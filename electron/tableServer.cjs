@@ -222,6 +222,15 @@ function sanitizeScene(input) {
     tokens,
     walls,
     darkness: Math.min(1, Math.max(0, num(input.darkness, 0))),
+    // FG's ambient light: its colour (a tint), how dark it leaves the map, the areas it falls in (none: everywhere).
+    ambient:
+      input.ambient && typeof input.ambient === "object"
+        ? {
+            color: /^#[0-9a-f]{6}$/i.test(String(input.ambient.color ?? "")) ? String(input.ambient.color) : null,
+            darkness: Math.min(1, Math.max(0, num(input.ambient.darkness, 0))),
+            areas: (Array.isArray(input.ambient.areas) ? input.ambient.areas : []).filter((points) => Array.isArray(points) && points.length >= 6 && points.length <= 4000).slice(0, 50).map((points) => points.map((value) => num(value, 0))),
+          }
+        : null,
   };
 }
 

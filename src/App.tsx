@@ -120,6 +120,7 @@ function toTable(loaded: LoadedAdventure, urls: string[]): TableAdventure {
         fit: scene.fit,
         walls: scene.walls,
         darkness: scene.darkness,
+        ambient: scene.ambient,
         lights: scene.lights,
         markers: scene.markers,
         regions: scene.regions,

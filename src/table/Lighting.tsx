@@ -24,18 +24,25 @@ export function Lighting({
   gm,
   twilight = false,
   image,
+  ambient = null,
 }: {
   width: number;
   height: number;
   darkness: number;
+  // FG's ambient light: its colour tints the map (where it falls); its areas are lit to its own darkness.
+  ambient?: { color: string | null; darkness: number; areas: number[][] } | null;
   lights: MapLight[];
   seeing: MapSeeing[];
   gm: boolean;
   twilight?: boolean;
   image?: { url: string; left: number; top: number; width: number; height: number } | null;
 }) {
-  if (darkness <= 0.01 && lights.length === 0) return null;
+  const tint = ambient?.color && ambient.color.toLowerCase() !== "#ffffff" ? ambient.color : null;
+  if (darkness <= 0.01 && lights.length === 0 && !tint) return null;
   const felt = twilight && darkness < 1 ? Math.min(darkness, 0.3) : darkness;
+  // Inside an ambient area the darkness is the ambient light's: the share of the scene's darkness cut away there.
+  const areas = ambient?.areas ?? [];
+  const areaCut = darkness > 0 ? Math.min(1, Math.max(0, 1 - (ambient?.darkness ?? darkness) / darkness)) : 0;
   const shade = Math.min(0.96, felt * (gm ? 0.5 : 0.96));
   // Warm the lit area without washing it out: stronger the darker the night.
   const glow = 0.05 + 0.22 * darkness;
@@ -89,8 +96,16 @@ export function Lighting({
             <circle key={light.id} cx={light.x} cy={light.y} r={light.dimPx} fill={`url(#light-cut-${index})`} clipPath={`url(#light-reach-${index})`} />
           ))}
         </mask>
+        {areas.length ? (
+          <clipPath id="ambient-areas">
+            {areas.map((area, index) => (
+              <polygon key={index} points={points(area)} />
+            ))}
+          </clipPath>
+        ) : null}
         <mask id="darkness-cut" maskUnits="userSpaceOnUse" x="0" y="0" width={width} height={height}>
           <rect width={width} height={height} fill="#fff" />
+          {areaCut > 0 ? areas.map((area, index) => <polygon key={`ambient-${index}`} points={points(area)} fill="#000" fillOpacity={areaCut} />) : null}
           {lights.map((light, index) => (
             <circle key={light.id} cx={light.x} cy={light.y} r={light.dimPx} fill={`url(#light-cut-${index})`} clipPath={`url(#light-reach-${index})`} />
           ))}
@@ -102,6 +117,8 @@ export function Lighting({
       {image && seeing.length > 0 && felt >= 0.5 ? (
         <image href={image.url} x={image.left} y={image.top} width={image.width} height={image.height} preserveAspectRatio="none" filter="url(#night-grey)" mask="url(#night-grey-area)" />
       ) : null}
+      {/* FG's ambient colour over the map where it falls (dusk's orange, moonlight's blue), thinner for the GM. */}
+      {tint ? <rect className="ambient-tint" width={width} height={height} fill={tint} fillOpacity={gm ? 0.35 : 0.6} style={{ mixBlendMode: "multiply" }} clipPath={areas.length ? "url(#ambient-areas)" : undefined} /> : null}
       {shade > 0 ? <rect width={width} height={height} fill="#03050a" fillOpacity={shade} mask="url(#darkness-cut)" /> : null}
       <g className="light-glow">
         {lights.map((light, index) => (

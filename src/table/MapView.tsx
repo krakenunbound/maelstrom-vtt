@@ -68,6 +68,8 @@ export type MapScene = {
   fit: BackgroundFit;
   walls: SceneWall[];
   darkness: number;
+  // FG's ambient light (its colour, how dark it leaves the map, where it falls).
+  ambient?: import("../foundry/importBundle").SceneAmbient | null;
   lights: SceneLight[];
   tokens: OverlayToken[];
   markers: SceneMarker[];
@@ -2137,6 +2139,7 @@ function MapViewInner({
             width={frame.worldWidth}
             height={frame.worldHeight}
             darkness={map.darkness}
+            ambient={map.ambient ?? null}
             lights={map.lights}
             seeing={gm ? [] : map.seeing}
             gm={gm}

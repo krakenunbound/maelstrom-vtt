@@ -1197,7 +1197,10 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       .map((wall) => ({ id: wall.id, group: doorGroup(wall), x1: wall.x1, y1: wall.y1, x2: wall.x2, y2: wall.y2, secret: wall.door === 2 || wall.toggle === "gm", found: Boolean(wall.found), kind: wall.door > 0 ? "door" : wall.kind, state: wall.id in doors ? doors[wall.id] : wall.ds }));
     const mask = maskHere();
     const groups = groupsHere();
-    const shared = { sceneId: scene.id, sight: sightOn(), locked, darkness: dark, settings: { grid: settings.grid, weather: settings.weather, darkness: settings.darkness, diagonal: settings.diagonal, diagonalRule: diagonalNow() }, drawings: drawingsHere(), deathMarkers: deathMarkersHere(), mask: mask.on || mask.shapes.length ? mask : null, groups, fx: fxHere(), templates: templatesFor(seat) };
+    // FG's ambient light: its tint always; its areas (where it falls, the rest at the scene's darkness) unless the GM
+    // set the darkness by hand, which then holds everywhere.
+    const ambientNow = scene.ambient ? { color: scene.ambient.color, darkness: scene.ambient.darkness, areas: settingsHere().darkness == null ? scene.ambient.areas ?? [] : [] } : null;
+    const shared = { sceneId: scene.id, sight: sightOn(), locked, darkness: dark, ambient: ambientNow, settings: { grid: settings.grid, weather: settings.weather, darkness: settings.darkness, diagonal: settings.diagonal, diagonalRule: diagonalNow() }, drawings: drawingsHere(), deathMarkers: deathMarkersHere(), mask: mask.on || mask.shapes.length ? mask : null, groups, fx: fxHere(), templates: templatesFor(seat) };
     const lightOut = (list) => list.map(({ id, x, y, brightPx, dimPx, color, polygon, animation, speed }) => ({ id, x, y, brightPx, dimPx, color, polygon, ...(animation ? { animation, speed } : {}) }));
     if (seat.role === "dm") {
       return {
@@ -1267,8 +1270,11 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
     // Twilight vision: a moonlit night is like dusk, and dim light is enough.
     const twilight = mine.some((token) => token.recordId && geometry.hasTwilightVision(records.get(token.recordId)?.data?.senses));
     const needsLight = mine.length > 0 && (twilight ? dark >= 1 : dark >= geometry.NEEDS_LIGHT);
+    // Inside FG's ambient areas the ambient light is enough to see by, when it is light enough.
+    const ambientAreas = scene.ambient && settingsHere().darkness == null && scene.ambient.darkness < geometry.NEEDS_LIGHT ? scene.ambient.areas ?? [] : [];
+    const inAmbient = (x, y) => ambientAreas.some((points) => geometry.pointInPolygon(x, y, points));
     const visibleInDark = (x, y) =>
-      mine.length > 0 && within(darkAreas, x, y) ? within(trueSeeing, x, y) : !needsLight || geometry.lit(x, y, shining) || within(seeing, x, y);
+      mine.length > 0 && within(darkAreas, x, y) ? within(trueSeeing, x, y) : !needsLight || geometry.lit(x, y, shining) || within(seeing, x, y) || inAmbient(x, y);
     // Nothing under the GM's mask reaches a player (FG: tokens under the mask are hidden), but their own tokens.
     const sighted = (token) => (!vision || geometry.seen(token.x, token.y, vision, slack)) && visibleInDark(token.x, token.y);
     const sensedOnly = new Set();

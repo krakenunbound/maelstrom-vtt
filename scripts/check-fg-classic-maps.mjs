@@ -86,5 +86,24 @@ assert(rain?.mask.polygons.length === 2, `every shape of a weather mask: ${JSON.
   assert(pin.x === 30 && pin.y === 60 && pin.text === "9. Vault", `a pin where its layer is: ${JSON.stringify(pin)}`);
   assert(extra.frame.base.x === 100 && extra.frame.base.y === -50, `the frame keeps the picture layer's place for encounters: ${JSON.stringify(extra.frame)}`);
 }
+
+// FG's lighting: off is daylight; on with no ambient light is dark (lights and darkvision only); ambient light sets
+// the darkness by its colour and tints the map; with an ambient mask it falls only inside the mask.
+{
+  const map = (id, image) => `<id-${id}><name type="string">L${id}</name><image type="image"><grid>on</grid>${image}<layers><layer><id>0</id><type>image</type><bitmap>l.png</bitmap>${id === "00013" ? "<ambientmask><points>-50,50,50,50,50,-50,-50,-50</points></ambientmask>" : ""}</layer></layers></image></id-${id}>`;
+  const WIDE = Buffer.from(PNG);
+  WIDE.writeUInt32BE(200, 16);
+  WIDE.writeUInt32BE(200, 20);
+  const db = `<root><image>${map("00010", "")}${map("00011", "<uselighting>on</uselighting>")}${map("00012", '<uselighting>on</uselighting><ambient><on type="number">1</on><ambientcolor>#91C9E7FF</ambientcolor></ambient>')}${map("00013", '<uselighting>on</uselighting><ambient><on type="number">1</on><useambientmask>on</useambientmask><ambientcolor>#FFFFF7E6</ambientcolor></ambient>')}</image></root>`;
+  fs.writeFileSync(path.join(dir, "Lit.mod"), zipSync({ "definition.xml": strToU8("<root><name>Lit</name></root>"), "db.xml": strToU8(db), "l.png": WIDE }));
+  const lit = fgModuleBundle(path.join(dir, "Lit.mod"), { all: true });
+  const scenes = Object.fromEntries(JSON.parse(new TextDecoder().decode(unzipSync(lit.bytes)["bundle.json"])).adventureData.scenes.map((scene) => [scene.name, scene]));
+  assert(scenes.L00010.darkness === 0 && !scenes.L00010.ambient, "lighting off: daylight");
+  assert(scenes.L00011.darkness === 1 && !scenes.L00011.ambient, `lighting on, no ambient light: dark (${scenes.L00011.darkness})`);
+  const moon = scenes.L00012;
+  assert(moon.darkness > 0.4 && moon.darkness < 0.6 && moon.ambient?.color === "#C9E7FF" && moon.ambient.areas.length === 0, `moonlight: half dark, tinted blue: ${JSON.stringify([moon.darkness, moon.ambient])}`);
+  const masked = scenes.L00013;
+  assert(masked.darkness === 1 && masked.ambient?.darkness < 0.1 && JSON.stringify(masked.ambient.areas) === JSON.stringify([[50, 50, 150, 50, 150, 150, 50, 150]]), `sunlight inside its mask, dark outside: ${JSON.stringify([masked.darkness, masked.ambient])}`);
+}
 fs.rmSync(dir, { recursive: true, force: true });
 console.log("ok fg classic maps: an older module's pins all come through, placed and named, a weather layer keeps every mask shape, a newer map's pins are named and linked, terrain is limited");

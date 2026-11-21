@@ -13,6 +13,7 @@ import {
   type SceneWall,
 } from "./sceneObjects";
 
+export type SceneAmbient = { color: string | null; darkness: number; areas: number[][] };
 export type ParsedScene = {
   id: string;
   name: string;
@@ -32,6 +33,9 @@ export type ParsedScene = {
   image: Uint8Array | null;
   // Foundry's darkness level (0 day .. 1 night); 0 when global light is on.
   darkness: number;
+  // FG's ambient light: its colour (a tint), how dark it leaves the map, and the areas it falls in (FG's
+  // ambient mask; none: everywhere). Outside the areas the scene's darkness holds.
+  ambient: SceneAmbient | null;
   walls: SceneWall[];
   lights: SceneLight[];
   tokens: SceneToken[];
@@ -198,6 +202,12 @@ function parseScenes(adventure: Record<string, unknown>): (Omit<ParsedScene, "im
         const globalLight = asRecord(environment?.globalLight);
         if (globalLight?.enabled === true || scene.globalLight === true) return 0;
         return Math.min(1, Math.max(0, asNumber(environment?.darknessLevel ?? scene.darkness, 0)));
+      })(),
+      ambient: (() => {
+        const given = asRecord(scene.ambient);
+        if (!given) return null;
+        const areas = (Array.isArray(given.areas) ? given.areas : []).filter((points): points is number[] => Array.isArray(points) && points.length >= 6).map((points) => points.map((value) => asNumber(value, 0)));
+        return { color: typeof given.color === "string" ? given.color : null, darkness: Math.min(1, Math.max(0, asNumber(given.darkness, 0))), areas };
       })(),
       lights: readLights(scene.lights, {
         size: asNumber(grid.size, 100),

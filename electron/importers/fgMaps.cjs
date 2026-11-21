@@ -116,6 +116,21 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
   // (not moved with their layer): from its origin, y up. Measured on Saltmarsh's maps: walls land on the
   // picture's lines this way (with the layer's place added again they fell off the picture).
   const at = (x, y) => ({ x: size.width / 2 + x - baseAt.x, y: size.height / 2 - (y - baseAt.y) });
+  // FG's lighting. Off (an older module, most maps): daylight. On: dark but where its lights reach, unless the
+  // map has ambient light: its colour sets how light the map is (sunlight near day, dusk, moonlight half, black
+  // none) and tints it; with an ambient mask the ambient light falls only inside the mask, the rest stays dark.
+  const lighting = image.uselighting === "on" || image.uselighting === true;
+  const ambientData = image.ambient && typeof image.ambient === "object" ? image.ambient : null;
+  const ambientOn = Boolean(ambientData) && [true, 1, "1", "on", "true"].includes(ambientData.on);
+  const argb = /^#?([0-9a-f]{2})([0-9a-f]{6})$/i.exec(String(ambientData?.ambientcolor ?? ""));
+  const ambientColor = argb ? `#${argb[2]}` : null;
+  const ambientLevel = argb
+    ? (() => {
+        const [r, g, b] = [0, 2, 4].map((at) => parseInt(argb[2].slice(at, at + 2), 16) / 255);
+        return (parseInt(argb[1], 16) / 255) * Math.min(1, 0.2126 * r + 0.7152 * g + 0.0722 * b);
+      })()
+    : 1;
+  const ambientDark = Math.round((1 - ambientLevel) * 100) / 100;
   const walls = [];
   let n = 0;
   for (const layer of layers) {
@@ -204,6 +219,16 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
       });
     }
   }
+  // The ambient mask's shapes (FG: the ambient light falls inside them), in scene pixels.
+  const ambientAreas =
+    ambientOn && (ambientData.useambientmask === "on" || ambientData.useambientmask === true)
+      ? layers.flatMap((layer) => [].concat(layer.ambientmask?.points ?? []).filter((points) => typeof points === "string").map((points) => nums(points).flatMap((value, index, all) => (index % 2 ? [] : (() => {
+          const p = at(value, all[index + 1]);
+          return [Math.round(p.x), Math.round(p.y)];
+        })())))).filter((points) => points.length >= 6)
+      : [];
+  const sceneDarkness = !lighting && !ambientOn ? 0 : ambientOn && !ambientAreas.length ? ambientDark : 1;
+  const ambient = ambientOn ? { color: ambientColor, darkness: ambientDark, areas: ambientAreas } : null;
   const fx = layers
     .filter((layer) => layer.type === "fx" && FX_MAP[layer.fx?.type])
     .map((layer) => ({
@@ -287,6 +312,8 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
       lights,
       tokens: [],
       notes: [],
+      darkness: sceneDarkness,
+      ...(ambient ? { ambient } : {}),
     },
     // FG's grid offset, in scene pixels from the picture's corner.
     // FG's grid offset is from the picture's top left, y down (measured on N1's and B3's maps: it lands on the artist's lines).

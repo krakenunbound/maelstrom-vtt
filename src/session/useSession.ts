@@ -110,6 +110,8 @@ export type TableMap = {
   sight: boolean;
   locked: boolean;
   darkness: number;
+  // FG's ambient light: a tint, and the areas it lights (to its own darkness; the rest at the scene's).
+  ambient?: { color: string | null; darkness: number; areas: number[][] } | null;
   lights: MapLight[];
   seeing: MapSeeing[];
   // Magical darkness reaching this seat's view, and where its truesight sees through it.
@@ -1116,6 +1118,7 @@ export function useSession() {
           fit: scene.fit,
           lights: scene.lights,
           darkness: scene.darkness,
+          ...(scene.ambient ? { ambient: scene.ambient } : {}),
           tokens,
           walls: scene.walls,
           // A bundle's regions (traps, difficult terrain, teleports): the host keeps them, never a player.

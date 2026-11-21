@@ -96,8 +96,10 @@ Fantasy Grounds modules and their history, [kraken-pack-format.md](kraken-pack-f
 
 - **From a Fantasy Grounds module (`.mod`)**: Maelstrom reads it directly
   (Modules) and makes a pack from it (**Modules > Packs > Make pack**). Its
-  records, pages, pictures, maps with walls and lights, tokens, sounds and
-  tables come along. A store book FG keeps encrypted is read through FG itself:
+  records, pages, pictures, maps (walls, doors, terrain, lights, FG's lighting
+  and ambient light with its mask, weather, pins, encounters), tokens, sounds
+  and tables come along. When a book's map uses something Maelstrom cannot
+  yet do, the job is to add it to Maelstrom, not to leave it out. A store book FG keeps encrypted is read through FG itself:
   `scripts/fg-bridge-export/export_book.py` with the book loaded in a running FG
   campaign and the Kraken Agent Bridge on.
 - **From a PDF or your own notes**: `npm run kpack:make` builds a pack from a
