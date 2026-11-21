@@ -149,6 +149,8 @@ function pageHtml(page, body, at) {
     <a href="${REPO}/releases" rel="noopener">Download</a>
     <a href="${REPO}/issues/new" rel="noopener">Report a bug</a>
     <a href="https://discord.gg/8jj4v8UdXr" rel="noopener">Discord</a>
+    <a href="https://www.youtube.com/@MaelstromVTT" rel="noopener">YouTube</a>
+    <a href="https://www.maelstromvtt.com" rel="noopener">Website</a>
     <a href="${REPO}" rel="noopener">GitHub</a>
   </nav>
 </header>

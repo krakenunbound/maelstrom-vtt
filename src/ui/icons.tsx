@@ -119,6 +119,9 @@ const PATHS: Record<string, string> = {
   flame: "M12 21c-3.6 0-6-2.4-6-5.6 0-3.4 3-5.4 3.6-8.9 1.6 1 2.4 2.6 2.4 4.1.9-.8 1.5-2 1.6-3.4C16 8.8 18 11.6 18 15.4 18 18.6 15.6 21 12 21Z",
   moon: "M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10Z",
   ration: "M5 9h14l-1.5 10.5h-11ZM8 9V6.5a4 4 0 0 1 8 0V9M9.5 13h5",
+  // A globe (a website), and a screen with a play mark (videos).
+  globe: "M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17ZM3.5 12h17M12 3.5c2.4 2.3 3.6 5.2 3.6 8.5s-1.2 6.2-3.6 8.5c-2.4-2.3-3.6-5.2-3.6-8.5S9.6 5.8 12 3.5Z",
+  video: "M4.5 6h15A1.5 1.5 0 0 1 21 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 16.5v-9A1.5 1.5 0 0 1 4.5 6ZM10 9.5v5l4.5-2.5Z",
 };
 
 export function Icon({ name, size = 18, title }: { name: keyof typeof PATHS | string; size?: number; title?: string }) {

@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **The YouTube channel and the website, everywhere:** the start screen has YouTube (@MaelstromVTT) and Website (maelstromvtt.com) beside Discord; the website, the wiki's top bar and the README link the channel.
 - **Cards on the character sheet, undocked anywhere:** with cards turned on (Settings, off unless you want them), every character sheet has a Cards tab with that character's hand; Undock lifts it into a window of its own (put it anywhere on the table, or out of the app with its pop-out), Dock puts it back on the tab. The cards roll as the sheet does.
 - **The quick slots dock where you like:** the grip's right-click menu docks the bar along the bottom or the top, or upright on the left or right; locks it where it is (no drag); and stands it upright or flat when it is loose. The agent's kraken_quickslots does the same (dock, locked, upright).
 - **Play-tested with the GM's own 2E books (B2, the Players Handbook), and fixed:** the tracker's header acts for the character a player speaks as (a player with two characters rolled the other one's surprise); a proficiency with no ability says "no check" instead of offering a die that cannot roll; the 2E ability rows' layout with Temp and the score on its die, with column heads. `npm run playtest-2e` plays it again (screenshots of each step).

@@ -1,6 +1,6 @@
 # Maelstrom VTT
 
-**[maelstromvtt.com](https://maelstromvtt.com)**
+**[maelstromvtt.com](https://www.maelstromvtt.com)** · [YouTube: @MaelstromVTT](https://www.youtube.com/@MaelstromVTT) · [Discord](https://discord.gg/8jj4v8UdXr)
 
 A free virtual tabletop, with its source open to read. The game master runs Maelstrom on
 their Windows or Linux PC and hosts the table; players join from their browser (Chrome,
@@ -10,7 +10,8 @@ of use, and a built-in AI agent that can do anything the GM can.
 > **Beta.** Maelstrom is in beta (see the version in the app's title bar).
 > Expect a few rough edges, and please report what you find (see
 > [Reporting problems](#reporting-problems)). Questions, help and tables looking
-> for players: the [Maelstrom VTT Discord](https://discord.gg/8jj4v8UdXr).
+> for players: the [Maelstrom VTT Discord](https://discord.gg/8jj4v8UdXr). Videos and
+> walkthroughs: the [Maelstrom VTT YouTube channel](https://www.youtube.com/@MaelstromVTT).
 
 ![The start screen](docs/screenshots/start-keep.jpg)
 
