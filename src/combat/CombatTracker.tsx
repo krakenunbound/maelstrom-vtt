@@ -1,5 +1,6 @@
 import { RestParty } from "../bookkeeping/RestParty";
-import { useState, type ReactNode } from "react";
+import { useState, useSyncExternalStore, type ReactNode } from "react";
+import { speakingAs } from "../ui/ChatDock";
 import { has, rulesetFor } from "../../shared/rulesets/registry.mjs";
 import { PANELS } from "../rulesets";
 import { Picture } from "../characters/ArtPicker";
@@ -579,7 +580,9 @@ function InitiativeTracker({ session }: { session: Session }) {
     .slice(0, 60);
   const mine = combat.entries.find((entry) => entry.mine && entry.id === combat.active);
   // The header's own buttons act on: a player's own creature (the one whose turn it is first); the GM's, whose turn it is.
-  const ownEntry = gm ? combat.entries.find((entry) => entry.id === combat.active) : (mine ?? combat.entries.find((entry) => entry.mine));
+  // A player with several characters: the one they speak as (the chat's identity), else their first.
+  const speaking = useSyncExternalStore(speakingAs.subscribe, speakingAs.get);
+  const ownEntry = gm ? combat.entries.find((entry) => entry.id === combat.active) : (mine ?? combat.entries.find((entry) => entry.mine && entry.name === speaking) ?? combat.entries.find((entry) => entry.mine));
 
   return (
     <div

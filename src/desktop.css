@@ -2143,7 +2143,7 @@ textarea.cc-field.tall { min-height: 220px; }
   .sheet-2e .d2e-main { grid-template-columns: minmax(0, 1fr) minmax(250px, 0.5fr); grid-template-areas: "abilities saves" "combat saves"; }
   .sheet-2e .d2e-main > .d2e-saves { align-self: stretch; }
 }
-.sheet-2e .d2e-ability { grid-template-columns: 6.2rem auto 2.2rem minmax(0, 1fr); column-gap: 8px; align-items: center; margin: 0; padding: 2px 0; border-bottom: 1px solid rgba(214, 170, 92, 0.12); }
+.sheet-2e .d2e-ability { grid-template-columns: 6.2rem auto 3.2rem auto minmax(0, 1fr); column-gap: 8px; align-items: center; margin: 0; padding: 2px 0; border-bottom: 1px solid rgba(214, 170, 92, 0.12); }
 .sheet-2e .d2e-ability:last-of-type { border-bottom: 0; }
 .sheet-2e .d2e-ability > b { font-size: 0.92rem; }
 .sheet-2e .d2e-score { display: inline-flex; align-items: center; gap: 2px; }
@@ -2928,3 +2928,7 @@ label.set-row { cursor: pointer; }
 .d2e-matrix { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.6rem, 1fr)); gap: 2px; padding: 0; }
 .d2e-matrix > li { display: flex; flex-direction: column; align-items: center; padding: 2px 0; border: 1px solid var(--line); border-radius: 4px; font-size: 0.8rem; }
 .d2e-matrix > li small { color: var(--brass); font-size: 0.85rem; }
+/* 2E's ability check: the die and the score now, compact; the Temp box narrow. */
+.sheet-2e .d2e-ability .cc-roll { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; white-space: nowrap; }
+.sheet-2e .d2e-ability input[aria-label$="temporary"] { width: 3rem; }
+.sheet-2e .d2e-ability-detail, .sheet-2e .d2e-save-detail { grid-template-columns: 9rem repeat(4, 4.2rem); column-gap: 8px; align-items: center; }

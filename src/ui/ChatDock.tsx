@@ -38,6 +38,23 @@ import "../effects/effects.css";
 import { cssRect, cssX, cssY, pageZoom } from "./pageZoom";
 import { GM } from "./gmTitle";
 
+// Who this seat speaks as (a player's character), for the rest of the screen: the combat tracker's
+// header acts for that character when the player has several.
+let speaking = "";
+const speakingListeners = new Set<() => void>();
+export const speakingAs = {
+  get: () => speaking,
+  set(name: string) {
+    if (name === speaking) return;
+    speaking = name;
+    for (const listener of speakingListeners) listener();
+  },
+  subscribe(listener: () => void) {
+    speakingListeners.add(listener);
+    return () => void speakingListeners.delete(listener);
+  },
+};
+
 // Where chat last was in a window of its own (in this browser).
 function chatPlace(): ScreenPlace | null {
   try {
@@ -597,6 +614,8 @@ export function ChatDock({ session }: { session: Session }) {
   // A player speaks as one of their characters (FG's identity list under the
   // chat), or as themselves; taking a character makes it who they speak as.
   const [speakAs, setSpeakAs] = useState("");
+  // Shared (the tracker's header acts for the character spoken as).
+  useEffect(() => speakingAs.set(speakAs), [speakAs]);
   const me = session.players.find((seat) => seat.id === session.selfId)?.name ?? "";
   // Who this seat speaks as: a player's own characters; the GM's, the characters no player has taken (made by the GM).
   const myCharacters = Object.values(session.records)

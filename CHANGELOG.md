@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Play-tested with the GM's own 2E books (B2, the Players Handbook), and fixed:** the tracker's header acts for the character a player speaks as (a player with two characters rolled the other one's surprise); a proficiency with no ability says "no check" instead of offering a die that cannot roll; the 2E ability rows' layout with Temp and the score on its die, with column heads. `npm run playtest-2e` plays it again (screenshots of each step).
 - **AD&D 2E: features and quick notes:** the Notes tab lists each feature from the books on its own row (the race's traits, each class's features up to its level, new ones as the character levels; hover for the book's words), and the Combat tab has a Quick notes box for the fight.
 - **AD&D 2E: temporary and lasting changes to abilities and saves:** each ability has its score as rolled, a Temp beside it, and (Notes, Ability and save details) a lasting adjustment and a score set outright (gauntlets of ogre power); its check button shows the score now. Each save has a Temp bonus and a number set outright.
 - **AD&D 2E: the THAC0 matrix and SURPRISE effects:** the Combat tab shows the d20 roll that hits each Armor Class from -10 to 10; SURPRISE effects on a character add to its surprise roll.
