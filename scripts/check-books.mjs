@@ -85,6 +85,29 @@ assert(text.includes('data-page="inn"') && text.includes('data-file="images/keep
   assert(page?.blocks.some((block) => block.kind === "text" && block.html.includes("A silver gate.")), "and its inline page reads");
   assert(Object.keys(chaptersOf({ category: { chapters: { a: {} } } })).join() === "a" && Object.keys(chaptersOf({ chapters: { b: {} } })).join() === "b", "a pack that kept the wrapper reads the same");
 }
+// An encounter on a map links its map beside it; a room of the same lair with no encounter names the map too.
+{
+  const { zipSync, strToU8 } = await import("fflate");
+  const { mkdtempSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const dir = mkdtempSync(path.join(tmpdir(), "kraken-lair-"));
+  const page = (name, text) => `<${name}><name type="string">${name}</name><blocks><id-00001><blocktype type="string">singletext</blocktype><text type="formattedtext">${text}</text></id-00001></blocks></${name}>`;
+  const encounter = '<linklist><link class="battle" recordname="battle.ambush@Lair"><b>Encounter: </b>Ambush</link></linklist><p>Kobolds.</p>';
+  const db = `<root><image><caves><name type="string">The Caves</name><image type="image"><layers><layer><name>caves</name><bitmap>images/caves.png</bitmap></layer></layers></image></caves></image>`
+    + `<battle><ambush><name type="string">Ambush</name><npclist><id-00001><name type="string">Kobold</name><maplink><id-00001><imageref type="windowreference"><class>imagewindow</class><recordname>image.caves.image@Lair</recordname></imageref><imagex type="number">10</imagex><imagey type="number">20</imagey></id-00001></maplink></id-00001></npclist></ambush></battle>`
+    + `<reference static="true"><refmanualdata>${page("guard", encounter)}${page("store", "<p>Sacks of grain.</p>")}</refmanualdata>`
+    + `<refmanualindex><chapters><id-00001><name type="string">The Caves</name><subchapters><id-00001><name type="string">A. Kobold Lair</name><refpages>`
+    + `<id-00001><name type="string">1. Guard Room</name><listlink type="windowreference"><class>reference_manualtextwide</class><recordname>reference.refmanualdata.guard@Lair</recordname></listlink></id-00001>`
+    + `<id-00002><name type="string">3. Store</name><listlink type="windowreference"><class>reference_manualtextwide</class><recordname>reference.refmanualdata.store@Lair</recordname></listlink></id-00002>`
+    + `</refpages></id-00001></subchapters></id-00001></chapters></refmanualindex></reference></root>`;
+  writeFileSync(path.join(dir, "Lair.mod"), zipSync({ "definition.xml": strToU8("<root><name>Lair</name><ruleset>2E</ruleset></root>"), "db.xml": strToU8(db), "images/caves.png": strToU8("png") }));
+  const lair = createBookShelf({ folder: dir });
+  const html = (id) => lair.page("Lair", id).blocks.map((block) => block.html ?? "").join("");
+  const guard = html("guard");
+  assert(/data-kind="battle"[^]*<a class="book-link picture encounter-map" data-book="Lair" data-file="images\/caves.png" data-name="The Caves"><b>Map: <\/b>The Caves<\/a>/.test(guard), `the encounter's map, beside it: ${guard}`);
+  const store = lair.page("Lair", "store");
+  assert(store.blocks[0]?.id === "map" && store.blocks[0].html.includes('data-file="images/caves.png"'), `a room with no encounter names its lair's map: ${JSON.stringify(store.blocks)}`);
+}
 // Typed superscripts and line breaks in a book's text read as such; nothing else does.
 {
   const { toHtml } = require("../electron/books.cjs");
