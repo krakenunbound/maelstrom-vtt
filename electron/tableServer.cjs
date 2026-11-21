@@ -3214,7 +3214,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
           send(ws, { type: "error", reason: "You cannot roll for that character." });
           return;
         }
-        siegeCheck(agentHandle, record, { attribute: msg.attribute, cl: msg.cl, bonus: msg.bonus, label: msg.label, addLevel: typeof msg.addLevel === "boolean" ? msg.addLevel : undefined, ...(["check", "save", "skill", "morale"].includes(msg.kind) ? { kind: msg.kind, skill: text(msg.skill, ""), dc: num(msg.dc, 0), advantage: ["advantage", "disadvantage", "boon", "bane"].includes(msg.advantage) ? msg.advantage : "" } : {}) }, client.role === "dm" ? record.name : client.name).catch((error) =>
+        siegeCheck(agentHandle, record, { attribute: msg.attribute, cl: msg.cl, bonus: msg.bonus, label: msg.label, addLevel: typeof msg.addLevel === "boolean" ? msg.addLevel : undefined, ...(["check", "save", "skill", "morale", "proficiency"].includes(msg.kind) ? { kind: msg.kind, skill: text(msg.skill, ""), dc: num(msg.dc, 0), advantage: ["advantage", "disadvantage", "boon", "bane"].includes(msg.advantage) ? msg.advantage : "" } : {}) }, client.role === "dm" ? record.name : client.name).catch((error) =>
           send(ws, { type: "error", reason: error instanceof Error ? error.message : "Could not roll that." }),
         );
         return;

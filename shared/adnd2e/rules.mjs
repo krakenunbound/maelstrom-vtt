@@ -706,6 +706,8 @@ export function derive(input) {
     ...(input.profs?.specialized ? { specialized: String(input.profs.specialized).slice(0, 60) } : {}),
     penalty: groups.length ? Math.max(...groups.map((group) => GROUPS[group].penalty)) : -2,
   };
+  // The sheet's rows of them, each with its die (keyed by its place on the list).
+  data.profs.checks = Object.fromEntries(data.profs.nonweapon.map((name, index) => [String(index), { name }]));
   data.ac = armorClass(data);
   data.attacks = {};
   for (const [key, item] of rows(data.inventorylist)) {

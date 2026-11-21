@@ -50,8 +50,8 @@ export function makeAdnd2eBooks() {
     <id-00002>${s("name", "Test Hedge Wizard")}${s("class", "Mage")}${s("text", "&lt;p&gt;A made-up kit.&lt;/p&gt;")}</id-00002>
   </background>
   <skill>
-    <id-00001>${s("name", "Endurance")}</id-00001>
-    <id-00002>${s("name", "Survival [2]")}</id-00002>
+    <id-00001>${s("name", "Endurance")}${s("stat", "constitution")}</id-00001>
+    <id-00002>${s("name", "Survival [2]")}${s("stat", "intelligence")}${n("adj_mod", -1)}</id-00002>
     <id-00003>${s("name", "Spellcraft")}</id-00003>
     <id-00004>${s("name", "Cooking")}</id-00004>
   </skill>

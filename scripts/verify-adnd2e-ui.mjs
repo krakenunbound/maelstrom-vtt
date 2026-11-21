@@ -208,6 +208,13 @@ try {
   await chat(page, "[CHECK] Strength");
   await seat.click('[data-roll-save="paralyzation"]');
   await chat(page, "[SAVE] Paralyzation");
+  // A nonweapon proficiency's die: its ability check with its modifier, both from the book (Survival: Intelligence 10, -1).
+  await seat.click('[data-sheet-tab="skills"]');
+  await tool("kraken_dice_force", { values: [5] });
+  await seat.click('.sheet-2e [data-proficiency="1"] [data-action="roll-proficiency"]');
+  await chat(page, "[PROFICIENCY] Survival [2] (Intelligence -1) [UNDER 9] [SUCCESS 5 under 9]");
+  await seat.screenshot({ path: path.join(tmpdir(), "kraken-adnd2e-proficiencies.png") });
+  await seat.click('[data-sheet-tab="main"]');
 
   // The GM's ogre and lion; initiative lowest first; the player's attack from the sheet.
   const ogreRecord = npcs.find((item) => item.name === "Ogre");

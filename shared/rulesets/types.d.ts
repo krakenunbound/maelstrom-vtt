@@ -28,7 +28,7 @@ export type ActionCall =
   // A roll (session.siegeCheck): bonus names the sheet modifier added to it; keyAs "skill": the key goes as the skill;
   // fight: a save while in a fight goes through the tracker (its effects count).
   // dc / advantage: the sheet modifiers sent as the roll's DC (a save in a fight: its cl) and advantage.
-  | { roll: "save" | "check" | "skill" | "morale"; key?: string; bonus?: string; keyAs?: "skill"; fight?: boolean; dc?: string; advantage?: string };
+  | { roll: "save" | "check" | "skill" | "morale" | "proficiency"; key?: string; bonus?: string; keyAs?: "skill"; fight?: boolean; dc?: string; advantage?: string };
 
 export interface FieldSpec {
   path: Path; // relative to the row in a list

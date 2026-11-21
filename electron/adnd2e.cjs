@@ -30,13 +30,15 @@ async function build2e(table, spec, owner, seat) {
 }
 
 // A test: kind save (its name: paralyzation, rod, petrification, breath,
-// spell), check (an ability: d20 at or under the score) or skill (a thief
-// skill: d100 at or under). bonus: a modifier (a save's +2 from magic adds to
-// the roll; a check's or skill's comes off it).
+// spell), check (an ability: d20 at or under the score), skill (a thief
+// skill: d100 at or under) or proficiency (a nonweapon proficiency, skill: its
+// name or its place on the sheet's list: an ability check with the
+// proficiency's modifier, both from its record in the active books). bonus: a
+// modifier (a save's +2 from magic adds to the roll; a check's or skill's comes off it).
 async function check2e(table, record, { kind = "check", attribute, skill, bonus = 0, label } = {}, from) {
   const rules = await rules2e();
   const data = rules.derive(record.data);
-  const test = rules.testOf(data, kind, kind === "skill" ? skill : kind === "save" ? attribute : String(attribute ?? "").toLowerCase());
+  const test = kind === "proficiency" ? proficiencyTest(rules, table, data, skill) : rules.testOf(data, kind, kind === "skill" ? skill : kind === "save" ? attribute : String(attribute ?? "").toLowerCase());
   const mod = Math.round(Number(bonus) || 0);
   // A save adds its modifier; a roll-under check takes a bonus off the die.
   const formula = `${test.die}${mod ? `${test.high ? (mod > 0 ? "+" : "") + mod : (mod > 0 ? "-" : "+") + Math.abs(mod)}` : ""}`;
@@ -46,6 +48,22 @@ async function check2e(table, record, { kind = "check", attribute, skill, bonus 
   const words = `${label ? `${label} ` : ""}${test.label} [${test.high ? "NEEDS" : "UNDER"} ${test.target}] [${success ? "SUCCESS" : "FAILURE"} ${rolled.total} ${test.high ? "vs" : "under"} ${test.target}]`;
   table.postRoll(rolled, words, from || record.name, false, { by: record.name, result: success ? "SUCCESS" : "FAILURE", against: test.target });
   return { total: rolled.total, target: test.target, success };
+}
+
+// A nonweapon proficiency's check: its ability (d20 at or under the score) and
+// modifier, as the active books' record of it says ("Blind-Fighting [2]" is Blind-fighting).
+function proficiencyTest(rules, table, data, skill) {
+  const list = data.profs?.nonweapon ?? [];
+  const name = /^\d+$/.test(String(skill ?? "")) ? list[Number(skill)] : String(skill ?? "").trim();
+  if (!name) throw new Error("No such proficiency on the sheet.");
+  const plain = (text) => String(text ?? "").replace(/\[[^\]]*\]|\([^)]*\)/g, "").replace(/[^a-z]/gi, "").toLowerCase();
+  const found = table.records.list({ type: "skill" }).find((item) => plain(item.name) === plain(name));
+  if (!found) throw new Error(`No ${name} in the active books: make the book that has it active (Modules), or roll the ability check.`);
+  const stat = String(found.data?.stat ?? "").toLowerCase();
+  if (!rules.STATS.includes(stat)) throw new Error(`${found.name} has no check (its book gives it no ability).`);
+  const adjust = Math.round(Number(found.data?.adj_mod) || 0);
+  const test = rules.testOf(data, "check", stat);
+  return { ...test, target: test.target + adjust, label: `[PROFICIENCY] ${found.name} (${rules.titled(stat)}${adjust ? ` ${rules.signed(adjust)}` : ""})` };
 }
 
 async function levelUp2e(table, record, from, className) {

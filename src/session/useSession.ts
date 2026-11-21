@@ -1241,7 +1241,7 @@ export function useSession() {
   }, []);
 
   // A SIEGE check for a character; the host rolls it and posts the result.
-  const siegeCheck = useCallback((id: string, attribute: string, cl = 0, save = false, extra?: { label?: string; bonus?: number; addLevel?: boolean; kind?: "check" | "save" | "skill" | "morale"; skill?: string; dc?: number; advantage?: string }) => {
+  const siegeCheck = useCallback((id: string, attribute: string, cl = 0, save = false, extra?: { label?: string; bonus?: number; addLevel?: boolean; kind?: "check" | "save" | "skill" | "morale" | "proficiency"; skill?: string; dc?: number; advantage?: string }) => {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     socket.send(JSON.stringify({ type: "siege-check", id, attribute, cl, ...(save ? { label: `${attribute[0].toUpperCase()}${attribute.slice(1)} save` } : {}), ...(extra ?? {}), ...throwIntent() }));

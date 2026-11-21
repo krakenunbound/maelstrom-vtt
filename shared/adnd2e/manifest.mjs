@@ -14,7 +14,7 @@ const titleOf = (/** @type {string} */ word) => word[0].toUpperCase() + word.sli
 
 const titled = (/** @type {string} */ word) => word[0].toUpperCase() + word.slice(1);
 // A roll with the strip's modifier ("mod": added to a save, taken off an ability check or a thief skill's d100).
-/** @param {"save" | "check" | "skill"} roll @param {Record<string, unknown>} [more] */
+/** @param {"save" | "check" | "skill" | "proficiency"} roll @param {Record<string, unknown>} [more] */
 const roll = (roll, more = {}) => ({ roll, bonus: "mod", ...more });
 /** @type {Record<string, string>} */
 const SAVE_WORDS = SAVE_NAMES;
@@ -222,8 +222,16 @@ export default {
             when: { rows: "thiefskills" },
           },
           { part: "heading", text: ["Nonweapon proficiencies "], hint: ["{profs.nonweaponslots|0}", " slots"] },
+          {
+            part: "list",
+            path: "profs.checks",
+            hook: "proficiency",
+            className: "five-items d2e-proficiencies",
+            name: { path: "name", flat: true },
+            rowActions: [{ hook: "roll-proficiency", className: "cc-roll-die", label: "d20", title: "Roll a {name} check: d20 at or under its ability, with its modifier (from its book)", action: roll("proficiency", { keyAs: "skill" }) }],
+          },
           { part: "notes", fields: [{ path: "profs.nonweapon", label: "Nonweapon proficiencies", kind: "textarea", lines: true, bare: true }] },
-          { part: "hint", text: "One a line. A proficiency check is an ability check (Mod: the proficiency's modifier)." },
+          { part: "hint", text: "One a line. Each rolls its ability check with its modifier (Mod adds too): the die beside it." },
         ],
       },
       {
