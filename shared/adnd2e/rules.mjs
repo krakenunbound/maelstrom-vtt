@@ -627,11 +627,15 @@ export function weaponAttack(data, item, key) {
   const itemWords = [...wordsOf(item.name), ...wordsOf(known?.[0])].map(stem);
   const names = (name) => same(name, item.name) || (known && same(name, known[0])) || (wordsOf(name).length > 0 && wordsOf(name).every((word) => itemWords.includes(stem(word))));
   const proficient = (data.profs?.weapon ?? []).some(names);
+  // The proficiencies' own adjustments (the sheet's Hit and Dmg on each), for every one that covers this weapon.
+  const covering = Object.values(data.profs?.weaponrows ?? {}).filter((row) => row && names(row.name));
+  const profHit = covering.reduce((total, row) => total + num(row.hit, 0), 0);
+  const profDmg = covering.reduce((total, row) => total + num(row.dmg, 0), 0);
   const penalty = proficient || (data.profs?.weapon ?? []).length === 0 ? 0 : num(data.profs?.penalty, 0);
   // A fighter's weapon specialization: +1 to hit, +2 damage.
   const special = data.profs?.specialized && names(data.profs.specialized) ? 1 : 0;
-  const tohit = (missile ? dex.missileadj : str.hitadj) + magic + racial + penalty + special + num(item.attackbonus, 0);
-  const dmg = (missile && fired ? 0 : str.dmgadj) + magic + 2 * special;
+  const tohit = (missile ? dex.missileadj : str.hitadj) + magic + racial + penalty + special + profHit + num(item.attackbonus, 0);
+  const dmg = (missile && fired ? 0 : str.dmgadj) + magic + 2 * special + profDmg;
   const add = (dice) => (dice ? `${dice}${dmg ? signed(dmg) : ""}`.replace(/([+-]\d+)([+-]\d+)$/, (_, a, b) => signed(Number(a) + Number(b))) : "");
   return {
     name: String(item.name ?? known?.[0] ?? "Weapon"),
@@ -641,6 +645,7 @@ export function weaponAttack(data, item, key) {
     damage: add(small),
     damagelarge: add(large),
     speed: num(item.speedfactor, known?.[3] ?? 0),
+    covers: covering.map((row) => row.name),
     type: missile ? "ranged" : "melee",
     dmgtype: known?.[4] ?? (/slash|pierc|bludg/i.exec(String(item.damage ?? ""))?.[0] ?? ""),
     rate: data.rate,
@@ -708,6 +713,18 @@ export function derive(input) {
     ...(input.profs?.specialized ? { specialized: String(input.profs.specialized).slice(0, 60) } : {}),
     penalty: groups.length ? Math.max(...groups.map((group) => GROUPS[group].penalty)) : -2,
   };
+  // The weapon proficiencies' rows: each one's own to-hit and damage adjustments (a kit's, a magic training's),
+  // added to every weapon it covers (weaponAttack), kept by name.
+  const knownWeapons = Object.values(input.profs?.weaponrows && typeof input.profs.weaponrows === "object" ? input.profs.weaponrows : {});
+  const bounded = (value) => Math.max(-10, Math.min(10, Math.round(num(value, 0))));
+  data.profs.weaponrows = Object.fromEntries(
+    data.profs.weapon.map((name, index) => {
+      const was = knownWeapons.find((row) => row?.name === name);
+      const hit = bounded(was?.hit);
+      const dmg = bounded(was?.dmg);
+      return [String(index), { name, ...(hit ? { hit } : {}), ...(dmg ? { dmg } : {}), ...(data.profs.specialized && same(data.profs.specialized, name) ? { specialized: true } : {}) }];
+    }),
+  );
   // The sheet's rows of them, each with its die (keyed by its place on the list): its ability and
   // modifier as the host found them in the books (kept by name), and the score to roll under.
   const known = Object.values(input.profs?.checks && typeof input.profs.checks === "object" ? input.profs.checks : {});
@@ -727,6 +744,11 @@ export function derive(input) {
     if (!isWeapon(item) || num(item.carried, 1) === 0) continue;
     const attack = weaponAttack(data, item, key);
     if (attack) data.attacks[key] = attack;
+  }
+  // Each weapon proficiency names the weapons it covers (on the sheet beside it).
+  for (const row of Object.values(data.profs.weaponrows)) {
+    const covered = Object.values(data.attacks).filter((attack) => attack.covers?.includes(row.name)).map((attack) => attack.name);
+    if (covered.length) row.weapons = covered.join(", ");
   }
   if (Object.keys(data.attacks).length === 0) {
     const str = data.abilities.strength;

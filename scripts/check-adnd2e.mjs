@@ -31,7 +31,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const { EDIT_PATHS } = require("../electron/adnd2e.cjs");
   const before = {
     text: ["playername", "alignment", "deity", "appearance", "notes", "background", "race", "gender", "age", "height", "weight", "languages"].map((key) => `^${key}$`),
-    number: [/^abilities\.(strength|dexterity|constitution|intelligence|wisdom|charisma)\.score$/, /^abilities\.strength\.percent$/, /^saves\.(paralyzation|rod|petrification|breath|spell)\.misc$/, /^thiefskills\.[a-z]+\.(points|misc)$/, /^hp\.(total|wounds|temp)$/, /^exp$/, /^ac\.misc$/, /^initiative\.misc$/, /^surprise\.misc$/, /^profs\.checks\.\d+\.misc$/, /^movement$/, /^stable$/, /^spellcasting\.\d\.used\.\d$/, /^coins\.id-\d+\.amount$/, /^inventorylist\.id-\d+\.(count|carried)$/].map((regex) => regex.source),
+    number: [/^abilities\.(strength|dexterity|constitution|intelligence|wisdom|charisma)\.score$/, /^abilities\.strength\.percent$/, /^saves\.(paralyzation|rod|petrification|breath|spell)\.misc$/, /^thiefskills\.[a-z]+\.(points|misc)$/, /^hp\.(total|wounds|temp)$/, /^exp$/, /^ac\.misc$/, /^initiative\.misc$/, /^surprise\.misc$/, /^profs\.checks\.\d+\.misc$/, /^profs\.weaponrows\.\d+\.(hit|dmg)$/, /^movement$/, /^stable$/, /^spellcasting\.\d\.used\.\d$/, /^coins\.id-\d+\.amount$/, /^inventorylist\.id-\d+\.(count|carried)$/].map((regex) => regex.source),
     // The lists were "spells", "profs.weapon" and "profs.nonweapon" by name.
     list: ["^spells$", /^profs\.(weapon|nonweapon)$/.source],
   };

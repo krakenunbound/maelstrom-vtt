@@ -93,7 +93,7 @@ may follow FG, icons and art are Maelstrom's own.
 | E11 | The weapon an entry rolled with is announced at its turn | no | Done (unreleased) |
 | E12 | Ability table rolls: Open Doors (and locked), Bend Bars, System Shock, Resurrection Survival, Learn Spell, Spell Failure | shown, not rolled | Done (unreleased) |
 | E13 | THAC0 double-click: a basic attack roll | THAC0 shown | Done (unreleased): a click |
-| E14 | Weapon proficiencies with to-hit and damage adjustments applied to chosen weapons (specialization) | names list; specialization in rules | open |
+| E14 | Weapon proficiencies with to-hit and damage adjustments applied to chosen weapons (specialization) | names list; specialization in rules | Done (unreleased): rows with Hit and Dmg, on the weapons each covers (by name or group) |
 | E15 | Features and traits lists (race, class, kit abilities) with links | notes | open |
 | E16 | Spells as rows: memorize into slots, cast (attack, save, damage, heal, effect), initiative | slots a day; names list | open |
 | E17 | Quick notes on the Actions tab; THAC0 matrix (AC -10..10) | none | open |

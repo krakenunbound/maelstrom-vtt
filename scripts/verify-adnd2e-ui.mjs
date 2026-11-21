@@ -301,6 +301,12 @@ try {
   await tool("kraken_dice_force", { values: [11] });
   await seat.click('.sheet-2e [data-action="roll-thaco"]');
   await chat(page, "[THAC0 20] [AC 4] [MISS 11 vs 16]");
+  // A weapon proficiency's own adjustment: Long sword +1 to hit puts the sword's attack at +3 (Strength 18/76's +2).
+  const swordProf = '.sheet-2e [data-weapon-prof]:has-text("Long sword")';
+  assert((await seat.textContent(swordProf)).includes("Long sword"), "the Long sword proficiency covers the long sword");
+  await seat.fill('.sheet-2e [aria-label="Long sword to hit"]', "1");
+  await seat.press('.sheet-2e [aria-label="Long sword to hit"]', "Tab");
+  await seat.waitForFunction(() => [...document.querySelectorAll('.sheet-2e [data-attack]')].some((row) => row.textContent.includes("Long sword") && row.querySelector('[data-action="attack"]')?.textContent.trim() === "+3"), null, { timeout: 10000 });
   // A natural 20 with the book's Krits & Fumbles tables: Critical Hit 5, the sword's slashing table: +1d4.
   await tool("kraken_combat", { action: "target", id: mine.id, targetId: ogre.id, on: true });
   await tool("kraken_dice_force", { values: [20, 5, 2] });

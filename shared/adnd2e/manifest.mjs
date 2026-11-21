@@ -223,7 +223,24 @@ export default {
             ],
           },
           { part: "heading", text: ["Weapon proficiencies "], hint: ["{profs.weaponslots|0}", " slots; nonproficient ", "{profs.penalty|signed}", " to hit"] },
+          {
+            part: "list",
+            path: "profs.weaponrows",
+            hook: "weapon-prof",
+            className: "five-items d2e-proficiencies",
+            fields: [
+              { path: "hit", kind: "number", label: "{name} to hit", title: "Its own to-hit adjustment (a kit's, a training's): on every weapon it covers" },
+              { path: "dmg", kind: "number", label: "{name} damage", title: "Its own damage adjustment: on every weapon it covers" },
+            ],
+            head: { select: "", fields: ["Hit", "Dmg"], name: "Proficiency", end: "" },
+            name: { path: "name", flat: true },
+            smalls: [
+              { place: "name", text: "specialized (+1 hit, +2 damage)", title: "Weapon specialization", when: { has: "specialized" } },
+              { place: "name", text: ["{weapons}"], title: "The weapons it covers, carried", when: { has: "weapons" } },
+            ],
+          },
           { part: "notes", fields: [{ path: "profs.weapon", label: "Weapon proficiencies", kind: "textarea", lines: true, bare: true }] },
+          { part: "hint", text: "Add or take away weapon proficiencies here, one a line (a weapon, or a group: Swords, Bows). Without one, a weapon takes the class's nonproficiency penalty." },
         ],
       },
       {
@@ -332,6 +349,7 @@ export default {
       "initiative.misc",
       "surprise.misc",
       "profs.checks.#+.misc",
+      "profs.weaponrows.#+.(hit|dmg)",
       "movement",
       "stable",
       "spellcasting.#.used.#",

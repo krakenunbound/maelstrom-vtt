@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **AD&D 2E weapon proficiencies as rows:** each with its own Hit and Dmg adjustments (a kit's, a training's) on every weapon it covers, the weapons it covers named beside it, and a specialized one marked.
 - **AD&D 2E: THAC0 rolls:** a click on THAC0 at the top of the sheet makes a plain attack roll (d20, no weapon's modifiers) at each target.
 - **The tracker's initiative, more of it:** Roll PC init and Clear init beside Roll NPC init, and a third initiative option in Settings: one plain roll a side (the party and their friends, then their foes; a tie goes to the party). Which way initiative runs (2E lowest first) now comes from each game's own rules.
 - **AD&D 2E proficiencies, each with its own numbers:** every row has its ability (the book's, changeable) and your own misc modifier, and shows its target (the score, the book's modifier and misc) beside its die.
