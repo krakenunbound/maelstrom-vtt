@@ -94,9 +94,10 @@ async function addBattle(table, fgPath, { place = true } = {}) {
     list.forEach((entry, index) => {
       const spot = spots[index];
       if (!place || !spot || (!frame && !own.length)) return;
-      // FG's map position: from the picture's centre, y up; Kraken's: the map's own.
+      // FG's map position (an encounter's maplink): from the picture's centre, y down (its pins'
+      // matrices are y up; B2's 69 encounters sit on their pins only read this way); Kraken's: the map's own.
       const x = own.length ? Number(spot.x) : frame.width / 2 + Number(spot.imagex);
-      const y = own.length ? Number(spot.y) : frame.height / 2 - Number(spot.imagey);
+      const y = own.length ? Number(spot.y) : frame.height / 2 + Number(spot.imagey);
       const unknown = String(row.unidentified ?? "").trim() || (Number(record.data?.isidentified) === 0 && record.data?.nonid_name ? String(record.data.nonid_name) : "");
       const token = table.map.place({ recordId: record.id, name: entry.name, x, y, hidden: true, ...(unknown ? { unidentified: unknown } : {}), faction: row.faction === "friend" ? "friend" : row.faction === "neutral" ? "neutral" : "foe", allowSecond: true }, table.seat);
       // Hidden on the map is hidden in the tracker too (and from the turn card): the eye reveals both together.

@@ -84,6 +84,15 @@ const views = new Map<string, { camera: Camera; framed: string }>();
 export function forgetView(sceneId: string) {
   views.delete(sceneId);
 }
+// A spot to open a map on (a book's link to a lair: FG's x, y from the picture's centre, y down; r its spread),
+// taken by the map view the next time it frames that scene, at once when it is showing it already.
+const focusWanted = new Map<string, { x: number; y: number; r: number }>();
+const focusListeners = new Set<() => void>();
+export function focusView(sceneId: string, at: { x: number; y: number; r: number }) {
+  focusWanted.set(sceneId, at);
+  views.delete(sceneId);
+  for (const listener of focusListeners) listener();
+}
 // The GM's copied tokens (Ctrl+C), kept across scenes for a paste on another map.
 const tokenClipboard: { items: { recordId: string | null; name: string; dx: number; dy: number }[] } = { items: [] };
 type Point = { x: number; y: number };
@@ -647,12 +656,32 @@ function MapViewInner({
   useEffect(() => {
     if (framedFor.current.startsWith(`${scene.id}|`)) views.set(scene.id, { camera, framed: framedFor.current });
   }, [camera, scene.id]);
+  // A focus asked for while this map is showing: framed again at once.
+  const [focusTick, setFocusTick] = useState(0);
+  useEffect(() => {
+    const listener = () => setFocusTick((tick) => tick + 1);
+    focusListeners.add(listener);
+    return () => void focusListeners.delete(listener);
+  }, []);
   useLayoutEffect(() => {
     const element = viewport.current;
     if (!element) return;
     const apply = () => {
       const rect = cssRect(element);
       if (rect.width < 10 || rect.height < 10) return;
+      // Opened on a spot (a book's map link): centred on it, zoomed to show it and a few squares round it.
+      const at = focusWanted.get(scene.id);
+      if (at && gm) {
+        focusWanted.delete(scene.id);
+        const frame = sceneFrame(scene);
+        const point = { x: frame.padX + scene.width / 2 + at.x, y: frame.padY + scene.height / 2 + at.y };
+        const span = 2 * (Math.max(0, at.r) + 4 * size);
+        const whole = fitCamera(rect.width, rect.height, frame, scene.width, scene.height).scale;
+        framedFor.current = `${scene.id}|focus`;
+        fitted.current = null;
+        setCamera(centeredOn(rect, point, Math.max(whole, Math.min(1.5, Math.min(rect.width, rect.height) / span))));
+        return;
+      }
       const own = mine[0];
       const key = `${scene.id}|${own ? "token" : "fit"}`;
       // Fitted, and not moved since: the window took its size (it opens, it is resized), fitted again to it.
@@ -678,7 +707,7 @@ function MapViewInner({
     const observer = new Observer(apply);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [scene.id, scene.width, scene.height, scene.padding, scene.grid.size, gm, mine[0]?.id]);
+  }, [scene.id, scene.width, scene.height, scene.padding, scene.grid.size, gm, mine[0]?.id, focusTick]);
 
   useEffect(() => {
     const element = viewport.current;

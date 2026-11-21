@@ -9,7 +9,7 @@ import { withGrid } from "../shared/map/geometry.mjs";
 import { imageMime, inspectZip, PICTURE, pictureBundle, UVTT, uvttBundle, type ImportCandidate, type LoadedAdventure } from "./foundry/importBundle";
 import { useSession } from "./session/useSession";
 import { SetupScreen } from "./setup/SetupScreen";
-import { forgetView, MapView, type MapScene } from "./table/MapView";
+import { focusView, forgetView, MapView, type MapScene } from "./table/MapView";
 import { DESIGNS, EFFECTS, FONTS, MATERIALS, PRESETS, diceStore, fullLook, type DiceLook } from "./dice/diceStore";
 import type { DiceSettingsPatch } from "./kraken";
 import { agentCommands } from "./ui/agentCommands";
@@ -472,16 +472,20 @@ export function App() {
     const chosen = byName ?? [...opened.scenes].sort((a, b) => (b.walls?.length ?? 0) - (a.walls?.length ?? 0) || (b.lights?.length ?? 0) - (a.lights?.length ?? 0))[0];
     if (!chosen) throw new Error("That picture could not be opened.");
     const onTable = pack?.scenes[sceneIndex]?.id === chosen.id;
+    // A book's map link to a lair: the map opens on it (see focusView), wherever it is shown.
+    const focus = () => image.at && focusView(chosen.id, image.at);
     if (onTable) {
       if (prep) closeImage();
       // Opened by the GM: no longer held closed.
       setMapHeld("");
       saveView(candidates[adventureIndex]?.name ?? pack?.name ?? "", chosen.id);
+      focus();
       mapWindow.front?.();
       return { opened: chosen.name, id: chosen.id, onTable: true };
     }
-    // Opened afresh: fitted and centred in its window, not where it was last left.
+    // Opened afresh: fitted and centred in its window, not where it was last left (or on the lair it was opened for).
     forgetView(chosen.id);
+    focus();
     setPrep({ scene: chosen, bytes, book: image.book, ...(image.own ? { own: true, file: image.file } : {}) });
     await session.publish(chosen, { prep: true });
     // Already the image shown (in a window minimized, or behind others): to the front again.

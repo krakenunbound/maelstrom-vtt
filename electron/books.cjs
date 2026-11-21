@@ -264,7 +264,17 @@ const escape = (text) => String(text).replace(/[&<>"]/g, (char) => ({ "&": "&amp
 // typed text ("Quarterstaff<sup>2</sup>", escaped in the module): shown as
 // one, as the book meant (a fixed few, so nothing else gets through).
 const typeset = (escaped) => escaped.replace(/&lt;(\/?)(sup|sub)&gt;/gi, (_, close, tag) => `<${close}${tag.toLowerCase()}>`).replace(/&lt;br\s*\/?&gt;/gi, "<br>");
-function toHtml(formatted, resolve) {
+// Where on a map a link opens: the middle of the spots (FG's, from the picture's centre, y down) and
+// how far they spread, as "x,y,r" (data-at), so the map opens on that lair, not the whole picture.
+function aroundOf(spots) {
+  if (!spots?.length) return "";
+  const x = spots.reduce((sum, [px]) => sum + px, 0) / spots.length;
+  const y = spots.reduce((sum, [, py]) => sum + py, 0) / spots.length;
+  const r = Math.max(...spots.map(([px, py]) => Math.hypot(px - x, py - y)));
+  return `${Math.round(x)},${Math.round(y)},${Math.round(r)}`;
+}
+// found: an array that takes the maps the text's encounters stand on (the page's map, see page()).
+function toHtml(formatted, resolve, found = null) {
   const root = parse(`<root>${formatted ?? ""}</root>`);
   const maps = new Set(); // an encounter's map, linked once
   if (!root) return `<p>${escape(formatted ?? "")}</p>`;
@@ -308,9 +318,11 @@ function toHtml(formatted, resolve) {
           out += `<a class="book-link record" data-book="${escape(target.book)}" data-record="${escape(target.record)}" data-kind="${escape(linkClass)}" data-name="${escape(target.name)}">${text}</a>`;
           // An encounter on a map: the map, beside it (the book keeps one map for many rooms; the page names it).
           const map = target.map;
+          if (map) found?.push(map);
           if (map && !maps.has(map.file) && !String(formatted).includes(`"${map.path.split("@")[0]}@`)) {
             maps.add(map.file);
-            out += `<a class="book-link picture encounter-map" data-book="${escape(map.book)}" data-file="${escape(map.file)}" data-name="${escape(map.name)}"><b>Map: </b>${escape(map.name)}</a>`;
+            const at = aroundOf(map.spots);
+            out += `<a class="book-link picture encounter-map" data-book="${escape(map.book)}" data-file="${escape(map.file)}" data-name="${escape(map.name)}"${at ? ` data-at="${at}"` : ""}><b>Map: </b>${escape(map.name)}</a>`;
           }
         }
         else out += `<span class="book-link dead" data-kind="${escape(linkClass)}">${text}</span>`;
@@ -535,18 +547,27 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
     };
   }
   // The map an encounter's creatures stand on (FG's maplink: the image it places them on), so the
-  // page that links the encounter links its map too: { book, file, name } or null.
+  // page that links the encounter links its map too: { book, file, name, path, spots } or null.
+  // spots: where they stand, FG's way ([x, y] from the picture's centre, y down), on that map only.
   function encounterMap(book, info, record) {
     const values = (object) => Object.values(object && typeof object === "object" ? object : {});
+    let found = null;
     for (const row of values(record.data?.npclist))
       for (const spot of values(row?.maplink)) {
         const [inner, moduleName] = String(spot?.imageref?.recordname ?? "").split("@");
         if (!inner || (moduleName && moduleName !== info.name)) continue;
-        const image = book.records.get(`${inner.replace(/\.image$/, "")}@${info.name}`);
-        const file = bitmapIn(image?.data?.image);
-        if (file) return { book: info.id, file, name: image.name, path: image.data.fgPath ?? `${inner}@${info.name}` };
+        const path = `${inner.replace(/\.image$/, "")}@${info.name}`;
+        if (!found) {
+          const image = book.records.get(path);
+          const file = bitmapIn(image?.data?.image);
+          if (!file) continue;
+          found = { book: info.id, file, name: image.name, path: image.data.fgPath ?? path, spots: [] };
+        }
+        const x = Number(spot.imagex);
+        const y = Number(spot.imagey);
+        if (path === found.path && Number.isFinite(x) && Number.isFinite(y)) found.spots.push([x, y]);
       }
-    return null;
+    return found;
   }
   // A section's map: the one its pages' encounters stand on most (a room with no encounter of its own,
   // "3. Food Storage Room", still names the map of its lair). Kept per book and section.
@@ -565,13 +586,43 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
       const words = [data.text, ...byOrder(data.blocks).flatMap((block) => [block.text, block.text2])].filter((text) => typeof text === "string").join(" ");
       for (const match of words.matchAll(/class="battle"\s+recordname="([^"]+)"/g)) {
         const map = resolve("battle", match[1].replaceAll("&amp;", "&"))?.map;
-        if (map) counts.set(map.path, { map, n: (counts.get(map.path)?.n ?? 0) + 1 });
+        if (map) counts.set(map.path, { map, spots: [...(counts.get(map.path)?.spots ?? []), ...map.spots] });
       }
     }
     // Only a section of one map (a lair): one whose encounters stand on several maps names none.
-    const best = counts.size === 1 ? [...counts.values()][0].map : null;
+    // Its spots: every encounter of the section (the map opens on the whole lair).
+    const one = counts.size === 1 ? [...counts.values()][0] : null;
+    const best = one ? { ...one.map, spots: one.spots } : null;
     kept.set(key, best);
     return best;
+  }
+  // Every page's pin on the book's maps (FG's shortcuts to its pages, the map's keys): page id ->
+  // { book, file, name, path, spots: [[x, y]] }, x and y from the picture's centre, y down (the shortcut's
+  // matrix is y up). A page pinned on several maps: the one with the most walls (the battle map, not the
+  // overview of the same place). Kept per book.
+  const bookPins = new WeakMap();
+  function pinsOf(book) {
+    if (bookPins.has(book)) return bookPins.get(book);
+    const found = new Map();
+    for (const record of book.records.values()) {
+      if (record.type !== "image") continue;
+      const file = bitmapIn(record.data?.image);
+      if (!file) continue;
+      const walls = (JSON.stringify(record.data.image).match(/"points"/g) ?? []).length;
+      const walk = (value) => {
+        if (!value || typeof value !== "object") return;
+        if (value.type === "shortcut" && value.shortcut && typeof value.shortcut === "object") {
+          const page = /refmanualdata\.([^.@]+)/.exec(String(value.shortcut.record ?? value.shortcut.recordname ?? ""))?.[1];
+          const matrix = String(value.matrix ?? "").split(",").map(Number);
+          if (page && (found.get(page)?.walls ?? -1) < walls && matrix.length === 16 && Number.isFinite(matrix[12]) && Number.isFinite(matrix[13]))
+            found.set(page, { book: book.info.id, file, name: record.name, path: record.data.fgPath, spots: [[matrix[12], -matrix[13]]], walls });
+        }
+        for (const inner of Object.values(value)) walk(inner);
+      };
+      walk(record.data.image);
+    }
+    bookPins.set(book, found);
+    return found;
   }
   // Where a page sits in the contents: [chapter, section] or null.
   function placeOf(book, pageId) {
@@ -726,7 +777,8 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
       let n = 0;
       const blockId = () => `b${++n}`;
       const words = (value) => (typeof value === "string" ? value : "");
-      const textBlock = (formatted, frame = "") => ({ id: blockId(), kind: "text", text: formatted, html: toHtml(formatted, resolve), frame });
+      const onMaps = []; // the maps this page's encounters stand on
+      const textBlock = (formatted, frame = "") => ({ id: blockId(), kind: "text", text: formatted, html: toHtml(formatted, resolve, onMaps), frame });
       if (typeof data.text === "string") blocks.push(textBlock(data.text));
       for (const block of byOrder(data.blocks)) {
         const type = String(block.blocktype ?? "");
@@ -736,15 +788,24 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
         const picture = { file, caption: String(block.caption ?? ""), scale: Math.min(200, Math.max(10, Number(block.scale) || 100)), name: link?.name ?? String(block.caption ?? "") };
         const side = /left$/.test(type) || align[1] === "left" ? "left" : /right$/.test(type) || align[1] === "right" ? "right" : "";
         if (type === "header") blocks.push({ id: blockId(), kind: "header", text: words(block.text).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() });
-        else if (["dualtext", "dualsidebar", "sidebarleft", "sidebarright"].includes(type) && (words(block.text).trim() || words(block.text2).trim())) blocks.push({ id: blockId(), kind: "twocol", text: words(block.text), html: toHtml(words(block.text), resolve), text2: words(block.text2), html2: toHtml(words(block.text2), resolve) });
-        else if (file && side && words(block.text).trim()) blocks.push({ id: blockId(), kind: "textpic", side, ...picture, text: words(block.text), html: toHtml(words(block.text), resolve) });
+        else if (["dualtext", "dualsidebar", "sidebarleft", "sidebarright"].includes(type) && (words(block.text).trim() || words(block.text2).trim())) blocks.push({ id: blockId(), kind: "twocol", text: words(block.text), html: toHtml(words(block.text), resolve, onMaps), text2: words(block.text2), html2: toHtml(words(block.text2), resolve, onMaps) });
+        else if (file && side && words(block.text).trim()) blocks.push({ id: blockId(), kind: "textpic", side, ...picture, text: words(block.text), html: toHtml(words(block.text), resolve, onMaps) });
         else {
           if (file) blocks.push({ id: blockId(), kind: "picture", ...picture, align: align[0] || "center" });
           for (const key of ["text", "text2"]) if (words(block[key]).trim()) blocks.push(textBlock(block[key], String(block.frame ?? "")));
         }
       }
-      // A room with no encounter of its own: its section's map, first, so every room of a lair names its map.
-      if (!blocks.some((block) => /encounter-map|data-kind="battle"/.test(`${block.html ?? ""}${block.html2 ?? ""}`))) {
+      // The page's own pin on a map (FG's shortcut to it, a map key "3. Food Storage Room"): its map, opened on it.
+      const pin = pinsOf(book).get(String(pageId)) ?? null;
+      const linksTo = (map) => blocks.some((block) => `${block.text ?? ""}${block.text2 ?? ""}`.includes(`"${map.path.split("@")[0]}@`) || `${block.html ?? ""}${block.html2 ?? ""}`.includes(`data-file="${escape(map.file)}"`));
+      const addMap = (map) => {
+        const text = `<linklist><link class="imagewindow" recordname="${escape(map.path)}"><b>Map: </b>${escape(map.name)}</link></linklist>`;
+        blocks.unshift({ id: "map", kind: "text", text, html: toHtml(text, resolve), frame: "" });
+      };
+      if (pin) {
+        if (!linksTo(pin)) addMap(pin);
+      } else if (!blocks.some((block) => /encounter-map|data-kind="battle"/.test(`${block.html ?? ""}${block.html2 ?? ""}`))) {
+        // A room with no pin and no encounter of its own: its section's map, first, so every room of a lair names its map.
         const place = placeOf(book, pageId);
         // A section with no encounters (The Ravine, The Inner Bailey): its chapter's map, when the chapter has only one.
         const chapterMaps = () => {
@@ -756,9 +817,20 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
           return found.size === 1 ? [...found.values()][0] : null;
         };
         const map = place ? sectionMap(book, ...place) ?? chapterMaps() : null;
-        if (map && !blocks.some((block) => `${block.text ?? ""}${block.text2 ?? ""}`.includes(`"${map.path.split("@")[0]}@`))) {
-          const text = `<linklist><link class="imagewindow" recordname="${escape(map.path)}"><b>Map: </b>${escape(map.name)}</link></linklist>`;
-          blocks.unshift({ id: "map", kind: "text", text, html: toHtml(text, resolve), frame: "" });
+        if (map && !linksTo(map)) addMap(map);
+        // The section's map (a lair's): opened on the whole lair. A chapter's: on the whole map.
+        const own = place ? sectionMap(book, ...place) : null;
+        if (own?.spots?.length) onMaps.push(own);
+      }
+      // Every link on the page to that map (the book's own "Map" links too) opens it there: data-at,
+      // the page's pin, else its first encounter, else its lair. An encounter's own map link keeps its encounter's.
+      const focus = pin ?? onMaps.find((map) => map.spots?.length);
+      if (focus) {
+        const at = aroundOf(focus.spots);
+        const mark = (html) => html.replace(/<a class="book-link picture([^"]*)"([^>]*?) data-file="([^"]*)"([^>]*)>/g, (whole, more, before, file, after) => (file === escape(focus.file) && !/data-at=/.test(whole) ? `<a class="book-link picture${more}"${before} data-file="${file}"${after} data-at="${at}">` : whole));
+        for (const block of blocks) {
+          if (typeof block.html === "string") block.html = mark(block.html);
+          if (typeof block.html2 === "string") block.html2 = mark(block.html2);
         }
       }
       return { book: book.info.id, id: pageId, name: record.name, blocks };

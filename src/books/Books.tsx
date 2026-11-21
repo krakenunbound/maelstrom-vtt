@@ -7,7 +7,7 @@ import { useWindows } from "../ui/Windows";
 import { sound } from "../sound/soundEngine";
 import { slotDrag } from "../ui/QuickSlots";
 import { PacksPanel } from "./Packs";
-import { imageWindow } from "../table/imageWindow";
+import { imageWindow, type MapSpot } from "../table/imageWindow";
 import { useReadAloudFrames } from "./readAloud";
 import { BookPages } from "./BookPages";
 import { BookContentsEditor } from "./BookContents";
@@ -24,6 +24,11 @@ import { GM } from "../ui/gmTitle";
 // which are out in a window of their own; and which shown ones this screen
 // closed (a shown picture comes back when the GM shows it again).
 type Tab = { book: string; file: string; name: string };
+// A map link's spot (data-at "x,y,r", see electron/books.cjs aroundOf): where the map opens.
+function spotOf(at: string | undefined): MapSpot | undefined {
+  const [x, y, r] = String(at ?? "").split(",").map(Number);
+  return at && Number.isFinite(x) && Number.isFinite(y) ? { x, y, r: Number.isFinite(r) ? r : 0 } : undefined;
+}
 const keyOf = (item: { book: string; file: string }) => `${item.book}|${item.file}`;
 const pictures = (() => {
   let tabs: Tab[] = [];
@@ -226,12 +231,12 @@ export function useBookWindows() {
     openRecord(book: string, path: string, name: string) {
       windows.open("bookrecord", name || "Record", `${book}|${path}`);
     },
-    openPicture(tab: Tab) {
+    openPicture(tab: Tab, at?: MapSpot) {
       // The GM: every picture opens in the image window, its one master (to
       // share, edit and test), wherever it was clicked. A player: the viewer.
       if (imageWindow.open) {
         // Should it fail, the picture still opens (in the viewer): never a dead end.
-        void imageWindow.open({ book: tab.book, file: tab.file, name: tab.name }).catch(() => {
+        void imageWindow.open({ book: tab.book, file: tab.file, name: tab.name, ...(at ? { at } : {}) }).catch(() => {
           pictures.open(tab);
           windows.open("images", "Pictures");
         });
@@ -594,7 +599,7 @@ export function BookWindow({ session, book }: { session: Session; book: string }
       goTo(target.page);
       setView("book");
     } else if (target.page && target.book) openBook(target.book, target.book, target.page);
-    else if (target.file && target.book) openPicture({ book: target.book, file: target.file, name: target.name || link.textContent || "Picture" });
+    else if (target.file && target.book) openPicture({ book: target.book, file: target.file, name: target.name || link.textContent || "Picture" }, spotOf(target.at));
     else if (target.record && target.book) openRecord(target.book, target.record, target.name || link.textContent || "Record");
   };
   if (error && !contents) return <p className="hint">{error}</p>;
