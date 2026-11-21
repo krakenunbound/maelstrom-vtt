@@ -237,6 +237,8 @@ function cleanEntry(raw) {
     lostTurn: Math.max(0, Math.round(num(raw.lostTurn, 0))),
     // Delay (the tracker row's Delay): out of the order until its Act now; actingNow: the entry it cut in after.
     ...(raw.delayed ? { delayed: true } : {}),
+    // 2E: the weapon its initiative was rolled with (FG's inititem).
+    ...(typeof raw.inititem === "string" && raw.inititem ? { inititem: raw.inititem.slice(0, 60) } : {}),
     ...(typeof raw.actingNow === "string" ? { actingNow: raw.actingNow.slice(0, 40) } : {}),
     ...(Number.isFinite(Number(raw.actedRound)) && raw.actedRound !== null && raw.actedRound !== undefined ? { actedRound: Number(raw.actedRound) } : {}),
     // Ironsworn and Starforged: a foe's rank and progress (ticks, 0-40), out of the fight once defeated.
@@ -3011,7 +3013,8 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       changed();
     },
     // Rolls initiative: one entry ("a player may roll their own"), every NPC, or everyone.
-    async rollInit(which, seat) {
+    // extra: { weapon } (a sheet's weapon row: initiative with that weapon, where the game takes it).
+    async rollInit(which, seat, extra = {}) {
       const pick =
         which === "npcs" ? state.entries.filter((entry) => record(entry)?.type !== "character") : which === "all" ? state.entries : [find(which)];
       if (seat.role !== "dm" && (pick.length !== 1 || owner(pick[0]) !== seat.name)) throw new Error("You can roll initiative for your own character.");
@@ -3030,7 +3033,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
           }
         }
       }
-      const rolled = await this.rollInitFor(leaders, seat);
+      const rolled = await this.rollInitFor(leaders, seat, pick.length === 1 ? extra : {});
       if (copies.length) {
         for (const [copy, leader] of copies) copy.initresult = leader.initresult;
         changed();
@@ -3038,7 +3041,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       return rolled;
     },
     // The initiative of these entries, by the game's rule (rollInit's dice).
-    async rollInitFor(pick, seat) {
+    async rollInitFor(pick, seat, extra = {}) {
       const { engine, game, options: opts } = await options();
       const die = Math.max(2, Math.round(num(opts?.SIEGE_INIT_DIE, 10)));
       // Forged in the Dark has no initiative: the action roll decides who acts (the Score panel instead of the tracker).
@@ -3102,13 +3105,17 @@ function createCombat({ saved, table, onChange = () => undefined }) {
         return;
       }
       if (d2e()) {
-        // 2E: d10 + modifiers (a character's Dexterity reaction adjustment comes off), the lowest first.
+        // 2E: d10 + modifiers (the ruleset's initiativeOf: a weapon's speed factor, else the sheet's
+        // own: the Dexterity reaction adjustment off), the lowest first.
         await r2eReady;
         for (const entry of pick) {
           const linked = record(entry);
-          const bonus = linked?.type === "character" ? num(r2e.derive(linked.data).initiative.total, 0) : entry.init;
-          const roll = table().roll(`1d10${bonus ? `${bonus > 0 ? "+" : ""}${bonus}` : ""}`, `[INIT] ${entry.name}`, seat.role === "dm" ? "Combat" : seat.name, entry.hidden);
+          const own = linked?.type === "character" ? r2e.initiativeOf(r2e.derive(linked.data), String(extra.weapon ?? "")) : { bonus: entry.init, item: "" };
+          const bonus = own.bonus;
+          const roll = table().roll(`1d10${bonus ? `${bonus > 0 ? "+" : ""}${bonus}` : ""}`, `[INIT] ${entry.name}${own.item ? ` [MOD: ${own.item}]` : ""}`, seat.role === "dm" ? "Combat" : seat.name, entry.hidden);
           entry.initresult = roll.total;
+          if (own.item) entry.inititem = own.item;
+          else delete entry.inititem;
         }
         changed();
         return;

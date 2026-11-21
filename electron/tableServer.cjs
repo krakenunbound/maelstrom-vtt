@@ -3612,8 +3612,12 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
               const token = map.place({ recordId: entry.recordId, name: entry.name, x, y, hidden: entry.hidden, faction: entry.faction, allowSecond: true }, seat);
               return combat.update(entry.id, { tokenId: token.id }, seat);
             }
-            case "init":
-              return combat.rollInit(String(msg.which ?? ""), seat);
+            case "init": {
+              // From a sheet (its weapon row's INIT): the character's own entry, and the weapon.
+              const which = msg.which ? String(msg.which) : msg.recordId ? combat.entries().find((item) => item.recordId === String(msg.recordId))?.id : "";
+              if (!which) throw new Error("Not in the fight: add this character to the combat tracker first.");
+              return combat.rollInit(which, seat, typeof msg.weapon === "string" && msg.weapon ? { weapon: msg.weapon.slice(0, 60) } : {});
+            }
             case "next":
               return combat.next(seat);
             case "round":

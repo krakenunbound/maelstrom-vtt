@@ -791,6 +791,15 @@ export function healthOf(data) {
 
 // A test for a character: a save (d20 at or above the number), an ability
 // check (d20 at or under the score), or a thief skill (d100 at or under).
+// An initiative roll's modifier (FG 2E's ActionInit.getRoll): with a weapon (the sheet's
+// weapon row: its INIT button), that weapon's speed factor alone; else the sheet's own
+// (the Dexterity reaction adjustment off, and its misc). { bonus, item } (item: the weapon's name).
+export function initiativeOf(data, weapon = "") {
+  const attack = weapon ? data.attacks?.[weapon] : null;
+  if (weapon && !attack) throw new Error("No such weapon on the sheet.");
+  return attack ? { bonus: num(attack.speed, 0), item: attack.name } : { bonus: num(data.initiative?.total, 0), item: "" };
+}
+
 export function testOf(data, kind, key) {
   if (kind === "save") {
     const save = saveKey(key);

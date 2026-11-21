@@ -234,10 +234,19 @@ try {
   const lion = view.find((entry) => entry.name === "Mountain Lion");
   assert(ogre.hp === 25 && ogre.ac === 4, "the ogre on the tracker: 25 HP, AC 4");
   await tool("kraken_combat", { action: "target", id: mine.id, targetId: ogre.id, on: true });
+  await seat.click('[data-sheet-tab="combat"]');
+  const swordRow = '.sheet-2e [data-attack]:has(b:text-is("Long sword"))';
+  await seat.waitForSelector(`${swordRow} [data-action="init"]`);
+  // Initiative with the weapon (FG's INIT on the weapon row): d10 + its speed factor (a long sword 5), the tracker's result.
+  assert((await seat.textContent(`${swordRow} [data-action="init"]`))?.trim() === "5", "the long sword's INIT shows its speed factor, 5");
+  await tool("kraken_dice_force", { values: [3] });
+  await seat.click(`${swordRow} [data-action="init"]`);
+  await chat(page, "[INIT] Brannoc [MOD: Long sword]");
+  const armed = await until(async () => (await tool("kraken_combat", { action: "view" })).entries.find((item) => item.id === mine.id && item.initresult === 8), "the sword's initiative");
+  assert(armed.initresult === 8, `d10 3 + speed 5 = 8: ${JSON.stringify(armed)}`);
   await tool("kraken_dice_force", { values: [14] });
   await seat.click('[data-sheet-tab="combat"]');
   await seat.waitForSelector('.sheet-2e [data-attack] [data-action="attack"]');
-  const swordRow = '.sheet-2e [data-attack]:has(b:text-is("Long sword"))';
   assert((await seat.textContent(`${swordRow} [data-action="damage"]`))?.includes("1d8+4 / 1d12+4"), "the long sword's damage, S/M and L, on the sheet");
   await seat.click(`${swordRow} [data-action="attack"]`);
   await chat(page, "[HIT 16 vs 16]");

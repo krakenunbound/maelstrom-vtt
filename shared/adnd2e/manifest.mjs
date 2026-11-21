@@ -193,9 +193,9 @@ export default {
             name: { path: "name", bold: true, flat: true },
             smalls: [
               { place: "name", text: "(nonproficient)", title: "Not proficient", when: { is: { path: "proficient", values: ["false"] } } },
-              { place: "end", text: ["SF ", "{speed|0}"], title: "Speed factor" },
             ],
             rowActions: [
+              { hook: "init", className: "d2e-init", label: "{speed|0}", title: "Initiative with the {name}: d10 + its speed factor ({speed|0}), the lowest acts first", action: { ct: "init", key: "weapon" } },
               { hook: "attack", label: "{tohit|signed}", title: "One attack roll at each target", action: { ct: "attack", key: "weapon" } },
               { hook: "full-attack", label: "{rate}", title: "A full round's attacks ({rate}) at the first target", when: { not: { is: { path: "rate", values: ["1/1"] } } }, action: { ct: "attack", key: "weapon", args: { full: true } } },
               { hook: "damage", label: ["{damage}", " / ", "{damagelarge}"], title: "Damage roll: Small or Medium / Large (by the target)", action: { ct: "damage-roll", key: "weapon" } },
