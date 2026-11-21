@@ -138,6 +138,7 @@ export type KrakenAgentCommand =
   | { kind: "sidebar"; action: "list" | "state" | "fold" | "press"; state?: number; group?: string; folded?: boolean; entry?: string }
   | { kind: "dice-settings"; patch: DiceSettingsPatch }
   | { kind: "quickslots"; action: "press"; index: number }
+  | { kind: "quickslots"; action: "bar"; dock?: "bottom" | "top" | "left" | "right"; locked?: boolean; upright?: boolean }
   | { kind: "tower"; action: "view" | "lock" | "unlock" | "place" | "on" | "off"; x?: number; y?: number }
   | { kind: "image"; action: "open" | "make" | "play" | "test" | "preview" | "close" | "studio"; book?: string; name?: string; file?: string; own?: boolean; on?: boolean };
 

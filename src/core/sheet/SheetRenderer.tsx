@@ -1,4 +1,6 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { CardsTab } from "../../cards/CardsWindow";
+import { cardsStore } from "../../cards/cardsStore";
 import type { ActionCall, Part, SheetSpec } from "../../../shared/rulesets/types";
 import type { Session, TableRecord } from "../../session/useSession";
 import { canEdit, NameField, SheetFrame } from "../frame/SheetFrame";
@@ -109,7 +111,9 @@ export function SheetRenderer({ spec: given, record, session, ruleset, custom, f
     };
     return { record, session, data, editable, gm, change, act, modifiers, setModifier: (key, value) => setModifiers((now) => ({ ...now, [key]: value })), targets, features, formats };
   }, [record, session, data, editable, gm, modifiers, targets.join("\u0000"), inFight?.id, features, formats]);
-  const shownTabs = spec.tabs.filter((item) => !item.gm || gm);
+  // Cards, for whoever turned them on (this browser's choice in Settings): a tab of their own on the sheet.
+  const cardsOn = useSyncExternalStore(cardsStore.subscribe, cardsStore.settings).on && record.type === "character";
+  const shownTabs = [...spec.tabs.filter((item) => !item.gm || gm), ...(cardsOn ? [{ id: "cards", label: "Cards", parts: [] } as unknown as (typeof spec.tabs)[number]] : [])];
   const page = shownTabs.find((item) => item.id === tab) ?? shownTabs[0];
   const scope = { data };
   const parts = page?.parts.map((part, index) => <PartView key={`${page.id}-${index}`} spec={part} custom={custom} formats={formats} />);
@@ -147,7 +151,11 @@ export function SheetRenderer({ spec: given, record, session, ruleset, custom, f
         {(spec.top ?? []).map((part, index) => (
           <PartView key={`top-${index}`} spec={part} custom={custom} formats={formats} />
         ))}
-        {page ? (
+        {page?.id === "cards" && cardsOn ? (
+          <section className="cc-panel cc-page" data-tab-page="cards">
+            <CardsTab session={session} character={record} />
+          </section>
+        ) : page ? (
           page.page === "none" ? (
             parts
           ) : page.page === "panel" ? (

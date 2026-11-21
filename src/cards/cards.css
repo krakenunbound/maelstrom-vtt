@@ -155,3 +155,6 @@
   .kcard.flipped .kcard-inner { transform: rotateY(180deg); }
   .kcard-sparks { display: none; }
 }
+/* The cards on the character sheet's own tab, and the note when they are out in a window. */
+.cards-on-sheet { min-height: 0; }
+.cards-docked-out { display: flex; flex-direction: column; gap: 8px; padding: 12px; }

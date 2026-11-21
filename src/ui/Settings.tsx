@@ -361,7 +361,7 @@ function CardsSetting() {
   const cards = useSyncExternalStore(cardsStore.subscribe, cardsStore.settings);
   return (
     <SettingsSection title="Ability cards" setting="cards-section">
-      <Toggle label="Spells and weapons as cards" hint="A Cards button in the sidebar with your character's abilities as painted cards." setting="cards" checked={cards.on} onChange={(on) => cardsStore.set({ on })} />
+      <Toggle label="Spells and weapons as cards" hint="Your character's spells and weapons as painted cards, on a Cards tab of the character sheet (Undock puts them in a window of their own, anywhere on the table or out of the app) and the Cards button in the sidebar. They roll the same as the sheet. Off unless you want them." setting="cards" checked={cards.on} onChange={(on) => cardsStore.set({ on })} />
       {cards.on ? <Toggle label="Card effects" hint="Flips, foil and sparks." setting="card-effects" checked={cards.effects} onChange={(on) => cardsStore.set({ effects: on })} /> : null}
     </SettingsSection>
   );

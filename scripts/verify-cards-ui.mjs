@@ -69,6 +69,13 @@ try {
   await seat.click('button[type="submit"]');
   await seat.waitForSelector(".sidebar", { timeout: 20000 });
 
+  // Settings closed (its sidebar button brings it in front first when a window covers it, then closes it).
+  const closeSettings = async (where) => {
+    for (let tries = 0; tries < 3 && (await where.locator('[data-window="settings"]').count()) > 0; tries++) {
+      await where.click('[data-launch="settings"]');
+      await where.waitForTimeout(150);
+    }
+  };
   // Off until the player turns it on.
   assert((await seat.locator('[data-launch="cards"]').count()) === 0, "no Cards button before the setting");
   await seat.click('[data-launch="settings"]');
@@ -81,7 +88,7 @@ try {
   assert((await seat.getAttribute('[data-card="spell:ember-ray"]', "data-spent")) === "yes", "a 2nd-level spell with no 2nd-level slot is spent");
   // A spell with its picture shows it (Kindle's, from the handbook).
   await seat.waitForFunction(() => { const img = document.querySelector('[data-card="spell:kindle"] .kcard-art img'); return img && img.complete && img.naturalWidth > 0; }, null, { timeout: 8000 });
-  await seat.locator('[data-launch="settings"]').click();
+  await closeSettings(seat);
   await seat.screenshot({ path: shot("hand") });
 
   // Turned over, cast twice from its back: both slots used, the card spent.
@@ -107,13 +114,36 @@ try {
   await seat.waitForSelector('[data-card="spell:burning-fan"][data-spent="no"]', { timeout: 5000 });
   assert((await slots()) === 0, "a long rest gives the slots back");
 
+  // The character sheet's Cards tab: the hand there; Undock puts it in a window of its own (the tab says so),
+  // Dock brings it back to the tab.
+  await seat.click('.sidebar [data-launch="characters"]');
+  await seat.click(`[data-charselect="${wizard.id}"]`);
+  await seat.waitForSelector('[data-sheet-tab="cards"]', { timeout: 10000 });
+  await seat.click('[data-sheet-tab="cards"]');
+  await seat.waitForSelector('[data-tab-page="cards"] .kcard', { timeout: 8000 });
+  await seat.screenshot({ path: shot("sheet-tab") });
+  const cardWindows = await seat.locator('[data-window="cards"]').count();
+  await seat.click('[data-tab-page="cards"] [data-action="cards-undock"]');
+  await seat.waitForSelector('[data-tab-page="cards"] [data-cards-out]', { timeout: 8000 });
+  await seat.waitForSelector(`[data-window="cards"] .cards-window[data-cards="${wizard.id}"] .kcard`, { timeout: 8000 });
+  await seat.screenshot({ path: shot("undocked") });
+  await seat.click('[data-window="cards"] [data-action="cards-dock"]');
+  await seat.waitForSelector('[data-tab-page="cards"] .kcard', { timeout: 8000 });
+  await seat.waitForFunction((before) => document.querySelectorAll('[data-window="cards"]').length === before, cardWindows, { timeout: 5000 });
+  // Off in Settings: no Cards tab.
+  await seat.click('[data-launch="settings"]');
+  await seat.uncheck('[data-setting="cards"]');
+  await seat.waitForFunction(() => !document.querySelector('[data-sheet-tab="cards"]'), null, { timeout: 5000 });
+  await seat.check('[data-setting="cards"]');
+  await closeSettings(seat);
+
   // The GM: cards on, the window for any character.
   await page.click('[data-launch="settings"]');
   await page.check('[data-setting="cards"]');
   await page.waitForSelector('[data-launch="cards"]', { timeout: 5000 });
   await tool("kraken_windows", { action: "open", kind: "cards" });
   await page.waitForSelector('.cards-window[data-cards] .kcard', { timeout: 8000 });
-  await page.click('[data-launch="settings"]');
+  await closeSettings(page);
   await page.locator('[data-card="spell:spark-lash"]').hover();
   await page.waitForTimeout(400);
   await page.screenshot({ path: shot("gm") });

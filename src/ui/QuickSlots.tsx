@@ -121,6 +121,29 @@ function keepPlace(place: Place) {
   }
 }
 
+// How the bar stands (this screen's choice, as the dice tower's): docked along an edge (the bottom, the
+// top, or upright on the left or right) when it has no place of its own; locked (no drag); upright when loose.
+const STYLE_KEY = "kraken-quickslots-style";
+type DockSide = "bottom" | "top" | "left" | "right";
+type BarStyle = { dock: DockSide; locked: boolean; upright: boolean };
+function readStyle(): BarStyle {
+  try {
+    const value = JSON.parse(window.localStorage.getItem(STYLE_KEY) ?? "null");
+    if (value && typeof value === "object") return { dock: ["top", "left", "right"].includes(value.dock) ? value.dock : "bottom", locked: value.locked === true, upright: value.upright === true };
+  } catch {
+    /* the default */
+  }
+  return { dock: "bottom", locked: false, upright: false };
+}
+function keepStyle(style: BarStyle) {
+  try {
+    window.localStorage.setItem(STYLE_KEY, JSON.stringify(style));
+  } catch {
+    /* this screen only */
+  }
+}
+const DOCK_WORDS: Record<DockSide, string> = { bottom: "Dock along the bottom", top: "Dock along the top", left: "Dock upright on the left", right: "Dock upright on the right" };
+
 const USE_LABEL: Record<QuickSlot["kind"], string> = { book: "Open", picture: "Open", sheet: "Open", note: "Open", record: "Open", sound: "Play", dice: "Roll", macro: "Run", window: "Open" };
 
 export function QuickSlots({ session }: { session: Session }) {
@@ -129,14 +152,23 @@ export function QuickSlots({ session }: { session: Session }) {
   // A slot's right-click menu (where it opened), and a rename being typed.
   const [menu, setMenu] = useState<{ index: number; x: number; y: number; rename?: string } | null>(null);
   const [place, setPlace] = useState<Place>(readPlace);
+  const [style, setStyleState] = useState<BarStyle>(readStyle);
+  const setStyle = (patch: Partial<BarStyle>) =>
+    setStyleState((now) => {
+      const next = { ...now, ...patch };
+      keepStyle(next);
+      return next;
+    });
+  // The grip's right-click menu (where it opened): dock it to an edge, lock it, stand it upright.
+  const [gripMenu, setGripMenu] = useState<{ x: number; y: number } | null>(null);
   const bar = useRef<HTMLDivElement>(null);
   const slots = session.quickSlots;
   const set = (index: number, slot: QuickSlot | null) => session.setQuickSlots(slots.map((item, at) => (at === index ? slot : item)));
   const open = openLink;
   // F1-F12 use the slots, as in other virtual tabletops; a key whose slot is empty is left to the browser
   // (F5 reloads, F11 is full screen).
-  const live = useRef({ slots, open });
-  live.current = { slots, open };
+  const live = useRef({ slots, open, setStyle, setPlace });
+  live.current = { slots, open, setStyle, setPlace };
   useEffect(() => {
     const key = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.altKey || event.metaKey || event.shiftKey || event.repeat) return;
@@ -156,6 +188,19 @@ export function QuickSlots({ session }: { session: Session }) {
     () =>
       agentCommands.register("quickslots", (command) => {
         if (command.kind !== "quickslots") return null;
+        // Where the bar stands (kraken_quickslots dock / locked / upright), as the grip's menu.
+        if (command.action === "bar") {
+          const patch: Partial<BarStyle> = {};
+          if (command.dock) {
+            patch.dock = command.dock;
+            live.current.setPlace(null);
+            keepPlace(null);
+          }
+          if (typeof command.locked === "boolean") patch.locked = command.locked;
+          if (typeof command.upright === "boolean") patch.upright = command.upright;
+          live.current.setStyle(patch);
+          return { ...readStyle(), ...patch };
+        }
         const slot = live.current.slots[command.index];
         if (!slot) throw new Error(`Quick slot F${command.index + 1} is empty.`);
         live.current.open(slot);
@@ -206,7 +251,7 @@ export function QuickSlots({ session }: { session: Session }) {
   // Drag the grip: the bar comes off the dock and goes where it is put.
   const grab = (event: React.PointerEvent) => {
     const element = bar.current;
-    if (!element || event.button !== 0) return;
+    if (!element || event.button !== 0 || style.locked) return;
     event.preventDefault();
     // Where it is on screen (docked, it is centred by a transform that offsetLeft leaves out), so it stays under the pointer.
     // In CSS pixels (a player's UI scale zooms the page).
@@ -225,13 +270,45 @@ export function QuickSlots({ session }: { session: Session }) {
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
   };
-  const dock = () => {
+  const dock = (side: DockSide = style.dock) => {
     setPlace(null);
     keepPlace(null);
+    setStyle({ dock: side });
   };
+  // The grip's menu closes on a click elsewhere, or Escape.
+  const gripMenuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!gripMenu) return;
+    const element = gripMenuRef.current;
+    if (element && !element.matches(":popover-open")) element.showPopover?.();
+    const away = (event: Event) => {
+      if (event instanceof KeyboardEvent && event.key !== "Escape") return;
+      if (event.target instanceof Element && event.target.closest(".quick-slots-grip-menu")) return;
+      setGripMenu(null);
+    };
+    window.addEventListener("pointerdown", away, true);
+    window.addEventListener("keydown", away);
+    return () => {
+      window.removeEventListener("pointerdown", away, true);
+      window.removeEventListener("keydown", away);
+    };
+  }, [gripMenu]);
+  const docked = !place;
+  const upright = docked ? style.dock === "left" || style.dock === "right" : style.upright;
   return (
-    <div ref={bar} className={place ? "quick-slots undocked" : "quick-slots"} role="toolbar" aria-label="Quick slots" data-docked={place ? "false" : "true"} style={place ? { left: place.x, top: place.y } : undefined}>
-      <span className="quick-slots-grip" title={place ? "Drag to move the quick slots" : "Drag to undock and move the quick slots"} aria-label="Move quick slots" data-action="quickslots-move" onPointerDown={grab} onDoubleClick={dock}>
+    <div ref={bar} className={`${place ? "quick-slots undocked" : "quick-slots"}${upright ? " upright" : ""}`} role="toolbar" aria-label="Quick slots" aria-orientation={upright ? "vertical" : "horizontal"} data-docked={place ? "false" : "true"} data-dock={place ? undefined : style.dock} data-locked={style.locked ? "true" : undefined} style={place ? { left: place.x, top: place.y } : undefined}>
+      <span
+        className="quick-slots-grip"
+        title={style.locked ? "Locked here (right-click: unlock, or dock it to an edge)" : `${place ? "Drag to move the quick slots" : "Drag to undock and move the quick slots"}; double-click: dock; right-click: dock it to an edge, lock it, stand it upright`}
+        aria-label="Move quick slots"
+        data-action="quickslots-move"
+        onPointerDown={grab}
+        onDoubleClick={() => !style.locked && dock()}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          setGripMenu({ x: cssX(event.clientX), y: cssY(event.clientY) });
+        }}
+      >
         <i />
         <i />
         <i />
@@ -274,6 +351,24 @@ export function QuickSlots({ session }: { session: Session }) {
           )}
         </button>
       ))}
+      {gripMenu ? (
+        <div ref={gripMenuRef} {...({ popover: "manual" } as object)} className="quick-slot-menu quick-slots-grip-menu tray-menu" role="menu" aria-label="Quick slots: where the bar stands" style={{ left: gripMenu.x, top: gripMenu.y }}>
+          <span className="quick-slot-menu-head">Quick slots</span>
+          {(["bottom", "top", "left", "right"] as DockSide[]).map((side) => (
+            <button key={side} type="button" role="menuitemradio" aria-checked={docked && style.dock === side} data-bar-action={`dock-${side}`} onClick={() => (setGripMenu(null), dock(side))}>
+              {DOCK_WORDS[side]}
+            </button>
+          ))}
+          {!docked ? (
+            <button type="button" role="menuitemcheckbox" aria-checked={style.upright} data-bar-action="upright" onClick={() => (setGripMenu(null), setStyle({ upright: !style.upright }))}>
+              {style.upright ? "Lay it flat" : "Stand it upright"}
+            </button>
+          ) : null}
+          <button type="button" role="menuitemcheckbox" aria-checked={style.locked} data-bar-action="lock" onClick={() => (setGripMenu(null), setStyle({ locked: !style.locked }))}>
+            {style.locked ? "Unlock (drag it again)" : "Lock it where it is"}
+          </button>
+        </div>
+      ) : null}
       {menu && menuSlot ? (
         <div ref={menuRef} {...({ popover: "manual" } as object)} className="quick-slot-menu tray-menu" role="menu" aria-label={`Quick slot F${menu.index + 1}`} style={{ left: menu.x, top: menu.y }}>
           <span className="quick-slot-menu-head">{menuSlot.label}</span>
@@ -308,7 +403,7 @@ export function QuickSlots({ session }: { session: Session }) {
         </div>
       ) : null}
       {place ? (
-        <button type="button" className="quick-slots-dock" title="Dock the quick slots at the bottom" aria-label="Dock quick slots" data-action="quickslots-dock" onClick={dock}>
+        <button type="button" className="quick-slots-dock" title="Dock the quick slots back along their edge" aria-label="Dock quick slots" data-action="quickslots-dock" onClick={() => dock()}>
           <Icon name="dock" size={14} />
         </button>
       ) : null}

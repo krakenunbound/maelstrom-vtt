@@ -342,6 +342,28 @@ try {
   assert(Math.abs(moved - docked - 30) < 3, `the bar follows its grip from the dock (${docked} -> ${moved}, moved 30)`);
   await page.dblclick('[data-action="quickslots-move"]');
   report.push("the quick slots' grip takes the bar off the dock without a jump");
+  // The grip's right-click menu: docked upright on the right, locked (no drag), back along the bottom.
+  await page.click('[data-action="quickslots-move"]', { button: "right" });
+  await page.click('[data-bar-action="dock-right"]');
+  await page.waitForSelector('.quick-slots[data-dock="right"].upright', { timeout: 5000 });
+  const right = await page.locator(".quick-slots").boundingBox();
+  const view = page.viewportSize() ?? { width: 1280, height: 800 };
+  if (!(right.height > right.width && right.x + right.width > view.width * 0.8)) throw new Error(`upright on the right: ${JSON.stringify(right)}`);
+  await page.click('[data-action="quickslots-move"]', { button: "right" });
+  await page.click('[data-bar-action="lock"]');
+  await page.waitForSelector('.quick-slots[data-locked="true"]', { timeout: 5000 });
+  const locked = await page.locator('[data-action="quickslots-move"]').boundingBox();
+  await page.mouse.move(locked.x + locked.width / 2, locked.y + locked.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(locked.x - 200, locked.y + 40, { steps: 4 });
+  await page.mouse.up();
+  const still = await page.locator(".quick-slots").boundingBox();
+  if (Math.abs(still.x - right.x) > 2) throw new Error(`a locked bar does not move: ${right.x} -> ${still.x}`);
+  await page.screenshot({ path: path.join(tmpdir(), "kraken-quickslots-right.png") });
+  const agentDock = await tool("kraken_quickslots", { dock: "bottom", locked: false });
+  await page.waitForSelector('.quick-slots[data-dock="bottom"]:not(.upright)', { timeout: 5000 });
+  if (agentDock.dock !== "bottom" || agentDock.locked !== false) throw new Error(`the agent docks it back: ${JSON.stringify(agentDock)}`);
+  report.push("the grip's menu docks it upright on the right and locks it (no drag); kraken_quickslots docks it back along the bottom");
 
   assert(failures.length === 0, `page errors: ${failures.join(" | ")}`);
   console.log(`ok quickslots ui:\n  ${report.join("\n  ")}`);

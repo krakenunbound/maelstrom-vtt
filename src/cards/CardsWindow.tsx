@@ -4,6 +4,7 @@ import { Icon } from "../ui/icons";
 import { cardsFor, restChanges, SCHOOLS } from "../../shared/cards/cards.mjs";
 import { rulesetOfRecord } from "../../shared/rulesets/registry.mjs";
 import { cardsStore } from "./cardsStore";
+import { useWindows } from "../ui/Windows";
 import "./cards.css";
 
 // Ability cards: a character's spells and weapons laid out as cards, the way
@@ -29,8 +30,48 @@ function useMine(session: Session) {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// The cards on their character's sheet (its Cards tab, for whoever turned cards on): the hand there,
+// docked; Undock lifts it into a window of its own (moved anywhere on the table, or popped out of the
+// app); while it is out, the tab says so and docks it back.
+export function CardsTab({ session, character }: { session: Session; character: TableRecord }) {
+  const windows = useWindows();
+  const settings = useSyncExternalStore(cardsStore.subscribe, cardsStore.settings);
+  const out = windows.windows.find((item) => item.kind === "cards" && item.payload === character.id);
+  if (out)
+    return (
+      <div className="cards-docked-out" data-cards-out={character.id}>
+        <p className="hint">{character.name}'s cards are in a window of their own.</p>
+        <span className="cc-inline">
+          <button type="button" data-action="cards-show" onClick={() => windows.focus(out.key)}>
+            Show them
+          </button>
+          <button type="button" data-action="cards-dock" title="Back on this tab" onClick={() => windows.close(out.key)}>
+            <Icon name="dock" size={14} /> Dock them here
+          </button>
+        </span>
+      </div>
+    );
+  return (
+    <div className={`cards-window cards-on-sheet layout-${settings.layout}${settings.effects ? "" : " still"}`} data-cards={character.id}>
+      <header className="cards-bar">
+        <b>Cards</b>
+        <span className="cards-bar-gap" />
+        <button type="button" className="ghost" data-action="cards-layout" title="Lay the cards out in rows, or fan them as a hand" onClick={() => cardsStore.set({ layout: settings.layout === "fan" ? "spread" : "fan" })}>
+          {settings.layout === "fan" ? "Spread" : "Fan"}
+        </button>
+        <RestButton session={session} character={character} />
+        <button type="button" className="ghost" data-action="cards-undock" title="Undock: the cards in a window of their own, to put anywhere on the table (or out of the app with its pop-out)" onClick={() => windows.open("cards", `${character.name}'s cards`, character.id)}>
+          <Icon name="popout" size={14} /> Undock
+        </button>
+      </header>
+      <Hand key={character.id} session={session} character={character} />
+    </div>
+  );
+}
+
 export function CardsWindow({ session, characterId }: { session: Session; characterId?: string }) {
   const characters = useMine(session);
+  const windows = useWindows();
   const [chosen, setChosen] = useState(characterId ?? "");
   const character = characters.find((item) => item.id === chosen) ?? characters[0] ?? null;
   const settings = useSyncExternalStore(cardsStore.subscribe, cardsStore.settings);
@@ -54,6 +95,15 @@ export function CardsWindow({ session, characterId }: { session: Session; charac
           {settings.layout === "fan" ? "Spread" : "Fan"}
         </button>
         <RestButton session={session} character={character} />
+        {characterId ? (
+          // Undocked from its sheet: back onto the sheet's Cards tab.
+          <button type="button" className="ghost" data-action="cards-dock" title="Dock: back on the character sheet's Cards tab" onClick={() => {
+            const self = windows.windows.find((item) => item.kind === "cards" && item.payload === characterId);
+            if (self) windows.close(self.key);
+          }}>
+            <Icon name="dock" size={14} /> Dock
+          </button>
+        ) : null}
       </header>
       {/* A hand per character: another one's cards never "stand up again" from this one's. */}
       <Hand key={character.id} session={session} character={character} />

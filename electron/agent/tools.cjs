@@ -844,9 +844,17 @@ const TOOLS = [
   {
     name: "kraken_quickslots",
     description: "A seat's quick slots (the bar along the bottom of the table: twelve things kept at hand, opened with a click or F1-F12): the GM's, or a player's by name. Read them, or set slots to a list of twelve (null for an empty slot): { kind: book, book (id), page (id, optional), label } | { kind: picture, book, file, label } | { kind: sheet, record (character id), label } | { kind: dice, formula (3d6, 1d20+2), label } (rolled with a click, as dice dropped on it from the tray) | { kind: macro, text (a chat line: /roll 4d6k3), label } (run as if typed) | { kind: window, window (a desktop window's kind: cards, notes, party, tracker, dice...), title, payload (optional), label } (opens that window, as its title-bar anchor dragged to the slot). press: a slot's index (0-11; F1-F12) uses it as the seat's click does (the GM's own bar).",
-    inputSchema: object({ seat: string("A player's name; empty for the GM"), slots: { type: "array", description: "Twelve slots, or leave out to read" }, press: number("The GM's slot to use (0-11), as its click or F-key (F1 is 0)") }),
+    inputSchema: object({
+      seat: string("A player's name; empty for the GM"),
+      slots: { type: "array", description: "Twelve slots, or leave out to read" },
+      press: number("The GM's slot to use (0-11), as its click or F-key (F1 is 0)"),
+      dock: { type: "string", enum: ["bottom", "top", "left", "right"], description: "The GM's bar docked along that edge (left and right: upright), as its grip's right-click menu" },
+      locked: { type: "boolean", description: "The GM's bar locked where it is (no drag), or unlocked" },
+      upright: { type: "boolean", description: "The GM's bar, when loose: standing upright, or flat" },
+    }),
     async run(args, ctx) {
       if (Number.isInteger(args.press)) return out(await ctx.ui({ kind: "quickslots", action: "press", index: args.press }));
+      if (args.dock || typeof args.locked === "boolean" || typeof args.upright === "boolean") return out(await ctx.ui({ kind: "quickslots", action: "bar", ...(args.dock ? { dock: args.dock } : {}), ...(typeof args.locked === "boolean" ? { locked: args.locked } : {}), ...(typeof args.upright === "boolean" ? { upright: args.upright } : {}) }));
       return out(needTable(ctx).quickSlots(args.seat || "@gm", args.slots));
     },
   },
