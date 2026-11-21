@@ -514,7 +514,7 @@ export function Wizard2e({ session, onDone }: { session: Session; onDone: (id: s
         </div>
       ) : (
         <>
-          <div className="ccw-page" style={{ ["--ccw-art" as string]: PAGE_ART[page] ? `url(${session.wizardArtUrl(EXT, PAGE_ART[page])})` : "none" }}>
+          <div className="ccw-page" data-art={PAGE_ART[page] ? "" : undefined} style={{ ["--ccw-art" as string]: PAGE_ART[page] ? `url(${session.wizardArtUrl(EXT, PAGE_ART[page], true)})` : "none" }}>
             <p className="hint">{LORE[page]}</p>
 
             {page === "abilities" ? (

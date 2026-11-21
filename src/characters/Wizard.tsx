@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "reac
 import { useHostRolls as useSharedHostRolls } from "./hostRolls";
 import type { Session } from "../session/useSession";
 import { ArtChoice } from "./ArtPicker";
+import { InkFilter } from "../core/wizard/RailFrame";
 import { STATS, abilityBonus, exactRow, levelGain, parseCost, progressionRow, raceLanguages, spellChoices, spellPicksAllowed, CORE_BOOK } from "./siege";
 import { ALIGNMENTS as COMBO_ALIGNMENTS, COMBO, alignmentAllowed, alignmentText, canPlus, classKey, dieOf, enhancedDie, enhancedRule, isRaceClass, multiDie, multiRule, plusText, startXP, supportLevel, supportOptions, supportPrime } from "../../shared/siege/combine.mjs";
 
@@ -678,6 +679,7 @@ export function Wizard({ session, onDone }: { session: Session; onDone: (id: str
 
   return (
     <section className="ccw" data-page={page}>
+      <InkFilter />
       <header className="ccw-head">
         <h2>SC C&amp;C Character Creation Wizard</h2>
         <span className="ccw-head-buttons">
@@ -708,7 +710,7 @@ export function Wizard({ session, onDone }: { session: Session; onDone: (id: str
         </p>
       ) : null}
 
-      <div className="ccw-page" style={{ ["--ccw-art" as string]: `url(${ART_BASE}/${ART[page]}.webp)` }}>
+      <div className="ccw-page" data-art="" style={{ ["--ccw-art" as string]: `url(${new URL(`${ART_BASE}/${ART[page]}.webp`, document.baseURI).href})` }}>
         <Instructions page={page} />
 
         {page === "abilities" ? (

@@ -364,7 +364,7 @@ export function Wizard35({ session, onDone }: { session: Session; onDone: (id: s
       note={note}
       onNote={() => setNote("")}
     >
-      <div className="ccw-page" style={{ ["--ccw-art" as string]: `url(${ART}/${PAGE_ART[page]}.webp)` }}>
+      <div className="ccw-page" data-art="" style={{ ["--ccw-art" as string]: `url(${new URL(`${ART}/${PAGE_ART[page]}.webp`, document.baseURI).href})` }}>
         <Instructions page={page} />
         <Plate>{W.PAGE_HEADER[page]}</Plate>
 

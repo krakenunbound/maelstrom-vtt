@@ -1785,14 +1785,20 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     if (req.method === "GET" && url.pathname === "/wizard-art") {
       const token = url.searchParams.get("token") || "";
       const allowed = token.length > 0 && [...clients.values()].some((client) => client.assetToken === token);
-      const found = allowed ? require("./wizardArt.cjs").wizardArt(url.searchParams.get("ext") || "", url.searchParams.get("file") || "") : null;
+      const ext = url.searchParams.get("ext") || "";
+      const file = url.searchParams.get("file") || "";
+      const art = require("./wizardArt.cjs");
+      const found = allowed ? art.wizardArt(ext, file) : null;
       if (!found) {
         res.writeHead(404, { "Cache-Control": "no-store" });
         res.end();
         return;
       }
-      res.writeHead(200, { "Content-Type": found.mime, "Content-Length": found.bytes.length, "Cache-Control": "private, max-age=86400", "X-Content-Type-Options": "nosniff" });
-      res.end(found.bytes);
+      // ink=1: a page's art as ink on nothing, for the wizard's dark page (electron/inkArt.cjs).
+      void (url.searchParams.get("ink") === "1" ? art.wizardArtInked(ext, file, found) : Promise.resolve(found)).then((picture) => {
+        res.writeHead(200, { "Content-Type": picture.mime, "Content-Length": picture.bytes.length, "Cache-Control": "private, max-age=86400", "X-Content-Type-Options": "nosniff" });
+        res.end(picture.bytes);
+      });
       return;
     }
     // The GM's FG character wizards' words (electron/extLua.cjs): a call of the

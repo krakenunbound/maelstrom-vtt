@@ -26,6 +26,20 @@ export function WizardPlate({ children, action }: { children: ReactNode; action?
   );
 }
 
+// Colours a page's art (white ink on nothing) with the theme's accent: .ccw-page[data-art]::after
+// uses it. An inline filter, not a CSS mask: a mask's picture is fetched with CORS, which the GM's
+// app (loaded from a file) and the host's wizard art do not pass. Two wizards open share the same id: same filter.
+export function InkFilter() {
+  return (
+    <svg width="0" height="0" aria-hidden="true" style={{ position: "absolute" }}>
+      <filter id="ccw-ink" colorInterpolationFilters="sRGB">
+        <feFlood style={{ floodColor: "var(--brass)" }} />
+        <feComposite in2="SourceAlpha" operator="in" />
+      </filter>
+    </svg>
+  );
+}
+
 export function RailFrame({
   className,
   attrs,
@@ -57,6 +71,7 @@ export function RailFrame({
 }) {
   return (
     <section className={className} {...attrs} aria-label={aria}>
+      <InkFilter />
       <header className="ccw-head">
         {heading}
         <span className="ccw-head-buttons">

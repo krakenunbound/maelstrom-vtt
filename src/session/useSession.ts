@@ -1358,7 +1358,7 @@ export function useSession() {
   );
   // A picture of the GM's FG character wizard (its extension's graphics folder, served by the host).
   const wizardArtUrl = useCallback(
-    (extension: string, file: string) => (assetRef.current ? `${originRef.current}/wizard-art?token=${assetRef.current}&ext=${encodeURIComponent(extension)}&file=${encodeURIComponent(file)}` : ""),
+    (extension: string, file: string, ink = false) => (assetRef.current ? `${originRef.current}/wizard-art?token=${assetRef.current}&ext=${encodeURIComponent(extension)}&file=${encodeURIComponent(file)}${ink ? "&ink=1" : ""}` : ""),
     [],
   );
   // A call of the GM's FG character wizard's own script (its race, class and alignment words): values, and pictures for icon names.

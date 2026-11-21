@@ -75,6 +75,14 @@ function wizardArt(extension, name) {
   const bytes = cache.get(extension)[clean];
   return bytes ? { bytes, mime: MIME[clean.split(".").pop().toLowerCase()] } : null;
 }
+// A picture as ink on nothing (electron/inkArt.cjs), made once: { bytes, mime }.
+const inked = new Map();
+async function wizardArtInked(extension, name, found) {
+  const key = `${extension}
+${name}`;
+  if (!inked.has(key)) inked.set(key, require("./inkArt.cjs").inkArt(found.bytes).then((bytes) => ({ bytes, mime: "image/webp" })));
+  return inked.get(key).catch(() => found);
+}
 // What an extension has (names), for checks.
 function wizardArtList(extension) {
   if (!EXTENSIONS.has(extension)) return [];
@@ -82,4 +90,4 @@ function wizardArtList(extension) {
   return Object.keys(cache.get(extension));
 }
 
-module.exports = { wizardArt, wizardArtList, EXTENSIONS };
+module.exports = { wizardArt, wizardArtInked, wizardArtList, EXTENSIONS };

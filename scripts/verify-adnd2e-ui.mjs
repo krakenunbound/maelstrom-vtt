@@ -136,6 +136,15 @@ try {
     return { text: slot.textContent, box: [box.left, box.top, box.right, box.bottom], small: small && [small.left, small.top, small.right, small.bottom], inside: Boolean(small) && small.left >= box.left && small.right <= box.right && small.top >= box.top && small.bottom <= box.bottom };
   });
   assert(strBox.text === "18/76" && strBox.inside, `Strength's box shows 18/76 whole: ${JSON.stringify(strBox)}`);
+  // The page's art comes as ink on nothing (a WebP with transparency) for the dark page.
+  const art = await seat.$eval(".ccw-page[data-art]", async (node) => {
+    const url = node.style.getPropertyValue("--ccw-art").replace(/^url\("?|"?\)$/g, "");
+    const response = await fetch(url);
+    return { ink: url.includes("ink=1"), type: response.headers.get("content-type") };
+  });
+  assert(art.ink && art.type === "image/webp", `the Abilities art served as ink: ${JSON.stringify(art)}`);
+  await tool("kraken_dice_clear", {});
+  await seat.waitForTimeout(800);
   await seat.locator(".ccw").screenshot({ path: path.join(tmpdir(), "kraken-adnd2e-abilities.png") });
   await tab("race");
   assert((await seat.$$("[data-race]")).length === 6, "every PHB race allows these scores");
