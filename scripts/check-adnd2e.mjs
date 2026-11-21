@@ -30,7 +30,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 {
   const { EDIT_PATHS } = require("../electron/adnd2e.cjs");
   const before = {
-    text: ["playername", "alignment", "deity", "appearance", "notes", "background", "race", "gender", "age", "height", "weight", "languages"].map((key) => `^${key}$`),
+    text: ["playername", "alignment", "deity", "appearance", "notes", "background", "race", "gender", "age", "height", "weight", "languages", "quicknotes"].map((key) => `^${key}$`),
     number: [/^abilities\.(strength|dexterity|constitution|intelligence|wisdom|charisma)\.(score|base|adj|temp|set)$/, /^abilities\.strength\.percent$/, /^saves\.(paralyzation|rod|petrification|breath|spell)\.(misc|temp|set)$/, /^thiefskills\.[a-z]+\.(points|misc)$/, /^hp\.(total|wounds|temp)$/, /^exp$/, /^ac\.misc$/, /^initiative\.misc$/, /^surprise\.misc$/, /^profs\.checks\.\d+\.misc$/, /^profs\.weaponrows\.\d+\.(hit|dmg)$/, /^spellrows\.\d+\.memorized$/, /^movement$/, /^stable$/, /^spellcasting\.\d\.used\.\d$/, /^coins\.id-\d+\.amount$/, /^inventorylist\.id-\d+\.(count|carried)$/].map((regex) => regex.source),
     // The lists were "spells", "profs.weapon" and "profs.nonweapon" by name.
     list: ["^spells$", /^profs\.(weapon|nonweapon)$/.source],
@@ -347,6 +347,13 @@ await tool("kraken_character_edit", { id: brannoc.id, changes: [{ path: "abiliti
 const edited = agent.records.get(brannoc.id).data;
 const sword2 = Object.values(edited.attacks).find((attack) => attack.name === "Long sword");
 assert(sword2.tohit === 3 && sword2.damage === "1d8+6" && edited.saves.spell.total === 15 && edited.profs.weapon.length === 2, `18/00: +3 / +6; a save's misc bonus: ${JSON.stringify(sword2)} ${edited.saves.spell.total}`);
+// Features from the books: the race's traits and the class's up to its level (Brannoc, a 1st-level human fighter), kept on an edit.
+make("race", "Human", { traits: { a: { name: "Test Trait", text: "<p>A human's <b>test</b> trait.</p>" } } });
+make("class", "Fighter", { features: { a: { level: 1, name: "Weapon Specialization", text: "<p>Only fighters.</p>" }, b: { level: 9, name: "Test Stronghold", text: "<p>Later.</p>" } } });
+await tool("kraken_character_edit", { id: brannoc.id, changes: [{ path: "quicknotes", value: "Held action: shoot the first orc through the door" }] });
+const featured = agent.records.get(brannoc.id).data;
+const featureNames = Object.values(featured.features ?? {}).map((item) => `${item.name} (${item.from})`);
+assert(featureNames.includes("Test Trait (Human)") && featureNames.includes("Weapon Specialization (Fighter 1)") && !featureNames.some((name) => name.startsWith("Test Stronghold")) && Object.values(featured.features).find((item) => item.name === "Test Trait").text === "A human's test trait." && featured.quicknotes.startsWith("Held action"), `the features and quick notes: ${JSON.stringify(featureNames)} ${featured.quicknotes}`);
 await tool("kraken_character_edit", { id: thief.id, changes: [{ path: "thiefskills.openlocks.points", value: 20 }] });
 assert(agent.records.get(thief.id).data.thiefskills.openlocks.points === 20, "a thief skill's points from the sheet");
 

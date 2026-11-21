@@ -226,6 +226,8 @@ export default {
               { hook: "damage", label: ["{damage}", " / ", "{damagelarge}"], title: "Damage roll: Small or Medium / Large (by the target)", action: { ct: "damage-roll", key: "weapon" } },
             ],
           },
+          // Quick notes (a reminder for the fight: a held action, a readied spell, a grudge).
+          { part: "notes", fields: [{ path: "quicknotes", label: "Quick notes", kind: "textarea" }] },
           { part: "heading", text: ["To hit each Armor Class"], hint: ["d20 at or above, before modifiers"] },
           { part: "list", path: "thacomatrix", hook: "thaco-ac", className: "d2e-matrix", name: { path: "ac", bold: true, flat: true }, smalls: [{ place: "name", text: ["{need}"], title: "The d20 roll that hits this Armor Class" }] },
           { part: "heading", text: ["Weapon proficiencies "], hint: ["{profs.weaponslots|0}", " slots; nonproficient ", "{profs.penalty|signed}", " to hit"] },
@@ -363,6 +365,9 @@ export default {
               { label: "Needs", path: "saves.{key}.total", field: { label: "{key} needs" } },
             ],
           },
+          // Each feature on its own row: the race's traits, the classes' features up to their levels (hover: its words).
+          { part: "heading", text: "Features", hint: "from the race and classes in the books" },
+          { part: "list", path: "features", hook: "feature", className: "five-items d2e-features", name: { path: "name", bold: true, flat: true, title: ["text"] }, small: ["{from}"], empty: "None yet: the race's and class's records come from the active books." },
           { part: "links", label: "Abilities", hook: "abilities", items: [{ label: "Race", type: "race", path: "race" }, { label: "Class", type: "class", path: "classes", field: "name" }, { label: "Kit", type: ["background", "kit"], path: "kit" }] },
           { part: "notes", fields: [{ path: "deity", kind: "text", label: "Deity" }, { path: "languages", kind: "text", label: "Languages" }] },
           { part: "hint", text: ["Infravision ", "{infravision}", " feet."], when: { positive: "infravision" } },
@@ -374,7 +379,7 @@ export default {
   // What the sheet may change (the host's whitelist, electron/adnd2e.cjs): "*" one id-n key, "#" a digit, "%" a word,
   // "(a|b)" either; lists: one item a line; remove: the lists whose rows the sheet may drop.
   edit: {
-    text: ["playername", "alignment", "deity", "appearance", "notes", "background", "race", "gender", "age", "height", "weight", "languages"],
+    text: ["playername", "alignment", "deity", "appearance", "notes", "background", "race", "gender", "age", "height", "weight", "languages", "quicknotes"],
     number: [
       "abilities.(strength|dexterity|constitution|intelligence|wisdom|charisma).(score|base|adj|temp|set)",
       "abilities.strength.percent",

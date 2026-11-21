@@ -24,7 +24,7 @@ async function build2e(table, spec, owner, seat) {
     built = { name: String(spec.name ?? "").trim() || sheet.name, data: rules.fromFG(sheet.data), problems: [] };
     // (Its FG portrait path is the book's, not Kraken's art: the GM's art by race and class instead.)
   } else built = rules.buildFromSpec(spec ?? {}, { items: table.records.list({ type: "item" }) });
-  const data = withProficiencies(rules, table, require("./characterArt.cjs").withArt(built.data, spec, table.art));
+  const data = withFeatures(table, withProficiencies(rules, table, require("./characterArt.cjs").withArt(built.data, spec, table.art)));
   const record = table.records.create({ type: "character", name: built.name, owner: owner ?? "", visibility: owner ? "owner" : "gm", data }, seat ?? table.seat);
   return { record, problems: built.problems };
 }
@@ -92,6 +92,22 @@ function withProficiencies(rules, table, data) {
   }
   return changed ? rules.derive(data) : data;
 }
+// The character's features, as its books list them (FG 2E's Abilities tab): its race's traits and its
+// classes' features up to their levels, each with where it is from and its words (plain, shortened).
+function withFeatures(table, data) {
+  const plain = (text) => String(text ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 1200);
+  const same = (a, b) => String(a ?? "").replace(/\(.*?\)/g, "").trim().toLowerCase() === String(b ?? "").replace(/\(.*?\)/g, "").trim().toLowerCase();
+  const values = (object) => Object.values(object && typeof object === "object" ? object : {});
+  const out = [];
+  const race = table.records.list({ type: "race" }).find((item) => same(item.name, data.race));
+  for (const trait of values(race?.data?.traits)) if (trait?.name) out.push({ name: String(trait.name), from: race.name, text: plain(trait.text) });
+  for (const cls of data.classes ?? []) {
+    const record = table.records.list({ type: "class" }).find((item) => same(item.name, cls.name));
+    for (const feature of values(record?.data?.features)) if (feature?.name && Number(feature.level ?? 1) <= Number(cls.level ?? 1)) out.push({ name: String(feature.name), from: `${record.name} ${Number(feature.level ?? 1)}`, text: plain(feature.text) });
+  }
+  const features = Object.fromEntries(out.slice(0, 80).map((item, index) => [String(index), item]));
+  return JSON.stringify(features) === JSON.stringify(data.features ?? {}) ? data : { ...data, features };
+}
 // A nonweapon proficiency's check: its ability (d20 at or under the score) and modifier.
 function proficiencyTest(rules, table, data, skill) {
   const list = data.profs?.nonweapon ?? [];
@@ -119,7 +135,9 @@ async function levelUp2e(table, record, from, className) {
   const die = rules.GROUPS[cls.group].die;
   const past = cls.level + 1 > rules.GROUPS[cls.group].top;
   const roll = past ? null : table.roll(`1d${die}`, `${record.name}: ${cls.name} ${cls.level + 1} hit points`, from || record.name);
-  const { data: next, gain } = rules.levelUp(data, roll?.total, cls.name);
+  const { data: levelled, gain } = rules.levelUp(data, roll?.total, cls.name);
+  // A new level's features join the list.
+  const next = withFeatures(table, levelled);
   const updated = table.records.update(record.id, { data: next }, table.seat, { replace: true });
   const now = next.classes.find((item) => item.name === cls.name);
   table.say(`[LEVEL UP] ${record.name} is now a level ${now.level} ${cls.name}: +${gain} hit points (${next.hp.total}), THAC0 ${next.thaco}.${next.thiefskills ? " Spend the new thief skill points on the sheet." : ""}`, from || record.name);
@@ -167,7 +185,7 @@ async function edit2e(table, record, changes, seat) {
     } else if (EDIT_PATHS.remove.some((pattern) => pattern.test(key)) && value === null) delete data[key.split(".")[0]]?.[key.split(".")[1]];
     else throw new Error(`The sheet cannot change ${key}.`);
   }
-  return table.records.update(record.id, { name, data: withProficiencies(rules, table, rules.derive(data)) }, table.seat, { replace: true });
+  return table.records.update(record.id, { name, data: withFeatures(table, withProficiencies(rules, table, rules.derive(data))) }, table.seat, { replace: true });
 }
 
 module.exports = { rules2e, build2e, check2e, levelUp2e, edit2e, is2e, is2eRuleset, RULESET_NAME, EDIT_PATHS };
