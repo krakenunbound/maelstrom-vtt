@@ -266,10 +266,11 @@ export function loadBundle(bytes: Uint8Array): LoadedAdventure {
   };
 }
 
-// A bundle's music (its playlists: Foundry keeps each track's file among the bundle's assets), for the
-// GM's sound library: { list (the playlist's name), name (the track's), file (its name with its
-// extension), bytes }. A zip of bundles gives every bundle's; one track kept once.
-export type BundleTrack = { list: string; name: string; file: string; bytes: Uint8Array };
+// A bundle's sounds for the GM's sound library, kept there for good: its playlists' tracks (music, a folder
+// per playlist), its scenes' ambient sounds (ambience) and any other audio it carries (effects), a folder
+// named for the adventure. { kind, list (the folder), name, file (with its extension), bytes }. A zip of
+// bundles gives every bundle's; one file kept once.
+export type BundleTrack = { kind: "music" | "ambience" | "sfx"; list: string; name: string; file: string; bytes: Uint8Array };
 const AUDIO = /\.(mp3|ogg|oga|wav|flac|m4a|webm|opus)$/i;
 export function bundleMusic(bytes: Uint8Array): BundleTrack[] {
   const one = (zipBytes: Uint8Array): BundleTrack[] => {
@@ -279,27 +280,46 @@ export function bundleMusic(bytes: Uint8Array): BundleTrack[] {
     } catch {
       return [];
     }
+    const adventureName = asString(adventure.name, "Adventure") || "Adventure";
     const lists = Array.isArray(adventure.playlists) ? (adventure.playlists as Record<string, unknown>[]) : [];
-    const wanted = lists.flatMap((list) => (Array.isArray(list.sounds) ? (list.sounds as Record<string, unknown>[]) : []).map((sound) => asString(sound.path, ""))).filter((path) => AUDIO.test(path));
-    if (wanted.length === 0) return [];
-    const names = new Set(wanted.map((path) => baseName(path)));
-    const assets = indexAssets(unzip(zipBytes, (name) => names.has(baseName(name)) && !name.includes("__MACOSX")));
-    return lists.flatMap((list) =>
-      (Array.isArray(list.sounds) ? (list.sounds as Record<string, unknown>[]) : []).flatMap((sound) => {
+    const scenes = Array.isArray(adventure.scenes) ? (adventure.scenes as Record<string, unknown>[]) : [];
+    const ambient = scenes.flatMap((scene) => (Array.isArray(scene.sounds) ? (scene.sounds as Record<string, unknown>[]) : []).map((sound) => asString(sound.path, "")));
+    const all = unzip(zipBytes, (name) => AUDIO.test(name) && !name.includes("__MACOSX"));
+    if (Object.keys(all).length === 0) return [];
+    const assets = indexAssets(all);
+    const out: BundleTrack[] = [];
+    const used = new Set<Uint8Array>();
+    const named = (name: string, ext: string) => `${name.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Track"}${ext}`;
+    for (const list of lists)
+      for (const sound of Array.isArray(list.sounds) ? (list.sounds as Record<string, unknown>[]) : []) {
         const path = asString(sound.path, "");
         const audio = AUDIO.test(path) ? assetFor(assets, path) : null;
-        if (!audio) return [];
-        const ext = AUDIO.exec(path)?.[0] ?? ".mp3";
+        if (!audio) continue;
+        used.add(audio);
         const name = asString(sound.name, baseName(path).replace(AUDIO, "")) || "Track";
-        return [{ list: asString(list.name, "Adventure music") || "Adventure music", name, file: `${name.replace(/[\\/:*?"<>|]+/g, " ").trim() || "Track"}${ext}`, bytes: audio }];
-      }),
-    );
+        out.push({ kind: "music", list: asString(list.name, adventureName) || adventureName, name, file: named(name, AUDIO.exec(path)?.[0] ?? ".mp3"), bytes: audio });
+      }
+    for (const path of ambient) {
+      const audio = AUDIO.test(path) ? assetFor(assets, path) : null;
+      if (!audio || used.has(audio)) continue;
+      used.add(audio);
+      const name = baseName(path).replace(AUDIO, "");
+      out.push({ kind: "ambience", list: adventureName, name, file: named(name, AUDIO.exec(path)?.[0] ?? ".ogg"), bytes: audio });
+    }
+    // Any other sound it carries (a bundled effect): effects.
+    for (const [file, audio] of Object.entries(all)) {
+      if (used.has(audio)) continue;
+      used.add(audio);
+      const name = baseName(file).replace(AUDIO, "");
+      out.push({ kind: "sfx", list: adventureName, name, file: named(name, AUDIO.exec(file)?.[0] ?? ".mp3"), bytes: audio });
+    }
+    return out;
   };
   const top = unzip(bytes, (name) => !name.includes("__MACOSX") && (name.endsWith("bundle.json") || name.toLowerCase().endsWith(".zip")));
   const found = bundleEntry(top) ? one(bytes) : Object.entries(top).filter(([name]) => name.toLowerCase().endsWith(".zip")).flatMap(([, inner]) => one(inner));
   const seen = new Set<string>();
   return found.filter((track) => {
-    const key = `${track.list}/${track.file}`.toLowerCase();
+    const key = `${track.kind}/${track.list}/${track.file}`.toLowerCase();
     if (seen.has(key)) return false;
     seen.add(key);
     return true;

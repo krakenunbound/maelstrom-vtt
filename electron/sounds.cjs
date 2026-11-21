@@ -105,6 +105,21 @@ function createSoundLibrary({ folder, builtin = "" }) {
       const id = [kind, ...parts, target].join("/");
       return { id, kind, group: parts.join("/"), name: prettyName(target) };
     },
+    // A module's sound kept in the library for good (a book made active, a map bundle opened): the
+    // same file already there (its name and size in that folder) is not added twice.
+    keep(kind, group, name, bytes) {
+      if (!KINDS.includes(kind) || !mimeOf(String(name))) return null;
+      const data = Buffer.isBuffer(bytes) ? bytes : Buffer.from(bytes);
+      const parts = String(group ?? "").split(/[\\/]+/).map((part) => part.replace(/[^\w .()&'-]+/g, "_").trim()).filter((part) => part && part !== "." && part !== "..");
+      const safe = path.basename(String(name)).replace(/[^\w .()&'-]+/g, "_");
+      const there = path.join(folder, kind, ...parts, safe);
+      try {
+        if (fs.existsSync(there) && fs.statSync(there).size === data.length) return { id: [kind, ...parts, safe].join("/"), kind, group: parts.join("/"), name: prettyName(safe), kept: true };
+      } catch {
+        /* added below */
+      }
+      return this.add(kind, group, name, data);
+    },
     addFile(kind, group, file) {
       return this.add(kind, group, path.basename(file), fs.readFileSync(file));
     },

@@ -113,6 +113,11 @@ try {
       assert((map.doors ?? []).length === want.doors, `${want.name} from the folder: ${want.doors} doors, ${(map.doors ?? []).length} here`);
     }
   report.push(`  switched to each floor from the one adventure: ${names.join(", ")}`);
+  // The music kept in the library once, though four imports brought it.
+  const library = await tool("kraken_sound", { action: "list" });
+  const copies = JSON.stringify(library).match(/Daggers In The Dark/g) ?? [];
+  assert(copies.length >= 1 && !/Daggers In The Dark \(2\)/.test(JSON.stringify(library)), `the music once in the library: ${copies.length} mentions`);
+  report.push("  the bundle's music in the sound library, once");
   // A player's view of the shared Ground Floor (in Chrome).
   await tool("kraken_scenes", { adventure: "Ground Floor", scene: "Ground Floor" });
   await tool("kraken_map", { share: true });

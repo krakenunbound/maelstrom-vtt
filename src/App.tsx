@@ -403,10 +403,12 @@ export function App() {
       else if (UVTT.test(name)) bytes = uvttBundle(bytes, name);
       const found = inspectZip(bytes);
       if (found.length === 0) throw new Error(`No prepared map bundle was in ${name}.`);
-      // Its music (Foundry's playlists) into the GM's sound library: Music, a folder per playlist.
+      // Its sounds into the GM's sound library for good (Foundry's playlists to Music, a scene's ambient
+      // sounds to Ambience, the rest to Effects), never twice.
       const music = /\.zip$/i.test(name) ? bundleMusic(bytes) : [];
-      if (music.length && window.kraken?.addSound) {
-        for (const track of music) await window.kraken.addSound("music", track.list, track.file, track.bytes).catch(() => undefined);
+      const keep = window.kraken?.keepSound ?? window.kraken?.addSound;
+      if (music.length && keep) {
+        for (const track of music) await keep(track.kind, track.list, track.file, track.bytes).catch(() => undefined);
       }
       const index = preferredCandidateIndex(found);
       setCandidates(found);
@@ -419,7 +421,7 @@ export function App() {
         const ofBook = found.some((candidate) => bookOf({ adventure: candidate.name, sceneId: "" }, books).fromBook) || table.scenes.some((scene) => /^fg-/.test(scene.id));
         await window.kraken?.saveBundle(campaignId, ofBook ? null : bytes);
       }
-      return { adventures: found.map((candidate) => candidate.name), opened: found[index].name, ...(music.length ? { music: music.map((track) => `${track.list}/${track.file}`) } : {}) };
+      return { adventures: found.map((candidate) => candidate.name), opened: found[index].name, ...(music.length ? { music: music.map((track) => `${track.list}/${track.file}`), sounds: music.map((track) => `${track.kind}/${track.list}/${track.file}`) } : {}) };
     } finally {
       setBusy(false);
     }

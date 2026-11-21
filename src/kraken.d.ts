@@ -118,6 +118,8 @@ export type KrakenApi = {
   contentOpen?: (kind: string) => Promise<string>;
   pickSounds: (kind: string, group: string) => Promise<KrakenSound[]>;
   addSound: (kind: string, group: string, name: string, bytes: Uint8Array) => Promise<KrakenSound>;
+  // A module's sound kept for good, never added twice (the same name and size there already).
+  keepSound?: (kind: string, group: string, name: string, bytes: Uint8Array) => Promise<KrakenSound | null>;
   openSoundFolder: () => Promise<string>;
   onAgentCommand: (handler: (command: KrakenAgentCommand) => Promise<unknown>) => () => void;
 };

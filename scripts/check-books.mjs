@@ -67,6 +67,18 @@ assert(text.includes('data-page="inn"') && text.includes('data-file="images/keep
   const wanted = { "images/cave.png": "Maps", "art/goblin.png": "Tokens", "art/goblin-big.png": "Portraits", "sounds/drip.ogg": "Sounds", "music/theme.mp3": "Music", "misc/other.png": "Images" };
   assert(JSON.stringify(kinds) === JSON.stringify(Object.fromEntries(Object.keys(kinds).map((file) => [file, wanted[file]]))) && Object.keys(kinds).length === 6, `a book's media by kind: ${JSON.stringify(kinds)}`);
   assert(shelf.media("Caves", "sounds/drip.ogg")?.mime === "audio/ogg" && shelf.media("Caves", "art/goblin.png") === null, "a sound is served as media, a picture is not");
+  // Made active, a book's sounds go into the GM's sound library for good (music to Music, the rest to Effects,
+  // a folder named for the book), never twice; still there after the book is put away.
+  {
+    const { createSoundLibrary } = require("../electron/sounds.cjs");
+    const library = createSoundLibrary({ folder: mkdtempSync(path.join(tmpdir(), "kraken-sound-keep-")) });
+    const table = createTableServer({ books: shelf, sounds: library, ruleset: "Castles & Crusades" });
+    await table.agent.activateBook("Caves");
+    await table.agent.activateBook("Caves", false);
+    await table.agent.activateBook("Caves");
+    const ids = library.list().map((item) => item.id).sort();
+    assert(JSON.stringify(ids) === JSON.stringify(["music/Caves/theme.mp3", "sfx/Caves/drip.ogg"]), `a book's sounds kept in the library, once: ${JSON.stringify(ids)}`);
+  }
 }
 // A book whose contents FG wraps whole in one <category> (B3, A4: refmanualindex > category > chapters, the pages
 // kept inline): its chapters and pages are listed and read, from the module and from a pack that kept the wrapper.

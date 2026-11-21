@@ -54,6 +54,7 @@ contextBridge.exposeInMainWorld("kraken", {
   contentOpen: (kind) => ipcRenderer.invoke("content-open", kind),
   pickSounds: (kind, group) => ipcRenderer.invoke("sound-pick", kind, group),
   addSound: (kind, group, name, bytes) => ipcRenderer.invoke("sound-add", kind, group, name, bytes),
+  keepSound: (kind, group, name, bytes) => ipcRenderer.invoke("sound-keep", kind, group, name, bytes),
   openSoundFolder: () => ipcRenderer.invoke("sound-folder"),
   campaignView: (id) => ipcRenderer.invoke("campaign-view", id),
   campaignBundle: (id) => ipcRenderer.invoke("campaign-bundle", id),

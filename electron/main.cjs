@@ -257,6 +257,7 @@ for (const name of [
   "set-token-art",
   "decal-add",
   "sound-add",
+  "sound-keep",
   "set-scene-image",
   "assistant-status",
   "assistant-ask",

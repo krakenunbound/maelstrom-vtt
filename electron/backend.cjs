@@ -938,6 +938,8 @@ const calls = {
   "decal-add": (name, bytes, kind) => libraryOf(kind).add(String(name ?? ""), bytesOf(bytes)),
   "sound-add-files": (kind, group, files) => (Array.isArray(files) ? files : []).map((file) => sounds().addFile(String(kind), String(group ?? ""), String(file))),
   "sound-add": (kind, group, name, bytes) => sounds().add(String(kind), String(group ?? ""), String(name ?? ""), bytesOf(bytes)),
+  // A module's sound kept for good (a map bundle's music): not added twice.
+  "sound-keep": (kind, group, name, bytes) => sounds().keep(String(kind), String(group ?? ""), String(name ?? ""), bytesOf(bytes)),
   "sound-folder": () => {
     fs.mkdirSync(sounds().folder, { recursive: true });
     return sounds().folder;

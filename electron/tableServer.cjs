@@ -1515,6 +1515,33 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     }
   }
   // Its module converted first (off this thread, once), so its records load in milliseconds.
+  // A book's sounds and music into the GM's sound library for good (bought, they are the GM's to use):
+  // music to Music, a loop (ambient, atmosphere) to Ambience, the rest to Effects, each in a folder named
+  // for the book (and its own folder in it); the same file is never added twice.
+  function keepBookSounds(info) {
+    if (!sounds?.keep || !books?.contents || !books?.media) return [];
+    let listed = [];
+    try {
+      listed = (books.contents(info.id).media ?? []).filter((item) => /\.(mp3|ogg|oga|wav|m4a|flac|opus)$/i.test(item.file));
+    } catch {
+      return [];
+    }
+    const kept = [];
+    for (const item of listed) {
+      const found = books.media(info.id, item.file);
+      if (!found?.bytes) continue;
+      const words = item.file.toLowerCase();
+      const kind = item.kind === "Music" || /\bmusic\b/.test(words) ? "music" : /ambien|atmos|loop|background/.test(words) ? "ambience" : "sfx";
+      const inner = path.dirname(item.file).split(/[\\/]+/).filter((part) => part && part !== "." && !/^(sounds?|music|audio|ambien\w*|sfx|effects?)$/i.test(part));
+      try {
+        const done = sounds.keep(kind, [info.title || info.name, ...inner].join("/"), path.basename(item.file), found.bytes);
+        if (done) kept.push(done.id);
+      } catch {
+        /* a sound the library refuses (too big) stays in the book */
+      }
+    }
+    return kept;
+  }
   async function activateBook(book, on = true) {
     const info = bookFor(book);
     if (on && !shelf.active.has(info.id)) {
@@ -1523,6 +1550,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       shelf.active.add(info.id);
       if (info.forPlayers) shelf.shared.add(info.id);
       loadRecords(info);
+      keepBookSounds(info);
       // A world's book brings its calendar: Mystara the Thyatian, a Greyhawk book the Common Year.
       const world = settingCalendar(info);
       if (world && calendar.persisted().id !== world) calendar.set({ id: world }, GM_SEAT);
@@ -1545,7 +1573,11 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       const file = books?.file?.(info.id);
       if (file) await prepareModule(file);
       // Deactivated while it waited (or was prepared): its records are not brought back.
-      if (shelf.active.has(id)) loadRecords(info);
+      if (shelf.active.has(id)) {
+        loadRecords(info);
+        // Its sounds kept in the library too (a book made active before the library kept them).
+        keepBookSounds(info);
+      }
     }
     setTimeout(loadNextBook, 50);
   };
