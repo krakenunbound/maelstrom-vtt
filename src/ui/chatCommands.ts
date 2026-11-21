@@ -5,6 +5,7 @@ import type { WindowKind } from "./Windows";
 import { manifestOf } from "../rulesets";
 import { BRAND } from "../../shared/brand.mjs";
 import { resolveTest } from "../../shared/text/actionLinks.mjs";
+import { GM } from "./gmTitle";
 
 // The chat's slash commands, as Fantasy Grounds' (so its players know them),
 // with Foundry's names too where it has its own (/gmroll, /me...) and a few of
@@ -45,7 +46,7 @@ const WINDOWS: Record<string, { kind: WindowKind; title: string }> = {
   sounds: { kind: "sound", title: "Sound" },
   decal: { kind: "decals", title: "Background Decal" },
   wallpaper: { kind: "wallpapers", title: "Desktop Wallpaper" },
-  gmicon: { kind: "gmicons", title: "GM Icon" },
+  gmicon: { kind: "gmicons", get title() { return GM("GM Icon"); } },
 };
 
 // "/roll 4d6d1 Strength", "/r 1d20 + 5 Climb" or "/r 2d6 + 3 #Damage": the
@@ -124,8 +125,8 @@ function testRoll(kind: "check" | "save" | "skill", rest: string, context: Comma
 export const COMMANDS: Command[] = [
   // --- Dice ---------------------------------------------------------------
   { names: ["roll", "r", "die"], args: "[dice] <for>", help: "Roll for everyone: 1d20+3 (spaces allowed: 1d20 + 3; #label: /r 2d6 + 3 #Damage), 4d6d1 (drop lowest), 4d6k3 (keep highest 3), 2d20kh1, 3d6! (explode), 3d6xo (once), 4d6r1 (reroll 1s once), 4d6rr1 (until not 1), 4d6min2, 4d6max5, 6d10cs>=7 (successes), 6d10cf<3 (failures), 1d20ms>=15 (margin), 4dF, d%. The modifier box and its keys are added by the host", group: "Dice", run: rollWith("public") },
-  { names: ["gmroll", "gr"], args: "[dice] <for>", help: "Roll so only the GM and you see it", group: "Dice", run: rollWith("gm") },
-  { names: ["blindroll", "br", "tower"], args: "[dice] <for>", help: "Roll for the GM's eyes only (the dice tower): you see only that you rolled", group: "Dice", run: rollWith("blind") },
+  { names: ["gmroll", "gr"], args: "[dice] <for>", get help() { return GM("Roll so only the GM and you see it"); }, group: "Dice", run: rollWith("gm") },
+  { names: ["blindroll", "br", "tower"], args: "[dice] <for>", get help() { return GM("Roll for the GM's eyes only (the dice tower): you see only that you rolled"); }, group: "Dice", run: rollWith("blind") },
   { names: ["selfroll", "sr"], args: "[dice] <for>", help: "Roll so only you see it", group: "Dice", run: rollWith("self") },
   { names: ["publicroll", "pr"], args: "[dice] <for>", help: "Roll for everyone (as /roll)", group: "Dice", run: rollWith("public") },
   {
@@ -171,11 +172,11 @@ export const COMMANDS: Command[] = [
   {
     names: ["w", "whisper"],
     args: "[name, name] [message]",
-    help: "Whisper to players (or GM); the GM sees every whisper",
+    get help() { return GM("Whisper to players (or GM); the GM sees every whisper"); },
     group: "Talk",
     run: (rest, context) => {
       const { names, text } = splitNames(rest, context.session);
-      if (names.length === 0 || !text) return context.session.note("As /w Ann Meet me by the well.  or  /w GM I search the chest.");
+      if (names.length === 0 || !text) return context.session.note(GM("As /w Ann Meet me by the well.  or  /w GM I search the chest."));
       context.session.sendChat(text, { to: names, as: context.speakAs });
     },
   },
@@ -183,7 +184,7 @@ export const COMMANDS: Command[] = [
     // Foundry's /gm: a whisper to the GM.
     names: ["gm"],
     args: "[message]",
-    help: "Whisper to the GM (as /w GM)",
+    get help() { return GM("Whisper to the GM (as /w GM)"); },
     group: "Talk",
     run: (rest, context) => (rest.trim() ? context.session.sendChat(rest.trim(), { to: ["GM"], as: context.speakAs }) : context.session.note("As /gm I pick the lock quietly.")),
   },
@@ -239,7 +240,7 @@ export const COMMANDS: Command[] = [
   {
     names: ["gmid"],
     args: "<name>",
-    help: "The name the GM is shown by (instead of DM)",
+    help: "The name you are shown by in chat (instead of your title)",
     group: "GM",
     gm: true,
     run: (rest, context) => {
@@ -256,12 +257,12 @@ export const COMMANDS: Command[] = [
     run: (rest, context) => (rest.trim() ? context.session.tableCommand({ type: "kick", name: rest.trim() }) : context.session.note("As /kick Bob")),
   },
   // Action links' rolls (shared/text/actionLinks.mjs): a player rolls their character's, the GM asks the players.
-  { names: ["check"], args: "[ability or skill] <DC>", help: "A check: /check dex 15 (the GM asks every player for theirs)", group: "Dice", run: (rest, context) => testRoll("check", rest, context) },
+  { names: ["check"], args: "[ability or skill] <DC>", get help() { return GM("A check: /check dex 15 (the GM asks every player for theirs)"); }, group: "Dice", run: (rest, context) => testRoll("check", rest, context) },
   { names: ["skill"], args: "[skill] <DC>", help: "A skill check: /skill perception 12", group: "Dice", run: (rest, context) => testRoll("skill", rest, context) },
   {
     names: ["save"],
     args: "<ability> <DC>",
-    help: "A saving throw: /save wis 13 (the GM asks the players); alone, the GM saves the campaign",
+    get help() { return GM("A saving throw: /save wis 13 (the GM asks the players); alone, the GM saves the campaign"); },
     group: "Dice",
     run: (rest, context) => {
       if (rest.trim()) return testRoll("save", rest, context);
@@ -296,7 +297,7 @@ export const COMMANDS: Command[] = [
     group: "Talk",
     run: (_rest, context) => {
       const me = context.session.players.find((seat) => seat.id === context.session.selfId);
-      if (context.session.role === "dm") return context.session.note("The GM is never away: /pause the game instead.");
+      if (context.session.role === "dm") return context.session.note(GM("The GM is never away: /pause the game instead."));
       context.session.setPresence({ afk: !me?.afk });
       context.session.note(me?.afk ? "You are back." : "You are away (/afk again to come back).");
     },
@@ -318,7 +319,7 @@ export const COMMANDS: Command[] = [
   { names: ["help", "?", "commands"], args: "", help: "Every command (/r rolls dice: /r 1d20+3 Climb)", group: "Screen", run: (_rest, context) => context.showHelp() },
   { names: ["dice"], args: "", help: "Your dice: sets, colours, effects", group: "Screen", run: (_rest, context) => context.openWindow("dice", "Dice") },
   { names: ["settings"], args: "", help: "Settings", group: "Screen", run: (_rest, context) => context.openWindow("settings", "Settings") },
-  { names: ["sound", "sounds"], args: "", help: "Sound: your volumes (and the GM's one-shots, ambience, music and triggers)", group: "Screen", run: (_rest, context) => context.openWindow("sound", "Sound") },
+  { names: ["sound", "sounds"], args: "", get help() { return GM("Sound: your volumes (and the GM's one-shots, ambience, music and triggers)"); }, group: "Screen", run: (_rest, context) => context.openWindow("sound", "Sound") },
   {
     names: ["play", "sfx"],
     args: "[folder or sound]",
@@ -489,7 +490,7 @@ export function runChat(draft: string, context: CommandContext) {
     return false;
   }
   if (found.gm && context.session.role !== "dm") {
-    context.session.note(`/${found.names[0]} is the GM's.`);
+    context.session.note(GM(`/${found.names[0]} is the GM's.`));
     return false;
   }
   found.run(command[2], context);

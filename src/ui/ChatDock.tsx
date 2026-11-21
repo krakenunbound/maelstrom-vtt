@@ -36,6 +36,7 @@ import "@fontsource/noto-sans-old-turkic/old-turkic-400.css";
 import { openPopOut, PopOutWindow, screenOffset, type ScreenPlace } from "./PopOut";
 import "../effects/effects.css";
 import { cssRect, cssX, cssY, pageZoom } from "./pageZoom";
+import { GM } from "./gmTitle";
 
 // Where chat last was in a window of its own (in this browser).
 function chatPlace(): ScreenPlace | null {
@@ -253,9 +254,9 @@ function Line({ line, gmIcon, session }: { line: ChatLine; gmIcon: string; sessi
       {line.to ? <span className="chat-tag whisper-tag">to {line.to.join(", ")}</span> : null}
       {line.kind === "ooc" ? <span className="chat-tag">OOC</span> : null}
       {line.lang ? <span className={`chat-tag chat-lang${line.garbled ? " unknown" : ""}`} title={line.garbled ? `Spoken in ${line.lang}, which none of your characters know` : `Spoken in ${line.lang}`}>{line.lang}</span> : null}
-      {line.secret ? <span className="chat-tag">{line.shownTo ? "GM and you" : "GM only"}</span> : null}
+      {line.secret ? <span className="chat-tag">{line.shownTo ? GM("GM and you") : GM("GM only")}</span> : null}
       {line.self ? <span className="chat-tag">Only you</span> : null}
-      {line.tower ? <span className="chat-tag">To the GM</span> : null}
+      {line.tower ? <span className="chat-tag">{GM("To the GM")}</span> : null}
       {line.roll ? (
         <>
           <RollCard roll={line.roll} pending={rolling.has(line)} />
@@ -816,8 +817,8 @@ export function ChatDock({ session }: { session: Session }) {
     session.role === "dm"
       ? "Dice tower: your rolls stay hidden from players. Drop dice here, or click to turn it on or off"
       : session.options.towerReveal
-        ? "Dice tower: the GM and you see the roll. Drop dice here, or click to turn it on or off"
-        : "Dice tower: only the GM sees the roll. Drop dice here, or click to turn it on or off";
+        ? GM("Dice tower: the GM and you see the roll. Drop dice here, or click to turn it on or off")
+        : GM("Dice tower: only the GM sees the roll. Drop dice here, or click to turn it on or off");
   // A quick slot under the pointer (the bar is in the main window).
   const slotAt = (view: Window, x: number, y: number) => {
     if (view !== window) return -1;
@@ -1214,8 +1215,8 @@ export function ChatDock({ session }: { session: Session }) {
         onChange={(event) => session.modify({ action: "mode", mode: event.target.value as "public" | "gm" | "blind" | "self" })}
       >
         <option value="public">Public roll</option>
-        <option value="gm">{session.role === "dm" ? "Private GM roll" : "GM and me"}</option>
-        {session.role === "dm" ? null : <option value="blind">Blind (GM only)</option>}
+        <option value="gm">{session.role === "dm" ? GM("Private GM roll") : GM("GM and me")}</option>
+        {session.role === "dm" ? null : <option value="blind">{GM("Blind (GM only)")}</option>}
         <option value="self">Self roll (only me)</option>
       </select>
       {helpOpen || suggestions.length > 0 ? (
@@ -1232,7 +1233,7 @@ export function ChatDock({ session }: { session: Session }) {
             const items = (helpOpen && !draft.startsWith("/") ? mineCommands : suggestions).filter((command) => command.group === group);
             return items.length === 0 ? null : (
               <div key={group} className="chat-commands-group">
-                <span>{group === "GM" ? "GM only" : group === "Screen" ? "This screen" : group}</span>
+                <span>{group === "GM" ? GM("GM only") : group === "Screen" ? "This screen" : group}</span>
                 {items.map((command) => (
                   <button key={command.names[0]} type="button" role="option" data-command={command.names[0]} onClick={() => setDraft(`/${command.names[0]} `)}>
                     <code>

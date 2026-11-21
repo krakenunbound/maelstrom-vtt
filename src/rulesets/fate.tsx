@@ -2,6 +2,7 @@ import type { Session } from "../session/useSession";
 import { Field } from "../core/fields/Field";
 import { useSheet } from "../core/sheet/context";
 import { ACTIONS, APPROACHES, APPROACH_NAMES, CONSEQUENCE_NAMES, CONSEQUENCES, LADDER, MILESTONES, SKILLS, aspectsOf, ladder, signed } from "../../shared/fate/rules.mjs";
+import { GM } from "../ui/gmTitle";
 
 // Fate's own parts, where no core part fits (docs/core-ui-design.md 4.4, level 3):
 // the roll bar and the skills (or approaches) it rolls, stress and consequences,
@@ -67,7 +68,7 @@ export function FateRollBar() {
         </select>
       </label>
       {action === "overcome" || action === "advantage" ? (
-        <label className="cc-inline" title="The opposition on the ladder (passive opposition: the GM says how hard)">
+        <label className="cc-inline" title={GM("The opposition on the ladder (passive opposition: the GM says how hard)")}>
           vs
           <select aria-label="Opposition" data-field="fate-opposition" value={opposition} onChange={(event) => setModifier("opposition", event.target.value)}>
             {LADDER_STEPS.map((step) => (

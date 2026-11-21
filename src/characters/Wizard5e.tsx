@@ -33,6 +33,7 @@ import {
   totalWealth,
   wealthRoll,
 } from "../../shared/dnd5e/wizard.mjs";
+import { GM } from "../ui/gmTitle";
 
 // The D&D 5E character wizard, after Fantasy Grounds' 5E wizard (and the same
 // for Descending Darkness, which FG plays through the 5E ruleset): six tabs,
@@ -415,7 +416,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
     }
   };
 
-  if (classes.length === 0) return <p className="hint">No classes yet: the GM makes the {profile.id === "dnd5e" ? "5E Player's Handbook" : `${profile.name} Player's Handbook`} active (Modules).</p>;
+  if (classes.length === 0) return <p className="hint">{GM("No classes yet: the GM makes the ")}{profile.id === "dnd5e" ? "5E Player's Handbook" : `${profile.name} Player's Handbook`} active (Modules).</p>;
   const next = TABS[Math.min(TABS.length - 1, TABS.indexOf(tab) + 1)];
   const scoreLine = (stat: Stat) => {
     const value = total(stat);

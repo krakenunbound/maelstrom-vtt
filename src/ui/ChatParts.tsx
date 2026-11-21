@@ -4,6 +4,7 @@ import { LINK_ICON, slotDrag, useOpenLink } from "./QuickSlots";
 import { Icon } from "./icons";
 import { useWindows } from "./Windows";
 import { FormattedText } from "../books/Records";
+import { GM } from "./gmTitle";
 
 // The parts of a chat line beyond its words: a link (FG's links in chat), a
 // shared record's text (FG's Share), the speaker's portrait (FG's chat
@@ -96,7 +97,7 @@ export function PromptCard({ line, session }: { line: ChatLine; session: Session
               {done ? (
                 <b className={row.success === true ? "hit" : row.success === false ? "miss" : ""}>{row.total}</b>
               ) : mine || gm ? (
-                <button type="button" className="play-button" data-prompt-roll={row.id} title={mine ? "Roll it from your sheet (your modifier box counts)" : `Roll for ${row.name} (offline, or the GM's call)`} onClick={() => session.tableCommand({ type: "party-prompt-roll", prompt: prompt.id, member: row.id })}>
+                <button type="button" className="play-button" data-prompt-roll={row.id} title={mine ? "Roll it from your sheet (your modifier box counts)" : GM(`Roll for ${row.name} (offline, or the GM's call)`)} onClick={() => session.tableCommand({ type: "party-prompt-roll", prompt: prompt.id, member: row.id })}>
                   <Icon name="d20" size={13} /> Roll
                 </button>
               ) : (

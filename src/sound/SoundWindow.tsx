@@ -3,6 +3,7 @@ import type { Session, SoundItem, SoundLibrary, SoundTrigger } from "../session/
 import { Icon } from "../ui/icons";
 import { SettingsSection, Toggle } from "../ui/SettingsParts";
 import { KINDS, sound, type SoundKind } from "./soundEngine";
+import { GM } from "../ui/gmTitle";
 
 // The Sound window (Syrinscape's, inside Kraken): the GM's one-shots, sound
 // effects, ambience loops and music, all from the GM's own sounds and played
@@ -336,7 +337,7 @@ function Triggers({ session, library }: { session: Session; library: SoundLibrar
       <p className="hint">An attack plays its weapon's swing, the damage roll its hit, a natural 20 its crit and a natural 1 its fumble. The first trigger that fits, and has sounds, plays for everyone who sees the line, as its result shows. ▶ plays a trigger's sound on your screen only.</p>
       <div className="sound-trigger-options">
         <label>
-          The GM's hidden rolls
+          {GM("The GM's hidden rolls")}
           <select value={session.options.soundHidden} onChange={(event) => session.setTableOptions({ soundHidden: event.target.value as "off" | "combat" | "all" })}>
             <option value="off">Silent</option>
             <option value="combat">Combat only</option>

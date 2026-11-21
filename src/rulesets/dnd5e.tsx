@@ -1,5 +1,6 @@
 import { signed } from "../../shared/dnd5e/rules.mjs";
 import { num, rows, useSheet, type Row } from "../core/sheet/context";
+import { GM } from "../ui/gmTitle";
 
 // D&D 5E's own parts, where no core part fits (docs/core-ui-design.md 4.4,
 // level 3), shared with Descending Darkness (its variant): the Spells page
@@ -74,7 +75,7 @@ export function Dnd5eDread() {
   const { data, editable, change } = useSheet();
   const dread = num(data.dread);
   return (
-    <div className="five-big five-dread" data-stat="dread" title="Dread: horrors, darkness and loss build it; a night's rest by a fire lowers it by 1. At 3 or more, disadvantage on Wisdom checks and saves; at 6 the character breaks (the GM says how).">
+    <div className="five-big five-dread" data-stat="dread" title={GM("Dread: horrors, darkness and loss build it; a night's rest by a fire lowers it by 1. At 3 or more, disadvantage on Wisdom checks and saves; at 6 the character breaks (the GM says how).")}>
       <small>Dread</small>
       <span className="five-dread-track">
         {Array.from({ length: 6 }, (_, index) => (

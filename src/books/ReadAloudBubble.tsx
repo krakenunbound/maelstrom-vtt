@@ -3,6 +3,7 @@ import { diceStore } from "../dice/diceStore";
 import { Icon } from "../ui/icons";
 import { useWindows } from "../ui/Windows";
 import type { ReadAloud } from "../session/useSession";
+import { GM } from "../ui/gmTitle";
 
 // How many maps are on this screen now: with none, the bubble floats over the table.
 let mapsShown = 0;
@@ -61,7 +62,7 @@ export function ReadAloudWindow({ log }: { log: ReadAloud[] }) {
   const items = [...log].reverse();
   return (
     <div className="read-aloud-list" data-read-aloud-window>
-      {items.length === 0 ? <p className="hint empty-state">Nothing read aloud yet. What the GM reads aloud appears here.</p> : null}
+      {items.length === 0 ? <p className="hint empty-state">{GM("Nothing read aloud yet. What the GM reads aloud appears here.")}</p> : null}
       {items.map((item, index) => (
         <article key={item.at} className={index === 0 ? "read-aloud-entry newest" : "read-aloud-entry"} data-read-aloud-entry={item.at}>
           {item.title ? <span className="read-aloud-title">{item.title}</span> : null}

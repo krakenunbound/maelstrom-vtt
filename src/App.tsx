@@ -16,6 +16,8 @@ import { agentCommands } from "./ui/agentCommands";
 import { Desktop } from "./ui/Desktop";
 import { WindowProvider } from "./ui/Windows";
 import { hasLink } from "./ui/QuickSlots";
+import { GM, setGmTitle } from "./ui/gmTitle";
+import { rulesetNamed } from "../shared/rulesets/registry.mjs";
 
 const COLOUR = /^#[0-9a-f]{6}$/i;
 
@@ -125,6 +127,8 @@ function toTable(loaded: LoadedAdventure, urls: string[]): TableAdventure {
 
 export function App() {
   const session = useSession();
+  // The game's word for the GM (AD&D: the DM), read by every window's words as they draw.
+  setGmTitle(rulesetNamed(session.ruleset)?.gm);
   // What the map is given stays the same object until it changes, so the map
   // (walls, lighting, tokens) is not drawn again for every chat line or roll.
   // Its actions are the session's own, always the latest.
@@ -438,7 +442,7 @@ export function App() {
   // An image opened in the image window: from the Images list, a book, the
   // Library, the agent. Already on the table: the table's map is that image.
   async function openImage(image: ImageRef) {
-    if (!dm) throw new Error("Only the GM opens images to edit.");
+    if (!dm) throw new Error(GM("Only the GM opens images to edit."));
     let bytes: Uint8Array;
     try {
       // A map or picture the book keeps as an image record (its walls, lights, pins).
@@ -571,7 +575,7 @@ export function App() {
           className={testing ? "on" : ""}
           data-action="image-test"
           aria-pressed={testing}
-          title={testing ? "End the play test: back to the GM's view" : "Play test: a test token on the image, seen as a player sees it (walls, doors, light); drag it to find problems"}
+          title={testing ? GM("End the play test: back to the GM's view") : "Play test: a test token on the image, seen as a player sees it (walls, doors, light); drag it to find problems"}
           onClick={() => session.playtest(!testing)}
         >
           {testing ? "End play test" : "Play test"}

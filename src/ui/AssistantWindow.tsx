@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "./icons";
+import { GM } from "./gmTitle";
 
 // The DM assistant (the GM's alone): a chat with the AI model of the GM's
 // choice (Claude, OpenAI, Gemini, Grok, DeepSeek, OpenRouter or another
@@ -85,7 +86,7 @@ export function AssistantWindow() {
   }, [api, status?.provider, status?.hasKey, status?.base]);
   useEffect(() => setBase(status?.base ?? ""), [status?.base]);
 
-  if (!api) return <p className="assistant-empty">The assistant runs in the GM's Maelstrom app.</p>;
+  if (!api) return <p className="assistant-empty">{GM("The assistant runs in the GM's Maelstrom app.")}</p>;
 
   const send = async (said = text) => {
     if (!said.trim() || busy) return;

@@ -31,8 +31,8 @@ const NEW_BLOCKS: { kind: string; icon: string; title: string; make: () => BookB
   { kind: "twocol", icon: "block-twocol", title: "Two columns of text", make: () => ({ kind: "twocol", text: "", text2: "", html: "", html2: "" }) },
   { kind: "header", icon: "block-header", title: "A header", make: () => ({ kind: "header", text: "New section" }) },
   { kind: "picture", icon: "block-image", title: "An image", make: () => ({ kind: "picture", file: "", caption: "", name: "", scale: 100, align: "center" }) },
-  { kind: "textpic-right", icon: "block-image-right", title: "Text with an image on the right", make: () => ({ kind: "textpic", side: "right", file: "", caption: "", name: "", scale: 50, text: "", html: "" }) },
-  { kind: "textpic-left", icon: "block-image-left", title: "Text with an image on the left", make: () => ({ kind: "textpic", side: "left", file: "", caption: "", name: "", scale: 50, text: "", html: "" }) },
+  { kind: "textpic-right", icon: "block-image-right", title: "Text with an image on the right", make: () => ({ kind: "textpic", side: "right", file: "", caption: "", name: "", scale: 100, text: "", html: "" }) },
+  { kind: "textpic-left", icon: "block-image-left", title: "Text with an image on the left", make: () => ({ kind: "textpic", side: "left", file: "", caption: "", name: "", scale: 100, text: "", html: "" }) },
   { kind: "links", icon: "block-links", title: "Links: anything dragged here (a sound plays on a click)", make: () => ({ kind: "links", links: [] }) },
 ];
 // What is kept (the host makes the HTML again from the words).
@@ -213,7 +213,7 @@ function BookPageView({ shared, pageRef, onLoaded }: { shared: Shared; pageRef: 
               </button>
               {block.kind === "picture" || block.kind === "textpic" ? (
                 <>
-                  <button type="button" className="book-tool" data-action="image-bigger" title={`Bigger (${block.scale}%)`} aria-label="Make the image bigger" disabled={block.scale >= 100} onClick={() => change(index, { scale: Math.min(100, block.scale + 10) })}>
+                  <button type="button" className="book-tool" data-action="image-bigger" title={`Bigger (${block.scale}%)`} aria-label="Make the image bigger" disabled={block.scale >= 200} onClick={() => change(index, { scale: Math.min(200, block.scale + 10) })}>
                     <Icon name="zoom-in" size={13} />
                   </button>
                   <button type="button" className="book-tool" data-action="image-smaller" title={`Smaller (${block.scale}%)`} aria-label="Make the image smaller" disabled={block.scale <= 10} onClick={() => change(index, { scale: Math.max(10, block.scale - 10) })}>
@@ -296,6 +296,9 @@ function BlockView({ shared, page, block, editing, onChange }: { shared: Shared;
 function Picture({ shared, page, block, editing, onChange }: { shared: Shared; page: BookPage; block: Extract<BookBlock, { kind: "picture" | "textpic" }>; editing: boolean; onChange: (patch: Partial<BookBlock>) => void }) {
   const { session, book } = shared;
   const [over, setOver] = useState(false);
+  // Its size: scale percent of its full size (its own width, or the page's when the picture is wider).
+  const [natural, setNatural] = useState(0);
+  const width = natural ? `calc(min(${natural}px, 100%) * ${block.scale / 100})` : undefined;
   const picture = { book, file: block.file, name: block.name || block.caption || page.name };
   const drop = editing
     ? {
@@ -320,10 +323,10 @@ function Picture({ shared, page, block, editing, onChange }: { shared: Shared; p
       }
     : {};
   return (
-    <figure className={over ? "book-figure dropping" : "book-figure"} style={{ width: `${block.scale}%` }} {...drop} onContextMenu={block.file ? (event) => shared.pictureMenu(event, picture) : undefined}>
+    <figure className={over ? "book-figure dropping" : "book-figure"} data-scale={block.scale} style={{ width }} {...drop} onContextMenu={block.file ? (event) => shared.pictureMenu(event, picture) : undefined}>
       {block.file ? (
         <button type="button" className="book-figure-open" data-figure={block.file} title="Open this image: share it, edit it (walls, doors, lights), play test it" onClick={() => shared.openPicture(picture)} {...slotDrag({ kind: "picture", book, file: block.file, label: picture.name })}>
-          <img src={session.bookUrl("picture", book, block.file)} alt={block.caption} loading="lazy" />
+          <img src={session.bookUrl("picture", book, block.file)} alt={block.caption} loading="lazy" style={natural ? { width: "100%" } : undefined} onLoad={(event) => setNatural(event.currentTarget.naturalWidth)} />
         </button>
       ) : editing ? (
         <div className="book-figure-empty">

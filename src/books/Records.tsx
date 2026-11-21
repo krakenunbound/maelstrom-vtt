@@ -12,6 +12,7 @@ import { ReadAloudButton } from "./readAloud";
 import { decodeEntities, isFormatted, linkOfRecordname } from "../../shared/text/formatted.mjs";
 import { LinkChip } from "../core/fields/RichText";
 import { CORE_VIEWS, IdentifyBar, openUnlocked, RecordFields, ShareMenu, TableEditor, TableRollBar, useRecordActions, useRecordMenu } from "./RecordEditor";
+import { GM } from "../ui/gmTitle";
 
 // FG's campaign lists (the sidebar's Campaign and Character groups, each a
 // master index): the records of this campaign and its active books, a list per
@@ -240,7 +241,7 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
   return (
     <div className={only ? "records-window single" : "records-window"} data-window="records" data-records-only={only}>
       {only ? null : <nav className="records-lists" aria-label="Lists">
-        {lists.length === 0 ? <p className="hint">{gm ? "Nothing yet: make a book active (Modules) or add NPCs and items." : "The GM has shared nothing yet."}</p> : null}
+        {lists.length === 0 ? <p className="hint">{gm ? "Nothing yet: make a book active (Modules) or add NPCs and items." : GM("The GM has shared nothing yet.")}</p> : null}
         {lists.map((id) => (
           <button key={id} type="button" className={id === list ? "on" : ""} aria-pressed={id === list} data-records-list={id} onClick={() => setChosen(id)}>
             {listLabel(id)} <small>{counts.get(id)}</small>
@@ -349,7 +350,7 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
             </section>
           ))}
           {rows.length > LIMIT ? <p className="hint">{rows.length - LIMIT} more: search to narrow the list.</p> : null}
-          {list && rows.length === 0 ? <p className="hint" data-records-empty>{sharedOnly ? "Nothing in this list is shared." : wanted ? "Nothing by that name." : spells && !gm && inList.length > 0 ? (myClasses.length ? "Your character's class casts none of these spells." : "Take a character first: you see the spells its class casts.") : gm ? "Nothing here yet: make a book active (Modules)." : "The GM has shared nothing here yet."}</p> : null}
+          {list && rows.length === 0 ? <p className="hint" data-records-empty>{sharedOnly ? "Nothing in this list is shared." : wanted ? "Nothing by that name." : spells && !gm && inList.length > 0 ? (myClasses.length ? "Your character's class casts none of these spells." : "Take a character first: you see the spells its class casts.") : gm ? "Nothing here yet: make a book active (Modules)." : GM("The GM has shared nothing here yet.")}</p> : null}
           {recordMenu.element}
         </div>
       </section>

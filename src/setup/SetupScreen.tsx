@@ -14,6 +14,7 @@ import { campaignRulesets } from "../../shared/rulesets/registry.mjs";
 import "./setup.css";
 import { Icon } from "../ui/icons";
 import { ReleaseNotes } from "./ReleaseNotes";
+import { GM } from "../ui/gmTitle";
 
 type HostInput = { name: string; port: number; password: string; lan: boolean; cloud: boolean; upnp?: boolean; campaignId: string };
 // accountPassword: the player's own password (their account at that table).
@@ -498,7 +499,7 @@ export function SetupScreen({
                 The table at <span className="secret">{window.location.host}</span> is waiting. Leave the table password blank when the game is public.
               </p>
             ) : (
-              <p className="join-lede">Use the address and port from your GM. Leave the table password blank when the game is public.</p>
+              <p className="join-lede">{GM("Use the address and port from your GM. Leave the table password blank when the game is public.")}</p>
             )}
             {signIn ? (
               // Signed in here before: the token this browser kept is enough.
@@ -549,7 +550,7 @@ export function SetupScreen({
             )}
             <label className="field">
               <span>Table password</span>
-              <input name="password" type="text" placeholder="The GM's, blank if the game is public" autoComplete="off" defaultValue={joinFill?.password ?? invitePassword} />
+              <input name="password" type="text" placeholder={GM("The GM's, blank if the game is public")} autoComplete="off" defaultValue={joinFill?.password ?? invitePassword} />
             </label>
             <button type="submit" className="play-button grand" disabled={busy}>
               {busy ? "Joining…" : "Take your seat"}

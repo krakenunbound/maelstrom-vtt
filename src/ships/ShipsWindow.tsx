@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Session, TableRecord } from "../session/useSession";
 import { Field } from "../core/fields/Field";
 import { CRITICALS, CRITICAL_WORDS, DESIGNS, RANGES, WEAPONS, signed } from "../../shared/starships/rules.mjs";
+import { GM } from "../ui/gmTitle";
 
 // Starships, in the 2d6 games (Traveller, Apeira Astra): the campaign's ships
 // down the left, the chosen one's sheet on the right. The GM makes a ship from
@@ -75,7 +76,7 @@ export function ShipsWindow({ session, openMaps }: { session: Session; openMaps?
       ) : (
         <p className="hint empty-state ships-empty">
           <b>No ships yet</b>
-          {gm ? "Make one on the left: its sheet opens here, with its crew, hull and weapons." : "The GM makes the crew's ship; its sheet opens here."}
+          {gm ? "Make one on the left: its sheet opens here, with its crew, hull and weapons." : GM("The GM makes the crew's ship; its sheet opens here.")}
         </p>
       )}
     </section>

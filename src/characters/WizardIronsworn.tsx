@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Session, TableRecord } from "../session/useSession";
 import { RANK_NAMES, RANKS, SPREAD, STAT_NAMES, STATS, gameOf } from "../../shared/ironsworn/rules.mjs";
+import { GM } from "../ui/gmTitle";
 
 // The Ironsworn and Starforged character wizard, moved unchanged from SheetIronsworn.tsx when the sheet went onto
 // the core parts (shared/ironsworn/manifest.mjs).
@@ -69,7 +70,7 @@ export function WizardIronsworn({ session, onDone }: { session: Session; onDone:
       setBusy(false);
     }
   };
-  if (assets.length === 0) return <p className="hint">No assets yet: the GM makes the {sf ? "Starforged" : "Ironsworn"} Reference active (Modules).</p>;
+  if (assets.length === 0) return <p className="hint">{GM("No assets yet: the GM makes the ")}{sf ? "Starforged" : "Ironsworn"} Reference active (Modules).</p>;
   const groups = [...new Set(assets.filter((item) => !(sf && /command vehicle|deed/i.test(String(item.data.category)))).map((item) => String(item.data.category)))];
   return (
     <section className="wizard-5e cc-panel wizard-ironsworn" aria-label={`${sf ? "Starforged" : "Ironsworn"} character wizard`} data-wizard="ironsworn" data-game={game}>

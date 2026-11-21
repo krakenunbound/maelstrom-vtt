@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Session } from "../session/useSession";
 import { COHORT_HARM, CREW_XP, EDGES, FLAWS, GANG_TYPES, REPUTATIONS, ROMAN, STATUS_WORDS, titled } from "../../shared/forged/rules.mjs";
+import { GM } from "../ui/gmTitle";
 
 // Forged in the Dark's crew sheet, on the party sheet's Crew tab: the whole
 // table's. With no crew yet, the crew wizard (the book's steps: a crew type,
@@ -289,7 +290,7 @@ function CrewWizard({ session }: { session: Session }) {
   const cost = (huntingDeal === "pay1" ? 1 : huntingDeal === "pay2" ? 2 : 0);
   const ready = Boolean(type && reputation && chosenAbility && boxes === 2 && contact && name.trim() && cost <= 2);
   // A faction: one the active books name (the GM's adventure may keep them to itself), or any the GM tells you.
-  const factionPick = (label: string, value: string, set: (value: string) => void) => <input aria-label={label} placeholder={`${label} (the GM names it)`} list="forged-factions" value={value} onChange={(event) => set(event.target.value)} />;
+  const factionPick = (label: string, value: string, set: (value: string) => void) => <input aria-label={label} placeholder={GM(`${label} (the GM names it)`)} list="forged-factions" value={value} onChange={(event) => set(event.target.value)} />;
   if (types.length === 0) return <p className="hint">No crew types yet: the GM makes the Forged in the Dark Scoundrel's Handbook active (Modules).</p>;
   return (
     <section className="wizard-5e cc-panel" aria-label="Crew wizard" data-wizard="forged-crew">

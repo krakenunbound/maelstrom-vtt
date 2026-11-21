@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Icon } from "./icons";
+import { GM } from "./gmTitle";
 
 // The GM's Folders window (the folder button along the top): Maelstrom's folders for what a GM adds (books and
 // modules as .kpack, sounds, this campaign's maps, dice, dice towers, GM icons, decals, wallpapers), each with how
@@ -62,7 +63,7 @@ export function FoldersWindow() {
     }
   };
 
-  if (!api?.contentFolders) return <p className="hint">The folders are in the GM's Maelstrom app.</p>;
+  if (!api?.contentFolders) return <p className="hint">{GM("The folders are in the GM's Maelstrom app.")}</p>;
   return (
     <div className="folders-window" data-window="folders">
       <div className="folders-bar">

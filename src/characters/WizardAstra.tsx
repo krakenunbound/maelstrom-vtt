@@ -3,6 +3,7 @@ import { useHostRolls } from "./Wizard2e";
 import { priceOf } from "../../shared/shop.mjs";
 import type { Session, TableRecord } from "../session/useSession";
 import { SKILLS, SPREAD, STAT_NAMES, STATS, dm, pathTricks, signed, skillList } from "../../shared/astra/rules.mjs";
+import { GM } from "../ui/gmTitle";
 
 // The Apeira Astra crew wizard, moved unchanged from SheetAstra.tsx when the sheet went onto the core parts
 // (shared/astra/manifest.mjs).
@@ -160,7 +161,7 @@ export function WizardAstra({ session, onDone }: { session: Session; onDone: (id
           {picker(minorRecord, minorSkills, setMinorSkills, 2, "minor")}
         </>
       ) : null}
-      <p className="hint" data-wizard-tricks title="A new crew member has no Marks: the GM awards them in play, and each teaches one of these">
+      <p className="hint" data-wizard-tricks title={GM("A new crew member has no Marks: the GM awards them in play, and each teaches one of these")}>
         Tricks to learn with Marks later:{" "}
         {[majorRecord, minor !== major ? minorRecord : undefined]
           .filter((item): item is TableRecord => Boolean(item))

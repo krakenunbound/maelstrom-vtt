@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Session, TableClock } from "../session/useSession";
 import { Icon } from "../ui/icons";
+import { GM } from "../ui/gmTitle";
 
 // Progress clocks (the Blades in the Dark SRD's, for every game): a circle
 // of segments filled as trouble mounts or effort pays off. The GM makes them
@@ -51,7 +52,7 @@ export function ClocksStrip({ session }: { session: Session }) {
   return (
     <div className="clocks-strip" data-clocks-strip={list.length} aria-label="Clocks">
       {list.map((clock) => (
-        <div key={clock.id} className={`clocks-strip-item${clock.shown ? "" : " gm-only"}`} data-clock={clock.name} data-filled={clock.filled} title={`${clock.name}: ${clock.filled}/${clock.segments} (${KIND_WORDS[clock.kind] ?? clock.kind})${clock.shown ? "" : " · the GM's alone"}${clock.note ? `\n${clock.note}` : ""}`}>
+        <div key={clock.id} className={`clocks-strip-item${clock.shown ? "" : " gm-only"}`} data-clock={clock.name} data-filled={clock.filled} title={GM(`${clock.name}: ${clock.filled}/${clock.segments} (${KIND_WORDS[clock.kind] ?? clock.kind})${clock.shown ? "" : " · the GM's alone"}${clock.note ? `\n${clock.note}` : ""}`)}>
           <ClockFace clock={clock} size={34} />
           <span>{clock.name}</span>
         </div>
@@ -87,7 +88,7 @@ export function ClocksWindow({ session }: { session: Session }) {
       {list.length === 0 ? (
         <p className="hint empty-state">
           <b>No clocks yet</b>
-          {gm ? "Make one below: 4 segments for a complex obstacle, 6 for a more complicated one, 8 for a daunting one." : "The GM's clocks show here when they share them."}
+          {gm ? "Make one below: 4 segments for a complex obstacle, 6 for a more complicated one, 8 for a daunting one." : GM("The GM's clocks show here when they share them.")}
         </p>
       ) : null}
       <div className="clocks-grid">
@@ -100,7 +101,7 @@ export function ClocksWindow({ session }: { session: Session }) {
                 {clock.filled}/{clock.segments} · {KIND_WORDS[clock.kind] ?? clock.kind}
                 {clock.rival ? ` · races ${list.find((item) => item.id === clock.rival)?.name ?? "?"}` : ""}
                 {clock.after ? ` · after ${list.find((item) => item.id === clock.after)?.name ?? "?"}` : ""}
-                {clock.shown ? "" : " · GM only"}
+                {clock.shown ? "" : GM(" · GM only")}
               </small>
               {clock.note ? <small className="hint">{clock.note}</small> : null}
               {gm ? (

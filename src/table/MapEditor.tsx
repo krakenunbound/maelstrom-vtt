@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import type { DecalItem, EditWall, MapLabel, MapTile, SceneLightRecord, TableMap, WallKind } from "../session/useSession";
 import type { SceneSettingsPatch } from "./SceneSettings";
 import { LIGHT_PRESETS } from "../../shared/map/geometry.mjs";
+import { GM } from "../ui/gmTitle";
 
 // The GM's map editor, as FG's image layer panel: tabs across the top (FG's
 // Line Of Sight, Lighting and Grid so far), a tool row for the tab and a
@@ -23,9 +24,9 @@ export const WALL_KIND_INFO: { kind: WallKind; label: string; icon: string; tip:
   { kind: "wall", label: "Wall", icon: "▮", tip: "Wall: blocks vision and movement.", color: "#FFFFBB" },
   { kind: "terrain", label: "Terrain", icon: "♣", tip: "Terrain: tokens can see into, but not out of or through, terrain.", color: "#81B90C" },
   { kind: "door", label: "Door", icon: "🚪", tip: "Door: blocks vision and movement until opened. Players open and close the doors they can see.", color: "#6666EE" },
-  { kind: "secret", label: "Secret door", icon: "⊘", tip: "Secret door: a door players never see until the GM opens it.", color: "#A612D4" },
-  { kind: "toggle", label: "Toggleable wall", icon: "⇄", tip: "Toggleable wall: blocks vision and movement; the GM switches it on and off.", color: "#E7C07A" },
-  { kind: "window", label: "Window", icon: "▦", tip: "Window: blocks movement, lets sight through. The GM or players can open it, and the GM can lock it (windows, portcullis).", color: "#C7D8FF" },
+  { kind: "secret", label: "Secret door", icon: "⊘", get tip() { return GM("Secret door: a door players never see until the GM opens it."); }, color: "#A612D4" },
+  { kind: "toggle", label: "Toggleable wall", icon: "⇄", get tip() { return GM("Toggleable wall: blocks vision and movement; the GM switches it on and off."); }, color: "#E7C07A" },
+  { kind: "window", label: "Window", icon: "▦", get tip() { return GM("Window: blocks movement, lets sight through. The GM or players can open it, and the GM can lock it (windows, portcullis)."); }, color: "#C7D8FF" },
   { kind: "illusion", label: "Illusionary wall", icon: "◌", tip: "Illusionary wall: blocks vision only (curtains, magical illusions).", color: "#CA81FF" },
   { kind: "invisible", label: "Invisible wall", icon: "┆", tip: "Invisible wall: blocks movement only.", color: "#77E7E8" },
   { kind: "ethereal", label: "Ethereal wall", icon: "≈", tip: "Ethereal wall: blocks vision, not movement.", color: "#CA81FF" },
@@ -699,7 +700,7 @@ function PaintTab(props: Props) {
             </select>
           </label>
         </div>
-        <p className="me-caption">Players draw with the play bar's pen; the GM's paint can be put in a group players do not see (make groups in the Text tab).</p>
+        <p className="me-caption">{GM("Players draw with the play bar's pen; the GM's paint can be put in a group players do not see (make groups in the Text tab).")}</p>
       </div>
       <div className="me-foot">
         <span className="hint">{map.drawings?.length ?? 0} drawings</span>
@@ -845,7 +846,7 @@ function FxTab(props: Props) {
         </div>
         {layers.map((item) => (
           <button key={item.id} type="button" className={item.id === selectedFx ? "me-layer-row on" : "me-layer-row"} data-fx={item.id} onClick={() => setSelectedFx(item.id)}>
-            ƒx {item.name || item.type} <small className="hint">{item.type}{item.mask.use ? ` · ${item.mask.polygons.length + (item.mask.strokes?.length ?? 0)} areas, ${item.mask.mode}` : ""}{item.players ? "" : " · GM only"}</small>
+            ƒx {item.name || item.type} <small className="hint">{item.type}{item.mask.use ? ` · ${item.mask.polygons.length + (item.mask.strokes?.length ?? 0)} areas, ${item.mask.mode}` : ""}{item.players ? "" : GM(" · GM only")}</small>
           </button>
         ))}
       </div>
@@ -1030,7 +1031,7 @@ function ImagesTab(props: Props) {
             🖼 {item.name || item.src.replace(/^lib\/[0-9a-f]{12}-/, "")}{" "}
             <small className="hint">
               {item.level === "above" ? "above tokens" : "below"}
-              {item.hidden ? " · GM only" : ""}
+              {item.hidden ? GM(" · GM only") : ""}
               {item.locked ? " · locked" : ""}
               {item.group ? ` · ${item.group}` : ""}
             </small>

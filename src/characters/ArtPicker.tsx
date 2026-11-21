@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "../ui/icons";
 import type { Session } from "../session/useSession";
+import { GM } from "../ui/gmTitle";
 
 export type ArtItem = { id: string; kind: "portrait" | "token"; group: string; name: string; video: boolean };
 
@@ -172,7 +173,7 @@ export function ArtPicker({
           </p>
         ) : null}
         {failed ? <p className="hint">The host's art library could not be read.</p> : null}
-        {items && items.length === 0 ? <p className="hint">No {kind}s yet: add one from your computer, or the GM adds them in the Folders window.</p> : null}
+        {items && items.length === 0 ? <p className="hint">No {kind}{GM("s yet: add one from your computer, or the GM adds them in the Folders window.")}</p> : null}
         <div className="art-grid">
           {current ? (
             <button type="button" className="art-cell art-clear" onClick={() => onPick(null)} title="No picture">

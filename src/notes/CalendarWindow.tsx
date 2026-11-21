@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { CalendarNote, Session } from "../session/useSession";
 import { Icon } from "../ui/icons";
 import { calendarOf, dateWords, monthsOf, weekday } from "../../shared/calendars.mjs";
+import { GM } from "../ui/gmTitle";
 
 // FG's Calendar (with the GM's Kraken Calendar Notes): the year's months laid
 // out, today marked, a day's notes underlined in its writer's colour. A click
@@ -51,7 +52,7 @@ export function CalendarWindow({ session }: { session: Session }) {
         <span>{note.text}</span>
         {mine ? (
           <span className="cal-note-tools">
-            <button type="button" className="ghost icon-button" data-action="cal-note-shown" aria-pressed={note.shown} title={note.by ? (note.shown ? "The whole table sees it: click to keep it to you and the GM" : "Kept to you and the GM: click to show the table") : note.shown ? "The players see it: click to keep it to the GM" : "The GM's alone: click to show the players"} onClick={() => op({ action: "note-update", id: note.id, patch: { shown: !note.shown } })}>
+            <button type="button" className="ghost icon-button" data-action="cal-note-shown" aria-pressed={note.shown} title={note.by ? (note.shown ? GM("The whole table sees it: click to keep it to you and the GM") : GM("Kept to you and the GM: click to show the table")) : note.shown ? GM("The players see it: click to keep it to the GM") : GM("The GM's alone: click to show the players")} onClick={() => op({ action: "note-update", id: note.id, patch: { shown: !note.shown } })}>
               <Icon name={note.shown ? "eye" : "lock"} size={14} />
             </button>
             <button type="button" className="ghost icon-button" data-action="cal-note-remove" title="Remove this note" aria-label="Remove this note" onClick={() => op({ action: "note-remove", id: note.id })}>
@@ -179,7 +180,7 @@ export function CalendarWindow({ session }: { session: Session }) {
           <ul className="cal-notes" data-cal-notes="players">
             {playerNotes.length ? playerNotes.map(noteRow) : <li className="hint cal-none">None on this day.</li>}
           </ul>
-          <h4>GM notes</h4>
+          <h4>{GM("GM notes")}</h4>
           <ul className="cal-notes" data-cal-notes="gm">
             {gmNotes.length ? gmNotes.map(noteRow) : <li className="hint cal-none">None on this day.</li>}
           </ul>
@@ -204,9 +205,9 @@ export function CalendarWindow({ session }: { session: Session }) {
             }}
           />
           <div className="cal-add">
-            <label className="check" title={gm ? "Only you see it" : "Only you and the GM see it"}>
+            <label className="check" title={gm ? "Only you see it" : GM("Only you and the GM see it")}>
               <input type="checkbox" checked={keep} data-field="cal-keep" onChange={(event) => setKeep(event.target.checked)} />
-              <Icon name="lock" size={13} /> {gm ? "GM only" : "Just me and the GM"}
+              <Icon name="lock" size={13} /> {gm ? GM("GM only") : GM("Just me and the GM")}
             </label>
             <button type="button" className="play-button" data-action="cal-note-add" disabled={!draft.trim()} onClick={add}>
               <Icon name="plus" size={14} /> Add note

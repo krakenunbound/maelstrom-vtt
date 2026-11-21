@@ -72,12 +72,14 @@ function fitsRuleset(info, ruleset) {
 // Handbook, a player's guide, gear and characters) starts open to the players
 // when made active; the GM's (monsters, the GM's guide) starts closed, and
 // the GM may open it.
-const ADVENTURE = /\badventures?\b|\bmodules?\b|one-shot|scenario|encounters?\b|campaign\b/i;
 function isAdventure(info) {
   const words = `${info.title} ${info.category}`;
   if (/player'?s'? (guide|handbook)/i.test(words)) return false;
-  // By its name, or by what it holds: a module with story entries is an adventure, whatever it is called.
-  return ADVENTURE.test(words) || Boolean(info.hasStory);
+  // Where the shelf files it (a pack says, else shared/packs/organize.mjs works it out from its category and
+  // title, and only then from story entries): a rules book with story entries (2E's Complete handbooks, a
+  // DM's guide) is still a book.
+  const { organize } = require("../shared/packs/organize.mjs");
+  return organize(info).kind === "adventure";
 }
 const GM_ONLY = /monster|bestiary|creature|codex|keeper|dungeon ?master|\bdm\b|\bgm\b|game ?master|\badventures?\b|module|encounter|scenario|campaign|one-shot|treasure|developer/i;
 const PLAYERS = /player|handbook|adventurer|backpack|common room|character|pregen/i;
@@ -670,7 +672,7 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
         const align = String(block.align ?? "").split(",").map((part) => part.trim());
         const file = bitmapIn(block.image) || (typeof block.picture === "string" ? block.picture : "");
         const link = block.imagelink?.recordname ? resolve("imagewindow", block.imagelink.recordname) : null;
-        const picture = { file, caption: String(block.caption ?? ""), scale: Math.min(100, Math.max(10, Number(block.scale) || 100)), name: link?.name ?? String(block.caption ?? "") };
+        const picture = { file, caption: String(block.caption ?? ""), scale: Math.min(200, Math.max(10, Number(block.scale) || 100)), name: link?.name ?? String(block.caption ?? "") };
         const side = /left$/.test(type) || align[1] === "left" ? "left" : /right$/.test(type) || align[1] === "right" ? "right" : "";
         if (type === "header") blocks.push({ id: blockId(), kind: "header", text: words(block.text).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() });
         else if (["dualtext", "dualsidebar", "sidebarleft", "sidebarright"].includes(type) && (words(block.text).trim() || words(block.text2).trim())) blocks.push({ id: blockId(), kind: "twocol", text: words(block.text), html: toHtml(words(block.text), resolve), text2: words(block.text2), html2: toHtml(words(block.text2), resolve) });

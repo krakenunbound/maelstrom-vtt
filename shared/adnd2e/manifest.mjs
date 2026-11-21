@@ -66,6 +66,8 @@ export default {
   // Spells name their tradition in type (FG's 2E: Arcane for mages and bards, Divine for priests).
   spells: { casters: { field: "type", traditions: { Arcane: "\\b(mage|wizard|magic[- ]user|illusionist|bard|abjurer|conjurer|diviner|enchanter|invoker|necromancer|transmuter|wild mage|elementalist)\\b", Divine: "\\b(cleric|priest|druid|paladin|ranger|shaman|crusader|specialty priest)\\b" } } },
   names: ["AD&D 2E"],
+  // The one who runs the game, as the game calls them (the UI's words for the GM).
+  gm: "DM",
   blurb: "Second Edition with your 2E books: THAC0 and descending Armor Class, the five saving throws, d10 initiative lowest first, thief skills, multi-classing, your books' pregenerated characters.",
   engine: "shared/adnd2e/rules.mjs",
   host: { module: "electron/adnd2e.cjs" },

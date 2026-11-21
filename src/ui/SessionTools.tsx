@@ -6,6 +6,7 @@ import { Icon } from "./icons";
 import { startWhisper } from "./ChatDock";
 import "./session.css";
 import { cssRect, cssX, cssY, pageZoom } from "./pageZoom";
+import { GM } from "./gmTitle";
 
 // The session's own controls, apart from the game: the connection coming back,
 // the GM's pause, a bell rung for a player and a hand raised to the GM, the
@@ -54,7 +55,7 @@ export function PauseVeil({ session }: { session: Session }) {
     <div className="pause-veil" role="status" aria-live="polite" data-paused="player">
       <div className="pause-card">
         <Icon name="pause" size={40} />
-        <strong>The GM has paused the game</strong>
+        <strong>{GM("The GM has paused the game")}</strong>
         <span className="hint">Chat goes on; moves and rolls wait until the game goes on.</span>
       </div>
     </div>
@@ -90,7 +91,7 @@ export function HandButton({ session }: { session: Session }) {
       data-action="raise-hand"
       aria-pressed={up}
       aria-label={up ? "Lower your hand" : "Raise your hand"}
-      title={up ? "Your hand is up: the GM has been told. Click to lower it." : "Raise your hand: the GM hears a chime and sees it by your name"}
+      title={up ? GM("Your hand is up: the GM has been told. Click to lower it.") : GM("Raise your hand: the GM hears a chime and sees it by your name")}
       onClick={() => session.setPresence({ hand: !up })}
     >
       <Icon name="raise" size={16} />
@@ -344,7 +345,7 @@ export function PlayerMenu({ session, menu, onClose }: { session: Session; menu:
           <>
             <p className="player-menu-name" aria-hidden="true">
               {menu.character.name}
-              <small> {menu.character.owner ? `(${menu.character.owner}'s)` : menu.character.released ? "(released)" : "(the GM's)"}</small>
+              <small> {menu.character.owner ? `(${menu.character.owner}'s)` : menu.character.released ? "(released)" : GM("(the GM's)")}</small>
             </p>
             {session.players
               .filter((item) => item.role === "player" && !item.lost && item.name.toLowerCase() !== menu.character!.owner.toLowerCase())
@@ -360,7 +361,7 @@ export function PlayerMenu({ session, menu, onClose }: { session: Session; menu:
             ) : null}
             {menu.character.owner || menu.character.released ? (
               <button type="button" role="menuitem" data-menu="keep" title="Yours: no player holds it, and players cannot see or take it" onClick={done(() => void session.characterOwner(menu.character!.id, "keep").catch(() => undefined))}>
-                <Icon name="lock" size={15} /> Keep as the GM's
+                <Icon name="lock" size={15} /> {GM("Keep as the GM's")}
               </button>
             ) : null}
             {menu.name ? <hr /> : null}
@@ -374,7 +375,7 @@ export function PlayerMenu({ session, menu, onClose }: { session: Session; menu:
         </p>
         {/* A private message: only the two of them and the GM (who sees every whisper) read it. */}
         {whisper ? (
-          <button type="button" role="menuitem" data-menu="whisper" title={gm ? `Only ${menu.name} reads it` : `Only ${menu.name} and the GM read it`} onClick={done(() => startWhisper(menu.name))}>
+          <button type="button" role="menuitem" data-menu="whisper" title={gm ? `Only ${menu.name} reads it` : GM(`Only ${menu.name} and the GM read it`)} onClick={done(() => startWhisper(menu.name))}>
             <Icon name="whisper" size={15} /> Whisper
           </button>
         ) : null}

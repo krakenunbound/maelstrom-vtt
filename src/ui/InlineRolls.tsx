@@ -5,6 +5,7 @@ import { splitInlineRolls, type InlinePiece } from "../../shared/text/inlineRoll
 import { actionLine, splitActionLinks, type GroupRoll, type LinkAction } from "../../shared/text/actionLinks.mjs";
 import { CONDITIONS } from "../../shared/actions/effects.mjs";
 import { EFFECT_DRAG } from "../effects/drops";
+import { GM } from "./gmTitle";
 
 // Action links (shared/text/actionLinks.mjs): a check, save or skill against a DC, damage, healing,
 // an XP award, a condition, from Foundry's markup or a book's own words. The game's group rolls say
@@ -19,11 +20,11 @@ const conditionOf = (word: string) => {
 };
 const actionTitle = (action: LinkAction) =>
   action.type === "test"
-    ? `${action.dc ? `DC ${action.dc} ` : ""}${action.name} ${action.kind === "save" ? "save" : "check"}: a click rolls your character's (the GM's asks the players for theirs)`
+    ? GM(`${action.dc ? `DC ${action.dc} ` : ""}${action.name} ${action.kind === "save" ? "save" : "check"}: a click rolls your character's (the GM's asks the players for theirs)`)
     : action.type === "damage"
       ? `Roll ${action.formula}${action.damageType ? ` ${action.damageType}` : ""}${action.heal ? " healing" : " damage"}; drag the card onto a creature`
       : action.type === "award"
-        ? `Award ${action.xp} XP to the party (the GM's)`
+        ? GM(`Award ${action.xp} XP to the party (the GM's)`)
         : `${conditionOf(action.word)?.text ?? action.word}: drag it onto a creature to apply it`;
 // What a click does: the chat line it stands for (the condition's is a drag).
 const runAction = (action: LinkAction) => {

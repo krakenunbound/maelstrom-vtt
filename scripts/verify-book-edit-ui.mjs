@@ -163,6 +163,42 @@ try {
   await tool("kraken_books", { action: "page-set", book: handbook.id, page: second.id, blocks: [{ kind: "header", text: "From the agent" }, { kind: "text", text: "<p>Written by the agent.</p>" }] });
   await page.waitForSelector(`[data-book-page="${second.id}"] .book-header:has-text("From the agent")`, { timeout: 10000 });
   report.push("kraken_books page-set: the open page shows it at once");
+  // 7. An image, in a book with pictures: made smaller and bigger, the picture itself changes size.
+  let pictured = null;
+  for (const book of await tool("kraken_books", { action: "list" })) {
+    if (!book.hasBook) continue;
+    if (!book.active) await tool("kraken_books", { action: "activate", book: book.id }).catch(() => undefined);
+    const toc = await tool("kraken_books", { action: "contents", book: book.id }).catch(() => null);
+    const firstPage = toc?.chapters.flatMap((c) => c.sections.flatMap((s) => s.pages))[0];
+    const file = toc?.pictures?.[0]?.file ?? toc?.assets?.[0];
+    if (file && firstPage) {
+      pictured = { book, page: firstPage, file };
+      break;
+    }
+  }
+  assert(pictured, "a book with pages and pictures");
+  await tool("kraken_books", { action: "page-set", book: pictured.book.id, page: pictured.page.id, blocks: [{ kind: "picture", file: pictured.file, caption: "Sized", scale: 100, align: "center" }] });
+  await tool("kraken_quickslots", { slots: [{ kind: "book", book: pictured.book.id, page: pictured.page.id, label: pictured.page.name }, null, null, null, null, null, null, null, null, null, null, null] });
+  await page.click('[data-quick-slot="0"]');
+  const pictureSheet = `[data-window="book"][aria-label="${pictured.page.name}"] [data-book-page="${pictured.page.id}"]`;
+  const img = `${pictureSheet} .book-block.kind-picture img`;
+  await page.waitForFunction((selector) => document.querySelector(selector)?.complete && document.querySelector(selector).naturalWidth > 0, img, { timeout: 20000 });
+  await page.click(`${pictureSheet} [data-action="page-lock"]`);
+  const sizeOf = () => page.$eval(img, (element) => ({ shown: Math.round(element.getBoundingClientRect().width), natural: element.naturalWidth }));
+  const full = await sizeOf();
+  for (let n = 0; n < 5; n += 1) await page.click(`${pictureSheet} .book-block.kind-picture [data-action="image-smaller"]`);
+  await page.waitForFunction(([selector, was]) => document.querySelector(selector).getBoundingClientRect().width < was * 0.6, [img, full.shown], { timeout: 10000 });
+  const half = await sizeOf();
+  await page.click(`${pictureSheet} .book-block.kind-picture [data-action="image-bigger"]`);
+  await page.waitForFunction(([selector, was]) => document.querySelector(selector).getBoundingClientRect().width > was, [img, half.shown], { timeout: 10000 });
+  const bigger = await sizeOf();
+  await settle(600);
+  const sized = await tool("kraken_books", { action: "page", book: pictured.book.id, page: pictured.page.id });
+  assert(sized.blocks[0]?.scale === 60, `the image's size kept: ${JSON.stringify(sized.blocks[0])}`);
+  await page.click(`${pictureSheet} [data-action="page-lock"]`);
+  await tool("kraken_books", { action: "page-revert", book: pictured.book.id, page: pictured.page.id });
+  report.push(`an image in "${pictured.book.title}": ${full.shown}px wide (its own ${full.natural}px), five times smaller ${half.shown}px, once bigger ${bigger.shown}px (60% kept)`);
+
   assert(failures.length === 0, `page errors: ${failures.join(" | ")}`);
   console.log(`ok book edit ui:\n  ${report.join("\n  ")}\n  ${path.join(tmpdir(), "kraken-book-edit.png")}`);
 } finally {

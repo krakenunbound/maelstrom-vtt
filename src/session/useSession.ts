@@ -7,6 +7,7 @@ import { diceStore, rolling, throwIntent } from "../dice/diceStore";
 import { rulerStore } from "../table/Ruler";
 import { exploredStore } from "../table/explored";
 import { setItemUser } from "../effects/drops";
+import { GM } from "../ui/gmTitle";
 
 // afk: away (/afk); idle: no input for a while; hand: a raised hand; lost: the connection dropped, a reconnect awaited.
 export type Seat = { id: string; name: string; role: "dm" | "player"; afk?: boolean; idle?: boolean; hand?: boolean; lost?: boolean };
@@ -621,7 +622,7 @@ export function useSession() {
           if (settled) return;
           settled = true;
           socket.close();
-          reject(new Error(`No table answered at ${label} in time. Check that the GM has pressed Play and that the address and port match. From another computer, the GM's firewall must allow Maelstrom VTT.`));
+          reject(new Error(GM(`No table answered at ${label} in time. Check that the GM has pressed Play and that the address and port match. From another computer, the GM's firewall must allow Maelstrom VTT.`)));
         }, 8000);
 
         // refused: the table said no (a wrong password, a ban): trying again would not help.
@@ -645,7 +646,7 @@ export function useSession() {
           if (msg.type === "no") {
             // The account would not take this browser's token (a new password, signed out elsewhere): forget it.
             if (msg.account === "password") forgetSignIn(label);
-            fail(typeof msg.reason === "string" ? msg.reason : "Wrong password.", !msg.retry);
+            fail(typeof msg.reason === "string" ? GM(msg.reason) : "Wrong password.", !msg.retry);
             return;
           }
           if (msg.type === "ok" && !settled) {
@@ -752,7 +753,7 @@ export function useSession() {
             return;
           }
           if (msg.type === "notice" && typeof msg.text === "string") {
-            const text = msg.text;
+            const text = GM(msg.text);
             setNotice(text);
             window.setTimeout(() => setNotice((current) => (current === text ? null : current)), 2500);
           }
@@ -780,7 +781,7 @@ export function useSession() {
           }
           if (msg.type === "sound-triggers" && Array.isArray(msg.triggers)) setSoundTriggers(msg.triggers as SoundTrigger[]);
           if (msg.type === "kicked") {
-            sentAway = String(msg.reason ?? "The GM has asked you to leave the table.");
+            sentAway = GM(String(msg.reason ?? "The GM has asked you to leave the table."));
             setError(sentAway);
           }
           if (msg.type === "content-refreshed") setContentAt(Number(msg.at) || Date.now());
@@ -835,7 +836,7 @@ export function useSession() {
           }
           // Seated, a refusal is shown (Desktop's toast) and kept in the chat log as the seat's own line.
           if (msg.type === "error" && typeof msg.reason === "string") {
-            const reason = msg.reason;
+            const reason = GM(msg.reason);
             setError(reason);
             setChat((current) => [...current, { id: "local", from: "Table", text: reason, at: Date.now(), local: true }].slice(-1000));
           }
@@ -851,7 +852,7 @@ export function useSession() {
             fail(
               opened
                 ? "The table closed the connection before you were seated. Try again."
-                : `No table answered at ${label}. Check that the GM has pressed Play and that the address and port match. From another computer, the GM's firewall must allow Maelstrom VTT.`,
+                : GM(`No table answered at ${label}. Check that the GM has pressed Play and that the address and port match. From another computer, the GM's firewall must allow Maelstrom VTT.`),
             );
             return;
           }
@@ -859,7 +860,7 @@ export function useSession() {
           if (generation.current !== gen || intentional.current || !seated) return;
           // Sent away (kicked, banned, signed in elsewhere), or the GM closed the table (4003): back to the join screen, saying why.
           if (sentAway || event.code === 4003 || !lastJoin.current || !reconnectRef.current) {
-            setError(sentAway || (event.code === 4003 ? "The GM closed the table." : "The table closed."));
+            setError(sentAway || (event.code === 4003 ? GM("The GM closed the table.") : "The table closed."));
             reset();
             return;
           }
@@ -1383,7 +1384,7 @@ export function useSession() {
   // One of the campaign's own maps (the GM's): as a map bundle (its one master), and its picture.
   const ownMap = useCallback(async (file: string) => {
     const response = await fetch(`${originRef.current}/table/own-map?token=${assetRef.current}&file=${encodeURIComponent(file)}`);
-    if (!response.ok) throw new Error(response.status === 404 ? "That map's picture is no longer in the campaign's Maps folder." : "Only the GM opens the campaign's own maps.");
+    if (!response.ok) throw new Error(response.status === 404 ? "That map's picture is no longer in the campaign's Maps folder." : GM("Only the GM opens the campaign's own maps."));
     return new Uint8Array(await response.arrayBuffer());
   }, []);
   const ownPictureUrl = useCallback((file: string) => (assetRef.current ? `${originRef.current}/table/own-picture?token=${assetRef.current}&file=${encodeURIComponent(file)}` : ""), []);

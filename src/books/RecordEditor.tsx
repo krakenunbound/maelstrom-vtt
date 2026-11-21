@@ -9,6 +9,7 @@ import { manifestOf } from "../rulesets/index";
 import { FormattedText } from "./Records";
 import { READ_FRAMES, ReadAloudButton } from "./readAloud";
 import { useContextMenu, type MenuItem } from "./Books";
+import { GM } from "../ui/gmTitle";
 
 // Editing the campaign's records, as FG's record windows do once their lock
 // is open: the GM's (or the owner's) pencil in the window's header, then the
@@ -34,7 +35,7 @@ export function playerNames(session: Session, record?: TableRecord) {
   return [...names.values()].sort((a, b) => a.localeCompare(b));
 }
 export const shareWords = (record: TableRecord) =>
-  isShared(record) ? "Shared with everyone" : sharedWith(record).length ? `Shared with ${sharedWith(record).join(", ")}` : record.visibility === "owner" && record.owner ? `${record.owner}'s` : "The GM's alone";
+  isShared(record) ? "Shared with everyone" : sharedWith(record).length ? `Shared with ${sharedWith(record).join(", ")}` : record.visibility === "owner" && record.owner ? `${record.owner}'s` : GM("The GM's alone");
 export function shareRecord(session: Session, record: TableRecord, visibility: Visibility) {
   return session.op({ op: "update", id: record.id, patch: { visibility } });
 }
@@ -121,7 +122,7 @@ export function ShareMenu({ session, record, words = false }: { session: Session
         ))}
         <hr />
         <button type="button" role="menuitemradio" aria-checked={!on} data-share="gm" onClick={() => (void shareRecord(session, record, "gm"), menu.current?.hidePopover())}>
-          <Icon name="eye-off" size={14} /> GM only
+          <Icon name="eye-off" size={14} />{GM(" GM only")}
         </button>
       </div>
     </>
@@ -368,8 +369,8 @@ export function TableRollBar({ session, record, book }: { session: Session; reco
         </select>
       ) : null}
       {gm ? (
-        <label title="The roll and its result for the GM alone">
-          <input type="checkbox" data-action="table-hide" checked={hide} onChange={(event) => setHide(event.target.checked)} /> GM only
+        <label title={GM("The roll and its result for the GM alone")}>
+          <input type="checkbox" data-action="table-hide" checked={hide} onChange={(event) => setHide(event.target.checked)} />{GM(" GM only")}
         </label>
       ) : null}
       {last ? <small className="hint" role="status">{last}</small> : null}
@@ -403,7 +404,7 @@ export function TableEditor({ session, record }: { session: Session; record: Tab
         <label>
           Columns <Field value={labels.length} editable number label="Columns" onSave={(value) => edit({ resultscols: Math.max(1, Math.min(30, Number(value) || 1)), rows: wire(resize(Math.max(1, Math.min(30, Number(value) || 1)))) })} />
         </label>
-        <label title="Its rolls for the GM alone">
+        <label title={GM("Its rolls for the GM alone")}>
           <input type="checkbox" checked={Number(record.data.hiderollresults) === 1} onChange={(event) => edit({ hiderollresults: event.target.checked ? 1 : 0 })} /> Hide rolls
         </label>
       </div>

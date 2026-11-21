@@ -391,6 +391,7 @@ export interface WindowSpec {
 export interface RulesetManifest {
   id: string; // data.ruleset on records: "cairn"
   names: string[]; // campaign names: ["Cairn"]; Fate: ["Fate Core", "Fate Accelerated"]
+  gm?: string; // what the game calls the one who runs it (default "GM"; AD&D 2E: "DM")
   variants?: Record<string, Partial<Omit<RulesetManifest, "variants" | "names">>>; // per name: Fate Accelerated, Descending Darkness, Starforged
   blurb: string; // the campaign screen's text
   engine: string | null; // "shared/cairn/rules.mjs"; null for no rules (Worldbuilding)

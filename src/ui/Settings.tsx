@@ -15,6 +15,7 @@ import { TokenOptionsSection } from "../table/TokenOptions";
 import { BookkeepingSettings } from "../bookkeeping/BookkeepingSettings";
 import { rulesetFor } from "../../shared/rulesets/registry.mjs";
 import { gameLanguages } from "../../shared/text/languages.mjs";
+import { GM } from "./gmTitle";
 
 // Settings, as FG's settings cog: a button for each thing to set. Everyone
 // sets their own dice; the GM also sets what the whole table sees.
@@ -57,7 +58,7 @@ function YouAtTheTable() {
       </div>
       <UiScaleRow />
       <Toggle label="Chime on your turn" hint="A soft chime when your turn comes round in combat." setting="turn-sound" checked={settings.turnSound !== false} onChange={(on) => diceStore.update({ turnSound: on })} />
-      <Toggle label="Read aloud on screen" hint="The GM's read-aloud text also pops up over the map in a bubble (it is always in the chat)." setting="read-aloud-popup" checked={settings.readAloud !== false} onChange={(on) => diceStore.update({ readAloud: on })} />
+      <Toggle label="Read aloud on screen" hint={GM("The GM's read-aloud text also pops up over the map in a bubble (it is always in the chat).")} setting="read-aloud-popup" checked={settings.readAloud !== false} onChange={(on) => diceStore.update({ readAloud: on })} />
       <Toggle label="Banner on your turn" hint="Your name across the screen when it is your turn." setting="turn-banner" checked={settings.turnBanner !== false} onChange={(on) => diceStore.update({ turnBanner: on })} />
       <Toggle label="Whose turn it is" hint="The portrait of whoever acts next, and the round as it begins, for a moment on every turn." setting="turn-card" checked={settings.turnCard !== false} onChange={(on) => diceStore.update({ turnCard: on })} />
     </SettingsSection>
@@ -81,8 +82,8 @@ export function SettingsWindow({ session }: { session: Session }) {
             <button type="button" className="settings-button" data-setting="wallpaper" onClick={() => windows.open("wallpapers", "Desktop Wallpaper")}>
               Desktop Wallpaper
             </button>
-            <button type="button" className="settings-button" data-setting="gmicon" onClick={() => windows.open("gmicons", "GM Icon")}>
-              GM Icon
+            <button type="button" className="settings-button" data-setting="gmicon" onClick={() => windows.open("gmicons", GM("GM Icon"))}>
+              {GM("GM Icon")}
             </button>
             <button type="button" className="settings-button" data-setting="tower-look" title="The dice tower's look: six drawn towers, painted ones, or a picture of your own" onClick={() => windows.open("towers", "Dice Tower")}>
               Dice Tower
@@ -94,7 +95,7 @@ export function SettingsWindow({ session }: { session: Session }) {
               Death Markers
             </button>
             {window.kraken?.openKrakenFolder ? (
-              <button type="button" className="settings-button" data-setting="kraken-folder" title="Documents/Kraken VTT: a folder for each kind of thing you add (books, dice packs, dice towers, GM icons, decals, wallpapers), each with a README on what goes in it and how to make one" onClick={() => void window.kraken?.openKrakenFolder?.("")}>
+              <button type="button" className="settings-button" data-setting="kraken-folder" title={GM("Documents/Kraken VTT: a folder for each kind of thing you add (books, dice packs, dice towers, GM icons, decals, wallpapers), each with a README on what goes in it and how to make one")} onClick={() => void window.kraken?.openKrakenFolder?.("")}>
                 Your Maelstrom folder
               </button>
             ) : null}

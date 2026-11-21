@@ -8,6 +8,7 @@ import { ACTION_DRAG } from "../effects/drops";
 import { Icon } from "../ui/icons";
 import { RestButtons } from "./RestButtons";
 import "./bookkeeping.css";
+import { GM } from "../ui/gmTitle";
 
 // The sheet's Supplies (a core part, placed on the inventory's tab): what bookkeeping counts for
 // this character, worked out from its inventory with the game's declaration
@@ -215,7 +216,7 @@ function LoadMeter({ load }: { load: NonNullable<ReturnType<typeof bk.encumbranc
         </span>
       </label>
       <small className={tone === "bad" ? "supplies-warn" : "hint"}>
-        {load.off ? "Not counted: the GM has switched encumbrance off." : load.level?.label}
+        {load.off ? GM("Not counted: the GM has switched encumbrance off.") : load.level?.label}
         {!load.off && load.level?.speed !== null && load.level?.speed !== undefined && load.level.base ? ` · speed ${load.level.base} to ${load.level.speed}` : ""}
         {!load.off && load.level?.text ? ` · ${load.level.text}` : ""}
         {load.note ? ` ${load.note}` : ""}

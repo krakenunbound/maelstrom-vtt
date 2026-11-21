@@ -6,6 +6,7 @@ import { useWindows } from "../ui/Windows";
 import { RichText } from "../core/fields/RichText";
 import { FormattedText } from "../books/Records";
 import { ShareMenu } from "../books/RecordEditor";
+import { GM, gmTitle } from "../ui/gmTitle";
 
 // Notes, as FG's Player Notes: everyone keeps their own; a note is its
 // writer's (and the GM's) until its writer shares it with the table. A note
@@ -21,7 +22,7 @@ function ModeToggle({ value, onChange, label, testId }: { value: "private" | "pu
     <div className="note-mode" role="radiogroup" aria-label={label} data-note-mode={testId}>
       {(
         [
-          ["private", "lock", "Private", "Only you (and the GM) read it"],
+          ["private", "lock", "Private", GM("Only you (and the GM) read it")],
           ["public", "share", "Public", "The whole table reads it"],
         ] as const
       ).map(([mode, icon, text, tip]) => (
@@ -103,7 +104,7 @@ export function NotesWindow({ session }: { session: Session }) {
             <span>
               <b>{record.name || "Untitled"}</b>
               <small>
-                {record.owner || "GM"}
+                {record.owner || gmTitle()}
                 {record.visibility === "all" ? " · public" : " · private"}
               </small>
             </span>
@@ -189,7 +190,7 @@ export function NoteWindow({ session, id }: { session: Session; id: string }) {
       </div>
       <div className="note-owner">
         <span>
-          <b>Owner:</b> {record.owner || "GM"}
+          <b>Owner:</b> {record.owner || gmTitle()}
         </span>
         {editable ? (
           <ModeToggle value={shared ? "public" : "private"} onChange={(mode) => save({ visibility: mode === "public" ? "all" : gm && record.owner === "" ? "gm" : "owner" })} label="This note is private or public" testId="note" />

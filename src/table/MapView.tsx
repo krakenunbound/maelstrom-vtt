@@ -31,6 +31,7 @@ import { DarknessAreas } from "./DarknessAreas";
 import { MoveApprovals, MoveRequestGhosts, RegionShapes, RevealedTraps, TokenPaths, TrapsSprung } from "./MovePlay";
 import { MapSoundMarkers, MapSoundsPanel } from "./MapSounds";
 import { MapVideo, isVideoScene } from "./MapVideo";
+import { GM } from "../ui/gmTitle";
 // three.js only loads when a scene has weather.
 const Weather = lazy(() => import("./Weather").then((module) => ({ default: module.Weather })));
 
@@ -2926,7 +2927,7 @@ function MapViewInner({
               ["ping", "ping", "Ping: click to show everyone a spot, in your colour"],
               ["draw", "pen", "Draw on the map, for everyone"],
               ["erase", "eraser", gm ? "Rub out a line (any)" : "Rub out one of your lines"],
-              ["target", "target", "Target mode: click a creature to target it (or not), drag a box to target every creature in it (Shift adds); with the selected creature, else yours (the GM's: whose turn it is)"],
+              ["target", "target", GM("Target mode: click a creature to target it (or not), drag a box to target every creature in it (Shift adds); with the selected creature, else yours (the GM's: whose turn it is)")],
               ["template", "template", "Area template: pick a shape and drag it out on the map; creatures inside become your targets"],
             ] as const
           ).map(([id, icon, title]) => (
@@ -3050,7 +3051,7 @@ function MapViewInner({
             </button>
           </div>
         ) : map.locked ? (
-          <span className="lock-note" title="The GM has locked token movement">
+          <span className="lock-note" title={GM("The GM has locked token movement")}>
             <Icon name="lock" size={14} /> Movement locked
           </span>
         ) : null}

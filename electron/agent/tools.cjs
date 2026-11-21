@@ -739,7 +739,7 @@ const TOOLS = [
       {
         action: { type: "string", enum: ["list", "activate", "deactivate", "contents", "page", "share", "unshare", "show", "hide", "shared", "sound", "sounds", "page-set", "page-revert", "contents-set", "contents-revert"] },
         chapters: { type: "array", items: { type: "object" }, description: "contents-set: [{ name, sections: [{ name, pages: [{ id?, name }] }] }], as contents gives them; a page without an id is added, empty" },
-        blocks: { type: "array", items: { type: "object" }, description: "page-set: the page's blocks in order: { kind: text, text (FG formatted text), frame? } | { kind: twocol, text, text2 } | { kind: header, text } | { kind: picture, file (a picture of this book), caption, scale 10-100, align } | { kind: textpic, side left|right, file, caption, scale, text } | { kind: links, links: [quick-slot links: a book page, a picture, a record, a sound...] }" },
+        blocks: { type: "array", items: { type: "object" }, description: "page-set: the page's blocks in order: { kind: text, text (FG formatted text), frame? } | { kind: twocol, text, text2 } | { kind: header, text } | { kind: picture, file (a picture of this book), caption, scale 10-200 (percent of the picture's own size), align } | { kind: textpic, side left|right, file, caption, scale, text } | { kind: links, links: [quick-slot links: a book page, a picture, a record, a sound...] }" },
         title: string("page-set: the page's title (else as it was)"),
         soundAction: { type: "string", enum: ["bind", "unbind", "add", "remove"] },
         key: string("A sound link's key (bind, unbind)"),

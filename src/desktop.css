@@ -1029,10 +1029,10 @@ span.ct-init { display: inline-block; }
 .book-toc-add:hover { color: var(--brass); border-color: var(--brass); }
 .book-page { min-height: 0; overflow: auto; padding: 8px 18px 18px; border: 1px solid var(--line); border-radius: 8px; background: rgba(0, 0, 0, 0.28); line-height: 1.5; }
 .book-page h2 { margin: 4px 0 12px; font-size: 1.25rem; }
-.book-figure { position: relative; margin: 8px 0 14px; text-align: center; }
+.book-figure { position: relative; max-width: 100%; min-width: 0; margin: 8px 0 14px; text-align: center; }
 .book-figure.left { text-align: left; }
 .book-figure.right { text-align: right; }
-.book-figure-open { padding: 0; border: none; background: transparent; cursor: pointer; }
+.book-figure-open { display: block; max-width: 100%; margin-inline: auto; padding: 0; border: none; background: transparent; cursor: pointer; }
 .book-figure img { max-width: 100%; height: auto; border-radius: 3px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55); }
 .book-figure figcaption { margin-top: 4px; font-size: 0.85rem; font-weight: 600; text-decoration: underline; }
 .book-figure .share-button { position: absolute; top: 6px; right: 6px; background: rgba(10, 14, 20, 0.8); }
@@ -1092,7 +1092,7 @@ span.ct-init { display: inline-block; }
 .book-twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 @container (max-width: 560px) { .book-twocol { grid-template-columns: 1fr; } }
 .book-textpic { display: flow-root; }
-.book-textpic .book-figure { margin: 4px 0 10px; }
+.book-textpic .book-figure { max-width: 60%; margin: 4px 0 10px; }
 .book-textpic.right .book-figure { float: right; margin-left: 16px; }
 .book-textpic.left .book-figure { float: left; margin-right: 16px; }
 .book-figure-row { display: flex; justify-content: center; }

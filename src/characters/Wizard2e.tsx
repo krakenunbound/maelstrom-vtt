@@ -5,6 +5,7 @@ import { ArtChoice } from "./ArtPicker";
 import { RailFrame, WizardPlate as Plate } from "../core/wizard/RailFrame";
 import { CLASSES, GROUPS, RACES, raceKey, signed, STATS } from "../../shared/adnd2e/rules.mjs";
 import * as W from "../../shared/adnd2e/wizard.mjs";
+import { GM } from "../ui/gmTitle";
 
 // The AD&D 2E character wizard: Kraken's FG extension KrakenCharWizard2E in
 // Kraken, tab for tab. Abilities (the PHB's Methods I to VI, as the GM
@@ -33,7 +34,7 @@ const plain = (html: unknown) =>
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 const LORE: Record<Page, string> = {
-  abilities: "Roll your six ability scores with one of the methods your GM allows. A Strength of 18 rolls its exceptional percentage (it counts for a warrior).",
+  get abilities() { return GM("Roll your six ability scores with one of the methods your GM allows. A Strength of 18 rolls its exceptional percentage (it counts for a warrior)."); },
   race: "Choose your race. Races your scores do not allow (PHB Table 7) are not listed; the race's adjustments are added to your scores.",
   class: "Choose your class: those your race may take and your scores allow. Set your starting level (up to your race's limit), and a multi-class (demihumans) or dual-class (humans) if the class type offers one.",
   kit: "A kit from your books, for your race and class, or No Kit.",
@@ -218,7 +219,7 @@ export function Wizard2e({ session, onDone }: { session: Session; onDone: (id: s
   // --- Abilities ---
   const setScore = (stat: string, value: number) => setAbilities((current) => ({ ...current, [stat]: value }));
   async function rollAll() {
-    if (options.rollLock && rolledAll) return say("Character Wizard: the GM has locked ability rolls - you may only roll once.");
+    if (options.rollLock && rolledAll) return say(GM("Character Wizard: the GM has locked ability rolls - you may only roll once."));
     const run = ++generation.current.attr;
     setRolling("attr");
     setAbilities({});
@@ -264,7 +265,7 @@ export function Wizard2e({ session, onDone }: { session: Session; onDone: (id: s
       setViPool(placed.pool);
       return setScore(stat, placed.score);
     }
-    if (options.rollLock && num(abilities[stat]) > 0) return say("Character Wizard: the GM has locked ability rolls - you may only roll once.");
+    if (options.rollLock && num(abilities[stat]) > 0) return say(GM("Character Wizard: the GM has locked ability rolls - you may only roll once."));
     setRolledAll(true);
     setRolling(stat);
     try {
@@ -275,7 +276,7 @@ export function Wizard2e({ session, onDone }: { session: Session; onDone: (id: s
     }
   }
   async function rollPercent() {
-    if (options.rollLock && rolledPct) return say("Character Wizard: the GM has locked ability rolls - you may only roll once.");
+    if (options.rollLock && rolledPct) return say(GM("Character Wizard: the GM has locked ability rolls - you may only roll once."));
     setRolledPct(true);
     const roll = await rollOnHost("1d100", "Exceptional Strength (d100)");
     setStrPercent(roll.total <= 0 ? 100 : roll.total);
@@ -445,7 +446,7 @@ export function Wizard2e({ session, onDone }: { session: Session; onDone: (id: s
         languages: [...known, ...languages],
         spells: spells.map((spell) => spell.name),
         ...Object.fromEntries(W.BIO_FIELDS.filter((key: string) => key !== "notes").map((key: string) => [key, bio[key] ?? ""])),
-        notes: [open.length ? `Unfinished in the character wizard (finish with your GM): ${open.join(" ")}` : "", bio.notes ?? ""].filter(Boolean).join("\n\n"),
+        notes: [open.length ? GM(`Unfinished in the character wizard (finish with your GM): ${open.join(" ")}`) : "", bio.notes ?? ""].filter(Boolean).join("\n\n"),
         ...art,
       };
       const id = await session.buildCharacter(spec);
@@ -542,7 +543,7 @@ export function Wizard2e({ session, onDone }: { session: Session; onDone: (id: s
                           ? `Method VI: click an ability's dice to add the largest die that fits (max 18). Unplaced dice: ${[...viPool].sort((a, b) => b - a).join("  ")}`
                           : "Method VI: every ability starts at 8. Roll All rolls 7d6; then place each die into an ability with its dice (whole die, max 18)."
                         : options.rollLock && rolledAll
-                          ? "Abilities rolled. The GM has locked re-rolls."
+                          ? GM("Abilities rolled. The GM has locked re-rolls.")
                           : methodRow.arrange
                             ? "Click one score, then another, to swap them (or drag)."
                             : "In order: the scores stay where they fall."}

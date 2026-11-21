@@ -11,6 +11,7 @@ import { imageWindow } from "../table/imageWindow";
 import { useReadAloudFrames } from "./readAloud";
 import { BookPages } from "./BookPages";
 import { BookContentsEditor } from "./BookContents";
+import { GM } from "../ui/gmTitle";
 
 // Books, as FG's Library: the Books window lists the campaign's active books
 // (by category, with their covers), and Activation every module for its game;
@@ -294,7 +295,7 @@ export function BooksWindow({ session, onOpenAdventure, start = "books" }: { ses
     if (openKind && !tree.some((kind) => kind.id === openKind)) setOpenKind("");
   }, [tree, openKind]);
   const empty = !gm
-    ? "The GM has not shared any books yet."
+    ? GM("The GM has not shared any books yet.")
     : search
       ? "No book has that name."
       : activation
@@ -323,8 +324,8 @@ export function BooksWindow({ session, onOpenAdventure, start = "books" }: { ses
       ) : null}
       {gm && tab === "packs" && canPack ? <PacksPanel ruleset={ruleset} /> : null}
       {gm && tab === "packs" ? null : activation ? (
-        <p className="hint books-intro" title="A Player's Handbook starts open to the players. Adventures are the GM's alone: show the players their pictures and maps from the book instead.">
-          The modules for {ruleset || "this campaign's game"}. <b>Active</b> puts a book in this campaign; <b>Players</b> lets the players read it too. Adventures stay the GM's.
+        <p className="hint books-intro" title={GM("A Player's Handbook starts open to the players. Adventures are the GM's alone: show the players their pictures and maps from the book instead.")}>
+          The modules for {ruleset || "this campaign's game"}. <b>Active</b> puts a book in this campaign; <b>Players</b> lets the players read it too. {GM("Adventures stay the GM's.")}
         </p>
       ) : null}
       <div className="books-list" role="list" hidden={gm && tab === "packs"}>
@@ -408,12 +409,12 @@ export function BooksWindow({ session, onOpenAdventure, start = "books" }: { ses
               <input type="checkbox" checked={item.active} data-activate={item.id} onChange={(event) => session.activateBook(item.id, event.target.checked)} /> Active
             </label>
             {item.hasBook && !item.adventure ? (
-              <label title={item.forPlayers ? "A players' book" : "The GM's book (it may hold spoilers)"}>
+              <label title={item.forPlayers ? "A players' book" : GM("The GM's book (it may hold spoilers)")}>
                 <input type="checkbox" checked={item.shared} disabled={!item.active} data-players={item.id} onChange={(event) => session.shareBook(item.id, event.target.checked)} /> Players
               </label>
             ) : item.adventure ? (
-              <span className="books-gm-only" title="An adventure is the GM's alone; show the players its pictures and maps">
-                GM only
+              <span className="books-gm-only" title={GM("An adventure is the GM's alone; show the players its pictures and maps")}>
+                {GM("GM only")}
               </span>
             ) : null}
           </span>
@@ -741,7 +742,7 @@ export function ImagesWindow({ session }: { session: Session }) {
     }
   }, [session.imageShown]);
   const active = tabs.find((tab) => keyOf(tab) === local.active) ?? tabs.at(-1);
-  if (!active) return <p className="hint">{gm ? "Open a picture or map from a book." : "The GM has not shown you any pictures yet."}</p>;
+  if (!active) return <p className="hint">{gm ? "Open a picture or map from a book." : GM("The GM has not shown you any pictures yet.")}</p>;
   return (
     <div className="images-window">
       <div className="images-tabs" role="tablist">

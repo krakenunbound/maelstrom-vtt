@@ -5,6 +5,7 @@ import { ArtChoice } from "./ArtPicker";
 import { RailFrame, WizardPlate as Plate } from "../core/wizard/RailFrame";
 import * as W from "../../shared/dnd35/wizard.mjs";
 import { ABILITY_PROSE, ALIGNMENT_DETAILS, ALIGNMENT_PROSE, CLASS_DETAILS, CLASS_PROSE, INSTRUCTIONS, RACE_DETAILS, RACE_MANUAL_NOTES, RACE_PROSE, WARNINGS } from "../../shared/dnd35/wizardText.mjs";
+import { GM } from "../ui/gmTitle";
 
 // The D&D 3.5E character wizard, a port of the GM's own Fantasy Grounds
 // extension (KrakenCharWizard35E): Abilities, Race, Class, Languages,
@@ -226,7 +227,7 @@ export function Wizard35({ session, onDone }: { session: Session; onDone: (id: s
   // --- Abilities ----------------------------------------------------------------
   async function rollAll() {
     if (method.manual) return say("Manual ability entry is selected. Type the scores directly.");
-    if (opts.rollLock && b.rolled) return say("Ability scores are locked after the first roll by the GM's option.");
+    if (opts.rollLock && b.rolled) return say(GM("Ability scores are locked after the first roll by the GM's option."));
     if (perAbility) return say("Classic 3d6 in order rolls one ability at a time. Use the dice button beside each score.");
     if (method.scores) {
       setB((current) => ({ ...current, rolled: true, lowRerolled: {}, rolledEach: Object.fromEntries(W.STATS.map((stat) => [stat, true])), abilities: Object.fromEntries(W.STATS.map((stat, index) => [stat, method.scores?.[index] ?? 10])) }));
@@ -245,7 +246,7 @@ export function Wizard35({ session, onDone }: { session: Session; onDone: (id: s
   }
   async function rollOne(stat: string) {
     if (!perAbility) return void rollAll();
-    if (opts.rollLock && b.rolledEach?.[stat]) return say("Ability scores are locked after the first roll by the GM's option.");
+    if (opts.rollLock && b.rolledEach?.[stat]) return say(GM("Ability scores are locked after the first roll by the GM's option."));
     setRolling(stat);
     setB((current) => ({ ...current, rolled: true }));
     try {

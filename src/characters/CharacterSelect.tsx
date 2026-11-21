@@ -5,6 +5,7 @@ import { Icon } from "../ui/icons";
 import { Picture } from "./ArtPicker";
 import { PlayerMenu, usePlayerMenu } from "../ui/SessionTools";
 import { canMakeBlank, createBlank, ExportButton, useCharacterFiles } from "./characterFiles";
+import { GM } from "../ui/gmTitle";
 
 // FG's Character Selection, what the sidebar's Characters opens for everyone:
 // the GM's charselect_host (every character at the table) and a player's
@@ -71,7 +72,7 @@ export function CharacterSelect({ session, onSheet, onWizard, onClose }: { sessi
   return (
     <section className="charselect" data-window="charselect">
       <div className="charselect-buttons">
-        <button type="button" className={editing ? "character-file-button on" : "character-file-button"} data-action="charselect-edit" aria-pressed={editing} aria-label="Edit the list" title="Edit the list: export a character, or (the GM) delete one" onClick={() => setEditing(!editing)}>
+        <button type="button" className={editing ? "character-file-button on" : "character-file-button"} data-action="charselect-edit" aria-pressed={editing} aria-label="Edit the list" title={GM("Edit the list: export a character, or (the GM) delete one")} onClick={() => setEditing(!editing)}>
           <Icon name="pen" size={15} />
         </button>
         <button
@@ -125,7 +126,7 @@ export function CharacterSelect({ session, onSheet, onWizard, onClose }: { sessi
                 className={mine ? "charselect-card mine" : free ? "charselect-card free" : "charselect-card held"}
                 data-charselect={entry.id}
                 disabled={!mine && !free}
-                title={mine ? `${entry.name}: open the sheet${gm ? " (right-click: give, release or keep it)" : ""}` : free ? `Look over ${entry.name} (Take to make it yours)` : entry.owner ? `${entry.name} is ${entry.owner}'s` : `${entry.name} is the GM's`}
+                title={mine ? `${entry.name}: open the sheet${gm ? " (right-click: give, release or keep it)" : ""}` : free ? `Look over ${entry.name} (Take to make it yours)` : entry.owner ? `${entry.name} is ${entry.owner}'s` : GM(`${entry.name} is the GM's`)}
                 onClick={() => void pick(entry)}
                 onContextMenu={gm ? (event) => menu.open(entry.owner, event, { id: entry.id, name: entry.name, owner: entry.owner, released: Boolean(entry.released) }) : undefined}
                 {...(mine ? slotDrag({ kind: "sheet", record: entry.id, label: entry.name }) : {})}
@@ -135,7 +136,7 @@ export function CharacterSelect({ session, onSheet, onWizard, onClose }: { sessi
                   <b>{entry.name}</b>
                   <small>Level {entry.level}</small>
                   {entry.classes || entry.species ? <small>{[entry.species, entry.classes].filter(Boolean).join(" · ")}</small> : null}
-                  <strong className="charselect-holder">{!entry.owner ? (entry.released === false ? "The GM's" : "Released") : gm ? `Owned by ${entry.owner}` : mine ? "Yours" : entry.owner}</strong>
+                  <strong className="charselect-holder">{!entry.owner ? (entry.released === false ? GM("The GM's") : "Released") : gm ? `Owned by ${entry.owner}` : mine ? "Yours" : entry.owner}</strong>
                 </span>
               </button>
               {!gm && free && !mine ? (

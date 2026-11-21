@@ -9,6 +9,7 @@ import { carriesCreatureDrop, dropOnCreature } from "../effects/drops";
 import { has, rulesetFor } from "../../shared/rulesets/registry.mjs";
 import { RestParty } from "../bookkeeping/RestParty";
 import { INVENTORY_DRAG, STASH_DRAG } from "../core/parts/Parts";
+import { GM } from "../ui/gmTitle";
 
 export type PartyMember = {
   id: string;
@@ -176,7 +177,7 @@ export function PartySheet({ session, compact = false }: { session: Session; com
                 ? characters.length
                   ? "Drag a character here from Character Selection (Characters in the sidebar), or choose one below: their hit points, armour and coins gather here."
                   : "There are no characters yet: make them in Character Selection (Characters in the sidebar), then drag them here."
-                : "The GM adds characters to the party."}
+                : GM("The GM adds characters to the party.")}
             </p>
           ) : null}
           <ul className="party-members">
@@ -286,7 +287,7 @@ export function PartySheet({ session, compact = false }: { session: Session; com
               <button
                 type="button"
                 data-action="party-from-here"
-                title="Add every character of the players at the table now and your own (the GM's: characters no player holds), and take out those whose player is not here"
+                title={GM("Add every character of the players at the table now and your own (the GM's: characters no player holds), and take out those whose player is not here")}
                 onClick={() => {
                   const here = new Set(session.players.filter((seat) => seat.role === "player" && !seat.lost).map((seat) => seat.name));
                   const keep = party.members.filter((member) => {
@@ -656,7 +657,7 @@ function OrderTab({ session, party }: { session: Session; party: PartyView }) {
   const placed = new Set(formation.slots.map((slot) => slot.id));
   const yours = party.members.filter(mine);
   const facingLabel = ["up", "right", "down", "left"][formation.facing] ?? "up";
-  if (party.members.length === 0) return <p className="hint">The party has no members yet. The GM adds them on the Main tab.</p>;
+  if (party.members.length === 0) return <p className="hint">{GM("The party has no members yet. The GM adds them on the Main tab.")}</p>;
   return (
     <div className="party-order-grid">
       <div className="order-tokens" aria-label="Your characters">

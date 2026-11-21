@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Session } from "../session/useSession";
 import { fateTableOf } from "../rulesets/fate";
 import { Icon } from "./icons";
+import { GM } from "./gmTitle";
 
 // Fate's Scene Aspects strip, over the table for everyone: the scene's
 // situation aspects, boosts and game aspects with their free invokes (dots),
@@ -50,15 +51,15 @@ export function FateStrip({ session }: { session: Session }) {
             {table.aspects.length === 0 ? <li className="hint">No aspects on the scene yet.</li> : null}
           </ul>
           {gm && !tools ? (
-            <span className="fate-pool" title="The GM's fate points for this scene">
-              GM pool <b data-gm-pool-count={table.gmpool}>{table.gmpool}</b>
-              <button type="button" className="ghost" data-action="fate-strip-gm" aria-label="The GM's scene tools" title="Add aspects, the GM's pool, a new scene, a new session" onClick={() => setTools(true)}>
+            <span className="fate-pool" title={GM("The GM's fate points for this scene")}>
+              {GM("GM pool ")}<b data-gm-pool-count={table.gmpool}>{table.gmpool}</b>
+              <button type="button" className="ghost" data-action="fate-strip-gm" aria-label={GM("The GM's scene tools")} title={GM("Add aspects, the GM's pool, a new scene, a new session")} onClick={() => setTools(true)}>
                 <Icon name="settings" size={14} />
               </button>
             </span>
           ) : gm ? (
             <div className="fate-strip-gm">
-              <button type="button" className="ghost" aria-label="Fold the GM's tools" title="Fold the GM's tools away" onClick={() => setTools(false)}>
+              <button type="button" className="ghost" aria-label={GM("Fold the GM's tools")} title={GM("Fold the GM's tools away")} onClick={() => setTools(false)}>
                 ×
               </button>
               <form
@@ -79,8 +80,8 @@ export function FateStrip({ session }: { session: Session }) {
                   Add
                 </button>
               </form>
-              <span className="fate-pool" title="The GM's fate points for this scene: one for each player character in it, at the scene's start">
-                GM pool
+              <span className="fate-pool" title={GM("The GM's fate points for this scene: one for each player character in it, at the scene's start")}>
+                {GM("GM pool")}
                 <button type="button" className="ghost" aria-label="One fate point less" data-action="gm-pool-down" disabled={table.gmpool <= 0} onClick={() => act("gm-pool", { amount: -1 })}>
                   −
                 </button>
@@ -89,7 +90,7 @@ export function FateStrip({ session }: { session: Session }) {
                   +
                 </button>
               </span>
-              <button type="button" data-action="scene-start" title="A new scene: the GM's pool is one fate point a player character; the last scene's situation aspects and boosts are gone (game aspects stay)" onClick={() => act("scene-start", {})}>
+              <button type="button" data-action="scene-start" title={GM("A new scene: the GM's pool is one fate point a player character; the last scene's situation aspects and boosts are gone (game aspects stay)")} onClick={() => act("scene-start", {})}>
                 New scene
               </button>
               <button type="button" data-action="refresh-all" title="A new session: every character's fate points back up to their refresh" onClick={() => act("refresh-all")}>
@@ -97,8 +98,8 @@ export function FateStrip({ session }: { session: Session }) {
               </button>
             </div>
           ) : (
-            <span className="fate-pool" title="The GM's fate points for this scene">
-              GM pool <b>{table.gmpool}</b>
+            <span className="fate-pool" title={GM("The GM's fate points for this scene")}>
+              {GM("GM pool ")}<b>{table.gmpool}</b>
             </span>
           )}
         </>

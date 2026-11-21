@@ -638,7 +638,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     if (!raw || typeof raw !== "object" || !BLOCK_KINDS.includes(raw.kind)) return null;
     const id = /^[\w-]{1,24}$/.test(String(raw.id ?? "")) ? String(raw.id) : `e${index}${crypto.randomBytes(3).toString("hex")}`;
     const words = (value) => sanitizeFormatted(typeof value === "string" ? value : "", 100000);
-    const picture = () => ({ file: text(raw.file, "").slice(0, 300), caption: text(raw.caption, "").slice(0, 200), name: text(raw.name, "").slice(0, 200), scale: Math.min(100, Math.max(10, Math.round(num(raw.scale, 100) / 10) * 10)) });
+    const picture = () => ({ file: text(raw.file, "").slice(0, 300), caption: text(raw.caption, "").slice(0, 200), name: text(raw.name, "").slice(0, 200), scale: Math.min(200, Math.max(10, Math.round(num(raw.scale, 100) / 10) * 10)) });
     if (raw.kind === "text") return { id, kind: "text", text: words(raw.text), frame: /^[a-z0-9]{0,20}$/.test(String(raw.frame ?? "")) ? String(raw.frame ?? "") : "" };
     if (raw.kind === "twocol") return { id, kind: "twocol", text: words(raw.text), text2: words(raw.text2) };
     if (raw.kind === "header") return { id, kind: "header", text: text(raw.text, "").slice(0, 200) };

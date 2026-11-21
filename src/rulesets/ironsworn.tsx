@@ -5,6 +5,7 @@ import { ProgressBoxes } from "../core/parts/ProgressBoxes";
 import { useSheet } from "../core/sheet/context";
 import { FormattedText } from "../books/Records";
 import { DEBILITIES, LEGACY, RANK_NAMES, RANKS, TRACK_KINDS, boxes, signed } from "../../shared/ironsworn/rules.mjs";
+import { GM } from "../ui/gmTitle";
 
 // Ironsworn's and Starforged's own parts, where no core part fits
 // (docs/core-ui-design.md 4.4, level 3): the initiative (or position) button
@@ -258,7 +259,7 @@ function MovesPanel({ record, session, editable, act }: { record: TableRecord; s
     setBusy(false);
     setVowName("");
   };
-  if (moves.length === 0) return <p className="hint cc-page">No moves yet: the GM makes the {game === "starforged" ? "Starforged" : "Ironsworn"} Reference active (Modules).</p>;
+  if (moves.length === 0) return <p className="hint cc-page">{GM("No moves yet: the GM makes the ")}{game === "starforged" ? "Starforged" : "Ironsworn"} Reference active (Modules).</p>;
   return (
     <section className="cc-panel cc-page iron-moves" data-tab-page="moves">
       <div className="iron-move-list">

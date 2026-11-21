@@ -12,6 +12,7 @@ import { presetsFor } from "../../shared/actions/effects.mjs";
 import { rulesetFor } from "../../shared/rulesets/registry.mjs";
 import { EFFECT_DRAG, type DropTarget } from "./drops";
 import "./effects.css";
+import { GM } from "../ui/gmTitle";
 
 type Item = { id: string; kind: string; label: string; icon: string; text: string; burn?: number | null; duration?: number; custom?: boolean; recordId?: string };
 const GROUPS: [string, string][] = [
@@ -69,7 +70,7 @@ export function EffectsWindow({ session }: { session: Session }) {
             </button>
           </>
         ) : (
-          <p className="muted">Drag one onto your character{allowed === "none" ? " (the GM has not allowed any)" : ""}.</p>
+          <p className="muted">Drag one onto your character{allowed === "none" ? GM(" (the GM has not allowed any)") : ""}.</p>
         )}
       </div>
       {editing ? (

@@ -49,6 +49,7 @@ import { cardsStore } from "../cards/cardsStore";
 import { entryId, Sidebar, type SidebarEntry, type SidebarGroup } from "./Sidebar";
 import { TurnCard } from "../combat/TurnCard";
 import { cssRect } from "./pageZoom";
+import { GM, gmTitle } from "./gmTitle";
 
 // The 3D dice (three.js and cannon) load when the table first shows them.
 const DiceLayer = lazy(() => import("../dice/DiceLayer"));
@@ -105,7 +106,7 @@ function PlayersWindow({ session, onMenu }: { session: Session; onMenu?: (name: 
               <span>{seat.name}</span>
               {seat.hand ? <span className="seat-hand" title="Hand raised"><Icon name="raise" size={14} title="Hand raised" /></span> : null}
               {state ? <small className="seat-state">{state === "reconnecting" ? "reconnecting…" : state}</small> : null}
-              <span className="seat-role">{seat.role === "dm" ? "GM" : "Player"}</span>
+              <span className="seat-role">{seat.role === "dm" ? gmTitle() : "Player"}</span>
               {controls ? (
                 <span className="seat-actions">
                   <button type="button" className="ghost icon-button" data-action="ring" aria-label={`Ring ${seat.name}'s bell`} title="Ring bell: a chime and a flash on their screen" disabled={seat.lost} onClick={() => session.ringPlayer(seat.name)}>
@@ -601,7 +602,7 @@ export function Desktop({
                           throw new Error("No map is open on the table.");
                         })()
                   : command.window === "gmicons"
-                    ? { kind: "gmicons" as const, title: "GM Icon" }
+                    ? { kind: "gmicons" as const, title: GM("GM Icon") }
                   : command.window === "towers"
                     ? { kind: "towers" as const, title: "Dice Tower" }
                   : command.window === "deathmarkers"
@@ -775,7 +776,7 @@ export function Desktop({
         <div className="desktop-surface" style={wallpaperStyle}>
           <div className="desktop-empty">
             <TableDecal session={session} />
-            {scene ? null : gm ? emptyGM : <p className="desktop-hint">The GM has not opened a map yet.</p>}
+            {scene ? null : gm ? emptyGM : <p className="desktop-hint">{GM("The GM has not opened a map yet.")}</p>}
           </div>
         </div>
 
