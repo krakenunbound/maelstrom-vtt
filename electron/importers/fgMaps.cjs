@@ -104,12 +104,18 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
   // What one square measures: FG's scale ("10ft", "5 ft", "1.5m"), else 5 ft.
   const scaleMatch = /^\s*(\d+(?:\.\d+)?)\s*([a-z]*)/i.exec(String(record.data?.scale ?? ""));
   const squareDistance = scaleMatch && Number(scaleMatch[1]) > 0 ? { value: Number(scaleMatch[1]), units: (scaleMatch[2] || "ft").toLowerCase() } : { value: 5, units: "ft" };
+  // The picture layer's own place: an older module's is 0 (FG's origin the picture's centre); a newer one's
+  // is half the picture (its origin the picture's top left, y up: Ghosts of Saltmarsh's (925, -925) on a 1850
+  // map). Every layer is placed from it, so walls, pins and tiles land on the picture either way.
   const baseAt = layerOffset(base);
-  // FG point -> scene pixel: from the picture's centre, y up.
-  const at = (x, y, layer = base) => {
+  const offsetOf = (layer) => {
     const shift = layerOffset(layer);
-    return { x: size.width / 2 + x + shift.x, y: size.height / 2 - (y + shift.y) };
+    return { x: shift.x - baseAt.x, y: shift.y - baseAt.y };
   };
+  // FG point (a wall's, a light's, a mask's) -> scene pixel. FG keeps these in the image's own coordinates
+  // (not moved with their layer): from its origin, y up. Measured on Saltmarsh's maps: walls land on the
+  // picture's lines this way (with the layer's place added again they fell off the picture).
+  const at = (x, y) => ({ x: size.width / 2 + x - baseAt.x, y: size.height / 2 - (y - baseAt.y) });
   const walls = [];
   let n = 0;
   for (const layer of layers) {
@@ -126,8 +132,8 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
       const move = occluder.allow_move ? 0 : 20;
       const dir = occluder.single_sided ? (occluder.counterclockwise ? 2 : 1) : 0;
       for (let i = 0; i + 3 < points.length; i += 2) {
-        const a = at(points[i], points[i + 1], layer);
-        const b = at(points[i + 2], points[i + 3], layer);
+        const a = at(points[i], points[i + 1]);
+        const b = at(points[i + 2], points[i + 3]);
         if (a.x === b.x && a.y === b.y) continue;
         walls.push({
           _id: `fg-${occluder.id ?? n}-${i / 2}`,
@@ -152,7 +158,7 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
       if (!Number.isFinite(x)) continue;
       // FG range: bright squares, bright intensity, dim squares, dim intensity.
       const [bright = 0, , dim = bright] = nums(light.range);
-      const point = at(x, y, layer);
+      const point = at(x, y);
       const color = /^#([0-9a-f]{2})?([0-9a-f]{6})$/i.exec(String(light.color ?? ""))?.[2];
       lights.push({ _id: `fg-light-${light.id}`, x: point.x, y: point.y, hidden: light.on === false, config: { bright: bright * 5, dim: Math.max(dim, bright) * 5, color: color ? `#${color}` : "#FFB347" } });
     }
@@ -160,7 +166,7 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
   // FG's shortcuts: map pins that open the story entry or encounter.
   const pins = [];
   for (const layer of layers.filter((item) => item.type === "shortcut" && item.shortcut?.record)) {
-    const shift = layerOffset(layer);
+    const shift = offsetOf(layer);
     const point = { x: size.width / 2 + shift.x, y: size.height / 2 - shift.y };
     const encounter = String(layer.name ?? "").startsWith("Encounter:");
     // The record it opens, without FG's module part ("@*": this module; "@Book": that one).
@@ -209,7 +215,7 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
       direction: Math.round((Number(layer.fx.RainDirection ?? 0.7) % 1) * 360),
       // Each of the mask's shapes (FG keeps one <points> a shape; a weather area may have several).
       mask: layer.fx.usemask && layer.fx.mask?.points ? { use: true, mode: "inside", polygons: list(layer.fx.mask.points).map((points) => nums(points).flatMap((value, index, all) => (index % 2 ? [] : (() => {
-        const p = at(value, all[index + 1], layer);
+        const p = at(value, all[index + 1]);
         return [Math.round(p.x), Math.round(p.y)];
       })()))) } : { use: false, mode: "inside", polygons: [] },
     }));
@@ -224,7 +230,7 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
     const own = art ? pictureSize(art.bytes) : null;
     if (!own) continue;
     const shape = layerShape(layer);
-    const shift = layerOffset(layer);
+    const shift = offsetOf(layer);
     const width = own.width * shape.sx;
     const height = own.height * shape.sy;
     const center = { x: size.width / 2 + shift.x, y: size.height / 2 - shift.y };
@@ -245,7 +251,7 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
   // FG's text layers: labels (a number is a numbered label of its group).
   const texts = [];
   for (const layer of layers.filter((item) => item.type === "text" && String(item.displayText ?? item.name ?? "").trim())) {
-    const shift = layerOffset(layer);
+    const shift = offsetOf(layer);
     const words = String(layer.displayText ?? layer.name).slice(0, 200);
     const fontSize = Number(layer.fontsize);
     texts.push({
@@ -365,7 +371,7 @@ function fgModuleBundle(moduleName, { only, all = false, file = "", picture = ()
       files[made.file] = new Uint8Array(painted);
     } else files[made.file] = new Uint8Array(made.bytes);
     scenes.push(made.scene);
-    extras[id] = { pins: [...made.pins, ...made.texts], fx: made.fx, tiles: made.tiles, groups: made.groups, gridOffset: made.gridOffset, legacyGridOffset: made.legacyGridOffset, walls: made.scene.walls.length, lights: made.scene.lights.length, frame: { image: String(record.data.fgPath ?? "").replace(/@.*$/, ""), module: label, width: made.scene.width, height: made.scene.height } };
+    extras[id] = { pins: [...made.pins, ...made.texts], fx: made.fx, tiles: made.tiles, groups: made.groups, gridOffset: made.gridOffset, legacyGridOffset: made.legacyGridOffset, walls: made.scene.walls.length, lights: made.scene.lights.length, frame: { image: String(record.data.fgPath ?? "").replace(/@.*$/, ""), module: label, width: made.scene.width, height: made.scene.height, base: made.baseAt } };
   }
   if (scenes.length === 0) throw new Error(`No maps in ${label}.`);
   files["bundle.json"] = strToU8(JSON.stringify({ adventureData: { name: label, scenes } }));

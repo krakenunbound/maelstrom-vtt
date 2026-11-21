@@ -63,5 +63,28 @@ assert(rain?.mask.polygons.length === 2, `every shape of a weather mask: ${JSON.
   assert(found?.mime === "image/png" && modulePicture("tokens/sea_hag.gif", path.join(dir, "Named.mod")) === null, `a picture by a near name, the same kind of file first; two of another kind: none (${found?.mime})`);
   assert(modulePicture("tokens/sea-hag.webp", path.join(dir, "Named.mod"))?.mime === "image/webp", "the token by its near name");
 }
+// A newer module's map (Saltmarsh's): its picture layer placed at half its size (FG's origin the picture's top
+// left, y up), its walls in the image's coordinates, a pin by its layer's place, an encounter's spot from the
+// top left: all land on the picture where FG has them.
+{
+  const WIDE = Buffer.from(PNG);
+  WIDE.writeUInt32BE(200, 16);
+  WIDE.writeUInt32BE(100, 20);
+  const db = `<root><encounter><enc_9><name type="string">9. Vault</name></enc_9></encounter><image>
+    <id-00004><name type="string">Vault</name><image type="image"><grid>on</grid><layers>
+      <layer><id>0</id><type>image</type><bitmap>vault.png</bitmap><matrix>1,0,0,0,0,1,0,0,0,0,1,0,100,-50,0,1</matrix><occluders>
+        <occluder><id>1</id><points>10,-20,190,-20</points></occluder>
+      </occluders></layer>
+      <layer><id>1</id><type>shortcut</type><matrix>1,0,0,0,0,1,0,0,0,0,1,0,30,-60,0,1</matrix><shortcut><class>encounter</class><record>encounter.enc_9@*</record></shortcut></layer>
+    </layers></image></id-00004></image></root>`;
+  fs.writeFileSync(path.join(dir, "Top.mod"), zipSync({ "definition.xml": strToU8("<root><name>Top</name><ruleset>5E</ruleset></root>"), "db.xml": strToU8(db), "vault.png": WIDE }));
+  const top = fgModuleBundle(path.join(dir, "Top.mod"), { all: true });
+  const scene = JSON.parse(new TextDecoder().decode(unzipSync(top.bytes)["bundle.json"])).adventureData.scenes[0];
+  const extra = Object.values(top.extras)[0];
+  const pin = extra.pins.find((item) => item.link);
+  assert(JSON.stringify(scene.walls[0].c) === JSON.stringify([10, 20, 190, 20]), `walls from the picture's top left: ${JSON.stringify(scene.walls[0].c)}`);
+  assert(pin.x === 30 && pin.y === 60 && pin.text === "9. Vault", `a pin where its layer is: ${JSON.stringify(pin)}`);
+  assert(extra.frame.base.x === 100 && extra.frame.base.y === -50, `the frame keeps the picture layer's place for encounters: ${JSON.stringify(extra.frame)}`);
+}
 fs.rmSync(dir, { recursive: true, force: true });
 console.log("ok fg classic maps: an older module's pins all come through, placed and named, a weather layer keeps every mask shape, a newer map's pins are named and linked, terrain is limited");

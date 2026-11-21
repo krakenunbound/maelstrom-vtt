@@ -414,6 +414,8 @@ export function App() {
       setCandidates(found);
       setAdventureIndex(index);
       const table = showAdventure(found[index]);
+      // A map opened (Open map, the agent): its window opens, even where the GM had closed the table's map.
+      reopenMap();
       // The campaign keeps the GM's own picture or bundle; a book's maps stay in the
       // book (read from it again when the campaign is hosted, while it is active).
       if (campaignId) {
@@ -456,6 +458,8 @@ export function App() {
       void publishCurrent(shown);
       saveView(candidates[at]?.name ?? table.name, shown.id);
     }
+    // Asked for by name: its window opens, even where the GM had closed it.
+    if (shown && (adventure || sceneName)) reopenMap();
     return {
       adventures: candidates.map((candidate) => candidate.name),
       adventure: candidates[at]?.name ?? table.name,
@@ -532,6 +536,11 @@ export function App() {
       if (open && open.scene.id === saved.sceneId && saved.picture) void live.current.openImage(open.own ? { book: "", own: true, file: open.file, name: open.scene.name } : { book: open.book, name: open.scene.name }).catch(() => undefined);
     });
   }, []);
+  // A map opened on purpose: no longer held closed, and its window to the front once the scene is set.
+  function reopenMap() {
+    setMapHeld("");
+    setTimeout(() => mapWindow.front?.(), 0);
+  }
   // The GM closed the table map's window: remembered, so hosting again does not open it.
   function closeTableMap(sceneId: string) {
     setMapHeld(sceneId);

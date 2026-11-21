@@ -88,6 +88,31 @@ pinTable.agent.map.seed("fg-pins", { pins: [pin(1, "1. Gate"), pin(2, "2. Hall")
 const pins = labelsOf();
 assert(pins.length === 3 && pins.map((item) => item.text).join("|") === "1. Gate|2. Hall|3. Vault".replace("1. Gate", pins[0].text), `the missing pins join, none twice: ${JSON.stringify(pins.map((item) => item.text))}`);
 await pinTable.stop();
+
+// A map's walls kept from a reading since put right (a newer FG module's fell a whole picture off, terrain as doors):
+// opened again, they take the import's place and kind; a wall the GM moved by hand stays; a door keeps its state.
+{
+  const wallTable = createTableServer();
+  const scene = (shift, terrainDoor) => ({ id: "fg-x-vault", name: "Vault", width: 200, height: 100, padding: 0, backgroundColor: "#000", grid: { size: 25, type: 1, distance: 5, units: "ft", color: "#000", alpha: 0.2 }, lights: [], tokens: [],
+    walls: [
+      ...[0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 14, 15].map((i) => ({ id: `fg-${i}-0`, x1: 10 + i * 20 + shift, y1: 20 - shift, x2: 20 + i * 20 + shift, y2: 20 - shift, sight: 20, light: 20, sound: 20, move: 20, dir: 0, door: 0, ds: 0 })),
+      { id: "fg-8-0", x1: 10 + shift, y1: 60 - shift, x2: 40 + shift, y2: 60 - shift, sight: terrainDoor ? 20 : 10, light: terrainDoor ? 20 : 10, sound: 10, move: 0, dir: 0, door: terrainDoor ? 1 : 0, ds: 0 },
+      { id: "fg-9-0", x1: 150 + shift, y1: 80 - shift, x2: 180 + shift, y2: 80 - shift, sight: 20, light: 20, sound: 20, move: 20, dir: 0, door: 1, ds: 0 },
+    ] });
+  wallTable.agent.map.setScene(scene(1850, true));
+  const kept = () => wallTable.agent.map.walls?.() ?? wallTable.agent.map.state?.().walls?.["fg-x-vault"];
+  const before = kept();
+  const door = before.find((wall) => wall.id === "fg-9-0");
+  door.ds = 2;
+  const moved = before.find((wall) => wall.id === "fg-4-0");
+  moved.x1 += 5;
+  wallTable.agent.map.setScene(scene(0, false));
+  const after = kept();
+  assert(after.find((wall) => wall.id === "fg-0-0").x1 === 10, `walls put back on the picture: ${JSON.stringify(after.find((wall) => wall.id === "fg-0-0"))}`);
+  assert(after.find((wall) => wall.id === "fg-8-0").kind === "terrain", `terrain read as terrain now: ${after.find((wall) => wall.id === "fg-8-0").kind}`);
+  assert(after.find((wall) => wall.id === "fg-9-0").ds === 2, "a locked door stays locked");
+  assert(after.find((wall) => wall.id === "fg-4-0").x1 === 10 + 80 + 1850 + 5, "a wall the GM moved stays where it is");
+}
 fs.rmSync(dir, { recursive: true, force: true });
 console.log("ok fg map grid: FG's offset from the picture's top left and its square's scale; the GM's grid settings saved with the map and kept when it is opened again");
 process.exit(0);

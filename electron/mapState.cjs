@@ -1437,10 +1437,31 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       scene = next;
       visionCache.clear();
       // The imported walls become the table's the first time; after that the table's own are kept.
+      // A wall of the scene as the table keeps it: its kind from its senses (Foundry's walls, FG's read as them).
+      const importWall = (wall) => cleanWall({ ...wall, kind: wall.door === 2 ? "secret" : wall.door === 1 ? "door" : Number(wall.sight) === 10 ? "terrain" : Number(wall.sight) === 0 && Number(wall.move) !== 0 ? "invisible" : Number(wall.move) === 0 && Number(wall.sight) !== 0 ? "ethereal" : Number(wall.sight) === 30 ? "window" : "wall", ...(Number(wall.sight) === 30 ? { sight: 30, light: Number(wall.light ?? 30), toggle: "none" } : {}) });
+      // The imported walls become the table's the first time; after that the table's own are kept.
       if (!state.walls[next.id]) {
-        state.walls[next.id] = (next.walls ?? [])
-          .map((wall) => cleanWall({ ...wall, kind: wall.door === 2 ? "secret" : wall.door === 1 ? "door" : Number(wall.sight) === 10 ? "terrain" : Number(wall.sight) === 0 && Number(wall.move) !== 0 ? "invisible" : Number(wall.move) === 0 && Number(wall.sight) !== 0 ? "ethereal" : Number(wall.sight) === 30 ? "window" : "wall", ...(Number(wall.sight) === 30 ? { sight: 30, light: Number(wall.light ?? 30), toggle: "none" } : {}) }))
-          .filter(Boolean);
+        state.walls[next.id] = (next.walls ?? []).map(importWall).filter(Boolean);
+      } else {
+        // Kept from a reading since put right (0.1.0-beta.1: a newer FG module's walls fell a whole picture off, its
+        // terrain read as doors): when nearly all the imported walls kept are off the import by one and the same
+        // amount, they become the import's (a door keeps whether it is open or locked); a wall the GM moved by hand is
+        // not off by that amount and stays as it is.
+        const fresh = new Map((next.walls ?? []).filter((wall) => wall?.id).map((wall) => [String(wall.id), wall]));
+        const kept = state.walls[next.id].filter((wall) => fresh.has(wall.id));
+        const deltaOf = (wall) => `${Math.round(wall.x1 - Number(fresh.get(wall.id).x1))},${Math.round(wall.y1 - Number(fresh.get(wall.id).y1))}`;
+        const counts = new Map();
+        for (const wall of kept) counts.set(deltaOf(wall), (counts.get(deltaOf(wall)) ?? 0) + 1);
+        const [shift, many] = [...counts].sort((a, b) => b[1] - a[1])[0] ?? ["0,0", 0];
+        if (shift !== "0,0" && kept.length >= 4 && many >= kept.length * 0.9) {
+          state.walls[next.id] = state.walls[next.id]
+            .map((wall) => {
+              if (!fresh.has(wall.id) || deltaOf(wall) !== shift) return wall;
+              const put = importWall(fresh.get(wall.id));
+              return put ? { ...put, ...(put.door ? { ds: wall.ds } : {}) } : wall;
+            })
+            .filter(Boolean);
+        }
       }
       liveScene();
       // A bundle's regions the first time (Foundry's: a Pause Game behaviour is a trap,
@@ -2209,8 +2230,26 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
     seed(sceneId, { pins = [], fx = [], tiles = [], groups = [], gridOffset = null, legacyGridOffset = null, frame = null } = {}) {
       const id = String(sceneId).slice(0, 80);
       // Which FG image the scene came from, and its size: to place an encounter's tokens where FG had them.
-      if (frame) state.frames[id] = { image: String(frame.image).slice(0, 160), module: String(frame.module).slice(0, 160), width: num(frame.width, 0), height: num(frame.height, 0) };
+      // base: the picture layer's place in FG (a newer module's origin is the picture's top left): encounters' spots are read from it.
+      if (frame) state.frames[id] = { image: String(frame.image).slice(0, 160), module: String(frame.module).slice(0, 160), width: num(frame.width, 0), height: num(frame.height, 0), base: { x: num(frame.base?.x, 0), y: num(frame.base?.y, 0) } };
       if (state.labels[id]) {
+        // Opened before 0.1.0-beta.1 put a newer module's map right: its pins linked "...@*@Book" and placed off by the
+        // picture layer's place (frame.base). Each such pin the GM has not moved takes its link and place now.
+        const base = frame?.base ?? { x: 0, y: 0 };
+        const byLink = new Map(pins.filter((pin) => pin.link?.id).map((pin) => [pin.link.id, pin]));
+        for (const label of state.labels[id]) {
+          if (!label.link?.id) continue;
+          const fixedId = label.link.id.replace(/@\*@/, "@");
+          const pin = byLink.get(fixedId);
+          if (!pin) continue;
+          if (fixedId !== label.link.id) label.link = { ...label.link, id: fixedId };
+          const wasAt = { x: Math.round(pin.x + num(base.x, 0)), y: Math.round(pin.y - num(base.y, 0)) };
+          if ((base.x || base.y) && Math.abs(label.x - wasAt.x) <= 1 && Math.abs(label.y - wasAt.y) <= 1) {
+            label.x = pin.x;
+            label.y = pin.y;
+            if (!label.text && pin.text) label.text = pin.text;
+          }
+        }
         // Opened before: the FG pins it lacks join it (an older module's map kept only its last pin until 0.1.0-beta.1);
         // the pins already there, and the GM's own, stay as they are.
         const have = new Set(state.labels[id].map((label) => label.link?.id).filter(Boolean));

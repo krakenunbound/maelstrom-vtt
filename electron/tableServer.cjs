@@ -3637,10 +3637,16 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
               const entry = combat.entries().find((item) => item.id === msg.id);
               if (!entry) throw new Error("No one like that is in the fight.");
               if (!map.scene()) throw new Error("Open a map first.");
-              const old = entry.tokenId ? map.tokens().find((token) => token.id === entry.tokenId) : null;
+              // A character keeps its one token on the map (FG): the one already there is moved and tied, not a second made.
+              const own = entry.tokenId ? map.tokens().find((token) => token.id === entry.tokenId) : null;
+              const isCharacter = records.get(entry.recordId)?.type === "character";
+              const old = own ?? (isCharacter ? map.tokens().find((token) => token.recordId === entry.recordId) : null);
               const x = num(msg.x, NaN);
               const y = num(msg.y, NaN);
-              if (old) return map.move(old.id, { x, y }, seat, { snap: true });
+              if (old) {
+                if (!own) combat.update(entry.id, { tokenId: old.id }, seat);
+                return map.move(old.id, { x, y }, seat, { snap: true });
+              }
               const token = map.place({ recordId: entry.recordId, name: entry.name, x, y, hidden: entry.hidden, faction: entry.faction, allowSecond: true }, seat);
               return combat.update(entry.id, { tokenId: token.id }, seat);
             }

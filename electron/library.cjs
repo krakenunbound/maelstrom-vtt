@@ -80,9 +80,12 @@ async function addBattle(table, fgPath, { place = true } = {}) {
   const frame = table.map.frame();
   const sceneId = (table.map.scene?.() ?? table.scene?.())?.id ?? null;
   const added = [];
+  // A creature linked with no book (FG's "npc.lizardfolk", or "@*") is the encounter's own book's.
+  const ownBook = moduleOf(battle.data?.fgPath ?? (typeof fgPath === "string" ? fgPath : ""));
   for (const row of rows(battle.data.npclist)) {
-    const npcPath = row.link?.recordname;
-    if (!npcPath) continue;
+    const linked = String(row.link?.recordname ?? "").replace(/@\*$/, "");
+    if (!linked) continue;
+    const npcPath = linked.includes("@") || !ownBook ? linked : `${linked}@${ownBook}`;
     const record = table.records.get(npcPath)?.type === "npc" ? table.records.get(npcPath) : ensureNpc(table, npcPath);
     const counted = /d/i.test(String(row.count ?? "")) ? table.dice.roll(String(row.count).replace(/\s+/g, "")).total : Number(row.count);
     const count = Math.max(1, Math.min(20, counted || 1));
@@ -96,8 +99,9 @@ async function addBattle(table, fgPath, { place = true } = {}) {
       if (!place || !spot || (!frame && !own.length)) return;
       // FG's map position (an encounter's maplink): from the picture's centre, y down (its pins'
       // matrices are y up; B2's 69 encounters sit on their pins only read this way); Kraken's: the map's own.
-      const x = own.length ? Number(spot.x) : frame.width / 2 + Number(spot.imagex);
-      const y = own.length ? Number(spot.y) : frame.height / 2 + Number(spot.imagey);
+      // A newer module's map has its origin at the picture's top left (the picture layer's place, frame.base).
+      const x = own.length ? Number(spot.x) : frame.width / 2 + Number(spot.imagex) - Number(frame.base?.x ?? 0);
+      const y = own.length ? Number(spot.y) : frame.height / 2 + Number(spot.imagey) + Number(frame.base?.y ?? 0);
       const unknown = String(row.unidentified ?? "").trim() || (Number(record.data?.isidentified) === 0 && record.data?.nonid_name ? String(record.data.nonid_name) : "");
       const token = table.map.place({ recordId: record.id, name: entry.name, x, y, hidden: true, ...(unknown ? { unidentified: unknown } : {}), faction: row.faction === "friend" ? "friend" : row.faction === "neutral" ? "neutral" : "foe", allowSecond: true }, table.seat);
       // Hidden on the map is hidden in the tracker too (and from the turn card): the eye reveals both together.

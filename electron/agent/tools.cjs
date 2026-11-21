@@ -1341,7 +1341,10 @@ const TOOLS = [
       else if (action === "place-token") {
         const entry = combat.entries().find((item) => item.id === args.id);
         if (!entry) throw new Error(`No entry ${args.id}.`);
-        const old = entry.tokenId ? map.tokens().find((token) => token.id === entry.tokenId) : null;
+        // A character keeps its one token on the map (FG): the one already there is moved and tied, not a second made.
+        const own = entry.tokenId ? map.tokens().find((token) => token.id === entry.tokenId) : null;
+        const old = own ?? (agent.records.get(entry.recordId)?.type === "character" ? map.tokens().find((token) => token.recordId === entry.recordId) : null);
+        if (old && !own) combat.update(entry.id, { tokenId: old.id }, seat);
         if (old) map.move(old.id, { x: Number(args.x), y: Number(args.y) }, seat, { snap: true });
         else {
           const token = map.place({ recordId: entry.recordId, name: entry.name, x: Number(args.x), y: Number(args.y), hidden: entry.hidden, faction: entry.faction, allowSecond: true }, seat);

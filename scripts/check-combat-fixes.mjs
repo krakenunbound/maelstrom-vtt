@@ -457,5 +457,24 @@ const done = [];
   }
 }
 
+// 10. A character already on the map keeps its one token when the tracker places it (FG): moved and tied, no second.
+{
+  const t = await table(null, []);
+  const { ct, agent, raw } = t;
+  try {
+    agent.map.setScene({ id: "room", name: "Room", width: 500, height: 300, padding: 0, backgroundColor: "#000", grid: { size: 50, type: 1, color: "#000", alpha: 0.2, distance: 5, units: "ft" }, lights: [], tokens: [], walls: [] });
+    const hero = agent.records.create({ type: "character", name: "Hero", owner: "Ann", data: { hp: { total: 10 } } }, { role: "dm", name: "GM" });
+    const placed = agent.map.place({ recordId: hero.id, name: "Hero", x: 75, y: 75 }, { role: "dm", name: "GM" });
+    await ct({ action: "add", recordId: hero.id });
+    const id = (await t.view()).entries.find((item) => item.name === "Hero").id;
+    await ct({ action: "place-token", id, x: 175, y: 125 });
+    const heroes = agent.map.tokens().filter((token) => token.recordId === hero.id);
+    assert(heroes.length === 1 && raw(id).tokenId === placed.id && heroes[0].x !== 75, `one token, moved and tied: ${JSON.stringify(heroes.map((token) => [token.id, token.x, token.y]))}`);
+    done.push("a character's token on the map is the one the tracker places");
+  } finally {
+    await t.close?.();
+  }
+}
+
 console.log(`ok combat-fixes: ${done.join("; ")}`);
 process.exit(0);

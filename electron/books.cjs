@@ -549,22 +549,30 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
   // The map an encounter's creatures stand on (FG's maplink: the image it places them on), so the
   // page that links the encounter links its map too: { book, file, name, path, spots } or null.
   // spots: where they stand, FG's way ([x, y] from the picture's centre, y down), on that map only.
+  // The picture layer's place in FG: 0 in an older module (origin the picture's centre), half the picture in a
+  // newer one (origin its top left). Spots and pins are read from it.
+  function baseOf(image) {
+    const layers = [].concat(image?.layers?.layer ?? []).filter((layer) => layer && typeof layer === "object");
+    const matrix = String(layers.find((layer) => layer.type === "image" && layer.bitmap)?.matrix ?? "").split(",").map(Number);
+    return matrix.length === 16 && Number.isFinite(matrix[12]) && Number.isFinite(matrix[13]) ? { x: matrix[12], y: matrix[13] } : { x: 0, y: 0 };
+  }
   function encounterMap(book, info, record) {
     const values = (object) => Object.values(object && typeof object === "object" ? object : {});
     let found = null;
     for (const row of values(record.data?.npclist))
       for (const spot of values(row?.maplink)) {
         const [inner, moduleName] = String(spot?.imageref?.recordname ?? "").split("@");
-        if (!inner || (moduleName && moduleName !== info.name)) continue;
+        // "@*" (FG: this module) is the book's own map.
+        if (!inner || (moduleName && moduleName !== "*" && moduleName !== info.name)) continue;
         const path = `${inner.replace(/\.image$/, "")}@${info.name}`;
         if (!found) {
           const image = book.records.get(path);
           const file = bitmapIn(image?.data?.image);
           if (!file) continue;
-          found = { book: info.id, file, name: image.name, path: image.data.fgPath ?? path, spots: [] };
+          found = { book: info.id, file, name: image.name, path: image.data.fgPath ?? path, spots: [], base: baseOf(image.data.image) };
         }
-        const x = Number(spot.imagex);
-        const y = Number(spot.imagey);
+        const x = Number(spot.imagex) - found.base.x;
+        const y = Number(spot.imagey) + found.base.y;
         if (path === found.path && Number.isFinite(x) && Number.isFinite(y)) found.spots.push([x, y]);
       }
     return found;
@@ -609,13 +617,14 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
       const file = bitmapIn(record.data?.image);
       if (!file) continue;
       const walls = (JSON.stringify(record.data.image).match(/"points"/g) ?? []).length;
+      const base = baseOf(record.data.image);
       const walk = (value) => {
         if (!value || typeof value !== "object") return;
         if (value.type === "shortcut" && value.shortcut && typeof value.shortcut === "object") {
           const page = /refmanualdata\.([^.@]+)/.exec(String(value.shortcut.record ?? value.shortcut.recordname ?? ""))?.[1];
           const matrix = String(value.matrix ?? "").split(",").map(Number);
           if (page && (found.get(page)?.walls ?? -1) < walls && matrix.length === 16 && Number.isFinite(matrix[12]) && Number.isFinite(matrix[13]))
-            found.set(page, { book: book.info.id, file, name: record.name, path: record.data.fgPath, spots: [[matrix[12], -matrix[13]]], walls });
+            found.set(page, { book: book.info.id, file, name: record.name, path: record.data.fgPath, spots: [[matrix[12] - base.x, -(matrix[13] - base.y)]], walls });
         }
         for (const inner of Object.values(value)) walk(inner);
       };
