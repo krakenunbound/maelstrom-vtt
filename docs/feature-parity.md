@@ -97,7 +97,7 @@ may follow FG, icons and art are Maelstrom's own.
 | E15 | Features and traits lists (race, class, kit abilities) with links | notes | Done (unreleased): links to the race, class and kit records (the core's links part); separate feature rows open |
 | E16 | Spells as rows: memorize into slots, cast (attack, save, damage, heal, effect), initiative | slots a day; names list; Cast per spell (slots, saves, damage, effects) | Done (unreleased): Cast and initiative per spell; memorized copies per spell, cast from them, back on a long rest |
 | E17 | Quick notes on the Actions tab; THAC0 matrix (AC -10..10) | none | THAC0 matrix Done (unreleased); quick notes open |
-| E18 | Ability and save details: base, base override, adjustment, temporary | misc only | open |
+| E18 | Ability and save details: base, base override, adjustment, temporary | misc only | Done (unreleased): rolled, Adj, Temp, Set for abilities; Temp and Set for saves |
 
 ## Dice, chat and combat flow
 

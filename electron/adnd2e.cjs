@@ -162,6 +162,8 @@ async function edit2e(table, record, changes, seat) {
       const n = Number(value);
       if (!Number.isFinite(n) || Math.abs(n) > 1e7) throw new Error(`${key} needs a number.`);
       setPath(data, key, /(^spellcasting|\.points$|^hp\.(wounds|temp))/.test(key) ? Math.max(0, Math.round(n)) : Math.round(n));
+      // A score typed as such (the agent, an older sheet) is the score as rolled.
+      if (/^abilities\.[a-z]+\.score$/.test(key)) setPath(data, key.replace(/score$/, "base"), Math.round(n));
     } else if (EDIT_PATHS.remove.some((pattern) => pattern.test(key)) && value === null) delete data[key.split(".")[0]]?.[key.split(".")[1]];
     else throw new Error(`The sheet cannot change ${key}.`);
   }

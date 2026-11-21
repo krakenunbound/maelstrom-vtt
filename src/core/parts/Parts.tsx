@@ -171,9 +171,9 @@ function RollButton({ roll, scope, className: base }: { roll: RollSpec; scope: S
       onClick={() => sheet.editable && sheet.act(roll.action, { key: sent })}
     >
       {roll.icon === "die" ? (
+        // A die beside what it rolls against (2E's check: the score now).
         <>
-          <Icon name="d20" size={16} />
-          {roll.aria ? null : <span className="sr-only">{nodesOf(roll.label, scope, sheet.modifiers)}</span>}
+          <Icon name="d20" size={16} /> <span className="cc-roll-label">{nodesOf(roll.label, scope, sheet.modifiers)}</span>
         </>
       ) : (
         nodesOf(roll.label, scope, sheet.modifiers)

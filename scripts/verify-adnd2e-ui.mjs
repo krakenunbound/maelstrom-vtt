@@ -231,6 +231,26 @@ try {
   await tool("kraken_dice_force", { values: [12] });
   await seat.click('.sheet-2e [data-proficiency="1"] [data-action="roll-proficiency"]');
   await chat(page, "[PROFICIENCY] Survival [2] (Wisdom +1) [UNDER 13] [SUCCESS 12 under 13]");
+  // Ability and save details: Wisdom 12 with a temporary +2 checks at 14; set outright to 15 (Notes), it is 15;
+  // a temporary +2 on Paralyzation needs 12. All back as they were after.
+  const typeIn = async (label, value) => {
+    await seat.fill(`.sheet-2e [aria-label="${label}"]`, value);
+    await seat.press(`.sheet-2e [aria-label="${label}"]`, "Tab");
+  };
+  await seat.click('[data-sheet-tab="main"]');
+  await typeIn("wisdom temporary", "2");
+  await seat.waitForFunction(() => document.querySelector('.sheet-2e [data-roll-check="wisdom"]')?.textContent.includes("14"), null, { timeout: 10000 });
+  await typeIn("paralyzation temporary", "2");
+  await seat.waitForFunction(() => document.querySelector('.sheet-2e [data-roll-save="paralyzation"]')?.textContent.trim() === "12", null, { timeout: 10000 });
+  await seat.click('[data-sheet-tab="notes"]');
+  await typeIn("wisdom set", "15");
+  await seat.waitForFunction(() => [...document.querySelectorAll('.sheet-2e [data-ability-detail="wisdom"] *')].some((node) => node.textContent.trim() === "15"), null, { timeout: 10000 });
+  await typeIn("wisdom set", "0");
+  await seat.click('[data-sheet-tab="main"]');
+  await typeIn("wisdom temporary", "0");
+  await typeIn("paralyzation temporary", "0");
+  await seat.waitForFunction(() => document.querySelector('.sheet-2e [data-roll-check="wisdom"]')?.textContent.includes("12") && document.querySelector('.sheet-2e [data-roll-save="paralyzation"]')?.textContent.trim() === "14", null, { timeout: 10000 });
+  await seat.click('[data-sheet-tab="skills"]');
   await seat.screenshot({ path: path.join(tmpdir(), "kraken-adnd2e-proficiencies.png") });
   await seat.click('[data-sheet-tab="main"]');
 

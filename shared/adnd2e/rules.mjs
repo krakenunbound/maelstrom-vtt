@@ -659,14 +659,23 @@ export function derive(input) {
   const data = { ...input, ruleset: RULESET };
   data.abilities = Object.fromEntries(
     STATS.map((stat) => {
-      const score = clampScore(data.abilities?.[stat]?.score);
+      // The score as rolled (base; a character from before it has its score as its base), a lasting
+      // adjustment (a wish, a tome), a temporary one (a spell, a potion), or a score set outright (gauntlets
+      // of ogre power): the score every rule reads.
+      const was = data.abilities?.[stat] ?? {};
+      const base = clampScore(was.base ?? was.score);
+      const step = (value) => Math.max(-20, Math.min(20, Math.round(num(value, 0))));
+      const adj = step(was.adj);
+      const temp = step(was.temp);
+      const set = Math.max(0, Math.min(25, Math.round(num(was.set, 0))));
+      const score = set > 0 ? set : clampScore(base + adj + temp);
       const percent = stat === "strength" && score === 18 ? Math.min(100, Math.max(0, Math.round(num(data.abilities?.strength?.percent, 0)))) : 0;
       const table = stat === "strength" ? strengthOf(score, percent) : ABILITY_TABLES[stat](score);
-      return [stat, { score, ...(stat === "strength" ? { percent } : {}), ...table }];
+      return [stat, { score, base, ...(adj ? { adj } : {}), ...(temp ? { temp } : {}), ...(set ? { set } : {}), ...(stat === "strength" ? { percent } : {}), ...table }];
     }),
   );
   // An exceptional Strength is a warrior's alone (others' 18 has no percentage).
-  if (!data.classes?.some?.((cls) => groupOf(cls) === "warrior")) data.abilities.strength = { score: data.abilities.strength.score, percent: 0, ...strengthOf(data.abilities.strength.score, 0) };
+  if (!data.classes?.some?.((cls) => groupOf(cls) === "warrior")) data.abilities.strength = { ...data.abilities.strength, percent: 0, ...strengthOf(data.abilities.strength.score, 0) };
   data.classes = (Array.isArray(data.classes) ? data.classes : [])
     .filter((item) => item && item.name)
     .map((item) => ({ name: CLASSES[classKey(item.name)]?.name ?? String(item.name), level: Math.min(MAX_LEVEL, Math.max(1, Math.round(num(item.level, 1)))), group: groupOf(item), ...(item.active === false ? { active: false } : {}) }));
@@ -681,7 +690,10 @@ export function derive(input) {
       const base = data.classes.length ? Math.min(...data.classes.map((item) => savesFor(item.group, item.level)[save])) : savesFor("warrior", 0)[save];
       const racial = race.conSaves?.includes(save) ? conSaveBonus(con) : 0;
       const misc = num(data.saves?.[save]?.misc, 0);
-      return [save, { base, racial, misc, total: Math.max(2, base - racial - misc) }];
+      // A temporary bonus (a ring of protection, a spell: off the number needed) and a number set outright.
+      const temp = Math.round(num(data.saves?.[save]?.temp, 0));
+      const set = Math.max(0, Math.min(25, Math.round(num(data.saves?.[save]?.set, 0))));
+      return [save, { base, racial, misc, ...(temp ? { temp } : {}), ...(set ? { set } : {}), total: set > 0 ? set : Math.max(2, base - racial - misc - temp) }];
     }),
   );
   data.savenotes = [

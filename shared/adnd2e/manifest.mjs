@@ -118,8 +118,8 @@ export default {
                 columns: [
                   {
                     label: "Score",
-                    path: "abilities.{key}.score",
-                    field: { kind: "number", label: "{key} score" },
+                    path: "abilities.{key}.base",
+                    field: { kind: "number", label: "{key} score", title: "The score as rolled (a lasting adjustment or a set score: Notes, Ability and save details)" },
                     wrap: "d2e-score",
                     // A warrior's 18 Strength has its percentile (18/76).
                     extra: {
@@ -128,7 +128,8 @@ export default {
                       field: { path: "abilities.strength.percent", kind: "number", label: "Exceptional strength" },
                     },
                   },
-                  { label: "Check", roll: { action: roll("check"), hook: "roll-check", label: "d20", icon: "die", title: "Roll a {key} check: d20 at or under {abilities.{key}.score|0}", aria: "{key} check" } },
+                  { label: "Temp", path: "abilities.{key}.temp", field: { kind: "number", label: "{key} temporary", title: "A temporary change (a spell, a potion): on the score while it lasts" } },
+                  { label: "Check", roll: { action: roll("check"), hook: "roll-check", label: "{abilities.{key}.score|0}", icon: "die", title: "Roll a {key} check: d20 at or under {abilities.{key}.score|0} (the score now)", aria: "{key} check" } },
                 ],
                 // What each ability's table gives at this score, as small boxes beside it.
                 rowBoxes: { row: "abilities.{key}", boxes: ABILITY_BOXES },
@@ -143,7 +144,10 @@ export default {
                 rowTitle: "Base {saves.{key}.base|0}[, racial -{saves.{key}.racial}][, misc -{saves.{key}.misc}]",
                 plain: true,
                 rows: SAVES.map((key) => ({ key, label: SAVE_WORDS[key] })),
-                columns: [{ label: "Misc", path: "saves.{key}.misc", field: { kind: "number", label: "{key} misc" } }],
+                columns: [
+                  { label: "Misc", path: "saves.{key}.misc", field: { kind: "number", label: "{key} misc" } },
+                  { label: "Temp", path: "saves.{key}.temp", field: { kind: "number", label: "{key} temporary", title: "A temporary bonus (a spell, a ring): off the number needed" } },
+                ],
                 roll: { action: roll("save", { fight: true }), hook: "roll-save", className: "cc-save", label: "{saves.{key}.total|0}", title: "Roll a save: d20 at or above {saves.{key}.total|0}", aria: "{key} save" },
                 notes: "savenotes",
               },
@@ -330,6 +334,35 @@ export default {
         page: "panel",
         parts: [
           // The race, classes and kit as links to their books' records (all their abilities in the words of the book).
+          // FG's details windows, in one place: each ability's lasting adjustment and a score set outright, each save's number set outright.
+          { part: "heading", text: "Ability and save details", hint: "the score now: as rolled + adjustment + temporary, or the set score" },
+          {
+            part: "statBlock",
+            label: "Ability details",
+            hook: "ability-detail",
+            plain: true,
+            rowClass: "five-ability d2e-ability-detail",
+            rows: STATS.map((key) => ({ key, label: titled(key) })),
+            columns: [
+              { label: "Rolled", path: "abilities.{key}.base", field: { label: "{key} rolled" } },
+              { label: "Adj", path: "abilities.{key}.adj", field: { kind: "number", label: "{key} adjustment", title: "A lasting change (a wish, a manual): on the score for good" } },
+              { label: "Set", path: "abilities.{key}.set", field: { kind: "number", label: "{key} set", title: "A score set outright (gauntlets of ogre power: 18/00 Strength); 0: none" } },
+              { label: "Now", path: "abilities.{key}.score", field: { label: "{key} now" } },
+            ],
+          },
+          {
+            part: "statBlock",
+            label: "Save details",
+            hook: "save-detail",
+            plain: true,
+            rowClass: "five-ability d2e-save-detail",
+            rows: SAVES.map((key) => ({ key, label: SAVE_WORDS[key] })),
+            columns: [
+              { label: "Base", path: "saves.{key}.base", field: { label: "{key} base" } },
+              { label: "Set", path: "saves.{key}.set", field: { kind: "number", label: "{key} save set", title: "The number needed set outright; 0: none" } },
+              { label: "Needs", path: "saves.{key}.total", field: { label: "{key} needs" } },
+            ],
+          },
           { part: "links", label: "Abilities", hook: "abilities", items: [{ label: "Race", type: "race", path: "race" }, { label: "Class", type: "class", path: "classes", field: "name" }, { label: "Kit", type: ["background", "kit"], path: "kit" }] },
           { part: "notes", fields: [{ path: "deity", kind: "text", label: "Deity" }, { path: "languages", kind: "text", label: "Languages" }] },
           { part: "hint", text: ["Infravision ", "{infravision}", " feet."], when: { positive: "infravision" } },
@@ -343,9 +376,9 @@ export default {
   edit: {
     text: ["playername", "alignment", "deity", "appearance", "notes", "background", "race", "gender", "age", "height", "weight", "languages"],
     number: [
-      "abilities.(strength|dexterity|constitution|intelligence|wisdom|charisma).score",
+      "abilities.(strength|dexterity|constitution|intelligence|wisdom|charisma).(score|base|adj|temp|set)",
       "abilities.strength.percent",
-      "saves.(paralyzation|rod|petrification|breath|spell).misc",
+      "saves.(paralyzation|rod|petrification|breath|spell).(misc|temp|set)",
       "thiefskills.%.(points|misc)",
       "hp.(total|wounds|temp)",
       "exp",

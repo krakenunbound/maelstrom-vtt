@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **AD&D 2E: temporary and lasting changes to abilities and saves:** each ability has its score as rolled, a Temp beside it, and (Notes, Ability and save details) a lasting adjustment and a score set outright (gauntlets of ogre power); its check button shows the score now. Each save has a Temp bonus and a number set outright.
 - **AD&D 2E: the THAC0 matrix and SURPRISE effects:** the Combat tab shows the d20 roll that hits each Armor Class from -10 to 10; SURPRISE effects on a character add to its surprise roll.
 - **AD&D 2E: memorizing spells:** each known spell has its Memorized count on the Spells tab; once a character memorizes, Cast uses a memorized copy (and refuses when none is left), each spell shows how many are cast today, and a long rest gives them back.
 - **Spell initiative:** a spell with a casting time in its book (AD&D 2E's) has an initiative button beside Cast: d10 + its casting time onto the tracker, and the caster is Casting it until its turn; hit before then, the spell is lost (said in chat). Any effect marked (C) ends when its creature takes damage.
