@@ -61,6 +61,12 @@ function save(name: string, text: string, type: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// A character to a file: Maelstrom's own (.json) or XML (the export button, the card's right-click).
+export function exportCharacter(record: TableRecord, kind: "kraken" | "xml") {
+  if (kind === "kraken") save(`${record.name}.kraken.json`, toKrakenFile(record), "application/json");
+  else save(`${record.name}.xml`, toFgXml(record), "application/xml");
+}
+
 // Export a character as Kraken's file or FG's XML (FG's button_exportchar). The menu closes on a
 // click elsewhere or Escape.
 export function ExportButton({ record }: { record: TableRecord }) {
@@ -103,7 +109,7 @@ export function ExportButton({ record }: { record: TableRecord }) {
             data-export="kraken"
             onClick={() => {
               setMenu(false);
-              save(`${record.name}.kraken.json`, toKrakenFile(record), "application/json");
+              exportCharacter(record, "kraken");
             }}
           >
             Maelstrom file (.json)
@@ -114,7 +120,7 @@ export function ExportButton({ record }: { record: TableRecord }) {
             data-export="fg"
             onClick={() => {
               setMenu(false);
-              save(`${record.name}.xml`, toFgXml(record), "application/xml");
+              exportCharacter(record, "xml");
             }}
           >
             XML character (.xml)

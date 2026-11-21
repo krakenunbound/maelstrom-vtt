@@ -7,6 +7,7 @@ import { startWhisper } from "./ChatDock";
 import "./session.css";
 import { cssRect, cssX, cssY, pageZoom } from "./pageZoom";
 import { GM } from "./gmTitle";
+import { exportCharacter } from "../characters/characterFiles";
 
 // The session's own controls, apart from the game: the connection coming back,
 // the GM's pause, a bell rung for a player and a hand raised to the GM, the
@@ -364,6 +365,23 @@ export function PlayerMenu({ session, menu, onClose }: { session: Session; menu:
                 <Icon name="lock" size={15} /> {GM("Keep as the GM's")}
               </button>
             ) : null}
+            {menu.name ? <hr /> : null}
+          </>
+        ) : null}
+        {/* Anyone's own character (the GM's every one): to a file. */}
+        {menu.character && session.records[menu.character.id] ? (
+          <>
+            {!gm ? (
+              <p className="player-menu-name" aria-hidden="true">
+                {menu.character.name}
+              </p>
+            ) : null}
+            <button type="button" role="menuitem" data-menu="export-kraken" title="Save this character as a Maelstrom file (.json), to bring into another table" onClick={done(() => exportCharacter(session.records[menu.character!.id], "kraken"))}>
+              <Icon name="export" size={15} /> Export (Maelstrom file)
+            </button>
+            <button type="button" role="menuitem" data-menu="export-xml" title="Save this character as an XML file" onClick={done(() => exportCharacter(session.records[menu.character!.id], "xml"))}>
+              <Icon name="export" size={15} /> Export (XML)
+            </button>
             {menu.name ? <hr /> : null}
           </>
         ) : null}

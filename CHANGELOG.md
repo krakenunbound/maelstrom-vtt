@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Export a character from its card's right-click:** in the Characters window, right-click a character (yours; the GM's, any) for Export as a Maelstrom file or as XML.
 - **AD&D 2E: more rolls on the sheet:** Initiative has its own d10 (without a weapon), a Surprise box (3 + misc) rolls d10 + the Dexterity reaction adjustment (surprised at or under), and the ability tables' numbers roll: Open Doors (a locked door too), Bend Bars, System Shock, Resurrection Survival, Learn Spell and Spell Failure.
 - **AD&D 2E: initiative with a weapon:** each weapon on the Combat tab has an INIT button showing its speed factor; a click rolls the character's initiative with it (d10 + the speed factor, the lowest first) onto the tracker, naming the weapon in chat ([MOD: Long sword]).
 - **AD&D 2E's nonweapon proficiencies roll from the sheet:** each proficiency on the Skills tab has its die: an ability check (d20 at or under the score) with the proficiency's modifier, both from its record in the active books (Survival: Intelligence -1), and the row shows what it rolls under (Survival [2] INT 9), worked out as the scores change; the sheet's Mod adds too. Typed ones roll when a book has them. The agent rolls one too (kind proficiency).

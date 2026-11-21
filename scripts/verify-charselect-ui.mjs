@@ -211,6 +211,15 @@ try {
   await zhreeItem.locator('[data-action="export-character"]').click();
   await seat.mouse.move(2, 2);
   await seat.screenshot({ path: path.join(shots, "player-edit-export.png") });
+  // A right-click on the player's own card exports it too (the GM's every card); not on another's.
+  await seat.click(`[data-charselect="${idOf(zhree)}"]`, { button: "right" });
+  await seat.waitForSelector('[data-menu="export-xml"]');
+  const xml = seat.waitForEvent("download", { timeout: 10000 });
+  await seat.click('[data-menu="export-xml"]');
+  assert((await xml).suggestedFilename() === "Zhree Limelight.xml", "the card's right-click exports the character as XML");
+  await seat.click(`[data-charselect="${idOf(maelis)}"]`, { button: "right" });
+  await seat.waitForTimeout(300);
+  assert((await seat.locator('[data-menu="export-kraken"]:visible').count()) === 0, "no export of another's character");
 
   // The GM's list, every character: edit mode, Export and Delete on each card; Bimz deleted (after the GM confirms).
   await page.click('.sidebar [data-launch="characters"]');

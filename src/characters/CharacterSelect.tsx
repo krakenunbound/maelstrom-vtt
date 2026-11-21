@@ -126,9 +126,9 @@ export function CharacterSelect({ session, onSheet, onWizard, onClose }: { sessi
                 className={mine ? "charselect-card mine" : free ? "charselect-card free" : "charselect-card held"}
                 data-charselect={entry.id}
                 disabled={!mine && !free}
-                title={mine ? `${entry.name}: open the sheet${gm ? " (right-click: give, release or keep it)" : ""}` : free ? `Look over ${entry.name} (Take to make it yours)` : entry.owner ? `${entry.name} is ${entry.owner}'s` : GM(`${entry.name} is the GM's`)}
+                title={mine ? `${entry.name}: open the sheet${gm ? " (right-click: give, release, keep or export it)" : " (right-click: export it)"}` : free ? `Look over ${entry.name} (Take to make it yours)` : entry.owner ? `${entry.name} is ${entry.owner}'s` : GM(`${entry.name} is the GM's`)}
                 onClick={() => void pick(entry)}
-                onContextMenu={gm ? (event) => menu.open(entry.owner, event, { id: entry.id, name: entry.name, owner: entry.owner, released: Boolean(entry.released) }) : undefined}
+                onContextMenu={gm || mine ? (event) => menu.open(gm ? entry.owner : "", event, { id: entry.id, name: entry.name, owner: entry.owner, released: Boolean(entry.released) }) : undefined}
                 {...(mine ? slotDrag({ kind: "sheet", record: entry.id, label: entry.name }) : {})}
               >
                 <span className="charselect-face">{entry.portrait ? <Picture session={session} id={entry.portrait} alt="" still /> : null}</span>
@@ -161,7 +161,7 @@ export function CharacterSelect({ session, onSheet, onWizard, onClose }: { sessi
           <li className="hint empty-state">{cards.length ? "No character by that name." : "No characters yet. Make one with New character above (the Character Wizard), or import one."}</li>
         ) : null}
       </ul>
-      {gm ? <PlayerMenu session={session} menu={menu.state} onClose={menu.close} /> : null}
+      <PlayerMenu session={session} menu={menu.state} onClose={menu.close} />
     </section>
   );
 }
