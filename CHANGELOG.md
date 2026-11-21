@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Foundry map sets, the whole set at once, with their music:** Open map takes several bundles (.zip) at once, or the agent a folder of them (a purchased set's floors): one adventure of them all, each floor to switch to, kept with the campaign. A bundle's playlists (Foundry's music) go into the sound library (Music, a folder per playlist). Proven with a purchased three-floor set (Adventure Bundler, Foundry 11): every wall, door and light as Foundry has them.
 - **The YouTube channel and the website, everywhere:** the start screen has YouTube (@MaelstromVTT) and Website (maelstromvtt.com) beside Discord; the website, the wiki's top bar and the README link the channel.
 - **Cards on the character sheet, undocked anywhere:** with cards turned on (Settings, off unless you want them), every character sheet has a Cards tab with that character's hand; Undock lifts it into a window of its own (put it anywhere on the table, or out of the app with its pop-out), Dock puts it back on the tab. The cards roll as the sheet does.
 - **The quick slots dock where you like:** the grip's right-click menu docks the bar along the bottom or the top, or upright on the left or right; locks it where it is (no drag); and stands it upright or flat when it is loose. The agent's kraken_quickslots does the same (dock, locked, upright).

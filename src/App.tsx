@@ -6,7 +6,7 @@ import { Icon } from "./ui/icons";
 import { imageWindow, mapWindow, studioOpener, type ImageRef } from "./table/imageWindow";
 import { gridLabel, preferredCandidateIndex, preferredSceneIndex } from "./foundry/geometry";
 import { withGrid } from "../shared/map/geometry.mjs";
-import { imageMime, inspectZip, PICTURE, pictureBundle, UVTT, uvttBundle, type ImportCandidate, type LoadedAdventure } from "./foundry/importBundle";
+import { bundleMusic, imageMime, inspectZip, PICTURE, pictureBundle, UVTT, uvttBundle, type ImportCandidate, type LoadedAdventure } from "./foundry/importBundle";
 import { useSession } from "./session/useSession";
 import { SetupScreen } from "./setup/SetupScreen";
 import { focusView, forgetView, MapView, type MapScene } from "./table/MapView";
@@ -18,6 +18,15 @@ import { WindowProvider } from "./ui/Windows";
 import { hasLink } from "./ui/QuickSlots";
 import { GM, setGmTitle } from "./ui/gmTitle";
 import { rulesetNamed } from "../shared/rulesets/registry.mjs";
+import { zipSync } from "fflate";
+
+// The words file names share at their start ("Dirty Rotten Looters Cellar Floor", "... Ground Floor": "Dirty Rotten Looters").
+function commonName(names: string[]): string {
+  const words = names.map((name) => name.split(/\s+/));
+  const out: string[] = [];
+  for (let i = 0; words.every((list) => i < list.length && list[i] === words[0][i]); i++) out.push(words[0][i]);
+  return out.join(" ").trim();
+}
 
 const COLOUR = /^#[0-9a-f]{6}$/i;
 
@@ -361,10 +370,18 @@ export function App() {
     }
   }, [session.connected]);
 
-  async function openFile(file: File) {
-    if (!dm) return;
+  // Several map bundles at once (a purchased set's floors, each its own .zip): one adventure of them all,
+  // every scene to switch between, kept with the campaign as one zip of the bundles.
+  async function openFiles(files: File[]) {
+    if (!dm || files.length === 0) return;
     try {
-      await openBytes(new Uint8Array(await file.arrayBuffer()), file.name);
+      const zips = files.filter((file) => /\.zip$/i.test(file.name));
+      if (zips.length > 1) {
+        const inner: Record<string, Uint8Array> = {};
+        for (const file of zips) inner[file.name] = new Uint8Array(await file.arrayBuffer());
+        const shared = commonName(zips.map((file) => file.name.replace(/\.zip$/i, "")));
+        await openBytes(zipSync(inner, { level: 0 }), `${shared || "Maps"}.zip`);
+      } else await openBytes(new Uint8Array(await files[0].arrayBuffer()), files[0].name);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Could not read that bundle.");
     }
@@ -386,6 +403,11 @@ export function App() {
       else if (UVTT.test(name)) bytes = uvttBundle(bytes, name);
       const found = inspectZip(bytes);
       if (found.length === 0) throw new Error(`No prepared map bundle was in ${name}.`);
+      // Its music (Foundry's playlists) into the GM's sound library: Music, a folder per playlist.
+      const music = /\.zip$/i.test(name) ? bundleMusic(bytes) : [];
+      if (music.length && window.kraken?.addSound) {
+        for (const track of music) await window.kraken.addSound("music", track.list, track.file, track.bytes).catch(() => undefined);
+      }
       const index = preferredCandidateIndex(found);
       setCandidates(found);
       setAdventureIndex(index);
@@ -397,7 +419,7 @@ export function App() {
         const ofBook = found.some((candidate) => bookOf({ adventure: candidate.name, sceneId: "" }, books).fromBook) || table.scenes.some((scene) => /^fg-/.test(scene.id));
         await window.kraken?.saveBundle(campaignId, ofBook ? null : bytes);
       }
-      return { adventures: found.map((candidate) => candidate.name), opened: found[index].name };
+      return { adventures: found.map((candidate) => candidate.name), opened: found[index].name, ...(music.length ? { music: music.map((track) => `${track.list}/${track.file}`) } : {}) };
     } finally {
       setBusy(false);
     }
@@ -544,8 +566,8 @@ export function App() {
     if (!dm) return;
     // A Maelstrom link (a window's anchor, a record, a quick slot) is never a picture to open as a map.
     if (hasLink(event)) return;
-    const file = event.dataTransfer.files[0];
-    if (file) void openFile(file);
+    const files = [...event.dataTransfer.files];
+    if (files.length) void openFiles(files);
   }
 
   if (!session.connected) {
@@ -714,9 +736,11 @@ export function App() {
                   type="file"
                   accept=".zip,application/zip,.png,.jpg,.jpeg,.webp,.gif,image/*,.dd2vtt,.df2vtt,.uvtt"
                   aria-label="Map bundle or picture"
+                  multiple
+                  title="A map bundle (.zip), several (a set's floors: one adventure of them all), a Universal VTT map or a picture"
                   onChange={(event) => {
-                    const file = event.target.files?.[0];
-                    if (file) void openFile(file);
+                    const files = [...(event.target.files ?? [])];
+                    if (files.length) void openFiles(files);
                     event.target.value = "";
                   }}
                 />

@@ -122,6 +122,7 @@
     "book-edit-ui": "node scripts/verify-book-edit-ui.mjs",
     "book-map-ui": "node scripts/verify-book-map-ui.mjs",
     "playtest-2e": "node scripts/playtest-2e.mjs",
+    "foundry-bundle-ui": "node scripts/verify-foundry-bundle-ui.mjs",
     "book-contents-ui": "node scripts/verify-book-contents-ui.mjs",
     "picture-map-ui": "node scripts/verify-picture-map-ui.mjs",
     "uvtt-map-ui": "node scripts/verify-uvtt-map-ui.mjs",
