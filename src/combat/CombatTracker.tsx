@@ -628,6 +628,12 @@ function InitiativeTracker({ session }: { session: Session }) {
             <button type="button" onClick={() => session.ct("init", { which: "npcs" })} disabled={combat.entries.length === 0}>
               Roll NPC init
             </button>
+            <button type="button" data-action="init-pcs" title="Roll the characters' initiative" onClick={() => session.ct("init", { which: "pcs" })} disabled={combat.entries.length === 0}>
+              Roll PC init
+            </button>
+            <button type="button" className="ghost" data-action="init-clear" title="Clear everyone's initiative (and who has rolled this round)" onClick={() => session.ct("init-clear")} disabled={combat.entries.length === 0}>
+              Clear init
+            </button>
             <button type="button" data-action="init-all" onClick={() => session.ct("init", { which: "all" })} disabled={combat.entries.length === 0} title={tracker?.initiative?.rollAllTitle}>
               {tracker?.initiative?.rollAll ?? "Roll all"}
             </button>

@@ -341,7 +341,7 @@ function savedOptions(value) {
     // roll) or by kind (one roll per kind of creature, its copies sharing it); who is skipped
     // (enemies: dead and unconscious creatures, FG's default; all: characters too; off: no one);
     // NPC numbering (append: the same name numbered, random: a random number, off).
-    initGroup: options.initGroup === "kind" ? "kind" : "each",
+    initGroup: ["kind", "sides"].includes(options.initGroup) ? options.initGroup : "each",
     // FG's house rule (everyone rolls initiative again each round) and "stop at round start" (a new
     // round waits for the GM's next click).
     ...(options.initEachRound ? { initEachRound: true } : {}),
@@ -3612,6 +3612,8 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
               const token = map.place({ recordId: entry.recordId, name: entry.name, x, y, hidden: entry.hidden, faction: entry.faction, allowSecond: true }, seat);
               return combat.update(entry.id, { tokenId: token.id }, seat);
             }
+            case "init-clear":
+              return combat.clearInit(seat);
             case "init": {
               // From a sheet (its weapon row's INIT): the character's own entry, and the weapon.
               const which = msg.which ? String(msg.which) : msg.id ? String(msg.id) : msg.recordId ? combat.entries().find((item) => item.recordId === String(msg.recordId))?.id : "";

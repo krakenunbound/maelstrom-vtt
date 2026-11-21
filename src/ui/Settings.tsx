@@ -132,10 +132,11 @@ export function SettingsWindow({ session }: { session: Session }) {
               <option value="turn">At the end of the creature's turn</option>
             </select>
           </SettingRow>
-          <SettingRow label="Initiative" hint="Each creature rolls its own, or one roll for each kind of creature (all the goblins together).">
+          <SettingRow label="Initiative" hint="Each creature rolls its own, one roll for each kind of creature (all the goblins together), or one plain roll a side (the party and their friends, then their foes; a tie goes to the party).">
             <select value={(session.options as { initGroup?: string }).initGroup ?? "each"} onChange={(event) => session.setTableOptions({ initGroup: event.target.value } as never)} aria-label="Initiative" data-setting="init-group">
               <option value="each">Each creature</option>
               <option value="kind">By kind of creature</option>
+              <option value="sides">One roll a side (the party, their foes)</option>
             </select>
           </SettingRow>
           <SettingRow label="Creatures' hit points" hint="When a creature joins the tracker: the book's listed hit points, its hit dice rolled each time (no two goblins alike), or the most they can be.">

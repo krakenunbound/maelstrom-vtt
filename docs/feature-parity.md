@@ -89,7 +89,7 @@ may follow FG, icons and art are Maelstrom's own.
 | E7 | A player rolls initiative once a round (initrolled); the GM may reroll; a forced reroll is announced | rerolls freely | Done (unreleased): Shift-click forces |
 | E8 | Spell initiative: casting time, and a Casting (C) effect broken by damage | none (spells are a text list) | open |
 | E9 | INIT effects add to initiative | no | Done (unreleased) |
-| E10 | NPC initiative: its highest weapon speed factor (size/speed option, default on); PC vs NPC side option; Roll PC init; Clear all | d10 + init only | Speed factor Done (unreleased); the side option, Roll PC init and Clear all open |
+| E10 | NPC initiative: its highest weapon speed factor (size/speed option, default on); PC vs NPC side option; Roll PC init; Clear all | d10 + init only | Done (unreleased): speed factor, one roll a side (Settings), Roll PC init, Clear init |
 | E11 | The weapon an entry rolled with is announced at its turn | no | Done (unreleased) |
 | E12 | Ability table rolls: Open Doors (and locked), Bend Bars, System Shock, Resurrection Survival, Learn Spell, Spell Failure | shown, not rolled | Done (unreleased) |
 | E13 | THAC0 double-click: a basic attack roll | THAC0 shown | open |

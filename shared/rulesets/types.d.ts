@@ -425,6 +425,9 @@ export interface RulesetManifest {
   // Kinds of sheet roll the game's host takes past check, save, skill and morale (2E's proficiency):
   // the table passes them on to it (ActionCall roll, the agent's check).
   rollKinds?: string[];
+  // Initiative: who acts first ("low": the lowest, 2E; else the highest) and the die a side's roll uses (the tracker's sides option).
+  initiativeOrder?: "low" | "high";
+  initiativeDie?: number;
   settings?: ({ key: string; label: string; hint?: string; kind: "toggle" | "select" | "checklist"; default: unknown; options?: string[] } | { component: Ref; gm?: boolean })[];
   // modifiers: the modifier box and its keys (shared/rulesets/modifiers.mjs); false: none. kinds: the rolls it reads (all when left out).
   dice?: { extraTray?: string[]; resultWords?: Record<string, "good" | "mixed" | "bad">; modifiers?: false | { presets?: (string | import("./modifiers.mjs").ModifierKey)[]; kinds?: string[] } };

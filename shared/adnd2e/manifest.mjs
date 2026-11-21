@@ -348,6 +348,9 @@ export default {
   features: ["turnUndead", "multiAttack", "dying.save", "thiefSkills", "spellbooks"],
   // Its own kinds of sheet roll, past check, save, skill and morale (its host's check2e rolls them).
   rollKinds: ["proficiency", "table", "surprise"],
+  // d10 initiative, the lowest acts first.
+  initiativeOrder: "low",
+  initiativeDie: 10,
   party: { currency: ["PP", "GP", "EP", "SP", "CP"], xp: "xp", groupCheck: { stats: [], rolls: [{ kind: "save", label: "Save", options: PARTY_SAVES.map((value) => ({ value, label: titleOf(value) })) }, { kind: "check", label: "Check", options: PARTY_STATS.map((value) => ({ value, label: titleOf(value) })) }, { kind: "skill", label: "Thief skill", options: Object.entries(PARTY_SKILLS).map(([value, row]) => ({ value, label: String(row[0]) })) }] } },
   tracker: {
     saves: { keys: ["paralyzation", "rod", "petrification", "breath", "spell"], modLabel: "Mod", modAria: "Save modifier", button: "Roll save" },

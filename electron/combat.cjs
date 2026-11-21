@@ -425,8 +425,9 @@ function createCombat({ saved, table, onChange = () => undefined }) {
   const d35 = () => table().ruleset?.() === "D&D 3.5E";
   const d2e = () => table().ruleset?.() === "AD&D 2E";
   const dbf = () => table().ruleset?.() === "Basic Fantasy";
-  // 2E acts lowest initiative first: the order and effect counts read it turned over.
-  const rank = (value) => (d2e() ? -value : value);
+  // A game that acts lowest initiative first (its manifest's initiativeOrder: 2E): the order and effect counts read it turned over.
+  const lowFirst = () => registry?.rulesetFor(table().ruleset?.() ?? "").initiativeOrder === "low";
+  const rank = (value) => (lowFirst() ? -value : value);
 
   function changed() {
     onChange();
@@ -3019,10 +3020,21 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       changed();
     },
     // Rolls initiative: one entry ("a player may roll their own"), every NPC, or everyone.
+    // Every initiative cleared (FG's Clear All Initiatives): no results, no weapons, everyone may roll again.
+    clearInit(seat) {
+      if (seat.role !== "dm") throw new Error("Only the GM clears initiative.");
+      for (const entry of state.entries) {
+        entry.initresult = 0;
+        delete entry.inititem;
+        delete entry.initrolled;
+      }
+      changed();
+    },
     // extra: { weapon } (a sheet's weapon row: initiative with that weapon, where the game takes it).
     async rollInit(which, seat, extra = {}) {
       const pick =
-        which === "npcs" ? state.entries.filter((entry) => record(entry)?.type !== "character") : which === "all" ? state.entries : [find(which)];
+        which === "npcs" ? state.entries.filter((entry) => record(entry)?.type !== "character") : which === "pcs" ? state.entries.filter((entry) => record(entry)?.type === "character") : which === "all" ? state.entries : [find(which)];
+      if (pick.length === 0) throw new Error(which === "pcs" ? "No characters are in the fight." : "No one to roll for.");
       if (seat.role !== "dm" && (pick.length !== 1 || owner(pick[0]) !== seat.name)) throw new Error("You can roll initiative for your own character.");
       // Group initiative (the table's option, FG's): one roll for each kind of creature, its copies sharing it.
       const copies = [];
@@ -3038,6 +3050,21 @@ function createCombat({ saved, table, onChange = () => undefined }) {
             leaders.push(entry);
           }
         }
+      }
+      // One roll a side (the table's option, FG 2E's PC versus NPC): the characters and their friends one plain die,
+      // their foes another; a tie goes to the characters.
+      if (pick.length > 1 && table().options?.().initGroup === "sides") {
+        const die = Math.max(2, Math.round(num(registry?.rulesetFor(table().ruleset?.() ?? "").initiativeDie, num((await options()).options?.SIEGE_INIT_DIE, 10))));
+        const ours = (entry) => record(entry)?.type === "character" || entry.faction === "friend";
+        const pcs = table().roll(`1d${die}`, "[INIT] The party's side", seat.role === "dm" ? "Combat" : seat.name, false).total;
+        let foes = table().roll(`1d${die}`, "[INIT] Their foes' side", seat.role === "dm" ? "Combat" : seat.name, true).total;
+        if (foes === pcs) foes = lowFirst() ? pcs + 1 : pcs - 1;
+        for (const entry of pick) {
+          entry.initresult = ours(entry) ? pcs : foes;
+          delete entry.inititem;
+        }
+        changed();
+        return;
       }
       const rolled = await this.rollInitFor(leaders, seat, pick.length === 1 ? extra : {});
       if (copies.length) {

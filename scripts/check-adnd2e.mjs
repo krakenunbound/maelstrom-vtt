@@ -197,6 +197,20 @@ await tool("kraken_combat", { action: "effect-remove", id: fighterEntry.id, effe
 const r2e = await import("../shared/adnd2e/rules.mjs");
 const clubbed = { initiative: { total: 2 }, weaponlist: { a: { name: "Club", speedfactor: 4, damagelist: { a: { dice: "1d10" } } }, b: { name: "Fist", speedfactor: 1, damagelist: { a: { dice: "1d4" } } } } };
 assert(r2e.npcInitiativeOf(clubbed) === 4 && r2e.npcInitiativeOf({ initiative: { total: 2 } }) === 2, `an NPC's initiative: its slowest weapon's speed, else its own: ${r2e.npcInitiativeOf(clubbed)}`);
+// Roll PC init (the characters alone: 6 - 1), Clear init, and one roll a side (a tie goes to the party: their foes 4 + 1, the lowest first).
+force(6);
+await tool("kraken_combat", { action: "init", which: "pcs" });
+let order = (await tool("kraken_combat", { action: "view" })).entries;
+assert(order.find((entry) => entry.id === fighterEntry.id).initresult === 5, `the characters' roll: ${order.map((entry) => `${entry.name} ${entry.initresult}`)}`);
+await tool("kraken_combat", { action: "init-clear" });
+order = (await tool("kraken_combat", { action: "view" })).entries;
+assert(order.every((entry) => entry.initresult === 0), `cleared: ${order.map((entry) => `${entry.name} ${entry.initresult}`)}`);
+await tool("kraken_table_options", { initGroup: "sides" });
+force(4, 4);
+await tool("kraken_combat", { action: "init", which: "all" });
+order = (await tool("kraken_combat", { action: "view" })).entries;
+assert(order.find((entry) => entry.id === fighterEntry.id).initresult === 4 && order.find((entry) => entry.id === ogreEntry.id).initresult === 5 && order.find((entry) => entry.id === lionEntry.id).initresult === 5, `a roll a side, the tie the party's: ${order.map((entry) => `${entry.name} ${entry.initresult}`)}`);
+await tool("kraken_table_options", { initGroup: "each" });
 force(2, 7, 5);
 await tool("kraken_combat", { action: "init", which: "all" });
 await tool("kraken_combat", { action: "target", id: fighterEntry.id, targetId: ogreEntry.id, on: true });
