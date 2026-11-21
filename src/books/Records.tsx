@@ -478,8 +478,9 @@ export function RecordWindow({ session, id, record: given, book }: { session: Se
   const npc = record.type === "npc";
   // The game's own block for an NPC, the GM's (Traveller's), instead of the core's fields.
   const Block = gm && npc ? statblockFor(session.ruleset, "npc") : null;
-  // The campaign's own record's text (its editor's Description) too.
-  if ((npc || (!record.source && !given)) && typeof data.text === "string" && data.text.trim()) texts.unshift(["description", data.text]);
+  // The campaign's own record's text (its editor's Description) too, and a book's story entry's (a map pin's
+  // room: FG keeps its whole text there).
+  if (typeof data.text === "string" && data.text.trim()) texts.unshift(["description", data.text]);
   // A creature's portrait, an item's or a vehicle's picture (each from its own book).
   const pictured = npc || record.type === "item" || record.type === "vehicle";
   const portrait = pictured && (data.picture || data.token) ? session.recordArtUrl(record.id, "portrait") : "";

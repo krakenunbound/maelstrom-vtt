@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
-import { zipSync, strToU8 } from "fflate";
+import { zipSync, unzipSync, strToU8 } from "fflate";
 
 const require = createRequire(import.meta.url);
 const { fgModuleBundle } = require("../electron/importers/fgMaps.cjs");
@@ -35,5 +35,33 @@ assert(pins.map((pin) => pin.text).join("|") === "1. Gate|2. Hall|Goblin ambush"
 assert(pins[2].group === "Encounters" && pins[0].group === "Map keys" && pins[0].link.id === "encounter.id-00001@Classic", `a battle is an encounter, a story entry a map key, each linked: ${JSON.stringify(pins)}`);
 const rain = extras.flatMap((extra) => extra.fx).find((fx) => fx.name === "Rain");
 assert(rain?.mask.polygons.length === 2, `every shape of a weather mask: ${JSON.stringify(rain?.mask)}`);
+// A newer module's map (Ghosts of Saltmarsh's): unnamed pins linked "@*" take the entry's name; terrain (FG marks
+// it toggleable too) is a limited wall, never a door; a toggleable wall is still a door.
+{
+  const db = `<root><encounter><enc_1><name type="string">1. Dock</name></enc_1></encounter><image>
+    <id-00003><name type="string">Ship</name><image type="image"><grid>on</grid><layers>
+      <layer><name>ship.png</name><id>0</id><type>image</type><bitmap>ship.png</bitmap><occluders>
+        <occluder><id>1</id><points>0,0,10,0,10,10</points><toggleable /><hidden /><single_sided /><terrain /><allow_move /><closed /><counterclockwise /></occluder>
+        <occluder><id>2</id><points>20,0,30,0</points><toggleable /></occluder>
+      </occluders></layer>
+      <layer><id>1</id><type>shortcut</type><shortcut><class>encounter</class><record>encounter.enc_1@*</record></shortcut></layer>
+    </layers></image></id-00003></image></root>`;
+  fs.writeFileSync(path.join(dir, "Newer.mod"), zipSync({ "definition.xml": strToU8("<root><name>Newer</name><ruleset>5E</ruleset></root>"), "db.xml": strToU8(db), "ship.png": PNG }));
+  const newer = fgModuleBundle(path.join(dir, "Newer.mod"), { all: true });
+  const pin = Object.values(newer.extras).flatMap((extra) => extra.pins).find((item) => item.link);
+  assert(pin?.text === "1. Dock" && pin.link.id === "encounter.enc_1@Newer", `an unnamed pin: the entry's name, linked to this book: ${JSON.stringify(pin)}`);
+  const walls = JSON.parse(new TextDecoder().decode(unzipSync(newer.bytes)["bundle.json"])).adventureData.scenes[0].walls;
+  const terrain = walls.filter((wall) => wall._id.startsWith("fg-1-"));
+  assert(terrain.length === 3 && terrain.every((wall) => wall.sight === 10 && wall.light === 10 && wall.door === 0 && wall.move === 0), `terrain: limited, walkable, not a door: ${JSON.stringify(terrain)}`);
+  assert(walls.find((wall) => wall._id.startsWith("fg-2-"))?.door === 1, "a toggleable wall is a door");
+  const grid = JSON.parse(new TextDecoder().decode(unzipSync(newer.bytes)["bundle.json"])).adventureData.scenes[0].grid;
+  assert(grid.size === 50 && grid.type === 1, `the grid on with no size written: FG's default 50 (${JSON.stringify(grid)})`);
+  // A record naming a picture by another path and spelling (FG's campaign folder, a dash for a space) finds the book's.
+  fs.writeFileSync(path.join(dir, "Named.mod"), zipSync({ "definition.xml": strToU8("<root><name>Named</name></root>"), "db.xml": strToU8("<root />"), "images/Sea Hag.png": PNG, "tokens/seahag.webp": PNG }));
+  const { modulePicture } = require("../electron/importers/fgModule.cjs");
+  const found = modulePicture("campaign/images/Sea-Hag.png", path.join(dir, "Named.mod"));
+  assert(found?.mime === "image/png" && modulePicture("tokens/sea_hag.gif", path.join(dir, "Named.mod")) === null, `a picture by a near name, the same kind of file first; two of another kind: none (${found?.mime})`);
+  assert(modulePicture("tokens/sea-hag.webp", path.join(dir, "Named.mod"))?.mime === "image/webp", "the token by its near name");
+}
 fs.rmSync(dir, { recursive: true, force: true });
-console.log("ok fg classic maps: an older module's pins all come through, placed and named, and a weather layer keeps every mask shape");
+console.log("ok fg classic maps: an older module's pins all come through, placed and named, a weather layer keeps every mask shape, a newer map's pins are named and linked, terrain is limited");

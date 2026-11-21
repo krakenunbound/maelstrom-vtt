@@ -196,6 +196,7 @@ export type MapActions = {
   decalUrl?: (id: string, kind?: PictureKind) => string;
   mapUndo?: () => void;
   libraryAction?: (action: string, payload?: Record<string, unknown>) => void;
+  bookFetch?: Session["bookFetch"];
 };
 // What a left-drag does on the map: pan it, ping, draw, or rub a line out.
 type Tool = "pan" | "ping" | "draw" | "erase" | "target" | "template";
@@ -400,13 +401,25 @@ function MapViewInner({
   const [tool, setTool] = useState<Tool>("pan");
   const bookWindows = useBookWindows();
   // A map pin (FG's shortcut): its story entry opens in the book; an encounter goes to the tracker.
-  function openPin(link: { kind: string; id: string }) {
+  // Another map: its picture in the image window. Any other record (a story entry, a creature): its window.
+  function openPin(link: { kind: string; id: string }, text = "") {
     if (link.kind !== "fg") return;
     const [record, ...rest] = link.id.split("@");
-    const module = rest.join("@");
+    // A map made before pins dropped FG's "@*" (this module) kept it in front of the book's name.
+    const module = rest.join("@").replace(/^\*@/, "");
     const page = /^reference\.refmanualdata\.([^.]+)$/.exec(record)?.[1];
     if (page) bookWindows.openBook(module, module, page);
-    else if (/^battle\./.test(record) && gm && actions.libraryAction && window.confirm("Put this encounter on the combat tracker (its tokens on this map, hidden)?")) actions.libraryAction("battle", { path: link.id });
+    else if (/^battle\./.test(record)) {
+      if (gm && actions.libraryAction && window.confirm("Put this encounter on the combat tracker (its tokens on this map, hidden)?")) actions.libraryAction("battle", { path: `${record}@${module}` });
+    } else if (/^image\./.test(record)) {
+      void actions.bookFetch?.<{ name: string; data: { image?: { bitmap?: string; layers?: { layer?: unknown } } } }>("record", { book: module, path: `${record}@${module}` })
+        .then((found) => {
+          const layers = ([] as { type?: string; bitmap?: string }[]).concat((found.data.image?.layers?.layer as never) ?? []);
+          const file = layers.find((layer) => layer.type === "image" && layer.bitmap)?.bitmap ?? found.data.image?.bitmap;
+          if (file) bookWindows.openPicture({ book: module, file, name: found.name });
+        })
+        .catch(() => undefined);
+    } else if (gm) bookWindows.openRecord(module, `${record}@${module}`, text);
   }
   // The GM's map editor (FG's image layer panel).
   const [editorOpen, setEditorOpen] = useState(startEditing);
@@ -2156,7 +2169,7 @@ function MapViewInner({
                 const baseline = label.anchor === "top" ? "hanging" : label.anchor === "bottom" ? "auto" : "central";
                 const icon = { pin: "📍", trap: "⚠", door: "🚪", chest: "🧰" }[label.icon as "pin"] ?? "";
                 return (
-                  <g key={label.id} transform={`rotate(${label.rotation} ${label.x} ${label.y})`} opacity={label.hidden ? 0.45 : 1} data-label={label.id} data-label-text={label.text} style={label.link || grabbable ? { pointerEvents: "auto", cursor: grabbable ? (labelDrag?.id === label.id ? "grabbing" : "grab") : "pointer" } : undefined} onPointerDown={label.link || grabbable ? (event) => (grabbable ? grabLabel(event, shownLabel) : event.stopPropagation()) : undefined} onClick={label.link ? () => !labelDragged.current && openPin(label.link as { kind: string; id: string }) : undefined} filter={label.shadow.blur > 0 || label.shadow.offset > 0 ? `url(#shadow-${label.id})` : undefined}>
+                  <g key={label.id} transform={`rotate(${label.rotation} ${label.x} ${label.y})`} opacity={label.hidden ? 0.45 : 1} data-label={label.id} data-label-text={label.text} style={label.link || grabbable ? { pointerEvents: "auto", cursor: grabbable ? (labelDrag?.id === label.id ? "grabbing" : "grab") : "pointer" } : undefined} onPointerDown={label.link || grabbable ? (event) => (grabbable ? grabLabel(event, shownLabel) : event.stopPropagation()) : undefined} onClick={label.link ? () => !labelDragged.current && openPin(label.link as { kind: string; id: string }, label.text) : undefined} filter={label.shadow.blur > 0 || label.shadow.offset > 0 ? `url(#shadow-${label.id})` : undefined}>
                     <text x={label.x} y={label.y} textAnchor={anchor} dominantBaseline={baseline} fontFamily={`"${label.font}", Cinzel, sans-serif`} fontSize={fontSize} fill={label.color} stroke={label.outline.width > 0 ? label.outline.color : "none"} strokeWidth={label.outline.width * fontSize * 0.04} paintOrder="stroke" strokeLinejoin="round">
                       {icon ? `${icon} ` : ""}
                       {label.text}

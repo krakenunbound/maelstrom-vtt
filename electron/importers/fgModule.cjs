@@ -523,6 +523,8 @@ function convertXml(text) {
 // memory as they are on disk, and the pictures last asked for, unpacked.
 const raw = new Map(); // module file -> { bytes, size, mtime }
 const pictures = new Map(); // module file|picture -> bytes
+// A picture found under a near name: its own type (a .webp asked for as .png).
+const standIns = new Map();
 let pictureBytes = 0;
 // A book's media, as its Assets serve them (sounds and video to the GM; books.cjs media()).
 const PICTURE_TYPES = { ".png": "image/png", ".webp": "image/webp", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".gif": "image/gif", ".webm": "video/webm", ".mp4": "video/mp4", ".ogg": "audio/ogg", ".mp3": "audio/mpeg", ".wav": "audio/wav", ".m4a": "audio/mp4" };
@@ -547,7 +549,7 @@ function modulePicture(reference, ownModule) {
   if (parts.length > 2) return null;
   const [inner, other] = parts;
   const moduleName = (other || ownModule || "").trim();
-  const mime = PICTURE_TYPES[path.extname(inner).toLowerCase()];
+  let mime = PICTURE_TYPES[path.extname(inner).toLowerCase()];
   if (!inner || !moduleName || !mime) return null;
   const wanted = inner.replace(/^\/+/, "").replaceAll("\\", "/");
   if (!insideModule(wanted)) return null;
@@ -564,7 +566,7 @@ function modulePicture(reference, ownModule) {
   if (kept) {
     pictures.delete(key);
     pictures.set(key, kept);
-    return { bytes: Buffer.from(kept), mime };
+    return { bytes: Buffer.from(kept), mime: standIns.get(key) ?? mime };
   }
   let bytes = null;
   try {
@@ -582,8 +584,28 @@ function modulePicture(reference, ownModule) {
         raw.set(source, zip);
       }
       const lower = wanted.toLowerCase();
-      const found = Object.values(unzipSync(zip.bytes, { filter: (entry) => entry.name.replaceAll("\\", "/").toLowerCase() === lower }));
-      bytes = found[0] ?? null;
+      // Not at its path (a record naming "campaign/images/Sea-Hag.webp" for the book's "images/Sea Hag.webp"): the
+      // one picture of the same name, its spaces, dashes and case aside.
+      const loose = (name) => path.posix.basename(name.replaceAll("\\", "/").toLowerCase()).replace(/\.[^.]+$/, "").replace(/[^a-z0-9]+/g, "");
+      const near = loose(wanted);
+      let exact = null;
+      const close = [];
+      unzipSync(zip.bytes, {
+        filter: (entry) => {
+          const name = entry.name.replaceAll("\\", "/").toLowerCase();
+          if (name === lower) exact = entry.name;
+          else if (near && PICTURE_TYPES[path.extname(name)] && loose(name) === near) close.push(entry.name);
+          return false;
+        },
+      });
+      // Of several, the one of the same kind of file (a .webp picture, not the .png token of that name).
+      const sameKind = close.filter((name) => path.extname(name).toLowerCase() === path.extname(lower));
+      const pick = exact ?? (close.length === 1 ? close[0] : sameKind.length === 1 ? sameKind[0] : null);
+      bytes = pick ? (unzipSync(zip.bytes, { filter: (entry) => entry.name === pick })[pick] ?? null) : null;
+      if (pick && !exact) {
+        mime = PICTURE_TYPES[path.extname(pick).toLowerCase()] ?? mime;
+        standIns.set(key, mime);
+      }
     }
   } catch {
     return null;

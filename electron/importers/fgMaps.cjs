@@ -14,6 +14,7 @@ const list = (value) => (Array.isArray(value) ? value : value && typeof value ==
 const nums = (text) =>
   String(text ?? "")
     .split(",")
+    .filter((part) => part.trim() !== "")
     .map(Number)
     .filter((value) => Number.isFinite(value));
 
@@ -97,7 +98,8 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
   if (!picture) return null;
   const size = pictureSize(picture.bytes);
   if (!size) return null;
-  const [gridW] = nums(image.gridsize).length ? nums(image.gridsize) : [50];
+  // FG writes no size for its default grid (50 pixels): a map with the grid on and no size is that.
+  const [gridW] = nums(image.gridsize).length && nums(image.gridsize)[0] > 0 ? nums(image.gridsize) : [50];
   const [offsetX = 0, offsetY = 0] = nums(image.gridoffset);
   // What one square measures: FG's scale ("10ft", "5 ft", "1.5m"), else 5 ft.
   const scaleMatch = /^\s*(\d+(?:\.\d+)?)\s*([a-z]*)/i.exec(String(record.data?.scale ?? ""));
@@ -116,8 +118,11 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
       if (occluder.closed && points.length >= 6) points.push(points[0], points[1]);
       // A toggleable occluder is a door; hidden too (FG's Toggleable Wall), a secret one the players do not see.
       const secret = occluder.hidden && !occluder.allow_vision && !occluder.terrain && !occluder.pit;
-      const door = occluder.toggleable ? (secret ? 2 : 1) : 0;
+      // FG marks terrain toggleable too (the GM may switch it): it is never a door.
+      const door = occluder.toggleable && !occluder.terrain ? (secret ? 2 : 1) : 0;
       const vision = Boolean(occluder.allow_vision);
+      // FG's terrain wall (trees, rocks, a hedge): seen into, not through: a limited wall (the second one blocks).
+      const sense = vision ? 0 : occluder.terrain ? 10 : 20;
       const move = occluder.allow_move ? 0 : 20;
       const dir = occluder.single_sided ? (occluder.counterclockwise ? 2 : 1) : 0;
       for (let i = 0; i + 3 < points.length; i += 2) {
@@ -127,9 +132,9 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
         walls.push({
           _id: `fg-${occluder.id ?? n}-${i / 2}`,
           c: [a.x, a.y, b.x, b.y].map((value) => Math.round(value * 10) / 10),
-          sight: vision ? 0 : 20,
-          light: vision ? 0 : 20,
-          sound: 20,
+          sight: sense,
+          light: sense,
+          sound: occluder.terrain ? 10 : 20,
           move,
           dir,
           door,
@@ -158,14 +163,17 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
     const shift = layerOffset(layer);
     const point = { x: size.width / 2 + shift.x, y: size.height / 2 - shift.y };
     const encounter = String(layer.name ?? "").startsWith("Encounter:");
+    // The record it opens, without FG's module part ("@*": this module; "@Book": that one).
+    const target = String(layer.shortcut.record).replace(/@.*$/, "");
     pins.push({
       x: Math.round(point.x),
       y: Math.round(point.y),
-      text: pinText(String(layer.name ?? "").replace(/^Encounter:\s*/, "")),
+      // A pin with no name of its own (most modules') shows the name of the entry it opens.
+      text: pinText(String(layer.name ?? "").replace(/^Encounter:\s*/, "") || names.get(target) || ""),
       icon: encounter ? "trap" : "pin",
       size: 0.4,
       group: encounter ? "Encounters" : "Map keys",
-      link: { kind: "fg", id: `${layer.shortcut.record}@${label}`, class: String(layer.shortcut.class ?? "") },
+      link: { kind: "fg", id: `${target}@${label}`, class: String(layer.shortcut.class ?? "") },
     });
   }
   // An older module's pins (no layers: image > shortcuts > shortcut), at picture pixels from its top left; a
@@ -329,7 +337,8 @@ function fgModuleBundle(moduleName, { only, all = false, file = "", picture = ()
   // when a map has such pins.
   let names = null;
   const namesFor = (record) => {
-    if (!list(record.data?.image?.shortcuts?.shortcut).length) return new Map();
+    const unnamed = list(record.data?.image?.layers?.layer).some((layer) => layer.type === "shortcut" && !String(layer.name ?? "").trim());
+    if (!unnamed && !list(record.data?.image?.shortcuts?.shortcut).length) return new Map();
     if (!names) {
       names = new Map();
       for (const item of readModule(moduleName).records) {
