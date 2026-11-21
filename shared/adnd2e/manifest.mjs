@@ -222,6 +222,8 @@ export default {
               { hook: "damage", label: ["{damage}", " / ", "{damagelarge}"], title: "Damage roll: Small or Medium / Large (by the target)", action: { ct: "damage-roll", key: "weapon" } },
             ],
           },
+          { part: "heading", text: ["To hit each Armor Class"], hint: ["d20 at or above, before modifiers"] },
+          { part: "list", path: "thacomatrix", hook: "thaco-ac", className: "d2e-matrix", name: { path: "ac", bold: true, flat: true }, smalls: [{ place: "name", text: ["{need}"], title: "The d20 roll that hits this Armor Class" }] },
           { part: "heading", text: ["Weapon proficiencies "], hint: ["{profs.weaponslots|0}", " slots; nonproficient ", "{profs.penalty|signed}", " to hit"] },
           {
             part: "list",

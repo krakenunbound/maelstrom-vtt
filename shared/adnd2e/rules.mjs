@@ -739,6 +739,8 @@ export function derive(input) {
     }),
   );
   data.ac = armorClass(data);
+  // The THAC0 matrix: the d20 roll that hits each Armor Class from -10 to 10 (THAC0 - AC).
+  data.thacomatrix = Object.fromEntries(Array.from({ length: 21 }, (_, index) => [String(index), { ac: index - 10, need: data.thaco - (index - 10) }]));
   data.attacks = {};
   for (const [key, item] of rows(data.inventorylist)) {
     if (!isWeapon(item) || num(item.carried, 1) === 0) continue;

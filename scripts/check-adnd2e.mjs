@@ -234,6 +234,14 @@ try {
 }
 assert(/no Test Light memorized left today/.test(castRefused), `none left, refused: ${castRefused}`);
 agent.records.update(brannoc.id, { data: { spells: [], spellrows: {}, spellcasting: castingBefore } }, agent.seat);
+// SURPRISE effects add to a surprise roll: d10 1 + the Dexterity reaction adjustment + 2.
+await tool("kraken_combat", { action: "effect", id: fighterEntry.id, effect: { label: "Alert; SURPRISE: 2", duration: 1 } });
+force(1);
+const surprised = await tool("kraken_siege_check", { id: brannoc.id, kind: "surprise" });
+const reaction = r2e.derive(agent.records.get(brannoc.id).data).abilities.dexterity.reactionadj;
+assert(surprised.total === 3 + reaction && /\[EFFECTS \+2\]/.test(last(/\[SURPRISE\]/).roll.label), `a SURPRISE effect adds: ${JSON.stringify(surprised)} ${last(/\[SURPRISE\]/)?.roll?.label}`);
+const alert = (await tool("kraken_combat", { action: "view" })).entries.find((entry) => entry.id === fighterEntry.id).effects.find((effect) => effect.label.startsWith("Alert"));
+await tool("kraken_combat", { action: "effect-remove", id: fighterEntry.id, effectId: alert.id });
 force(2, 7, 5);
 await tool("kraken_combat", { action: "init", which: "all" });
 await tool("kraken_combat", { action: "target", id: fighterEntry.id, targetId: ogreEntry.id, on: true });

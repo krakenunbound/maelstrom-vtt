@@ -83,7 +83,7 @@ may follow FG, icons and art are Maelstrom's own.
 | E1 | INIT on each weapon row: d10 + its speed factor alone, [MOD: weapon], the entry's inititem | none | Done (unreleased) |
 | E2 | Nonweapon proficiencies: a die and a value each (ability score + class, stat, racial, armor, skill, misc), a detail window (type incl. percent) | a text box | Done (unreleased): the ability (changeable) and a misc modifier on each row, its target beside its die |
 | E3 | Sheet initiative roll (no weapon): d10 + initiative.total | tracker only | Done (unreleased) |
-| E4 | Surprise: value (base 3 + mod + temp) and its roll, d10 + Dex reaction adj + SURPRISE effects, surprised at or under | none | Done on the sheet (unreleased); SURPRISE effects open |
+| E4 | Surprise: value (base 3 + mod + temp) and its roll, d10 + Dex reaction adj + SURPRISE effects, surprised at or under | none | Done (unreleased): the sheet, the tracker header, SURPRISE effects |
 | E5 | Delay as a general button (sheet and tracker header) for the active creature: to the end of the round | tracker row only, on its turn | Done in the tracker header (unreleased) |
 | E6 | Tracker header for players: Surprise, Init, Delay | GM header only; player row init | Done (unreleased): the manifest's tracker.ownActions |
 | E7 | A player rolls initiative once a round (initrolled); the GM may reroll; a forced reroll is announced | rerolls freely | Done (unreleased): Shift-click forces |
@@ -96,7 +96,7 @@ may follow FG, icons and art are Maelstrom's own.
 | E14 | Weapon proficiencies with to-hit and damage adjustments applied to chosen weapons (specialization) | names list; specialization in rules | Done (unreleased): rows with Hit and Dmg, on the weapons each covers (by name or group) |
 | E15 | Features and traits lists (race, class, kit abilities) with links | notes | Done (unreleased): links to the race, class and kit records (the core's links part); separate feature rows open |
 | E16 | Spells as rows: memorize into slots, cast (attack, save, damage, heal, effect), initiative | slots a day; names list; Cast per spell (slots, saves, damage, effects) | Done (unreleased): Cast and initiative per spell; memorized copies per spell, cast from them, back on a long rest |
-| E17 | Quick notes on the Actions tab; THAC0 matrix (AC -10..10) | none | open |
+| E17 | Quick notes on the Actions tab; THAC0 matrix (AC -10..10) | none | THAC0 matrix Done (unreleased); quick notes open |
 | E18 | Ability and save details: base, base override, adjustment, temporary | misc only | open |
 
 ## Dice, chat and combat flow

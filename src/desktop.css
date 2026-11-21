@@ -2924,3 +2924,7 @@ label.set-row { cursor: pointer; }
 /* A spell's memorized copies (2E): the count, and how many are cast today. */
 .spell-memo { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
 .spell-memo input { width: 3.2rem; }
+/* 2E's THAC0 matrix: each Armor Class over the roll that hits it, in one band. */
+.d2e-matrix { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.6rem, 1fr)); gap: 2px; padding: 0; }
+.d2e-matrix > li { display: flex; flex-direction: column; align-items: center; padding: 2px 0; border: 1px solid var(--line); border-radius: 4px; font-size: 0.8rem; }
+.d2e-matrix > li small { color: var(--brass); font-size: 0.85rem; }

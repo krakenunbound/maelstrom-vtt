@@ -307,6 +307,9 @@ try {
   await seat.fill('.sheet-2e [aria-label="Long sword to hit"]', "1");
   await seat.press('.sheet-2e [aria-label="Long sword to hit"]', "Tab");
   await seat.waitForFunction(() => [...document.querySelectorAll('.sheet-2e [data-attack]')].some((row) => row.textContent.includes("Long sword") && row.querySelector('[data-action="attack"]')?.textContent.trim() === "+3"), null, { timeout: 10000 });
+  // The THAC0 matrix: THAC0 20 hits AC 10 on a 10 (21 Armor Classes, -10 to 10).
+  const matrixCells = await seat.$$eval('.sheet-2e .d2e-matrix > li', (cells) => cells.map((cell) => cell.textContent.split(' ').join('')));
+  assert(matrixCells.length === 21 && matrixCells[20] === "1010", `the THAC0 matrix: ${matrixCells.join(' ')}`);
   // The Notes tab's Abilities: the kit a link to its book's record, opened in a window.
   await seat.click('[data-sheet-tab="notes"]');
   await seat.waitForSelector('.sheet-2e [data-links="abilities"] button.cc-link:has-text("Test Swordsman")', { timeout: 10000 });

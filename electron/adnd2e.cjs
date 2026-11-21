@@ -38,7 +38,13 @@ async function build2e(table, spec, owner, seat) {
 async function check2e(table, record, { kind = "check", attribute, skill, bonus = 0, label } = {}, from) {
   const rules = await rules2e();
   const data = rules.derive(record.data);
-  const test = kind === "proficiency" ? proficiencyTest(rules, table, data, skill) : rules.testOf(data, kind, kind === "skill" || kind === "table" ? skill : kind === "save" ? attribute : String(attribute ?? "").toLowerCase());
+  let test = kind === "proficiency" ? proficiencyTest(rules, table, data, skill) : rules.testOf(data, kind, kind === "skill" || kind === "table" ? skill : kind === "save" ? attribute : String(attribute ?? "").toLowerCase());
+  // SURPRISE effects on the character's tracker entry add to its surprise roll (FG 2E).
+  if (kind === "surprise") {
+    const entry = table.combat?.entries?.().find((item) => item.recordId === record.id);
+    const extra = (entry?.effects ?? []).flatMap((effect) => String(effect.label ?? "").split(";")).map((part) => /^\s*SURPRISE\s*:\s*([+-]?\d+)\s*$/i.exec(part)).filter(Boolean).reduce((total, match) => total + Number(match[1]), 0);
+    if (extra) test = { ...test, add: Number(test.add || 0) + extra, label: `${test.label} [EFFECTS ${extra > 0 ? "+" : ""}${extra}]` };
+  }
   // A die the test adds to itself (surprise: the Dexterity reaction adjustment) goes with the sheet's modifier.
   const mod = Math.round(Number(bonus) || 0) + Math.round(Number(test.add) || 0);
   // A save adds its modifier; a roll-under check takes a bonus off the die.
