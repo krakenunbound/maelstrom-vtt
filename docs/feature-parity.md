@@ -82,8 +82,8 @@ may follow FG, icons and art are Maelstrom's own.
 |---|---|---|---|
 | E1 | INIT on each weapon row: d10 + its speed factor alone, [MOD: weapon], the entry's inititem | none | Done (unreleased) |
 | E2 | Nonweapon proficiencies: a die and a value each (ability score + class, stat, racial, armor, skill, misc), a detail window (type incl. percent) | a text box | Die and value from the book Done (unreleased); the modifiers and detail open |
-| E3 | Sheet initiative roll (no weapon): d10 + initiative.total | tracker only | open |
-| E4 | Surprise: value (base 3 + mod + temp) and its roll, d10 + Dex reaction adj + SURPRISE effects, surprised at or under | none | open |
+| E3 | Sheet initiative roll (no weapon): d10 + initiative.total | tracker only | Done (unreleased) |
+| E4 | Surprise: value (base 3 + mod + temp) and its roll, d10 + Dex reaction adj + SURPRISE effects, surprised at or under | none | Done on the sheet (unreleased); SURPRISE effects open |
 | E5 | Delay as a general button (sheet and tracker header) for the active creature: to the end of the round | tracker row only, on its turn | open |
 | E6 | Tracker header for players: Surprise, Init, Delay | GM header only; player row init | open |
 | E7 | A player rolls initiative once a round (initrolled); the GM may reroll; a forced reroll is announced | rerolls freely | open |
@@ -91,7 +91,7 @@ may follow FG, icons and art are Maelstrom's own.
 | E9 | INIT effects add to initiative | no | open |
 | E10 | NPC initiative: its highest weapon speed factor (size/speed option, default on); PC vs NPC side option; Roll PC init; Clear all | d10 + init only | open |
 | E11 | The weapon an entry rolled with is announced at its turn | no | open |
-| E12 | Ability table rolls: Open Doors (and locked), Bend Bars, System Shock, Resurrection Survival, Learn Spell, Spell Failure | shown, not rolled | open |
+| E12 | Ability table rolls: Open Doors (and locked), Bend Bars, System Shock, Resurrection Survival, Learn Spell, Spell Failure | shown, not rolled | Done (unreleased) |
 | E13 | THAC0 double-click: a basic attack roll | THAC0 shown | open |
 | E14 | Weapon proficiencies with to-hit and damage adjustments applied to chosen weapons (specialization) | names list; specialization in rules | open |
 | E15 | Features and traits lists (race, class, kit abilities) with links | notes | open |

@@ -208,6 +208,12 @@ try {
   await chat(page, "[CHECK] Strength");
   await seat.click('[data-roll-save="paralyzation"]');
   await chat(page, "[SAVE] Paralyzation");
+  // The ability tables roll from their boxes (Bend Bars, d100 at or under), and Surprise (d10 + Dexterity 16's +1: 2 + 1 = 3, surprised at 3 or under).
+  await seat.click('.sheet-2e [data-ability="strength"] [data-detail="bendbars"]');
+  await chat(page, "[CHECK] Bend Bars / Lift Gates [UNDER");
+  await tool("kraken_dice_force", { values: [2] });
+  await seat.click('.sheet-2e [data-action="roll-surprise"]');
+  await chat(page, "[SURPRISE] surprised at 3 or under [NEEDS 4] [SURPRISED 3 vs 4]");
   // A nonweapon proficiency's die: its ability check with its modifier, both from the book (Survival: Intelligence 10, -1).
   await seat.click('[data-sheet-tab="skills"]');
   // Each shows what it rolls under, the engine's: Endurance Constitution 16, Survival Intelligence 10 - 1.
@@ -234,6 +240,11 @@ try {
   const lion = view.find((entry) => entry.name === "Mountain Lion");
   assert(ogre.hp === 25 && ogre.ac === 4, "the ogre on the tracker: 25 HP, AC 4");
   await tool("kraken_combat", { action: "target", id: mine.id, targetId: ogre.id, on: true });
+  // The sheet's own initiative (no weapon): d10 + its -1 (Dexterity 16), onto the tracker.
+  await seat.click('[data-sheet-tab="main"]');
+  await tool("kraken_dice_force", { values: [4] });
+  await seat.click('.sheet-2e [data-action="roll-init"]');
+  await until(async () => (await tool("kraken_combat", { action: "view" })).entries.find((item) => item.id === mine.id && item.initresult === 3), "the sheet's initiative, 4 - 1");
   await seat.click('[data-sheet-tab="combat"]');
   const swordRow = '.sheet-2e [data-attack]:has(b:text-is("Long sword"))';
   await seat.waitForSelector(`${swordRow} [data-action="init"]`);

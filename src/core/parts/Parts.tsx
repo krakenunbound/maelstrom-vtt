@@ -247,7 +247,7 @@ function StatRows({ spec }: { spec: StatBlockSpec }) {
             })}
             {spec.roll ? <RollButton roll={spec.roll} scope={scope} className="cc-bonus" /> : null}
             {spec.rowNote ? <small className={spec.rowNote.className}>{sheet.formats[spec.rowNote.format]?.((at(sheet.data, spec.rowNote.row.replace("{key}", row.key)) ?? {}) as Row, row.key)}</small> : null}
-            {spec.rowBoxes?.boxes[row.key]?.length ? <DetailBoxes boxes={spec.rowBoxes.boxes[row.key]} row={(at(sheet.data, spec.rowBoxes.row.replace("{key}", row.key)) ?? {}) as Row} /> : null}
+            {spec.rowBoxes?.boxes[row.key]?.length ? <DetailBoxes boxes={spec.rowBoxes.boxes[row.key]} row={(at(sheet.data, spec.rowBoxes.row.replace("{key}", row.key)) ?? {}) as Row} rowKey={row.key} /> : null}
           </div>
         );
       })}
@@ -277,13 +277,21 @@ function detailText(value: unknown, format: DetailBox["format"]) {
   if (format === "dash") return n ? String(n) : "—";
   return String(n);
 }
-function DetailBoxes({ boxes, row }: { boxes: DetailBox[]; row: Row }) {
+function DetailBoxes({ boxes, row, rowKey }: { boxes: DetailBox[]; row: Row; rowKey: string }) {
+  const sheet = useSheet();
   return (
     <span className="cc-details">
       {boxes.map((box) => (
         <span key={box.path} className="cc-detail" title={box.title ?? box.label}>
           <small>{box.label}</small>
-          <b data-detail={box.path}>{detailText(at(row, box.path), box.format)}</b>
+          {box.roll ? (
+            // A value that is a roll (2E's Bend Bars): the button rolls it, the value is its target.
+            <button type="button" className="cc-detail-roll" data-detail={box.path} data-action="roll-detail" disabled={!sheet.editable} title={box.roll.title ?? `Roll ${box.label}`} onClick={() => sheet.act(box.roll!.action, { key: `${rowKey}.${box.path}` })}>
+              {detailText(at(row, box.path), box.format)}
+            </button>
+          ) : (
+            <b data-detail={box.path}>{detailText(at(row, box.path), box.format)}</b>
+          )}
         </span>
       ))}
     </span>
@@ -521,6 +529,17 @@ function DerivedBox({ box }: { box: BoxSpec }) {
           {box.steps.map((step) => (
             <StepButton key={step.hook} spec={step} />
           ))}
+        </span>
+      ) : null}
+      {box.actions?.length ? (
+        <span className="cc-inline cc-box-actions">
+          {box.actions
+            .filter((action) => holds(action.when, scope, sheet))
+            .map((action) => (
+              <button key={action.hook} type="button" className={action.className ?? "cc-roll-die"} data-action={action.hook} disabled={!sheet.editable} title={action.title ? textOf(action.title, scope, sheet.modifiers) : undefined} onClick={() => sheet.act(action.action)} {...actionDrag(action.action, sheet.record.id, "", sheet.editable)}>
+                {nodesOf(action.label, scope, sheet.modifiers)}
+              </button>
+            ))}
         </span>
       ) : null}
     </div>

@@ -20,13 +20,17 @@ const roll = (roll, more = {}) => ({ roll, bonus: "mod", ...more });
 const SAVE_WORDS = SAVE_NAMES;
 // What each ability's table gives at its score, as small boxes beside it (the Player's Handbook's tables).
 /** @type {Record<string, import("../rulesets/types").DetailBox[]>} */
+// An ability table's roll (its box: key "strength.bendbars"), the strip's modifier taken off.
+/** @type {import("../rulesets/types").ActionCall} */
+const TABLE_ROLL = { roll: "table", keyAs: "skill", bonus: "mod" };
+/** @type {Record<string, import("../rulesets/types").DetailBox[]>} */
 const ABILITY_BOXES = {
   strength: [
     { label: "Hit", path: "hitadj", format: "signed", title: "Hit probability adjustment" },
     { label: "Dmg", path: "dmgadj", format: "signed", title: "Damage adjustment" },
     { label: "Allow", path: "weightallow", title: "Weight allowance (lb.)" },
-    { label: "Doors", path: "opendoors", format: "text", title: "Open doors (locked doors in brackets)" },
-    { label: "Bars", path: "bendbars", format: "percent", title: "Bend bars / lift gates" },
+    { label: "Doors", path: "opendoors", format: "text", title: "Open doors (locked doors in brackets)", roll: { action: TABLE_ROLL, title: "Roll to open a stuck door: d20 at or under (a locked one, the number in brackets, too)" } },
+    { label: "Bars", path: "bendbars", format: "percent", title: "Bend bars / lift gates", roll: { action: TABLE_ROLL, title: "Roll to bend bars or lift a gate: d100 at or under" } },
   ],
   dexterity: [
     { label: "Reaction", path: "reactionadj", format: "signed", title: "Reaction adjustment (surprise)" },
@@ -36,19 +40,19 @@ const ABILITY_BOXES = {
   constitution: [
     { label: "HP", path: "hitpointadj", format: "signed", title: "Hit point adjustment a level" },
     { label: "Warrior", path: "warriorhpadj", format: "signed", title: "Hit point adjustment a level for warriors" },
-    { label: "Shock", path: "systemshock", format: "percent", title: "System shock" },
-    { label: "Res.", path: "resurrectionsurvival", format: "percent", title: "Resurrection survival" },
+    { label: "Shock", path: "systemshock", format: "percent", title: "System shock", roll: { action: TABLE_ROLL, title: "Roll system shock: d100 at or under" } },
+    { label: "Res.", path: "resurrectionsurvival", format: "percent", title: "Resurrection survival", roll: { action: TABLE_ROLL, title: "Roll resurrection survival: d100 at or under" } },
   ],
   intelligence: [
     { label: "Lang.", path: "languages", title: "Number of languages" },
     { label: "Spell lvl", path: "spelllevel", format: "dash", title: "Highest spell level (wizards)" },
-    { label: "Learn", path: "learn", format: "percent", title: "Chance to learn a spell" },
+    { label: "Learn", path: "learn", format: "percent", title: "Chance to learn a spell", roll: { action: TABLE_ROLL, title: "Roll to learn a spell: d100 at or under" } },
     { label: "Max", path: "maxspells", format: "all", title: "Most spells known a level" },
   ],
   wisdom: [
     { label: "Magic def.", path: "magicdefenseadj", format: "signed", title: "Magical defense adjustment" },
     { label: "Bonus", path: "spellbonus", format: "text", title: "Bonus spells (priests)" },
-    { label: "Failure", path: "failure", format: "percent", title: "Chance of spell failure (priests)" },
+    { label: "Failure", path: "failure", format: "percent", title: "Chance of spell failure (priests)", roll: { action: TABLE_ROLL, title: "Roll for spell failure: the spell fails on a d100 at or under" } },
   ],
   charisma: [
     { label: "Hench.", path: "maxhench", title: "Most henchmen" },
@@ -171,7 +175,24 @@ export default {
                       { status: "Unconscious", atMost: 0, text: "Unconscious: the wounds are bound; no longer dying." },
                     ],
                   },
-                  { label: "Initiative", show: "value", path: "initiative.total", hook: "init", format: "signed", title: "d10 + this, lowest acts first" },
+                  {
+                    label: "Initiative",
+                    show: "value",
+                    path: "initiative.total",
+                    hook: "init",
+                    format: "signed",
+                    title: "d10 + this, lowest acts first (a weapon's INIT on the Combat tab rolls with its speed factor instead)",
+                    actions: [{ hook: "roll-init", label: "d10", title: "Roll initiative: d10 {initiative.total|signed} onto the combat tracker", action: { ct: "init" } }],
+                  },
+                  {
+                    label: "Surprise",
+                    show: "value",
+                    path: "surprise.total",
+                    hook: "surprise",
+                    title: "Surprised on a d10 (+ Dexterity reaction adjustment) at or under this",
+                    lines: [{ items: [{ before: "Misc", field: { path: "surprise.misc", kind: "number", label: "Surprise misc" } }] }],
+                    actions: [{ hook: "roll-surprise", label: "d10", title: "Roll for surprise: d10 {abilities.dexterity.reactionadj|signed}, surprised at {surprise.total|0} or under", action: { roll: "surprise", bonus: "mod" } }],
+                  },
                   { label: "Movement", show: "field", path: "movement", field: { path: "movement", kind: "number", label: "Movement" } },
             ],
           },
@@ -304,6 +325,7 @@ export default {
       "exp",
       "ac.misc",
       "initiative.misc",
+      "surprise.misc",
       "movement",
       "stable",
       "spellcasting.#.used.#",
@@ -319,7 +341,7 @@ export default {
   blank: false,
   features: ["turnUndead", "multiAttack", "dying.save", "thiefSkills", "spellbooks"],
   // Its own kinds of sheet roll, past check, save, skill and morale (its host's check2e rolls them).
-  rollKinds: ["proficiency"],
+  rollKinds: ["proficiency", "table", "surprise"],
   party: { currency: ["PP", "GP", "EP", "SP", "CP"], xp: "xp", groupCheck: { stats: [], rolls: [{ kind: "save", label: "Save", options: PARTY_SAVES.map((value) => ({ value, label: titleOf(value) })) }, { kind: "check", label: "Check", options: PARTY_STATS.map((value) => ({ value, label: titleOf(value) })) }, { kind: "skill", label: "Thief skill", options: Object.entries(PARTY_SKILLS).map(([value, row]) => ({ value, label: String(row[0]) })) }] } },
   tracker: {
     saves: { keys: ["paralyzation", "rod", "petrification", "breath", "spell"], modLabel: "Mod", modAria: "Save modifier", button: "Roll save" },

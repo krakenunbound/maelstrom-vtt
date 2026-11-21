@@ -686,6 +686,8 @@ export function derive(input) {
   ].filter(Boolean);
   // Initiative: d10, lowest first; Dexterity's reaction adjustment comes off it.
   data.initiative = { misc: num(data.initiative?.misc, 0), total: -data.abilities.dexterity.reactionadj + num(data.initiative?.misc, 0) };
+  // Surprise (PHB): surprised on a d10 roll of 3 or under (the side's roll, the Dexterity reaction adjustment added); misc changes the 3.
+  data.surprise = { misc: Math.round(num(data.surprise?.misc, 0)), total: 3 + Math.round(num(data.surprise?.misc, 0)) };
   data.movement = Math.round(num(input.movement, 0)) || race.movement;
   data.infravision = race.infravision;
   // Warriors: 3/2 attacks a round from 7th, 2 from 13th.
@@ -800,7 +802,35 @@ export function initiativeOf(data, weapon = "") {
   return attack ? { bonus: num(attack.speed, 0), item: attack.name } : { bonus: num(data.initiative?.total, 0), item: "" };
 }
 
+// The ability tables' rolls (the sheet's boxes beside each score): key "strength.bendbars".
+const TABLE_ROLLS = {
+  "strength.opendoors": "Open Doors",
+  "strength.bendbars": "Bend Bars / Lift Gates",
+  "constitution.systemshock": "System Shock",
+  "constitution.resurrectionsurvival": "Resurrection Survival",
+  "intelligence.learn": "Learn Spell",
+  "wisdom.failure": "Spell Failure",
+};
 export function testOf(data, kind, key) {
+  if (kind === "surprise") {
+    // d10 + the Dexterity reaction adjustment: not surprised above the surprise number.
+    const target = num(data.surprise?.total, 3);
+    return { die: "1d10", add: num(data.abilities?.dexterity?.reactionadj, 0), target: target + 1, high: true, label: `[SURPRISE] surprised at ${target} or under`, words: ["NOT SURPRISED", "SURPRISED"] };
+  }
+  if (kind === "table") {
+    const label = TABLE_ROLLS[String(key)];
+    if (!label) throw new Error("No such roll on the ability tables.");
+    const [stat, field] = String(key).split(".");
+    const value = data.abilities?.[stat]?.[field];
+    if (field === "opendoors") {
+      // "16(8)": 16 or under on a d20 opens a stuck door; 8 or under a locked, barred or magically held one.
+      const [, plain, locked] = /^(\d+)(?:\((\d+)\))?/.exec(String(value ?? "")) ?? [];
+      return { die: "1d20", target: num(plain, 0), high: false, label: `[CHECK] ${label}`, ...(locked ? { then: { target: num(locked, 0), label: "[CHECK] Open Locked Doors" } } : {}) };
+    }
+    // Spell failure: the spell fails at or under the chance; it works above it.
+    if (field === "failure") return { die: "1d100", target: 100 - num(value, 0), high: false, label: `[CHECK] Spell works (fails at ${num(value, 0)}% or under)` };
+    return { die: "1d100", target: num(value, 0), high: false, label: `[CHECK] ${label}` };
+  }
   if (kind === "save") {
     const save = saveKey(key);
     return { die: "1d20", target: num(data.saves?.[save]?.total, 20), high: true, label: `[SAVE] ${SAVE_NAMES[save]}` };

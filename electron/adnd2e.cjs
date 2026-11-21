@@ -38,8 +38,9 @@ async function build2e(table, spec, owner, seat) {
 async function check2e(table, record, { kind = "check", attribute, skill, bonus = 0, label } = {}, from) {
   const rules = await rules2e();
   const data = rules.derive(record.data);
-  const test = kind === "proficiency" ? proficiencyTest(rules, table, data, skill) : rules.testOf(data, kind, kind === "skill" ? skill : kind === "save" ? attribute : String(attribute ?? "").toLowerCase());
-  const mod = Math.round(Number(bonus) || 0);
+  const test = kind === "proficiency" ? proficiencyTest(rules, table, data, skill) : rules.testOf(data, kind, kind === "skill" || kind === "table" ? skill : kind === "save" ? attribute : String(attribute ?? "").toLowerCase());
+  // A die the test adds to itself (surprise: the Dexterity reaction adjustment) goes with the sheet's modifier.
+  const mod = Math.round(Number(bonus) || 0) + Math.round(Number(test.add) || 0);
   // A save adds its modifier; a roll-under check takes a bonus off the die.
   const formula = `${test.die}${mod ? `${test.high ? (mod > 0 ? "+" : "") + mod : (mod > 0 ? "-" : "+") + Math.abs(mod)}` : ""}`;
   // The modifier stack too: added to a save, taken off a roll-under die.
@@ -50,8 +51,15 @@ async function check2e(table, record, { kind = "check", attribute, skill, bonus 
   }
   const rolled = table.act(formula, kind === "save" ? "save" : "check", "", { under: !test.high });
   const success = test.high ? rolled.total >= test.target : rolled.total <= test.target;
-  const words = `${label ? `${label} ` : ""}${test.label} [${test.high ? "NEEDS" : "UNDER"} ${test.target}] [${success ? "SUCCESS" : "FAILURE"} ${rolled.total} ${test.high ? "vs" : "under"} ${test.target}]`;
-  table.postRoll(rolled, words, from || record.name, false, { by: record.name, result: success ? "SUCCESS" : "FAILURE", against: test.target });
+  const [yes, no] = test.words ?? ["SUCCESS", "FAILURE"];
+  const words = `${label ? `${label} ` : ""}${test.label} [${test.high ? "NEEDS" : "UNDER"} ${test.target}] [${success ? yes : no} ${rolled.total} ${test.high ? "vs" : "under"} ${test.target}]`;
+  table.postRoll(rolled, words, from || record.name, false, { by: record.name, result: success ? yes : no, against: test.target });
+  // Open Doors: a locked, barred or magically held door its own roll (the bracketed number).
+  if (test.then) {
+    const again = table.act(`${test.die}${mod ? `${mod > 0 ? "-" : "+"}${Math.abs(mod)}` : ""}`, "check", "", { under: true });
+    const opened = again.total <= test.then.target;
+    table.postRoll(again, `${test.then.label} [UNDER ${test.then.target}] [${opened ? "SUCCESS" : "FAILURE"} ${again.total} under ${test.then.target}]`, from || record.name, false, { by: record.name, result: opened ? "SUCCESS" : "FAILURE", against: test.then.target });
+  }
   return { total: rolled.total, target: test.target, success };
 }
 

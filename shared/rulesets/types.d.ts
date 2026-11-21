@@ -111,6 +111,7 @@ export interface BoxSpec {
   suffix?: string; // after the number (movement's ')
   note?: Text; // a small hint under the number
   quick?: boolean; // remaining: an amount with Damage (onto minus, plus first) and Heal (off minus) under it, for the owner
+  actions?: ListAction[]; // buttons under the number (2E's Initiative and Surprise rolls), the owner's
 }
 export interface ListAction {
   hook: Hook;
@@ -201,6 +202,8 @@ export interface DetailBox {
   path: Path;
   title?: string;
   format?: "signed" | "percent" | "all" | "dash" | "text";
+  // The value is a roll (2E's Bend Bars, System Shock): its button sends the action with key "<row key>.<path>".
+  roll?: { action: ActionCall; title?: string };
 }
 // Column heads over a list (docs/core-ui-design.md 8.1): a word over its select, each field, the name and the end
 // (the buttons); the select and fields then keep fixed widths so the heads line up.
