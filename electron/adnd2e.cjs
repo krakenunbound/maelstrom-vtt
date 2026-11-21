@@ -24,7 +24,7 @@ async function build2e(table, spec, owner, seat) {
     built = { name: String(spec.name ?? "").trim() || sheet.name, data: rules.fromFG(sheet.data), problems: [] };
     // (Its FG portrait path is the book's, not Kraken's art: the GM's art by race and class instead.)
   } else built = rules.buildFromSpec(spec ?? {}, { items: table.records.list({ type: "item" }) });
-  const data = require("./characterArt.cjs").withArt(built.data, spec, table.art);
+  const data = withProficiencies(rules, table, require("./characterArt.cjs").withArt(built.data, spec, table.art));
   const record = table.records.create({ type: "character", name: built.name, owner: owner ?? "", visibility: owner ? "owner" : "gm", data }, seat ?? table.seat);
   return { record, problems: built.problems };
 }
@@ -43,6 +43,11 @@ async function check2e(table, record, { kind = "check", attribute, skill, bonus 
   // A save adds its modifier; a roll-under check takes a bonus off the die.
   const formula = `${test.die}${mod ? `${test.high ? (mod > 0 ? "+" : "") + mod : (mod > 0 ? "-" : "+") + Math.abs(mod)}` : ""}`;
   // The modifier stack too: added to a save, taken off a roll-under die.
+  // A sheet made before its proficiencies showed their targets: kept with them now.
+  if (kind === "proficiency") {
+    const filled = withProficiencies(rules, table, structuredClone(data));
+    if (filled !== data && JSON.stringify(filled.profs) !== JSON.stringify(data.profs)) table.records.update(record.id, { data: filled }, table.seat, { replace: true });
+  }
   const rolled = table.act(formula, kind === "save" ? "save" : "check", "", { under: !test.high });
   const success = test.high ? rolled.total >= test.target : rolled.total <= test.target;
   const words = `${label ? `${label} ` : ""}${test.label} [${test.high ? "NEEDS" : "UNDER"} ${test.target}] [${success ? "SUCCESS" : "FAILURE"} ${rolled.total} ${test.high ? "vs" : "under"} ${test.target}]`;
@@ -50,20 +55,39 @@ async function check2e(table, record, { kind = "check", attribute, skill, bonus 
   return { total: rolled.total, target: test.target, success };
 }
 
-// A nonweapon proficiency's check: its ability (d20 at or under the score) and
-// modifier, as the active books' record of it says ("Blind-Fighting [2]" is Blind-fighting).
+// A nonweapon proficiency as the active books have it ("Blind-Fighting [2]" is
+// Blind-fighting): { found, stat, mod } (stat "" when its book gives it no ability), or null.
+function proficiencyOf(rules, table, name) {
+  const plain = (text) => String(text ?? "").replace(/\[[^\]]*\]|\([^)]*\)/g, "").replace(/[^a-z]/gi, "").toLowerCase();
+  const found = table.records.list({ type: "skill" }).find((item) => plain(item.name) === plain(name));
+  if (!found) return null;
+  const stat = String(found.data?.stat ?? "").toLowerCase();
+  return { found, stat: rules.STATS.includes(stat) ? stat : "", mod: Math.round(Number(found.data?.adj_mod) || 0) };
+}
+// The sheet's proficiency rows with their ability and modifier from the books (the engine's, as FG's
+// sheet shows each skill's target), worked out again: a character's data, ready to keep.
+function withProficiencies(rules, table, data) {
+  let changed = false;
+  for (const row of Object.values(data.profs?.checks ?? {})) {
+    if (!row || row.stat) continue;
+    const known = proficiencyOf(rules, table, row.name);
+    if (!known?.stat) continue;
+    row.stat = known.stat;
+    row.mod = known.mod;
+    changed = true;
+  }
+  return changed ? rules.derive(data) : data;
+}
+// A nonweapon proficiency's check: its ability (d20 at or under the score) and modifier.
 function proficiencyTest(rules, table, data, skill) {
   const list = data.profs?.nonweapon ?? [];
   const name = /^\d+$/.test(String(skill ?? "")) ? list[Number(skill)] : String(skill ?? "").trim();
   if (!name) throw new Error("No such proficiency on the sheet.");
-  const plain = (text) => String(text ?? "").replace(/\[[^\]]*\]|\([^)]*\)/g, "").replace(/[^a-z]/gi, "").toLowerCase();
-  const found = table.records.list({ type: "skill" }).find((item) => plain(item.name) === plain(name));
-  if (!found) throw new Error(`No ${name} in the active books: make the book that has it active (Modules), or roll the ability check.`);
-  const stat = String(found.data?.stat ?? "").toLowerCase();
-  if (!rules.STATS.includes(stat)) throw new Error(`${found.name} has no check (its book gives it no ability).`);
-  const adjust = Math.round(Number(found.data?.adj_mod) || 0);
-  const test = rules.testOf(data, "check", stat);
-  return { ...test, target: test.target + adjust, label: `[PROFICIENCY] ${found.name} (${rules.titled(stat)}${adjust ? ` ${rules.signed(adjust)}` : ""})` };
+  const known = proficiencyOf(rules, table, name);
+  if (!known) throw new Error(`No ${name} in the active books: make the book that has it active (Modules), or roll the ability check.`);
+  if (!known.stat) throw new Error(`${known.found.name} has no check (its book gives it no ability).`);
+  const test = rules.testOf(data, "check", known.stat);
+  return { ...test, target: test.target + known.mod, label: `[PROFICIENCY] ${known.found.name} (${rules.titled(known.stat)}${known.mod ? ` ${rules.signed(known.mod)}` : ""})` };
 }
 
 async function levelUp2e(table, record, from, className) {
@@ -120,7 +144,7 @@ async function edit2e(table, record, changes, seat) {
     } else if (EDIT_PATHS.remove.some((pattern) => pattern.test(key)) && value === null) delete data[key.split(".")[0]]?.[key.split(".")[1]];
     else throw new Error(`The sheet cannot change ${key}.`);
   }
-  return table.records.update(record.id, { name, data: rules.derive(data) }, table.seat, { replace: true });
+  return table.records.update(record.id, { name, data: withProficiencies(rules, table, rules.derive(data)) }, table.seat, { replace: true });
 }
 
 module.exports = { rules2e, build2e, check2e, levelUp2e, edit2e, is2e, is2eRuleset, RULESET_NAME, EDIT_PATHS };

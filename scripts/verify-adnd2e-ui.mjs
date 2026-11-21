@@ -210,6 +210,9 @@ try {
   await chat(page, "[SAVE] Paralyzation");
   // A nonweapon proficiency's die: its ability check with its modifier, both from the book (Survival: Intelligence 10, -1).
   await seat.click('[data-sheet-tab="skills"]');
+  // Each shows what it rolls under, the engine's: Endurance Constitution 16, Survival Intelligence 10 - 1.
+  await seat.waitForFunction(() => document.querySelector('.sheet-2e [data-proficiency="1"]')?.textContent.includes("INT 9"), null, { timeout: 10000 });
+  assert((await seat.textContent('.sheet-2e [data-proficiency="0"]')).includes("CON 16"), `Endurance's row shows CON 16: ${await seat.textContent('.sheet-2e [data-proficiency="0"]')}`);
   await tool("kraken_dice_force", { values: [5] });
   await seat.click('.sheet-2e [data-proficiency="1"] [data-action="roll-proficiency"]');
   await chat(page, "[PROFICIENCY] Survival [2] (Intelligence -1) [UNDER 9] [SUCCESS 5 under 9]");

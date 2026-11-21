@@ -706,8 +706,17 @@ export function derive(input) {
     ...(input.profs?.specialized ? { specialized: String(input.profs.specialized).slice(0, 60) } : {}),
     penalty: groups.length ? Math.max(...groups.map((group) => GROUPS[group].penalty)) : -2,
   };
-  // The sheet's rows of them, each with its die (keyed by its place on the list).
-  data.profs.checks = Object.fromEntries(data.profs.nonweapon.map((name, index) => [String(index), { name }]));
+  // The sheet's rows of them, each with its die (keyed by its place on the list): its ability and
+  // modifier as the host found them in the books (kept by name), and the score to roll under.
+  const known = Object.values(input.profs?.checks && typeof input.profs.checks === "object" ? input.profs.checks : {});
+  data.profs.checks = Object.fromEntries(
+    data.profs.nonweapon.map((name, index) => {
+      const was = known.find((row) => row?.name === name);
+      const stat = STATS.includes(was?.stat) ? was.stat : "";
+      const mod = Math.round(num(was?.mod, 0));
+      return [String(index), { name, ...(stat ? { stat, mod, short: stat.slice(0, 3).toUpperCase(), target: num(data.abilities?.[stat]?.score, 10) + mod } : {}) }];
+    }),
+  );
   data.ac = armorClass(data);
   data.attacks = {};
   for (const [key, item] of rows(data.inventorylist)) {

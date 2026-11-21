@@ -228,6 +228,7 @@ export default {
             hook: "proficiency",
             className: "five-items d2e-proficiencies",
             name: { path: "name", flat: true },
+            smalls: [{ place: "name", text: ["{short} ", "{target}"], title: "Its ability and modifier, from its book: roll at or under", when: { has: "short" } }],
             rowActions: [{ hook: "roll-proficiency", className: "cc-roll-die", label: "d20", title: "Roll a {name} check: d20 at or under its ability, with its modifier (from its book)", action: roll("proficiency", { keyAs: "skill" }) }],
           },
           { part: "notes", fields: [{ path: "profs.nonweapon", label: "Nonweapon proficiencies", kind: "textarea", lines: true, bare: true }] },
