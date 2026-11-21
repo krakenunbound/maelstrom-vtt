@@ -128,7 +128,8 @@ function remember(kind: WindowKind, placement: Placement, payload?: string) {
 type Manager = {
   windows: OpenWindow[];
   open: (kind: WindowKind, title: string, payload?: string) => void;
-  toggle: (kind: WindowKind, title: string, payload?: string) => void;
+  // from: the window whose button this is (Settings' Dice): that window aside, a window on top closes.
+  toggle: (kind: WindowKind, title: string, payload?: string, from?: string) => void;
   close: (key: string) => void;
   focus: (key: string) => void;
   // Tucked away to the tray, and back where it was, in front.
@@ -226,9 +227,11 @@ export function WindowProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggle = useCallback(
-    (kind: WindowKind, title: string, payload?: string) => {
+    (kind: WindowKind, title: string, payload?: string, from?: string) => {
       const key = payload ? `${kind}:${payload}` : kind;
       const existing = windows.find((item) => item.key === key);
+      // On top: in front of every window but the one whose button this is (a click on it raised that one).
+      const highest = Math.max(0, ...windows.filter((item) => item.key !== from && !item.minimized && !item.popped).map((item) => item.z));
       // Tucked away: its button brings it back, in front.
       if (existing?.minimized) {
         restore(key);
@@ -244,7 +247,7 @@ export function WindowProvider({ children }: { children: ReactNode }) {
         else close(key);
         return;
       }
-      if (existing && (existing.z === top.current || AT_BACK.includes(existing.kind))) {
+      if (existing && (existing.z === top.current || existing.z === highest || AT_BACK.includes(existing.kind))) {
         close(key);
         return;
       }

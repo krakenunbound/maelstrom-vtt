@@ -71,27 +71,27 @@ export function SettingsWindow({ session }: { session: Session }) {
   return (
     <div className="settings-window">
       <div className="settings-grid" role="group" aria-label="Look and feel">
-        <button type="button" className="settings-button" data-setting="dice" onClick={() => windows.open("dice", "Dice")}>
+        <button type="button" className="settings-button" data-setting="dice" onClick={() => windows.toggle("dice", "Dice", undefined, "settings")}>
           Dice
         </button>
         {gm ? (
           <>
-            <button type="button" className="settings-button" data-setting="decal" onClick={() => windows.open("decals", "Background Decal")}>
+            <button type="button" className="settings-button" data-setting="decal" onClick={() => windows.toggle("decals", "Background Decal", undefined, "settings")}>
               Background Decal
             </button>
-            <button type="button" className="settings-button" data-setting="wallpaper" onClick={() => windows.open("wallpapers", "Desktop Wallpaper")}>
+            <button type="button" className="settings-button" data-setting="wallpaper" onClick={() => windows.toggle("wallpapers", "Desktop Wallpaper", undefined, "settings")}>
               Desktop Wallpaper
             </button>
-            <button type="button" className="settings-button" data-setting="gmicon" onClick={() => windows.open("gmicons", GM("GM Icon"))}>
+            <button type="button" className="settings-button" data-setting="gmicon" onClick={() => windows.toggle("gmicons", GM("GM Icon"), undefined, "settings")}>
               {GM("GM Icon")}
             </button>
-            <button type="button" className="settings-button" data-setting="tower-look" title="The dice tower's look: six drawn towers, painted ones, or a picture of your own" onClick={() => windows.open("towers", "Dice Tower")}>
+            <button type="button" className="settings-button" data-setting="tower-look" title="The dice tower's look: six drawn towers, painted ones, or a picture of your own" onClick={() => windows.toggle("towers", "Dice Tower", undefined, "settings")}>
               Dice Tower
             </button>
-            <button type="button" className="settings-button" data-setting="krits" onClick={() => windows.open("krits", "Critical Hits & Fumbles")}>
+            <button type="button" className="settings-button" data-setting="krits" onClick={() => windows.toggle("krits", "Critical Hits & Fumbles", undefined, "settings")}>
               Critical Hits &amp; Fumbles
             </button>
-            <button type="button" className="settings-button" data-setting="death-markers" onClick={() => windows.open("deathmarkers", "Death Markers")}>
+            <button type="button" className="settings-button" data-setting="death-markers" onClick={() => windows.toggle("deathmarkers", "Death Markers", undefined, "settings")}>
               Death Markers
             </button>
             {window.kraken?.openKrakenFolder ? (

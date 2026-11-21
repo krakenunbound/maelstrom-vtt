@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Settings' buttons open in front, and close on a second click:** Dice, Background Decal, Desktop Wallpaper, GM Icon, Dice Tower, Critical Hits & Fumbles and Death Markers come up in front of Settings (and of every other window); the same button again closes the window, or brings it to the front first if another window covers it, as the sidebar's buttons do.
 - **AD&D 2E says DM:** a ruleset names the one who runs the game (its manifest's `gm`), and the interface uses that word everywhere it speaks of them: in an AD&D 2E campaign the Modules window, chat, dice tower, notes, party, calendar, map editor tips, messages from the table and the rest say DM. Other games still say GM.
 - **Fixed: 2E's Complete handbooks were marked GM only.** Packs that hold FG story entries were taken for adventures. A book is now an adventure only when the shelf files it as one (its pack's kind, or its category and title), so the Complete handbooks start open to the players and the DMG and Monstrous Manual are DM's books the DM may share.
 - **Fixed: an image's size in a page you changed.** Bigger and smaller now resize the picture itself (10% to 200% of its full size, never wider than the page), not just the caption bar.

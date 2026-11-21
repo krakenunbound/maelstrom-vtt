@@ -211,6 +211,27 @@ try {
   const annSees = await seat.$$eval('[data-window="records"] [data-record-row]', (all) => all.length);
   report.push(`a player's Fighter sees no spells ("${said.trim()}"); with a Wizard too she sees ${annSees}`);
   assert(mage.id, "the wizard was made");
+
+  // A window opened from Settings comes up in front of it; its button again closes it; behind another, in front.
+  const zOf = (kind) => page.$eval(`section.window[data-window="${kind}"]`, (w) => Number(w.style.zIndex)).catch(() => 0);
+  const press = async (setting) => {
+    await page.dispatchEvent('section.window[data-window="settings"]', "pointerdown");
+    await page.$eval(`[data-setting="${setting}"]`, (button) => button.click());
+    await settle(500);
+  };
+  if (!(await page.$('section.window[data-window="settings"]'))) await page.click('[title="Settings"], [aria-label="Settings"]');
+  await page.waitForSelector('[data-setting="dice"]');
+  await press("dice");
+  assert((await zOf("dice")) > (await zOf("settings")), "Dice opens in front of Settings");
+  await press("dice");
+  assert(!(await zOf("dice")), "Dice's button again closes it");
+  await press("dice");
+  await press("decal");
+  await press("dice");
+  assert((await zOf("dice")) > (await zOf("decals")) && (await zOf("dice")) > (await zOf("settings")), "Dice behind Background Decal comes in front");
+  await press("dice");
+  assert(!(await zOf("dice")) && (await zOf("decals")), "then its button closes it, Background Decal stays");
+  report.push("Settings' Dice: opens in front of Settings, its button again closes it; behind Background Decal it comes in front, then closes");
   assert(failures.length === 0, `page errors: ${failures.join(" | ")}`);
   console.log(`ok desk ui:\n  ${report.join("\n  ")}`);
 } finally {
