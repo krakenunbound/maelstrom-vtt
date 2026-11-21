@@ -91,9 +91,16 @@ function proficiencyTest(rules, table, data, skill) {
   const list = data.profs?.nonweapon ?? [];
   const name = /^\d+$/.test(String(skill ?? "")) ? list[Number(skill)] : String(skill ?? "").trim();
   if (!name) throw new Error("No such proficiency on the sheet.");
+  // The sheet's row (its ability and modifiers, the player's choice kept), else the book's record.
+  const row = Object.values(data.profs?.checks ?? {}).find((item) => item?.name === name);
+  if (row?.stat) {
+    const test = rules.testOf(data, "check", row.stat);
+    const adjust = Math.round(Number(row.mod) || 0) + Math.round(Number(row.misc) || 0);
+    return { ...test, target: test.target + adjust, label: `[PROFICIENCY] ${name} (${rules.titled(row.stat)}${adjust ? ` ${rules.signed(adjust)}` : ""})` };
+  }
   const known = proficiencyOf(rules, table, name);
-  if (!known) throw new Error(`No ${name} in the active books: make the book that has it active (Modules), or roll the ability check.`);
-  if (!known.stat) throw new Error(`${known.found.name} has no check (its book gives it no ability).`);
+  if (!known) throw new Error(`No ${name} in the active books: make the book that has it active (Modules), or pick its ability on the sheet.`);
+  if (!known.stat) throw new Error(`${known.found.name} has no check (its book gives it no ability): pick one on the sheet.`);
   const test = rules.testOf(data, "check", known.stat);
   return { ...test, target: test.target + known.mod, label: `[PROFICIENCY] ${known.found.name} (${rules.titled(known.stat)}${known.mod ? ` ${rules.signed(known.mod)}` : ""})` };
 }

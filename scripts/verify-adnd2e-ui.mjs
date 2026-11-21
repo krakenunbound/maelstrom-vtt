@@ -217,11 +217,20 @@ try {
   // A nonweapon proficiency's die: its ability check with its modifier, both from the book (Survival: Intelligence 10, -1).
   await seat.click('[data-sheet-tab="skills"]');
   // Each shows what it rolls under, the engine's: Endurance Constitution 16, Survival Intelligence 10 - 1.
-  await seat.waitForFunction(() => document.querySelector('.sheet-2e [data-proficiency="1"]')?.textContent.includes("INT 9"), null, { timeout: 10000 });
-  assert((await seat.textContent('.sheet-2e [data-proficiency="0"]')).includes("CON 16"), `Endurance's row shows CON 16: ${await seat.textContent('.sheet-2e [data-proficiency="0"]')}`);
+  await seat.waitForFunction(() => document.querySelector('.sheet-2e [data-proficiency="1"]')?.textContent.includes("9") && document.querySelector('.sheet-2e [aria-label="Survival [2] ability"]')?.value === "intelligence", null, { timeout: 10000 });
+  assert((await seat.inputValue('.sheet-2e [aria-label="Endurance ability"]')) === "constitution" && (await seat.textContent('.sheet-2e [data-proficiency="0"]')).includes("16"), `Endurance's row: CON, 16: ${await seat.textContent('.sheet-2e [data-proficiency="0"]')}`);
   await tool("kraken_dice_force", { values: [5] });
   await seat.click('.sheet-2e [data-proficiency="1"] [data-action="roll-proficiency"]');
   await chat(page, "[PROFICIENCY] Survival [2] (Intelligence -1) [UNDER 9] [SUCCESS 5 under 9]");
+  // Its own modifier and ability on the row: misc +2 makes Survival 11; Wisdom 12 - 1 + 2 = 13.
+  await seat.fill('.sheet-2e [aria-label="Survival [2] modifier"]', "2");
+  await seat.press('.sheet-2e [aria-label="Survival [2] modifier"]', "Tab");
+  await seat.waitForFunction(() => document.querySelector('.sheet-2e [data-proficiency="1"]')?.textContent.includes("11"), null, { timeout: 10000 });
+  await seat.selectOption('.sheet-2e [aria-label="Survival [2] ability"]', "wisdom");
+  await seat.waitForFunction(() => document.querySelector('.sheet-2e [data-proficiency="1"]')?.textContent.includes("13"), null, { timeout: 10000 });
+  await tool("kraken_dice_force", { values: [12] });
+  await seat.click('.sheet-2e [data-proficiency="1"] [data-action="roll-proficiency"]');
+  await chat(page, "[PROFICIENCY] Survival [2] (Wisdom +1) [UNDER 13] [SUCCESS 12 under 13]");
   await seat.screenshot({ path: path.join(tmpdir(), "kraken-adnd2e-proficiencies.png") });
   await seat.click('[data-sheet-tab="main"]');
 

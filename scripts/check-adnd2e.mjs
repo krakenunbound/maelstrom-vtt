@@ -31,13 +31,13 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const { EDIT_PATHS } = require("../electron/adnd2e.cjs");
   const before = {
     text: ["playername", "alignment", "deity", "appearance", "notes", "background", "race", "gender", "age", "height", "weight", "languages"].map((key) => `^${key}$`),
-    number: [/^abilities\.(strength|dexterity|constitution|intelligence|wisdom|charisma)\.score$/, /^abilities\.strength\.percent$/, /^saves\.(paralyzation|rod|petrification|breath|spell)\.misc$/, /^thiefskills\.[a-z]+\.(points|misc)$/, /^hp\.(total|wounds|temp)$/, /^exp$/, /^ac\.misc$/, /^initiative\.misc$/, /^surprise\.misc$/, /^movement$/, /^stable$/, /^spellcasting\.\d\.used\.\d$/, /^coins\.id-\d+\.amount$/, /^inventorylist\.id-\d+\.(count|carried)$/].map((regex) => regex.source),
+    number: [/^abilities\.(strength|dexterity|constitution|intelligence|wisdom|charisma)\.score$/, /^abilities\.strength\.percent$/, /^saves\.(paralyzation|rod|petrification|breath|spell)\.misc$/, /^thiefskills\.[a-z]+\.(points|misc)$/, /^hp\.(total|wounds|temp)$/, /^exp$/, /^ac\.misc$/, /^initiative\.misc$/, /^surprise\.misc$/, /^profs\.checks\.\d+\.misc$/, /^movement$/, /^stable$/, /^spellcasting\.\d\.used\.\d$/, /^coins\.id-\d+\.amount$/, /^inventorylist\.id-\d+\.(count|carried)$/].map((regex) => regex.source),
     // The lists were "spells", "profs.weapon" and "profs.nonweapon" by name.
     list: ["^spells$", /^profs\.(weapon|nonweapon)$/.source],
   };
   assert(EDIT_PATHS.remove.map((regex) => regex.source).join() === /^(inventorylist)\.id-\d+$/.source, `the rows the sheet may drop: ${EDIT_PATHS.remove.map((regex) => regex.source).join()}`);
   for (const kind of ["text", "number", "list"]) assert(EDIT_PATHS[kind].map((regex) => regex.source).join(" ") === before[kind].join(" "), `the ${kind} whitelist from the manifest is the old one: ${EDIT_PATHS[kind].map((regex) => regex.source).join(" ")}`);
-  assert(EDIT_PATHS.string.length === 1 && EDIT_PATHS.string[0].test("inventorylist.id-00001.location"), "one string path: an item's container (its location)");
+  assert(EDIT_PATHS.string.length === 2 && EDIT_PATHS.string[0].test("inventorylist.id-00001.location") && EDIT_PATHS.string[1].test("profs.checks.12.stat"), "the string paths: an item's container (its location), a proficiency's ability");
   console.log("whitelist ok");
 }
 

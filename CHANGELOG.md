@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **AD&D 2E proficiencies, each with its own numbers:** every row has its ability (the book's, changeable) and your own misc modifier, and shows its target (the score, the book's modifier and misc) beside its die.
 - **AD&D 2E initiative, as the rules have it:** a player rolls once a round (Shift-click to roll again, and the table is told; the GM any time); INIT effects add to it; a creature rolls with its slowest weapon's speed factor; the weapon a character rolled with is said when its turn starts.
 - **The combat tracker's header: your own creature's buttons:** a game can put buttons there for your character (the GM's: whoever's turn it is). AD&D 2E: Surprise, Initiative and Delay (on your turn).
 - **Export a character from its card's right-click:** in the Characters window, right-click a character (yours; the GM's, any) for Export as a Maelstrom file or as XML.

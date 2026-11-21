@@ -714,9 +714,11 @@ export function derive(input) {
   data.profs.checks = Object.fromEntries(
     data.profs.nonweapon.map((name, index) => {
       const was = known.find((row) => row?.name === name);
+      // Its ability (the book's, or the player's choice), the book's modifier and the player's own misc.
       const stat = STATS.includes(was?.stat) ? was.stat : "";
       const mod = Math.round(num(was?.mod, 0));
-      return [String(index), { name, ...(stat ? { stat, mod, short: stat.slice(0, 3).toUpperCase(), target: num(data.abilities?.[stat]?.score, 10) + mod } : {}) }];
+      const misc = Math.max(-20, Math.min(20, Math.round(num(was?.misc, 0))));
+      return [String(index), { name, ...(misc ? { misc } : {}), ...(stat ? { stat, mod, short: stat.slice(0, 3).toUpperCase(), target: num(data.abilities?.[stat]?.score, 10) + mod + misc } : {}) }];
     }),
   );
   data.ac = armorClass(data);

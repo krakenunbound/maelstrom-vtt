@@ -81,7 +81,7 @@ may follow FG, icons and art are Maelstrom's own.
 | # | FG 2E | Maelstrom before | Status |
 |---|---|---|---|
 | E1 | INIT on each weapon row: d10 + its speed factor alone, [MOD: weapon], the entry's inititem | none | Done (unreleased) |
-| E2 | Nonweapon proficiencies: a die and a value each (ability score + class, stat, racial, armor, skill, misc), a detail window (type incl. percent) | a text box | Die and value from the book Done (unreleased); the modifiers and detail open |
+| E2 | Nonweapon proficiencies: a die and a value each (ability score + class, stat, racial, armor, skill, misc), a detail window (type incl. percent) | a text box | Done (unreleased): the ability (changeable) and a misc modifier on each row, its target beside its die |
 | E3 | Sheet initiative roll (no weapon): d10 + initiative.total | tracker only | Done (unreleased) |
 | E4 | Surprise: value (base 3 + mod + temp) and its roll, d10 + Dex reaction adj + SURPRISE effects, surprised at or under | none | Done on the sheet (unreleased); SURPRISE effects open |
 | E5 | Delay as a general button (sheet and tracker header) for the active creature: to the end of the round | tracker row only, on its turn | Done in the tracker header (unreleased) |
