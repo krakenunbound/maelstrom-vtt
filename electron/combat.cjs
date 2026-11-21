@@ -1738,7 +1738,9 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       if (!linked || linked.type !== "character") throw new Error("No such character.");
       if (seat.role !== "dm" && linked.owner !== seat.name) throw new Error("That is not your character.");
       const data = r2e.derive(linked.data);
-      const attack = data.attacks?.[key] ?? Object.values(data.attacks ?? {}).find((item) => item.item === key || item.name.toLowerCase() === String(key).toLowerCase());
+      // A plain attack (the sheet's THAC0): d20 and nothing else, no weapon's modifiers; a punch's damage if it lands.
+      const basic = key === "basic" ? { name: "Attack", tohit: 0, damage: data.attacks?.unarmed?.damage ?? "1d2", damagelarge: data.attacks?.unarmed?.damagelarge ?? "1d2", type: "melee", dmgtype: "B" } : null;
+      const attack = basic ?? data.attacks?.[key] ?? Object.values(data.attacks ?? {}).find((item) => item.item === key || item.name.toLowerCase() === String(key).toLowerCase());
       if (!attack) throw new Error("No such weapon.");
       const swing = { name: attack.name, tohit: attack.tohit, damage: attack.damage, damagelarge: attack.damagelarge, type: attack.type, dmgtype: attack.dmgtype ?? "" };
       const times = attack.rate === "2/1" ? 2 : attack.rate === "3/2" && state.round % 2 === 0 ? 2 : 1;

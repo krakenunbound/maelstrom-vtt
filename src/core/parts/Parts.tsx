@@ -865,7 +865,14 @@ function Strip({ spec }: { spec: Extract<Part, { part: "strip" }> }) {
           case "value":
             return (
               <span key={index} className="cc-inline" title={item.title}>
-                <b>{item.label}</b> <span className="cc-num" data-stat={item.hook}>{item.format === "signed" ? signed(num(at(data, item.path))) : num(at(data, item.path))}</span>
+                <b>{item.label}</b>{" "}
+                {item.action ? (
+                  <button type="button" className="cc-num cc-num-roll" data-stat={item.hook} data-action={`roll-${item.hook}`} disabled={!sheet.editable} title={item.title} onClick={(event) => sheet.act(item.action!, { shift: event.shiftKey })}>
+                    {item.format === "signed" ? signed(num(at(data, item.path))) : num(at(data, item.path))}
+                  </button>
+                ) : (
+                  <span className="cc-num" data-stat={item.hook}>{item.format === "signed" ? signed(num(at(data, item.path))) : num(at(data, item.path))}</span>
+                )}
               </span>
             );
           case "modifier": {

@@ -297,6 +297,10 @@ try {
   }, "the ogre's wounds");
   assert(hurt.wounds === 10, `the Large damage: 6 + 4 = 10: ${JSON.stringify(hurt)}`);
 
+  // THAC0 is a plain attack roll (no weapon, no modifiers): d20 11 against the ogre's AC 4 needs 16, a miss.
+  await tool("kraken_dice_force", { values: [11] });
+  await seat.click('.sheet-2e [data-action="roll-thaco"]');
+  await chat(page, "[THAC0 20] [AC 4] [MISS 11 vs 16]");
   // A natural 20 with the book's Krits & Fumbles tables: Critical Hit 5, the sword's slashing table: +1d4.
   await tool("kraken_combat", { action: "target", id: mine.id, targetId: ogre.id, on: true });
   await tool("kraken_dice_force", { values: [20, 5, 2] });

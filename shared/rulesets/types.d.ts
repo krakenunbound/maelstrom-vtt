@@ -231,7 +231,8 @@ export type StripItem =
   // shown: the experience as a number box (data-stat=hook) and its next, with the GM's field after them (Basic
   // Fantasy's); note: a small after it while when holds (+10% XP).
   | { kind: "xp"; path: Path; next?: Path; label: string; word?: string; edit?: "gm"; shown?: { hook: Hook }; note?: { when: Cond; text: Nodes } }
-  | { kind: "value"; label: string; path: Path; hook: Hook; title?: string; format?: "signed" }
+  // action: the value is a button (2E's THAC0: a plain attack roll), its owner's.
+  | { kind: "value"; label: string; path: Path; hook: Hook; title?: string; format?: "signed"; action?: ActionCall }
   // A sheet modifier the rolls read (DC, Mod): a number kept while the sheet is open.
   // plain: the label as plain words, not bold; input: the field's classes (default "cc-field number"); width: in em;
   // start: its value when the sheet opens (default 0); no min or max: none.

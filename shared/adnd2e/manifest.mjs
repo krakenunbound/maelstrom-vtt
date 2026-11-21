@@ -94,7 +94,7 @@ export default {
         items: [
           { kind: "levels", path: "classes", exp: "exp", next: "expnext", max: MAX_LEVEL, title: "{name}: {exp|0} of {expnext|nz:—} XP", buttonTitle: "Level up as a {name|lower}: the host rolls the hit die", hook: "adnd2e.classKey" },
           { kind: "xp", path: "exp", next: "expnext", label: "Experience" },
-          { kind: "value", label: "THAC0", path: "thaco", hook: "thaco", title: "To Hit Armor Class 0: an attack hits when d20 + modifiers reaches THAC0 - the target's AC" },
+          { kind: "value", label: "THAC0", path: "thaco", hook: "thaco", title: "To Hit Armor Class 0: an attack hits when d20 + modifiers reaches THAC0 - the target's AC. Click: a plain attack roll at each target (no weapon)", action: { ct: "attack", args: { weapon: "basic" } } },
           { kind: "modifier", key: "mod", label: "Mod", aria: "Roll modifier", title: "A modifier for the next roll: added to a save, taken off an ability check or a thief skill's d100", min: -20, max: 20 },
         ],
       },
