@@ -318,6 +318,7 @@ export type Cond =
   | { gmOrMine: true }
   | { viewerHasCharacter: true }
   | { atLeast: { path: Path; value: number } }
+  | { character: true } // in the tracker: the entry is a character (not an NPC)
   | { anyEntry: Cond } // in the tracker's header: some entry in the fight
   | { has: Path }
   // On a sheet: a row's or the record's values, and whether the viewer may type.
@@ -342,7 +343,8 @@ export type Cond =
 export type Words = string | { if: Cond; then: string; else: string } | Words[];
 // A tracker button's call: a tracker message (session.ct(ct, { id: the row's entry, ...args }); with: the row's record
 // as recordId, or the viewer's own character's), or a ruleset message on the row's record (session.<message>Action).
-export type TrackerCall = { ct: string; args?: Record<string, unknown>; with?: "record" | "viewer" } | { message: string; action: string };
+// roll: a sheet roll on the entry's record (its kind, as the sheet's: 2E's surprise), key its attribute or skill.
+export type TrackerCall = { ct: string; args?: Record<string, unknown>; with?: "record" | "viewer" } | { message: string; action: string } | { roll: string; key?: string };
 export interface TrackerAction {
   hook: Hook; // data-action
   label: Words;
@@ -363,6 +365,9 @@ export interface TrackerSpec {
   rowActions?: TrackerAction[]; // on a row, after its health, in this order
   headerParts?: Ref[]; // whole controls a game adds to the GM's header (Fate's conflict)
   headerActions?: TrackerAction[]; // buttons in the GM's header (Cairn's morale for every foe)
+  // Buttons in the header for the viewer's own creature, its row their entry: a player's character in the
+  // fight; the GM's, whoever's turn it is (2E's Surprise, Init and Delay).
+  ownActions?: TrackerAction[];
   // The GM's "Roll save" box on a row: the stats offered, the modifier's word and aria-label, the button.
   saves?: { keys: string[]; modLabel: string; modAria: string; button: string };
 }

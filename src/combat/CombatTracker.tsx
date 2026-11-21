@@ -578,6 +578,8 @@ function InitiativeTracker({ session }: { session: Session }) {
     .sort((a, b) => a.name.localeCompare(b.name))
     .slice(0, 60);
   const mine = combat.entries.find((entry) => entry.mine && entry.id === combat.active);
+  // The header's own buttons act on: a player's own creature (the one whose turn it is first); the GM's, whose turn it is.
+  const ownEntry = gm ? combat.entries.find((entry) => entry.id === combat.active) : (mine ?? combat.entries.find((entry) => entry.mine));
 
   return (
     <div
@@ -614,6 +616,13 @@ function InitiativeTracker({ session }: { session: Session }) {
             </button>
           ) : null}
         </span>
+        {ownEntry && tracker?.ownActions?.length ? (
+          // The ruleset's buttons for the viewer's own creature (a player's character; the GM's, whose turn it is).
+          <span className="ct-own" aria-label={`${ownEntry.name}'s actions`}>
+            <small className="ct-own-name">{ownEntry.name}</small>
+            <TrackerButtons actions={tracker.ownActions} scope={{ session, gm, myCharacterId: "", entry: ownEntry }} className="ct-own-button" />
+          </span>
+        ) : null}
         {gm ? (
           <span className="ct-head-tools">
             <button type="button" onClick={() => session.ct("init", { which: "npcs" })} disabled={combat.entries.length === 0}>

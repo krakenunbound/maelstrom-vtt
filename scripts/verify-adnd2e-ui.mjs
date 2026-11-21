@@ -240,6 +240,17 @@ try {
   const lion = view.find((entry) => entry.name === "Mountain Lion");
   assert(ogre.hp === 25 && ogre.ac === 4, "the ogre on the tracker: 25 HP, AC 4");
   await tool("kraken_combat", { action: "target", id: mine.id, targetId: ogre.id, on: true });
+  // The tracker's header: the player's own Surprise and Initiative (the ruleset's ownActions).
+  await seat.click('.sidebar [data-launch="combat"]');
+  await seat.waitForSelector('.ct-own [data-action="own-surprise"]', { timeout: 10000 });
+  await tool("kraken_dice_force", { values: [7] });
+  await seat.click('.ct-own [data-action="own-surprise"]');
+  await chat(page, "[SURPRISE] surprised at 3 or under [NEEDS 4] [NOT SURPRISED 8 vs 4]");
+  await tool("kraken_dice_force", { values: [6] });
+  await seat.click('.ct-own [data-action="own-init"]');
+  await until(async () => (await tool("kraken_combat", { action: "view" })).entries.find((item) => item.id === mine.id && item.initresult === 5), "the header's initiative, 6 - 1");
+  await seat.screenshot({ path: path.join(tmpdir(), "kraken-adnd2e-tracker-own.png") });
+  await seat.click('.sidebar [data-launch="combat"]');
   // The sheet's own initiative (no weapon): d10 + its -1 (Dexterity 16), onto the tracker.
   await seat.click('[data-sheet-tab="main"]');
   await tool("kraken_dice_force", { values: [4] });

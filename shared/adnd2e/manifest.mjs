@@ -345,6 +345,14 @@ export default {
   party: { currency: ["PP", "GP", "EP", "SP", "CP"], xp: "xp", groupCheck: { stats: [], rolls: [{ kind: "save", label: "Save", options: PARTY_SAVES.map((value) => ({ value, label: titleOf(value) })) }, { kind: "check", label: "Check", options: PARTY_STATS.map((value) => ({ value, label: titleOf(value) })) }, { kind: "skill", label: "Thief skill", options: Object.entries(PARTY_SKILLS).map(([value, row]) => ({ value, label: String(row[0]) })) }] } },
   tracker: {
     saves: { keys: ["paralyzation", "rod", "petrification", "breath", "spell"], modLabel: "Mod", modAria: "Save modifier", button: "Roll save" },
+    // The header's buttons for your own creature: Surprise (a character's: d10 + its Dexterity reaction
+    // adjustment, surprised at or under its surprise number), initiative (d10 + its sheet's; a weapon's INIT
+    // on the sheet rolls with that weapon's speed), Delay (on its turn: wait, act later with Act now).
+    ownActions: [
+      { hook: "own-surprise", label: "Surprise", title: "Roll {name}'s surprise: d10 + Dexterity reaction adjustment, surprised at or under the surprise number", when: { character: true }, call: { roll: "surprise" } },
+      { hook: "own-init", label: "Initiative", title: "Roll {name}'s initiative: d10 + the sheet's modifier, lowest first (a weapon's INIT on the sheet rolls with its speed factor)", call: { ct: "init" } },
+      { hook: "own-delay", label: "Delay", title: "Delay {name}'s turn: wait out of the order, then act later with Act now", when: { all: [{ activeTurn: true }, { not: { has: "delayed" } }] }, call: { ct: "delay" } },
+    ],
     rowActions: [
       // Binding the wounds stops the dying's bleeding.
       { hook: "stabilize", label: "Bind wounds", title: "Bind their wounds: unconscious, no longer losing a hit point each round", when: { all: [{ status: "Dying" }, { any: [{ gm: true }, { viewerHasCharacter: true }] }] }, call: { ct: "stabilize", with: "viewer" } },

@@ -84,8 +84,8 @@ may follow FG, icons and art are Maelstrom's own.
 | E2 | Nonweapon proficiencies: a die and a value each (ability score + class, stat, racial, armor, skill, misc), a detail window (type incl. percent) | a text box | Die and value from the book Done (unreleased); the modifiers and detail open |
 | E3 | Sheet initiative roll (no weapon): d10 + initiative.total | tracker only | Done (unreleased) |
 | E4 | Surprise: value (base 3 + mod + temp) and its roll, d10 + Dex reaction adj + SURPRISE effects, surprised at or under | none | Done on the sheet (unreleased); SURPRISE effects open |
-| E5 | Delay as a general button (sheet and tracker header) for the active creature: to the end of the round | tracker row only, on its turn | open |
-| E6 | Tracker header for players: Surprise, Init, Delay | GM header only; player row init | open |
+| E5 | Delay as a general button (sheet and tracker header) for the active creature: to the end of the round | tracker row only, on its turn | Done in the tracker header (unreleased) |
+| E6 | Tracker header for players: Surprise, Init, Delay | GM header only; player row init | Done (unreleased): the manifest's tracker.ownActions |
 | E7 | A player rolls initiative once a round (initrolled); the GM may reroll; a forced reroll is announced | rerolls freely | open |
 | E8 | Spell initiative: casting time, and a Casting (C) effect broken by damage | none (spells are a text list) | open |
 | E9 | INIT effects add to initiative | no | open |

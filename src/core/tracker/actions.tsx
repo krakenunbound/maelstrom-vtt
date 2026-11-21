@@ -36,6 +36,7 @@ export function entryHolds(cond: Cond | undefined, scope: Scope): boolean {
   if ("has" in cond) return present(look(entry, cond.has));
   if ("defined" in cond) return look(entry, cond.defined) !== undefined;
   if ("atLeast" in cond) return Number(look(entry, cond.atLeast.path)) >= cond.atLeast.value;
+  if ("character" in cond) return session.records[entry.recordId ?? ""]?.type === "character";
   return false;
 }
 
@@ -58,6 +59,10 @@ export const textOfWords = (words: Words | undefined, scope: Scope) => (words ==
 function press(action: TrackerAction, scope: Scope) {
   const { session, entry } = scope;
   const call = action.call;
+  if ("roll" in call) {
+    if (entry?.recordId) session.siegeCheck(entry.recordId, call.key ?? "", 0, false, { kind: call.roll });
+    return;
+  }
   if ("ct" in call) {
     const extra = call.with === "record" ? entry?.recordId : call.with === "viewer" ? scope.myCharacterId : "";
     session.ct(call.ct, { ...(entry ? { id: entry.id } : {}), ...(call.args ?? {}), ...(extra ? { recordId: extra } : {}) });

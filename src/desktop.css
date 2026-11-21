@@ -470,6 +470,10 @@ li.empty-state { list-style: none; }
 .ct-round { display: flex; align-items: center; gap: 6px; color: var(--brass); font-family: var(--serif); font-size: 1.05rem; white-space: nowrap; }
 .ct-head-tools { margin-left: auto; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 .ct-head-tools > button, .ct-head-tools > select { white-space: nowrap; }
+/* The ruleset's buttons for your own creature (2E's Surprise, Initiative, Delay): a small group named after it. */
+.ct-own { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 8px; border: 1px solid var(--brass-dim); border-radius: 999px; background: var(--brass-soft); }
+.ct-own-name { color: var(--brass); font-weight: 600; margin-right: 2px; max-width: 10rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ct-own .ct-own-button { padding: 2px 10px; border-radius: 999px; white-space: nowrap; }
 .ct-list { flex: 1; min-height: 0; overflow: auto; list-style: none; margin: 0; padding: 8px; display: flex; flex-direction: column; gap: 4px; }
 .ct-row { border: 1px solid var(--line); border-left-width: 4px; border-radius: 8px; background: #1a1d23; }
 .ct-row.faction-friend { border-left-color: #56b33f; }
