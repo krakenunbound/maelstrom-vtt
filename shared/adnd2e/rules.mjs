@@ -802,6 +802,17 @@ export function derive(input) {
   const nexts = data.classes.filter((item) => item.expnext > 0).map((item) => item.expnext * data.classes.length);
   data.expnext = nexts.length ? Math.min(...nexts) : 0;
   data.spells = (Array.isArray(data.spells) ? data.spells : []).map((spell) => String(spell).slice(0, 80)).filter(Boolean);
+  // Each known spell's memorized copies (FG 2E's memorization: a spell is cast from one) and how many are
+  // cast since the last long rest, kept by name.
+  const knownSpells = Object.values(input.spellrows && typeof input.spellrows === "object" ? input.spellrows : {});
+  data.spellrows = Object.fromEntries(
+    data.spells.map((name, index) => {
+      const was = knownSpells.find((row) => row?.name === name);
+      const memorized = Math.max(0, Math.min(20, Math.round(num(was?.memorized, 0))));
+      const cast = Math.max(0, Math.min(memorized || 20, Math.round(num(was?.cast, 0))));
+      return [String(index), { name, ...(memorized ? { memorized } : {}), ...(cast ? { cast } : {}) }];
+    }),
+  );
   data.languages = String(data.languages ?? race.languages ?? "Common");
   return data;
 }

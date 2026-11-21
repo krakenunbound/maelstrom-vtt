@@ -352,6 +352,7 @@ export default {
       "surprise.misc",
       "profs.checks.#+.misc",
       "profs.weaponrows.#+.(hit|dmg)",
+      "spellrows.#+.memorized",
       "movement",
       "stable",
       "spellcasting.#.used.#",

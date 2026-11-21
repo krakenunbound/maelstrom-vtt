@@ -2921,3 +2921,6 @@ label.set-row { cursor: pointer; }
 .cc-links p { margin: 2px 0; gap: 8px; }
 .cc-link { padding: 0 2px; border: none; background: none; color: var(--brass); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
 .cc-link:hover { color: var(--text); }
+/* A spell's memorized copies (2E): the count, and how many are cast today. */
+.spell-memo { display: inline-flex; align-items: center; gap: 6px; margin-left: 8px; }
+.spell-memo input { width: 3.2rem; }

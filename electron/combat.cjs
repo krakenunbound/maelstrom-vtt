@@ -2649,6 +2649,13 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     const isCharacter = caster.type === "character";
     const level = textSpellLevel(spell.data ?? {}, data);
     const casterLevel = isCharacter ? Math.max(1, Math.max(num(data.level, 0), ...(data.classes ?? []).map((item) => num(item.level, 0)))) : Math.max(1, Number(/^(\d+)/.exec(String(data.hd ?? data.hitdice ?? "").replace(/[()]/g, ""))?.[1] ?? 1));
+    // A memorized copy (2E, once the character memorizes spells): cast from one, refused when none is left.
+    const memo = isCharacter && data.spellrows ? Object.entries(data.spellrows) : [];
+    if (memo.some(([, row]) => num(row?.memorized, 0) > 0)) {
+      const [key, row] = memo.find(([, item]) => String(item?.name ?? "").toLowerCase() === spell.name.toLowerCase()) ?? [];
+      if (!row || num(row.memorized, 0) <= num(row.cast, 0)) throw new Error(`${caster.name} has no ${spell.name} memorized${row && num(row.memorized, 0) ? " left today" : ""}.`);
+      table().records.update(caster.id, { data: { spellrows: { ...data.spellrows, [key]: { ...row, cast: num(row.cast, 0) + 1 } } } }, table().seat);
+    }
     // A slot of its level (3.5E: spellcasting.used by level; 2E: each class's row, from 1st level).
     if (isCharacter && level > 0 && data.spellcasting) {
       const rows = Array.isArray(data.spellcasting) ? data.spellcasting : [data.spellcasting];

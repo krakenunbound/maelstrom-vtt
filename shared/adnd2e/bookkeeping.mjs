@@ -37,6 +37,6 @@ export default {
     ],
   },
   rest: {
-    long: { hours: 8, hp: 1, reset: ["spellcasting.*.used.*"], rations: true },
+    long: { hours: 8, hp: 1, reset: ["spellcasting.*.used.*", "spellrows.*.cast"], rations: true },
   },
 };

@@ -31,7 +31,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const { EDIT_PATHS } = require("../electron/adnd2e.cjs");
   const before = {
     text: ["playername", "alignment", "deity", "appearance", "notes", "background", "race", "gender", "age", "height", "weight", "languages"].map((key) => `^${key}$`),
-    number: [/^abilities\.(strength|dexterity|constitution|intelligence|wisdom|charisma)\.score$/, /^abilities\.strength\.percent$/, /^saves\.(paralyzation|rod|petrification|breath|spell)\.misc$/, /^thiefskills\.[a-z]+\.(points|misc)$/, /^hp\.(total|wounds|temp)$/, /^exp$/, /^ac\.misc$/, /^initiative\.misc$/, /^surprise\.misc$/, /^profs\.checks\.\d+\.misc$/, /^profs\.weaponrows\.\d+\.(hit|dmg)$/, /^movement$/, /^stable$/, /^spellcasting\.\d\.used\.\d$/, /^coins\.id-\d+\.amount$/, /^inventorylist\.id-\d+\.(count|carried)$/].map((regex) => regex.source),
+    number: [/^abilities\.(strength|dexterity|constitution|intelligence|wisdom|charisma)\.score$/, /^abilities\.strength\.percent$/, /^saves\.(paralyzation|rod|petrification|breath|spell)\.misc$/, /^thiefskills\.[a-z]+\.(points|misc)$/, /^hp\.(total|wounds|temp)$/, /^exp$/, /^ac\.misc$/, /^initiative\.misc$/, /^surprise\.misc$/, /^profs\.checks\.\d+\.misc$/, /^profs\.weaponrows\.\d+\.(hit|dmg)$/, /^spellrows\.\d+\.memorized$/, /^movement$/, /^stable$/, /^spellcasting\.\d\.used\.\d$/, /^coins\.id-\d+\.amount$/, /^inventorylist\.id-\d+\.(count|carried)$/].map((regex) => regex.source),
     // The lists were "spells", "profs.weapon" and "profs.nonweapon" by name.
     list: ["^spells$", /^profs\.(weapon|nonweapon)$/.source],
   };
@@ -221,6 +221,19 @@ await tool("kraken_combat", { action: "damage", id: fighterEntry.id, amount: 1 }
 casting = (await tool("kraken_combat", { action: "view" })).entries.find((entry) => entry.id === fighterEntry.id);
 assert(!casting.effects.some((effect) => /Casting/.test(effect.label)), `hit while casting, the spell is lost: ${JSON.stringify(casting.effects.map((effect) => effect.label))}`);
 await tool("kraken_combat", { action: "heal", id: fighterEntry.id, amount: 1 });
+// Memorizing: a character that memorizes casts from a copy; with none left the cast is refused.
+const castingBefore = agent.records.get(brannoc.id).data.spellcasting;
+agent.records.update(brannoc.id, { data: { spells: ["Test Light"], spellrows: { 0: { name: "Test Light", memorized: 1 } }, spellcasting: [{ class: "Mage", kind: "arcane", perday: [2], used: [0] }] } }, agent.seat);
+await tool("kraken_combat", { action: "cast", recordId: brannoc.id, power: "Test Light" });
+assert(agent.records.get(brannoc.id).data.spellrows["0"].cast === 1, `a memorized copy cast: ${JSON.stringify(agent.records.get(brannoc.id).data.spellrows)}`);
+let castRefused = "";
+try {
+  await tool("kraken_combat", { action: "cast", recordId: brannoc.id, power: "Test Light" });
+} catch (error) {
+  castRefused = String(error?.message ?? error);
+}
+assert(/no Test Light memorized left today/.test(castRefused), `none left, refused: ${castRefused}`);
+agent.records.update(brannoc.id, { data: { spells: [], spellrows: {}, spellcasting: castingBefore } }, agent.seat);
 force(2, 7, 5);
 await tool("kraken_combat", { action: "init", which: "all" });
 await tool("kraken_combat", { action: "target", id: fighterEntry.id, targetId: ogreEntry.id, on: true });
