@@ -28,7 +28,7 @@ export type ActionCall =
   // A roll (session.siegeCheck): bonus names the sheet modifier added to it; keyAs "skill": the key goes as the skill;
   // fight: a save while in a fight goes through the tracker (its effects count).
   // dc / advantage: the sheet modifiers sent as the roll's DC (a save in a fight: its cl) and advantage.
-  | { roll: "save" | "check" | "skill" | "morale" | "proficiency"; key?: string; bonus?: string; keyAs?: "skill"; fight?: boolean; dc?: string; advantage?: string };
+  | { roll: "save" | "check" | "skill" | "morale" | (string & {}) /* or a kind the manifest's rollKinds declares */; key?: string; bonus?: string; keyAs?: "skill"; fight?: boolean; dc?: string; advantage?: string };
 
 export interface FieldSpec {
   path: Path; // relative to the row in a list
@@ -414,6 +414,9 @@ export interface RulesetManifest {
   tracker?: TrackerSpec;
   party: PartySpec;
   features: FeatureId[];
+  // Kinds of sheet roll the game's host takes past check, save, skill and morale (2E's proficiency):
+  // the table passes them on to it (ActionCall roll, the agent's check).
+  rollKinds?: string[];
   settings?: ({ key: string; label: string; hint?: string; kind: "toggle" | "select" | "checklist"; default: unknown; options?: string[] } | { component: Ref; gm?: boolean })[];
   // modifiers: the modifier box and its keys (shared/rulesets/modifiers.mjs); false: none. kinds: the rolls it reads (all when left out).
   dice?: { extraTray?: string[]; resultWords?: Record<string, "good" | "mixed" | "bad">; modifiers?: false | { presets?: (string | import("./modifiers.mjs").ModifierKey)[]; kinds?: string[] } };

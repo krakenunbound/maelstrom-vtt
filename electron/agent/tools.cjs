@@ -655,7 +655,7 @@ const TOOLS = [
         bonus: number("Extra modifier, default 0"),
         addLevel: { type: "boolean", description: "Add the character's level (default: the game's SIEGE_ADD_LEVEL)" },
         label: string("What the check is for"),
-        kind: { type: "string", enum: ["check", "save", "skill", "morale", "proficiency"], description: "5E: an ability check, a saving throw, or a skill; Basic Fantasy also morale (a retainer's loyalty); AD&D 2E also proficiency (a nonweapon proficiency's check: skill its name)" },
+        kind: { type: "string", description: "check, save, skill (5E: an ability check, a saving throw, or a skill), morale (Basic Fantasy: a retainer's loyalty), or a kind the character's game declares (its manifest's rollKinds: AD&D 2E's proficiency, a nonweapon proficiency's check, skill its name)" },
         skill: string("5E: the skill (Perception, Stealth...); 2E proficiency: its name (Fishing)"),
         dc: number("5E: the difficulty class"),
         advantage: { type: "string", enum: ["", "advantage", "disadvantage", "boon", "bane"] },

@@ -14,7 +14,7 @@ const titleOf = (/** @type {string} */ word) => word[0].toUpperCase() + word.sli
 
 const titled = (/** @type {string} */ word) => word[0].toUpperCase() + word.slice(1);
 // A roll with the strip's modifier ("mod": added to a save, taken off an ability check or a thief skill's d100).
-/** @param {"save" | "check" | "skill" | "proficiency"} roll @param {Record<string, unknown>} [more] */
+/** @param {"save" | "check" | "skill" | "proficiency"} roll (proficiency: this game's own, its rollKinds) @param {Record<string, unknown>} [more] */
 const roll = (roll, more = {}) => ({ roll, bonus: "mod", ...more });
 /** @type {Record<string, string>} */
 const SAVE_WORDS = SAVE_NAMES;
@@ -318,6 +318,8 @@ export default {
   wizard: "adnd2e.wizard",
   blank: false,
   features: ["turnUndead", "multiAttack", "dying.save", "thiefSkills", "spellbooks"],
+  // Its own kinds of sheet roll, past check, save, skill and morale (its host's check2e rolls them).
+  rollKinds: ["proficiency"],
   party: { currency: ["PP", "GP", "EP", "SP", "CP"], xp: "xp", groupCheck: { stats: [], rolls: [{ kind: "save", label: "Save", options: PARTY_SAVES.map((value) => ({ value, label: titleOf(value) })) }, { kind: "check", label: "Check", options: PARTY_STATS.map((value) => ({ value, label: titleOf(value) })) }, { kind: "skill", label: "Thief skill", options: Object.entries(PARTY_SKILLS).map(([value, row]) => ({ value, label: String(row[0]) })) }] } },
   tracker: {
     saves: { keys: ["paralyzation", "rod", "petrification", "breath", "spell"], modLabel: "Mod", modAria: "Save modifier", button: "Roll save" },
