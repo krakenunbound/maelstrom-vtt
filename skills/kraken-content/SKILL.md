@@ -23,7 +23,7 @@ checklist. **Read that README before making something for it.**
 | `GM Icons` | Chat pictures | A square transparent PNG, 256 to 512 pixels, bold enough to read at 36 pixels. |
 | `Background Decals` | Table emblems | A transparent PNG or WebP, about 1024 pixels, one centred emblem; a subfolder named for a game groups it with that game. |
 | `Wallpapers` | Desktop tiles | Game-table art (a hex grid, a battle mat, a map, a star chart): seamless, dark and quiet, about 2048 pixels across (shown at its own size). |
-| `Packs` | Books (.kpack) | Made by Kraken from FG modules; not by hand. |
+| `Packs` | Books (.kpack) | Made by Kraken from an FG module (Modules > Packs > Make pack) or by `npm run kpack:make` from a PDF's records and pictures; checked with `npm run kpack:check`. The format: `docs/kpack-format.md`. Bringing any other content (Foundry map sets, Universal VTT maps, a new game's rules): `docs/adapting-content.md`. |
 
 ## Rules for every picture
 

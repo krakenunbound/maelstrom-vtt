@@ -55,6 +55,17 @@ Records name media by their path in the zip (`images/maps/keep.webp`), or, for
 another pack's file, `path@Pack Name`. Store pictures already compressed
 (WebP, PNG, JPEG); the zip need not compress them again.
 
+A pack's sounds join the GM's sound library when the pack is made active (and
+when a campaign opens with it active), and stay there: a file in a `music`
+folder (or a Music record) goes to Music, one whose path says loop, ambient,
+atmosphere or background to Ambience, the rest to Effects, each in a folder
+named for the book. The same file is never added twice. Name sound folders so
+they sort themselves: `sounds/music/`, `sounds/ambience/`, `sounds/effects/`.
+
+Packs hold books. Foundry map sets (adventure bundles), Universal VTT maps and
+other content are opened another way; [adapting-content.md](adapting-content.md)
+says how to bring each kind of content to Maelstrom.
+
 The file name is not significant: Maelstrom finds a pack by the `name` inside
 it, or by its file name without `.kpack`. Name the file after the book.
 
@@ -270,4 +281,6 @@ The GM's own packs come before the packs Maelstrom ships.
 
 - **3** (alpha.97): `kind`, `group`, `order`, `parent`, `thumbnail`,
   `contents`; packs kept in a folder per game; `kpack-make` and `kpack-check`.
+  Since alpha.97: an active pack's sounds are kept in the sound library;
+  pages' map links open the map at their room.
 - **2**: records in `records.json`, media at the module's paths.

@@ -112,4 +112,4 @@ An item's window has **Identified**, and the name and notes the players see unti
 
 ## Importing from Fantasy Grounds
 
-Maelstrom reads Fantasy Grounds modules (`.mod`) in place and can import their content into a campaign. Maps from them bring their walls, doors and lights. Maelstrom also reads Foundry scene bundles' regions (see [Maps and scenes](maps-and-scenes.md#traps-and-regions)).
+Maelstrom reads Fantasy Grounds modules (`.mod`) in place and can import their content into a campaign. Maps from them bring their walls, doors and lights. Maelstrom also opens Foundry map sets (adventure bundles) with their walls, doors, lights and music (see [Maps and scenes](maps-and-scenes.md#foundry-map-sets-and-universal-vtt-maps)). A book's sounds go into your sound library when it is made active.

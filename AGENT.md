@@ -13,6 +13,10 @@ Kraken VTT is built for an AI agent from the ground up, not with one added after
    - `npm run coverage` also runs `scripts/check-manifests.mjs`, which fails if a manifest names a message with no tool or a tool that does not exist.
    - Where a sheet is laid out by its manifest (Cairn so far), the manifest lists every field and its record path, and every button's `data-action`. An agent can read the paths there, then change them with `kraken_character_edit`, or press the buttons through the game's tool (`kraken_cairn`). The tools and hooks did not change.
 
+## Bringing content and games
+
+[docs/adapting-content.md](docs/adapting-content.md) is the agent's guide to bringing anything to Maelstrom: dice packs (and their particle effects), dice towers, GM icons, decals, wallpapers, sounds, books as packs (from FG modules or PDFs), Foundry map sets and Universal VTT maps, and a new game's ruleset from its core rulebook. [docs/kpack-format.md](docs/kpack-format.md) is the pack format.
+
 ## Connecting an agent
 
 The app starts the MCP server when it opens. `electron/agent/mcp-stdio.cjs` is the stdio bridge an MCP client runs, and `.mcp.json` registers it for Claude Code. The agent acts as the GM. Start with `kraken_status`.
@@ -53,7 +57,7 @@ doesn't get it (it could reach the tools withheld from the assistant).
 | Images (Campaign > Images): open a book's picture in the image window (the GM's alone, the same master everywhere: the map tools then work on it), put it in play, play test, close | `kraken_image` (open, play, test, close); `kraken_library` list kind image |
 | Map Studio (Kraken's map maker, studio/web served by electron/studio/server.cjs): open the open image in it; its Save to Kraken writes walls, lights, weather and the painted picture into the image's master | `kraken_image` action studio; `kraken_windows` kind studio |
 | Map Studio's editor itself, every action (skill: [skills/kraken-map-studio/SKILL.md](skills/kraken-map-studio/SKILL.md)): the art library; New, Generate a dungeon; floors (tiled from the map's corner, feathered), the Texture and Scatter brushes, stamping art; the Wall tool's wall art with its line of sight, Walls & doors lines, doors in gaps (the Razor cuts the wall); Lights and time of day; Weather effects in areas; Traps & regions; changing, removing, undo, redo; the map read back and checked against the skill's quality rules; a full-size render (the picture, the editor's view, or the play test from a token); Save project, Open (saved, or a .json / portable .zip); Save to Kraken (into the open image or a new scene); export for a book (picture + walls JSON + portable project). Done by the editor's own code (studio/web/agent.js) in the GM's Map Studio window (main.cjs studioOp, opened if closed); units are squares. `npm run coverage` maps every editor control to an action; `npm run studio-tools` checks each | `kraken_map_studio` (library, new, generate, floor, paint, scatter, place, wall, door, light, ambient, weather, region, update, remove, undo, redo, map, check, render, save, projects, open (saved, file, demo), tabs (select, close), grid, layer, export, kraken). Not yet: add your own art, a map from a picture, duplicate, group, lock, align, assemblies (coverage prints the list) |
-| Quick slots: read or set a seat's ten (books, pages, pictures, sheets, sounds, notes, records, dice `{kind: dice, formula}`, chat macros `{kind: macro, text}`); use one as its click or number key does | `kraken_quickslots` (slots; press) |
+| Quick slots: read or set a seat's ten (books, pages, pictures, sheets, sounds, notes, records, dice `{kind: dice, formula}`, chat macros `{kind: macro, text}`); use one as its click or number key does; dock the bar to an edge, lock it, stand it upright | `kraken_quickslots` (slots; press; dock, locked, upright) |
 | Sidebar Assistant: ask, stop, new chat (its key is set in its window or ANTHROPIC_API_KEY, never by a tool) | `kraken_assistant`, `kraken_windows` kind assistant |
 | **Campaigns** | |
 | List campaigns, make one | `kraken_campaigns`, `kraken_campaign_create` |
@@ -64,7 +68,7 @@ doesn't get it (it could reach the tools withheld from the assistant).
 | The Players window's controls and the portraits' right-click: Ring bell, View as, Mark away, a raised hand lowered, the Ban list and Unban; a player's /afk, idle and raised hand (shown on their row and portrait); a dropped seat kept while it reconnects (lost) | `kraken_players` action ring, view-as, afk, lower, bans, unban |
 | Pause the game (the menubar's button, /pause): the players' veil, their moves and rolls refused | `kraken_table_options` paused |
 | **Maps** | |
-| Open map (a prepared map bundle, or a bare picture to build on) | `kraken_open_adventure` |
+| Open map (a Foundry adventure bundle, several, or a folder of them as one adventure; a Universal VTT map; a bare picture to build on); a bundle's playlists and sounds go into the sound library for good | `kraken_open_adventure` |
 | Adventure and scene menus | `kraken_scenes` |
 | Scene settings: darkness, weather, grid | `kraken_scene_settings` |
 | Place, move (one, or several together), change (facing too), remove tokens | `kraken_token_place`, `kraken_token_move` (`ids`, `dcol`, `drow`), `kraken_token_update`, `kraken_token_remove` |

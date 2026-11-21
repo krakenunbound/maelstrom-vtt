@@ -1311,3 +1311,27 @@ the CL as `dc`; the host's C&C check reads it as the CL and names a save a
 save from the roll's kind. `verify-d20-sheet-ui cnc` presses every control
 on two of the GM's pregens (a fighter and a cleric) on the old and the new
 sheet; the chat lines and changed fields are compared by effect.
+
+## 9. Manifest additions for AD&D 2E's controls (2026-11-20)
+
+Matching AD&D 2E control by control added general manifest options, so any
+ruleset can use them; none is written for one game
+(`shared/rulesets/types.d.ts` has each one):
+
+- `rollKinds`: the game's own kinds of sheet roll beyond save, check, skill
+  and morale (2E: surprise, table, proficiency). The host's roll message
+  accepts exactly these from the manifest.
+- `initiativeOrder` (`"low"`: lowest goes first) and `initiativeDie` (10 for
+  a d10): the tracker sorts and rolls by them.
+- `tracker.ownActions`: buttons in the tracker's header for the viewer's own
+  creature (2E's Initiative, Surprise and Delay), each a `TrackerCall`
+  `{ roll, key }`; a condition `{ character: true }` shows one only when a
+  character is selected.
+- A value box's `actions` (buttons under the number), a detail box's `roll`,
+  a strip value's `action`: every number on the sheet can roll.
+- The `links` part: record links on a sheet (a class, a race, a kit), each
+  opening its record.
+- A shift-click on a roll sends `force` (a reroll where the game allows one);
+  `sheet.act(call, { key, shift })` carries it.
+
+`docs/adapting-content.md` is the how-to for a new ruleset built on these.

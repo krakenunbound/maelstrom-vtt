@@ -14,6 +14,17 @@ Click any picture to open it in the image window:
 
 Nothing shown is a dead end. Every place that opens a picture opens the same master, so walls you draw in one place are there in all the others. The map window can be moved, resized and popped out to another monitor. A picture from a book opens only once that book is active (see [Records, books and packs](records-books-and-packs.md)).
 
+### Foundry map sets and Universal VTT maps
+
+**Open map** (the GM's) also opens maps made for other VTTs:
+
+- **Foundry adventure bundles** (a `.zip` holding `bundle.json`, the usual download of a map set made for Foundry): every scene comes in with its grid, walls, doors (open, closed, locked, secret), lights, tokens, tiles and notes, as Foundry has them. Its music goes into your sound library (see [Sound and music](sound-and-music.md)).
+- **Several at once:** choose several bundles in Open map, or drop them together. They become one adventure (a building's floors, say), each scene a click away, kept with the campaign.
+- **Universal VTT maps** (`.dd2vtt` from Dungeondraft, `.df2vtt`, `.uvtt`): the picture with its grid, walls, doors and lights.
+- **A picture**: one scene, ready for its grid and walls in the map editor.
+
+A bundle's actors, items and journal entries are not read yet.
+
 ## Sharing with the players
 
 - An image you open is **yours alone** (**Not shared**) until you choose **Share**. Then it is the players' map, and it opens on every player's screen, even where a player closed it.

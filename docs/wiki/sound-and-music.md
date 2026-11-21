@@ -28,6 +28,10 @@ Put your sounds in `%APPDATA%\kraken-vtt\assets\sounds` (on Linux, `~/.config/kr
 | `ambience` | Loops. |
 | `music` | Music. |
 
+### Sounds from your books and map sets
+
+When you make a book active, its sounds go into your library and stay there: music in **Music**, loops in **Ambience**, the rest in **Effects**, each in a folder named for the book. A Foundry map set you open does the same with its playlists. A sound already there is not added twice. These are your copies, kept on your computer only.
+
 ## Playing from chat
 
 - `/play oneshots/Doors/Wooden Door` (or `/sfx`) plays a sound for the table (GM). Alone, it opens the Sound window.
