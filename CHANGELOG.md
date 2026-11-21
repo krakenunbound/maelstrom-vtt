@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Stop all sounds stops everything:** the Sound window's Stop all sounds (now on every tab) stops ambience loops and music as well as sound effects; before, a book's mood loop kept playing. A book's sound link that is playing shows a stop square, and its tooltip says a click stops it.
 - **The character wizards in the table's colours:** the bright parchment page is gone; every ruleset's character wizard now uses the table's dark panels and the GM's theme colour, with its page art redrawn as ink on nothing (the paper made transparent) in the theme's colour, like gold leaf on the dark page; every page of the 2E, 3.5E and C&C wizards. The ability boxes keep their width when empty, and an 18 shows its exceptional Strength in full (18/76, before cut off).
 - **Settings' buttons open in front, and close on a second click:** Dice, Background Decal, Desktop Wallpaper, GM Icon, Dice Tower, Critical Hits & Fumbles and Death Markers come up in front of Settings (and of every other window); the same button again closes the window, or brings it to the front first if another window covers it, as the sidebar's buttons do.
 - **AD&D 2E says DM:** a ruleset names the one who runs the game (its manifest's `gm`), and the interface uses that word everywhere it speaks of them: in an AD&D 2E campaign the Modules window, chat, dice tower, notes, party, calendar, map editor tips, messages from the table and the rest say DM. Other games still say GM.

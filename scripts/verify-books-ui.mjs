@@ -137,6 +137,17 @@ try {
     scape = await tool("kraken_sound", { action: "scape" });
   }
   assert(JSON.stringify(scape).includes("ambience/Forest"), `clicking the link starts the loop for the table (${JSON.stringify(scape).slice(0, 200)})`);
+  // The link shows it plays; the Sound window's Stop all sounds stops loops and music too.
+  await page.waitForSelector("a.book-link.sound.playing", { timeout: 8000 });
+  await page.click('.sidebar [data-launch="sound"]');
+  await page.click('[data-action="stop-all-sounds"]');
+  for (let wait = 0; wait < 20 && JSON.stringify(scape).includes("ambience/Forest"); wait++) {
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    scape = await tool("kraken_sound", { action: "scape" });
+  }
+  assert(!JSON.stringify(scape).includes("ambience/Forest"), `Stop all sounds stops the loop (${JSON.stringify(scape).slice(0, 200)})`);
+  await page.waitForSelector("a.book-link.sound:not(.playing)", { timeout: 8000 });
+  await page.click('.sidebar [data-launch="sound"]');
   const dropSound = (selector, ref) =>
     page.evaluate(
       ([target, data]) => {

@@ -481,6 +481,18 @@ export function BookWindow({ session, book }: { session: Session; book: string }
     // Only when the pages, their sounds or the library change (not on every change at the table).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageId, reading, library, session.bookSounds, session.bookPageStamps, gm]);
+  // A sound link that is playing shows it, and says a click stops it.
+  const nowPlaying = useSyncExternalStore(sound.subscribe, sound.playingNow);
+  useEffect(() => {
+    if (!gm) return;
+    for (const link of body.current?.querySelectorAll<HTMLElement>("a.book-link.sound.bound") ?? []) {
+      const ref = linkSound(link);
+      const on = Boolean(ref && sound.isPlaying(ref.sound));
+      link.classList.toggle("playing", on);
+      if (ref) link.title = on ? `Playing ${ref.sound}: click to stop it` : `Plays ${ref.sound} for the table (drop a sound here to change it)`;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nowPlaying, pageId, reading, library, session.bookSounds, session.bookPageStamps, gm]);
   const dropSound = (event: React.DragEvent) => {
     if (!gm || !pageId) return;
     // Dropped on a page's links block (unlocked): that block takes it.

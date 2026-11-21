@@ -288,11 +288,19 @@ function Browser({ session, kind, library, reload }: { session: Session; kind: S
         </div>
       ) : null}
       <div className="sound-stops">
-        {kind === "oneshots" || kind === "sfx" ? (
-          <button type="button" className="sound-stop" onClick={() => session.soundCommand({ type: "sound-stop" })}>
-            Stop all sounds
-          </button>
-        ) : null}
+        <button
+          type="button"
+          className="sound-stop"
+          data-action="stop-all-sounds"
+          title="Stop every sound the table hears: sound effects, ambience loops and music"
+          onClick={() => {
+            session.soundCommand({ type: "sound-stop" });
+            session.soundCommand({ type: "ambience", action: "clear" });
+            session.soundCommand({ type: "music", action: "stop" });
+          }}
+        >
+          Stop all sounds
+        </button>
         <button type="button" className="sound-stop ghost" data-hear-stop onClick={() => sound.stopAll()}>
           Stop what I hear
         </button>
