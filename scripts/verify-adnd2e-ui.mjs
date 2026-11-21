@@ -129,6 +129,14 @@ try {
   await tool("kraken_dice_force", { values: [76] });
   await seat.click('[data-action="roll-strength-percent"]');
   await seat.waitForSelector('[data-str-percent="76"]');
+  // 18/76 fits its box: the percentage is not cut off.
+  const strBox = await seat.$eval('[data-stat="strength"]', (slot) => {
+    const box = slot.getBoundingClientRect();
+    const small = slot.querySelector("small")?.getBoundingClientRect();
+    return { text: slot.textContent, box: [box.left, box.top, box.right, box.bottom], small: small && [small.left, small.top, small.right, small.bottom], inside: Boolean(small) && small.left >= box.left && small.right <= box.right && small.top >= box.top && small.bottom <= box.bottom };
+  });
+  assert(strBox.text === "18/76" && strBox.inside, `Strength's box shows 18/76 whole: ${JSON.stringify(strBox)}`);
+  await seat.locator(".ccw").screenshot({ path: path.join(tmpdir(), "kraken-adnd2e-abilities.png") });
   await tab("race");
   assert((await seat.$$("[data-race]")).length === 6, "every PHB race allows these scores");
   await seat.click('[data-race="Human"]');
@@ -169,7 +177,8 @@ try {
   assert(await isDone("proficiencies"), "every slot spent: the Profs tab done");
   await tab("commit");
   await seat.fill('[aria-label="Character name"]', "Brannoc");
-  // The details filled from the race on the host's dice.
+  // The player rolls the details (the race's tables, on the host's dice).
+  await seat.click('[data-action="roll-details"]');
   await seat.waitForFunction(() => document.querySelector('[aria-label="weight"]')?.value?.includes("lbs"), null, { timeout: 15000 });
   assert(await isDone("commit"), "ready to commit");
   await seat.click('[data-action="wizard-finish"]');
