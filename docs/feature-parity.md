@@ -71,6 +71,34 @@ The big gap: beyond characters, notes and the party sheet, every record is read-
 
 Lower: full-text search across books, GM's own handout images (drop a file on Images), Foundry JSON import, shop, story templates, PDF pages, category editing.
 
+## AD&D 2E against FG's 2E ruleset, control by control (2026-11-21)
+
+Audited from FG's installed 2E.pak and CoreRPG.pak (every control of the six sheet tabs and both combat
+trackers) and the running FG campaign; Maelstrom's side from shared/adnd2e and the tracker. Built through
+the 2E ruleset's manifest and rules (the core only gains general abilities any ruleset can use); the layout
+may follow FG, icons and art are Maelstrom's own.
+
+| # | FG 2E | Maelstrom before | Status |
+|---|---|---|---|
+| E1 | INIT on each weapon row: d10 + its speed factor alone, [MOD: weapon], the entry's inititem | none | Done (unreleased) |
+| E2 | Nonweapon proficiencies: a die and a value each (ability score + class, stat, racial, armor, skill, misc), a detail window (type incl. percent) | a text box | Die and value from the book Done (unreleased); the modifiers and detail open |
+| E3 | Sheet initiative roll (no weapon): d10 + initiative.total | tracker only | open |
+| E4 | Surprise: value (base 3 + mod + temp) and its roll, d10 + Dex reaction adj + SURPRISE effects, surprised at or under | none | open |
+| E5 | Delay as a general button (sheet and tracker header) for the active creature: to the end of the round | tracker row only, on its turn | open |
+| E6 | Tracker header for players: Surprise, Init, Delay | GM header only; player row init | open |
+| E7 | A player rolls initiative once a round (initrolled); the GM may reroll; a forced reroll is announced | rerolls freely | open |
+| E8 | Spell initiative: casting time, and a Casting (C) effect broken by damage | none (spells are a text list) | open |
+| E9 | INIT effects add to initiative | no | open |
+| E10 | NPC initiative: its highest weapon speed factor (size/speed option, default on); PC vs NPC side option; Roll PC init; Clear all | d10 + init only | open |
+| E11 | The weapon an entry rolled with is announced at its turn | no | open |
+| E12 | Ability table rolls: Open Doors (and locked), Bend Bars, System Shock, Resurrection Survival, Learn Spell, Spell Failure | shown, not rolled | open |
+| E13 | THAC0 double-click: a basic attack roll | THAC0 shown | open |
+| E14 | Weapon proficiencies with to-hit and damage adjustments applied to chosen weapons (specialization) | names list; specialization in rules | open |
+| E15 | Features and traits lists (race, class, kit abilities) with links | notes | open |
+| E16 | Spells as rows: memorize into slots, cast (attack, save, damage, heal, effect), initiative | slots a day; names list | open |
+| E17 | Quick notes on the Actions tab; THAC0 matrix (AC -10..10) | none | open |
+| E18 | Ability and save details: base, base override, adjustment, temporary | misc only | open |
+
 ## Dice, chat and combat flow
 
 Kraken already at or ahead: seeded host dice engine, 3D dice, tray with right-click roll N, custom dice and dice packs, dice tower, whispers and reply, emote/OOC/mood/story/vote, speak as, roll cards and drag a damage/heal line onto a creature, drag chat into notes, initiative (all/NPCs/own), sort/turns/rounds/undo, hide NPCs, turn chime and banner, add from list/map/encounter/party, damage/heal on rows, death markers, 5E death saves, XP awards.
