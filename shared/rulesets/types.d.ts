@@ -161,6 +161,9 @@ export type Part = (
   | { part: "strip"; className?: string; items: StripItem[] }
   // A line of words from lists: "<b>Feats:</b> Alert, Tough" (hook: its data-list), none when empty.
   | { part: "tags"; label: string; hook: string; from: Path[] }
+  // The records the character's words name (its race, classes, kit), each a link to the campaign's record
+  // of that type and name (opened with a click, dragged as a link); path: a name, or a list (its rows' field).
+  | { part: "links"; label?: string; hook: string; items: { label: string; type: string | string[]; path: Path; field?: string }[] }
   | ({ part: "button" } & StepSpec)
   | { part: "row"; parts: Part[]; className?: string }
   | { part: "custom"; component: Ref; props?: Record<string, unknown> }

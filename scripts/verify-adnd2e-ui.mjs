@@ -307,6 +307,12 @@ try {
   await seat.fill('.sheet-2e [aria-label="Long sword to hit"]', "1");
   await seat.press('.sheet-2e [aria-label="Long sword to hit"]', "Tab");
   await seat.waitForFunction(() => [...document.querySelectorAll('.sheet-2e [data-attack]')].some((row) => row.textContent.includes("Long sword") && row.querySelector('[data-action="attack"]')?.textContent.trim() === "+3"), null, { timeout: 10000 });
+  // The Notes tab's Abilities: the kit a link to its book's record, opened in a window.
+  await seat.click('[data-sheet-tab="notes"]');
+  await seat.waitForSelector('.sheet-2e [data-links="abilities"] button.cc-link:has-text("Test Swordsman")', { timeout: 10000 });
+  await seat.click('.sheet-2e [data-links="abilities"] button.cc-link:has-text("Test Swordsman")');
+  await seat.waitForSelector('[data-window="record"][aria-label="Test Swordsman"], [data-window="record"]:has-text("A made-up kit")', { timeout: 10000 });
+  await seat.click('[data-sheet-tab="combat"]');
   // A natural 20 with the book's Krits & Fumbles tables: Critical Hit 5, the sword's slashing table: +1d4.
   await tool("kraken_combat", { action: "target", id: mine.id, targetId: ogre.id, on: true });
   await tool("kraken_dice_force", { values: [20, 5, 2] });

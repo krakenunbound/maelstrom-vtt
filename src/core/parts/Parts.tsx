@@ -9,6 +9,8 @@ import { Supplies } from "../../bookkeeping/Supplies";
 import { CONTAINERS } from "../../../shared/bookkeeping/bookkeeping.mjs";
 import { rulesetFor } from "../../../shared/rulesets/registry.mjs";
 import { useState } from "react";
+import { useWindows } from "../../ui/Windows";
+import { slotDrag } from "../../ui/QuickSlots";
 
 // An attack or damage button drags onto a creature (FG's drag of a sheet's action onto a
 // token or tracker row): there it is rolled against that creature alone (src/effects/drops.ts).
@@ -55,6 +57,8 @@ export function PartView({ spec, custom, formats }: { spec: Part; custom: Record
       return <Derived spec={spec} custom={custom} />;
     case "strip":
       return <Strip spec={spec} />;
+    case "links":
+      return <Links spec={spec} />;
     case "tags": {
       const words = spec.from.flatMap((path) => {
         const value = at(sheet.data, path);
@@ -276,6 +280,46 @@ function detailText(value: unknown, format: DetailBox["format"]) {
   if (format === "all") return n >= 99 ? "All" : String(n);
   if (format === "dash") return n ? String(n) : "—";
   return String(n);
+}
+// The records the character's words name (its race, its classes, its kit), each a link to the
+// campaign's record of that type and name: a click opens it, a drag carries it (a quick slot, a note).
+function Links({ spec }: { spec: Extract<Part, { part: "links" }> }) {
+  const sheet = useSheet();
+  const windows = useWindows();
+  const plain = (text: string) => text.replace(/\(.*?\)/g, "").trim().toLowerCase();
+  const groups = spec.items
+    .map((item) => {
+      const value = at(sheet.data, item.path);
+      const names = (typeof value === "string" ? [value] : Array.isArray(value) ? value : value && typeof value === "object" ? Object.values(value) : [])
+        .map((entry) => (typeof entry === "string" ? entry : entry && typeof entry === "object" ? String((entry as Row)[item.field ?? "name"] ?? "") : ""))
+        .map((name) => name.trim())
+        .filter(Boolean);
+      const types = Array.isArray(item.type) ? item.type : [item.type];
+      return { item, names: names.map((name) => ({ name, record: Object.values(sheet.session.records).find((record) => types.includes(record.type) && plain(record.name) === plain(name)) })) };
+    })
+    .filter((group) => group.names.length);
+  if (!groups.length) return null;
+  return (
+    <div className="cc-links" data-links={spec.hook}>
+      {spec.label ? <h4>{spec.label}</h4> : null}
+      {groups.map(({ item, names }) => (
+        <p key={item.label} className="cc-inline">
+          <b>{item.label}</b>
+          {names.map(({ name, record }) =>
+            record ? (
+              <button key={name} type="button" className="cc-link" data-link-record={record.id} title={`Open ${record.name}`} onClick={() => windows.open("record", record.name, record.id)} {...slotDrag({ kind: "record", record: record.id, label: record.name })}>
+                {name}
+              </button>
+            ) : (
+              <span key={name} title="No record of it in the campaign's active books">
+                {name}
+              </span>
+            ),
+          )}
+        </p>
+      ))}
+    </div>
+  );
 }
 function DetailBoxes({ boxes, row, rowKey }: { boxes: DetailBox[]; row: Row; rowKey: string }) {
   const sheet = useSheet();

@@ -327,6 +327,8 @@ export default {
         id: "notes",
         page: "panel",
         parts: [
+          // The race, classes and kit as links to their books' records (all their abilities in the words of the book).
+          { part: "links", label: "Abilities", hook: "abilities", items: [{ label: "Race", type: "race", path: "race" }, { label: "Class", type: "class", path: "classes", field: "name" }, { label: "Kit", type: ["background", "kit"], path: "kit" }] },
           { part: "notes", fields: [{ path: "deity", kind: "text", label: "Deity" }, { path: "languages", kind: "text", label: "Languages" }] },
           { part: "hint", text: ["Infravision ", "{infravision}", " feet."], when: { positive: "infravision" } },
           { part: "notes", fields: [{ path: "notes", kind: "textarea", label: "Notes", bare: true, fieldClass: "tall" }] },

@@ -2917,3 +2917,7 @@ label.set-row { cursor: pointer; }
 .party-token-info { display: grid; gap: 6px; min-width: 0; }
 .party-token-info input { max-width: 18rem; }
 .party-token-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+/* A sheet's links to the records its words name (2E's race, classes and kit): open on a click, drag as a link. */
+.cc-links p { margin: 2px 0; gap: 8px; }
+.cc-link { padding: 0 2px; border: none; background: none; color: var(--brass); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.cc-link:hover { color: var(--text); }
