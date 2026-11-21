@@ -331,7 +331,7 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
           </span>
         ) : entry.mine ? (
           <span className="ct-tools">
-            <button type="button" title={tracker?.initiative?.ownTitle ?? "Roll my initiative"} onClick={() => session.ct("init", { which: entry.id })}>
+            <button type="button" title={tracker?.initiative?.ownTitle ?? "Roll my initiative"} onClick={(event) => session.ct("init", { which: entry.id, ...(event.shiftKey ? { force: true } : {}) })}>
               {tracker?.initiative?.own ?? "d10"}
             </button>
           </span>
@@ -508,7 +508,7 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
               <option value="foe">Foe</option>
               <option value="none">No side</option>
             </select>
-            <button type="button" onClick={() => session.ct("init", { which: entry.id })}>
+            <button type="button" onClick={(event) => session.ct("init", { which: entry.id, ...(event.shiftKey ? { force: true } : {}) })}>
               Roll init
             </button>
             <ConfirmButton className="danger" action="remove-entry" label={<><Icon name="trash" size={14} /> Remove</>} ask={`Remove ${entry.name}`} onConfirm={() => session.ct("remove", { id: entry.id })} />

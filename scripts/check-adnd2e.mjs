@@ -31,7 +31,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const { EDIT_PATHS } = require("../electron/adnd2e.cjs");
   const before = {
     text: ["playername", "alignment", "deity", "appearance", "notes", "background", "race", "gender", "age", "height", "weight", "languages"].map((key) => `^${key}$`),
-    number: [/^abilities\.(strength|dexterity|constitution|intelligence|wisdom|charisma)\.score$/, /^abilities\.strength\.percent$/, /^saves\.(paralyzation|rod|petrification|breath|spell)\.misc$/, /^thiefskills\.[a-z]+\.(points|misc)$/, /^hp\.(total|wounds|temp)$/, /^exp$/, /^ac\.misc$/, /^initiative\.misc$/, /^movement$/, /^stable$/, /^spellcasting\.\d\.used\.\d$/, /^coins\.id-\d+\.amount$/, /^inventorylist\.id-\d+\.(count|carried)$/].map((regex) => regex.source),
+    number: [/^abilities\.(strength|dexterity|constitution|intelligence|wisdom|charisma)\.score$/, /^abilities\.strength\.percent$/, /^saves\.(paralyzation|rod|petrification|breath|spell)\.misc$/, /^thiefskills\.[a-z]+\.(points|misc)$/, /^hp\.(total|wounds|temp)$/, /^exp$/, /^ac\.misc$/, /^initiative\.misc$/, /^surprise\.misc$/, /^movement$/, /^stable$/, /^spellcasting\.\d\.used\.\d$/, /^coins\.id-\d+\.amount$/, /^inventorylist\.id-\d+\.(count|carried)$/].map((regex) => regex.source),
     // The lists were "spells", "profs.weapon" and "profs.nonweapon" by name.
     list: ["^spells$", /^profs\.(weapon|nonweapon)$/.source],
   };
@@ -187,6 +187,18 @@ await tool("kraken_combat", { action: "init", which: "all" });
 view = (await tool("kraken_combat", { action: "view" })).entries;
 assert(view.find((entry) => entry.id === fighterEntry.id).initresult === 2 && view.find((entry) => entry.id === ogreEntry.id).initresult === 7, `d10 initiative: ${view.map((entry) => `${entry.name} ${entry.initresult}`)}`);
 assert(same(view.map((entry) => entry.name), ["Brannoc", "Mountain Lion", "Ogre"]), `lowest first: ${view.map((entry) => entry.name)}`);
+// INIT effects add to initiative (2 - 1 + 3 = 4); a creature's initiative is its slowest weapon's speed factor, else its own.
+await tool("kraken_combat", { action: "effect", id: fighterEntry.id, effect: { label: "Slowed; INIT: 3", duration: 1 } });
+force(2);
+await tool("kraken_combat", { action: "init", which: fighterEntry.id });
+let slowed = (await tool("kraken_combat", { action: "view" })).entries.find((entry) => entry.id === fighterEntry.id);
+assert(slowed.initresult === 4, `an INIT effect adds: ${slowed.initresult}`);
+await tool("kraken_combat", { action: "effect-remove", id: fighterEntry.id, effectId: slowed.effects.find((effect) => effect.label.startsWith("Slowed")).id });
+const r2e = await import("../shared/adnd2e/rules.mjs");
+const clubbed = { initiative: { total: 2 }, weaponlist: { a: { name: "Club", speedfactor: 4, damagelist: { a: { dice: "1d10" } } }, b: { name: "Fist", speedfactor: 1, damagelist: { a: { dice: "1d4" } } } } };
+assert(r2e.npcInitiativeOf(clubbed) === 4 && r2e.npcInitiativeOf({ initiative: { total: 2 } }) === 2, `an NPC's initiative: its slowest weapon's speed, else its own: ${r2e.npcInitiativeOf(clubbed)}`);
+force(2, 7, 5);
+await tool("kraken_combat", { action: "init", which: "all" });
 await tool("kraken_combat", { action: "target", id: fighterEntry.id, targetId: ogreEntry.id, on: true });
 // THAC0 20 against AC 4: 16 needed; 14 + 2 hits.
 force(14);

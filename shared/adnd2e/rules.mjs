@@ -811,6 +811,13 @@ const TABLE_ROLLS = {
   "intelligence.learn": "Learn Spell",
   "wisdom.failure": "Spell Failure",
 };
+// A creature's initiative modifier (FG 2E with its size and speed option, the default): its slowest
+// weapon's speed factor, else its own initiative. data: the NPC record's.
+export function npcInitiativeOf(data) {
+  const stats = npcStats(data);
+  return Math.max(0, ...stats.attacks.map((attack) => num(attack.speed, 0))) || stats.init;
+}
+
 export function testOf(data, kind, key) {
   if (kind === "surprise") {
     // d10 + the Dexterity reaction adjustment: not surprised above the surprise number.

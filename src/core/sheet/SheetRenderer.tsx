@@ -75,7 +75,7 @@ export function SheetRenderer({ spec: given, record, session, ruleset, custom, f
   const targets = (inFight?.targets ?? []).map((id) => session.combat.entries.find((entry) => entry.id === id)?.name).filter((name): name is string => Boolean(name));
   const context: SheetContext = useMemo(() => {
     const change = (path: string, value: unknown) => void session.editCharacter(record.id, [{ path, value }]);
-    const act = (call: ActionCall, given: { key?: string; value?: unknown } = {}) => {
+    const act = (call: ActionCall, given: { key?: string; value?: unknown; shift?: boolean } = {}) => {
       if ("roll" in call) {
         const key = String(given.key ?? call.key ?? "");
         const bonus = call.bonus ? num(modifiers[call.bonus]) : 0;
@@ -95,7 +95,7 @@ export function SheetRenderer({ spec: given, record, session, ruleset, custom, f
       if (call.value && given.value !== undefined) args[call.value] = given.value;
       for (const name of call.modifiers ?? []) if (modifiers[name] !== undefined && modifiers[name] !== "") args[name] = modifiers[name];
       if ("ct" in call) {
-        session.ct(call.ct, { recordId: record.id, ...args });
+        session.ct(call.ct, { recordId: record.id, ...args, ...(given.shift ? { force: true } : {}) });
         return;
       }
       const send = messageSender(session, call.message);

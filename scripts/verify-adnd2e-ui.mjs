@@ -253,8 +253,12 @@ try {
   await seat.click('.sidebar [data-launch="combat"]');
   // The sheet's own initiative (no weapon): d10 + its -1 (Dexterity 16), onto the tracker.
   await seat.click('[data-sheet-tab="main"]');
-  await tool("kraken_dice_force", { values: [4] });
+  // Once a round for a player (FG 2E): a second roll is refused, unless Shift-clicked (the table is told).
   await seat.click('.sheet-2e [data-action="roll-init"]');
+  await seat.waitForFunction(() => document.body.textContent.includes("has rolled initiative this round"), null, { timeout: 10000 });
+  await tool("kraken_dice_force", { values: [4] });
+  await seat.click('.sheet-2e [data-action="roll-init"]', { modifiers: ["Shift"] });
+  await chat(page, "Brannoc rolls initiative again.");
   await until(async () => (await tool("kraken_combat", { action: "view" })).entries.find((item) => item.id === mine.id && item.initresult === 3), "the sheet's initiative, 4 - 1");
   await seat.click('[data-sheet-tab="combat"]');
   const swordRow = '.sheet-2e [data-attack]:has(b:text-is("Long sword"))';
@@ -262,10 +266,14 @@ try {
   // Initiative with the weapon (FG's INIT on the weapon row): d10 + its speed factor (a long sword 5), the tracker's result.
   assert((await seat.textContent(`${swordRow} [data-action="init"]`))?.trim() === "5", "the long sword's INIT shows its speed factor, 5");
   await tool("kraken_dice_force", { values: [3] });
-  await seat.click(`${swordRow} [data-action="init"]`);
+  await seat.click(`${swordRow} [data-action="init"]`, { modifiers: ["Shift"] });
   await chat(page, "[INIT] Brannoc [MOD: Long sword]");
   const armed = await until(async () => (await tool("kraken_combat", { action: "view" })).entries.find((item) => item.id === mine.id && item.initresult === 8), "the sword's initiative");
   assert(armed.initresult === 8, `d10 3 + speed 5 = 8: ${JSON.stringify(armed)}`);
+  // The weapon is said when Brannoc's turn starts (first in the order).
+  await tool("kraken_combat", { action: "update", id: mine.id, patch: { initresult: 0 } });
+  await tool("kraken_combat", { action: "next" });
+  await chat(page, "[INIT] Brannoc: Long sword");
   await tool("kraken_dice_force", { values: [14] });
   await seat.click('[data-sheet-tab="combat"]');
   await seat.waitForSelector('.sheet-2e [data-attack] [data-action="attack"]');

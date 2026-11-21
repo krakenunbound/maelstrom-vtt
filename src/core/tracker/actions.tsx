@@ -56,7 +56,7 @@ export function wordsOf(words: Words | undefined, scope: Scope): string[] {
 export const textOfWords = (words: Words | undefined, scope: Scope) => (words === undefined ? undefined : wordsOf(words, scope).join(""));
 
 // A button's call: a tracker message (with the row's entry), or a ruleset message on the row's record.
-function press(action: TrackerAction, scope: Scope) {
+function press(action: TrackerAction, scope: Scope, shift = false) {
   const { session, entry } = scope;
   const call = action.call;
   if ("roll" in call) {
@@ -65,7 +65,7 @@ function press(action: TrackerAction, scope: Scope) {
   }
   if ("ct" in call) {
     const extra = call.with === "record" ? entry?.recordId : call.with === "viewer" ? scope.myCharacterId : "";
-    session.ct(call.ct, { ...(entry ? { id: entry.id } : {}), ...(call.args ?? {}), ...(extra ? { recordId: extra } : {}) });
+    session.ct(call.ct, { ...(entry ? { id: entry.id } : {}), ...(call.args ?? {}), ...(extra ? { recordId: extra } : {}), ...(shift ? { force: true } : {}) });
     return;
   }
   const send = messageSender(session, call.message);
@@ -78,7 +78,7 @@ export function TrackerButtons({ actions, scope, className }: { actions: Tracker
     <>
       {(actions ?? []).map((action) =>
         entryHolds(action.when, scope) ? (
-          <button key={action.hook} type="button" className={action.className ?? className} data-action={action.hook} title={textOfWords(action.title, scope)} disabled={action.disabled ? entryHolds(action.disabled, scope) : undefined} onClick={() => press(action, scope)}>
+          <button key={action.hook} type="button" className={action.className ?? className} data-action={action.hook} title={textOfWords(action.title, scope)} disabled={action.disabled ? entryHolds(action.disabled, scope) : undefined} onClick={(event) => press(action, scope, event.shiftKey)}>
             {wordsOf(action.label, scope)}
           </button>
         ) : null,

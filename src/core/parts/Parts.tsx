@@ -536,7 +536,7 @@ function DerivedBox({ box }: { box: BoxSpec }) {
           {box.actions
             .filter((action) => holds(action.when, scope, sheet))
             .map((action) => (
-              <button key={action.hook} type="button" className={action.className ?? "cc-roll-die"} data-action={action.hook} disabled={!sheet.editable} title={action.title ? textOf(action.title, scope, sheet.modifiers) : undefined} onClick={() => sheet.act(action.action)} {...actionDrag(action.action, sheet.record.id, "", sheet.editable)}>
+              <button key={action.hook} type="button" className={action.className ?? "cc-roll-die"} data-action={action.hook} disabled={!sheet.editable} title={action.title ? textOf(action.title, scope, sheet.modifiers) : undefined} onClick={(event) => sheet.act(action.action, { shift: event.shiftKey })} {...actionDrag(action.action, sheet.record.id, "", sheet.editable)}>
                 {nodesOf(action.label, scope, sheet.modifiers)}
               </button>
             ))}
@@ -699,7 +699,7 @@ function List({ spec, formats }: { spec: Extract<Part, { part: "list" }>; format
               {(spec.rowActions ?? [])
                 .filter((action) => holds(action.when, scope, sheet))
                 .map((action) => (
-                  <button key={action.hook} type="button" className={action.className} data-action={action.hook} disabled={!editable} title={action.title ? textOf(action.title, scope, modifiers) : undefined} onClick={() => sheet.act(action.action, { key })} {...actionDrag(action.action, sheet.record.id, key, editable)}>
+                  <button key={action.hook} type="button" className={action.className} data-action={action.hook} disabled={!editable} title={action.title ? textOf(action.title, scope, modifiers) : undefined} onClick={(event) => sheet.act(action.action, { key, shift: event.shiftKey })} {...actionDrag(action.action, sheet.record.id, key, editable)}>
                     {nodesOf(action.label, scope, modifiers)}
                   </button>
                 ))}

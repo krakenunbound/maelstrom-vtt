@@ -14,7 +14,8 @@ export interface SheetContext {
   gm: boolean;
   change: (path: string, value: unknown) => void;
   // An action: the row's key and a field's value go in as the call's key / value arguments.
-  act: (call: ActionCall, given?: { key?: string; value?: unknown }) => void;
+  // shift: the button was Shift-clicked (a tracker call goes with force: 2E's second initiative a round).
+  act: (call: ActionCall, given?: { key?: string; value?: unknown; shift?: boolean }) => void;
   // Sheet-wide choices a part's buttons read (Cairn's "In danger", its attack mode): kept while the sheet is open.
   modifiers: Record<string, unknown>;
   setModifier: (key: string, value: unknown) => void;

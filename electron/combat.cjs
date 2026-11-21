@@ -237,8 +237,9 @@ function cleanEntry(raw) {
     lostTurn: Math.max(0, Math.round(num(raw.lostTurn, 0))),
     // Delay (the tracker row's Delay): out of the order until its Act now; actingNow: the entry it cut in after.
     ...(raw.delayed ? { delayed: true } : {}),
-    // 2E: the weapon its initiative was rolled with (FG's inititem).
+    // 2E: the weapon its initiative was rolled with (FG's inititem), and that a player has rolled this round.
     ...(typeof raw.inititem === "string" && raw.inititem ? { inititem: raw.inititem.slice(0, 60) } : {}),
+    ...(raw.initrolled ? { initrolled: true } : {}),
     ...(typeof raw.actingNow === "string" ? { actingNow: raw.actingNow.slice(0, 40) } : {}),
     ...(Number.isFinite(Number(raw.actedRound)) && raw.actedRound !== null && raw.actedRound !== undefined ? { actedRound: Number(raw.actedRound) } : {}),
     // Ironsworn and Starforged: a foe's rank and progress (ticks, 0-40), out of the fight once defeated.
@@ -963,6 +964,11 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     // A turn passes: templates of instant spells come off the map.
     table().onTurn?.();
     table().say(`[TURN] ${entry.name}`, "Combat", secret);
+    // 2E: what it rolled initiative with (a weapon's INIT), said as its turn starts, then cleared.
+    if (entry.inititem) {
+      table().say(`[INIT] ${entry.name}: ${entry.inititem}`, "Combat", secret);
+      delete entry.inititem;
+    }
     // Ongoing damage (CoreRPG's DMGO: "Severed artery; DMGO: 1d12") at the start of the turn.
     for (const effect of entry.effects) {
       for (const part of livePartsOf(effect)) {
@@ -3110,10 +3116,17 @@ function createCombat({ saved, table, onChange = () => undefined }) {
         await r2eReady;
         for (const entry of pick) {
           const linked = record(entry);
-          const own = linked?.type === "character" ? r2e.initiativeOf(r2e.derive(linked.data), String(extra.weapon ?? "")) : { bonus: entry.init, item: "" };
-          const bonus = own.bonus;
-          const roll = table().roll(`1d10${bonus ? `${bonus > 0 ? "+" : ""}${bonus}` : ""}`, `[INIT] ${entry.name}${own.item ? ` [MOD: ${own.item}]` : ""}`, seat.role === "dm" ? "Combat" : seat.name, entry.hidden);
+          const character = linked?.type === "character";
+          // A player rolls once a round (FG 2E); again only on purpose (force), and the table is told. The GM any time.
+          if (character && seat.role !== "dm" && entry.initrolled && !extra.force) throw new Error(`${entry.name} has rolled initiative this round. Hold Shift to roll again (the table is told).`);
+          const own = character ? r2e.initiativeOf(r2e.derive(linked.data), String(extra.weapon ?? "")) : { bonus: linked?.type === "npc" ? r2e.npcInitiativeOf(linked.data) : entry.init, item: "" };
+          // INIT effects (numbers and dice) add to it.
+          const bonus = own.bonus + effectBonus(entry, "INIT");
+          const roll = table().roll(`1d10${effectDice(entry, "INIT")}${bonus ? `${bonus > 0 ? "+" : ""}${bonus}` : ""}`, `[INIT] ${entry.name}${own.item ? ` [MOD: ${own.item}]` : ""}`, seat.role === "dm" ? "Combat" : seat.name, entry.hidden);
+          if (character && seat.role !== "dm" && entry.initrolled) table().say(`${entry.name} rolls initiative again.`, "Combat");
           entry.initresult = roll.total;
+          // Only a player's own roll counts (the GM's rolls for the table, as FG's tracker menu, do not).
+          if (character && seat.role !== "dm") entry.initrolled = true;
           if (own.item) entry.inititem = own.item;
           else delete entry.inititem;
         }
@@ -3205,6 +3218,8 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       state.resume = null;
       state.round += 1;
       table().say(`[ROUND ${state.round}]`, "Combat");
+      // A new round: everyone may roll initiative again.
+      for (const entry of state.entries) delete entry.initrolled;
       // FG's house rule: everyone rolls initiative again each round (the GM rolls for all).
       if (table().options?.().initEachRound && state.round > 1) await this.rollInit("all", { role: "dm", name: "Combat" });
       // FG's "stop at round start": the new round waits for the GM's next click before anyone acts.
