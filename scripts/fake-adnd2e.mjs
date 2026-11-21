@@ -49,6 +49,9 @@ export function makeAdnd2eBooks() {
     <id-00001>${s("name", "Test Swordsman")}${s("class", "Fighter")}${s("text", "&lt;p&gt;A made-up kit. Requirements: Strength 12&lt;/p&gt;")}</id-00001>
     <id-00002>${s("name", "Test Hedge Wizard")}${s("class", "Mage")}${s("text", "&lt;p&gt;A made-up kit.&lt;/p&gt;")}</id-00002>
   </background>
+  <spell>
+    <id-00001>${s("name", "Test Light")}${n("level", 1)}${n("castinitiative", 4)}${s("castingtime", "4")}${s("type", "Divine")}</id-00001>
+  </spell>
   <skill>
     <id-00001>${s("name", "Endurance")}${s("stat", "constitution")}</id-00001>
     <id-00002>${s("name", "Survival [2]")}${s("stat", "intelligence")}${n("adj_mod", -1)}</id-00002>

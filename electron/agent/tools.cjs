@@ -1276,6 +1276,7 @@ const TOOLS = [
       place: { type: "boolean", description: "Also place tokens on the map" },
       entry: { type: "object" },
       which: string("init: an entry id, npcs, pcs or all (init-clear: everyone's initiative cleared)"),
+      spell: string("init (one entry): initiative casting this spell, its casting time added (2E: the caster is Casting it until its turn; hit before then, it is lost)"),
       removeNpcs: { type: "boolean" },
       patch: { type: "object" },
       amount: number("Damage or healing"),
@@ -1310,7 +1311,7 @@ const TOOLS = [
         }
       } else if (action === "add-party") {
         for (const member of (await party.partyView(agent)).members) await combat.add({ recordId: member.id }, seat);
-      } else if (action === "init") await combat.rollInit(args.which ?? "all", seat);
+      } else if (action === "init") await combat.rollInit(args.which ?? "all", seat, { ...(args.weapon ? { weapon: String(args.weapon) } : {}), ...(args.spell ? { spell: String(args.spell) } : {}) });
       else if (action === "init-clear") combat.clearInit(seat);
       else if (action === "next") await combat.next(seat);
       else if (action === "round") await combat.nextRound(seat);

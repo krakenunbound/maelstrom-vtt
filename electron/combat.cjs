@@ -1134,7 +1134,16 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     const current = before.hp - wounds;
     table().say(`${why} -> ${entry.name}: ${delta >= 0 ? delta : -delta} (${status}${entry.faction === "friend" ? `, HP ${current}/${before.hp}` : ""})`, "Combat", entry.hidden);
     changed();
+    if (taken > 0) breakCasting(entry);
     if (taken > 0) await concentrationCheck(entry, taken);
+  }
+  // A creature hit while casting (an effect marked (C): 2E's Casting, from a spell's initiative): the spell is lost.
+  function breakCasting(entry) {
+    const held = entry.effects.filter((effect) => /\(C\)/.test(effect.label));
+    if (!held.length) return;
+    entry.effects = entry.effects.filter((effect) => !held.includes(effect));
+    for (const effect of held) table().say(`[CONCENTRATION] ${entry.name} is hit: ${effect.label.split(";")[0].trim()} is lost.`, "Combat", entry.hidden);
+    changed();
   }
 
   // --- Concentration (5E family) ---------------------------------------------
@@ -3148,12 +3157,21 @@ function createCombat({ saved, table, onChange = () => undefined }) {
           const character = linked?.type === "character";
           // A player rolls once a round (FG 2E); again only on purpose (force), and the table is told. The GM any time.
           if (character && seat.role !== "dm" && entry.initrolled && !extra.force) throw new Error(`${entry.name} has rolled initiative this round. Hold Shift to roll again (the table is told).`);
-          const own = character ? r2e.initiativeOf(r2e.derive(linked.data), String(extra.weapon ?? "")) : { bonus: linked?.type === "npc" ? r2e.npcInitiativeOf(linked.data) : entry.init, item: "" };
+          // A spell's initiative: its casting time (the book's castinitiative), and the caster is Casting it until its turn.
+          const spell = extra.spell ? table().records.list({ type: "spell" }).find((item) => item.name.toLowerCase() === String(extra.spell).toLowerCase()) : null;
+          if (extra.spell && !spell) throw new Error(`No ${extra.spell} in the active books.`);
+          const own = spell ? { bonus: num(spell.data?.castinitiative, 0), item: spell.name } : character ? r2e.initiativeOf(r2e.derive(linked.data), String(extra.weapon ?? "")) : { bonus: linked?.type === "npc" ? r2e.npcInitiativeOf(linked.data) : entry.init, item: "" };
           // INIT effects (numbers and dice) add to it.
           const bonus = own.bonus + effectBonus(entry, "INIT");
           const roll = table().roll(`1d10${effectDice(entry, "INIT")}${bonus ? `${bonus > 0 ? "+" : ""}${bonus}` : ""}`, `[INIT] ${entry.name}${own.item ? ` [MOD: ${own.item}]` : ""}`, seat.role === "dm" ? "Combat" : seat.name, entry.hidden);
           if (character && seat.role !== "dm" && entry.initrolled) table().say(`${entry.name} rolls initiative again.`, "Combat");
           entry.initresult = roll.total;
+          if (spell) {
+            // Casting until it goes off (FG 2E): hit before then, the spell is lost (breakCasting).
+            entry.effects = entry.effects.filter((effect) => !/^Casting .*\(C\)/.test(effect.label));
+            const casting = cleanEffect({ label: `Casting ${spell.name}; (C)`, duration: 1, init: entry.initresult });
+            if (casting) entry.effects.push(casting);
+          }
           // Only a player's own roll counts (the GM's rolls for the table, as FG's tracker menu, do not).
           if (character && seat.role !== "dm") entry.initrolled = true;
           if (own.item) entry.inititem = own.item;

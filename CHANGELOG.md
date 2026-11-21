@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Spell initiative:** a spell with a casting time in its book (AD&D 2E's) has an initiative button beside Cast: d10 + its casting time onto the tracker, and the caster is Casting it until its turn; hit before then, the spell is lost (said in chat). Any effect marked (C) ends when its creature takes damage.
 - **A sheet's race, classes and kit as links:** on AD&D 2E's Notes tab, Abilities links each to its book's record (a click opens it, a drag carries it); any game can use the same links.
 - **AD&D 2E weapon proficiencies as rows:** each with its own Hit and Dmg adjustments (a kit's, a training's) on every weapon it covers, the weapons it covers named beside it, and a specialized one marked.
 - **AD&D 2E: THAC0 rolls:** a click on THAC0 at the top of the sheet makes a plain attack roll (d20, no weapon's modifiers) at each target.

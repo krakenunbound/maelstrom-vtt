@@ -211,6 +211,16 @@ await tool("kraken_combat", { action: "init", which: "all" });
 order = (await tool("kraken_combat", { action: "view" })).entries;
 assert(order.find((entry) => entry.id === fighterEntry.id).initresult === 4 && order.find((entry) => entry.id === ogreEntry.id).initresult === 5 && order.find((entry) => entry.id === lionEntry.id).initresult === 5, `a roll a side, the tie the party's: ${order.map((entry) => `${entry.name} ${entry.initresult}`)}`);
 await tool("kraken_table_options", { initGroup: "each" });
+// Initiative casting a spell: d10 + its casting time (Test Light, 4), and Casting until it goes off; hit before then, it is lost.
+make("spell", "Test Light", { level: 1, castinitiative: 4, castingtime: "4" });
+force(3);
+await tool("kraken_combat", { action: "init", which: fighterEntry.id, spell: "Test Light" });
+let casting = (await tool("kraken_combat", { action: "view" })).entries.find((entry) => entry.id === fighterEntry.id);
+assert(casting.initresult === 7 && casting.effects.some((effect) => effect.label === "Casting Test Light; (C)"), `the spell's initiative and Casting: ${casting.initresult} ${JSON.stringify(casting.effects.map((effect) => effect.label))}`);
+await tool("kraken_combat", { action: "damage", id: fighterEntry.id, amount: 1 });
+casting = (await tool("kraken_combat", { action: "view" })).entries.find((entry) => entry.id === fighterEntry.id);
+assert(!casting.effects.some((effect) => /Casting/.test(effect.label)), `hit while casting, the spell is lost: ${JSON.stringify(casting.effects.map((effect) => effect.label))}`);
+await tool("kraken_combat", { action: "heal", id: fighterEntry.id, amount: 1 });
 force(2, 7, 5);
 await tool("kraken_combat", { action: "init", which: "all" });
 await tool("kraken_combat", { action: "target", id: fighterEntry.id, targetId: ogreEntry.id, on: true });

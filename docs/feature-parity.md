@@ -87,7 +87,7 @@ may follow FG, icons and art are Maelstrom's own.
 | E5 | Delay as a general button (sheet and tracker header) for the active creature: to the end of the round | tracker row only, on its turn | Done in the tracker header (unreleased) |
 | E6 | Tracker header for players: Surprise, Init, Delay | GM header only; player row init | Done (unreleased): the manifest's tracker.ownActions |
 | E7 | A player rolls initiative once a round (initrolled); the GM may reroll; a forced reroll is announced | rerolls freely | Done (unreleased): Shift-click forces |
-| E8 | Spell initiative: casting time, and a Casting (C) effect broken by damage | none (spells are a text list) | open |
+| E8 | Spell initiative: casting time, and a Casting (C) effect broken by damage | none (spells are a text list) | Done (unreleased): an initiative button by each spell with a casting time |
 | E9 | INIT effects add to initiative | no | Done (unreleased) |
 | E10 | NPC initiative: its highest weapon speed factor (size/speed option, default on); PC vs NPC side option; Roll PC init; Clear all | d10 + init only | Done (unreleased): speed factor, one roll a side (Settings), Roll PC init, Clear init |
 | E11 | The weapon an entry rolled with is announced at its turn | no | Done (unreleased) |
@@ -95,7 +95,7 @@ may follow FG, icons and art are Maelstrom's own.
 | E13 | THAC0 double-click: a basic attack roll | THAC0 shown | Done (unreleased): a click |
 | E14 | Weapon proficiencies with to-hit and damage adjustments applied to chosen weapons (specialization) | names list; specialization in rules | Done (unreleased): rows with Hit and Dmg, on the weapons each covers (by name or group) |
 | E15 | Features and traits lists (race, class, kit abilities) with links | notes | Done (unreleased): links to the race, class and kit records (the core's links part); separate feature rows open |
-| E16 | Spells as rows: memorize into slots, cast (attack, save, damage, heal, effect), initiative | slots a day; names list | open |
+| E16 | Spells as rows: memorize into slots, cast (attack, save, damage, heal, effect), initiative | slots a day; names list; Cast per spell (slots, saves, damage, effects) | Cast and initiative per spell Done; memorizing into slots open |
 | E17 | Quick notes on the Actions tab; THAC0 matrix (AC -10..10) | none | open |
 | E18 | Ability and save details: base, base override, adjustment, temporary | misc only | open |
 

@@ -24,6 +24,12 @@ export function SpellCasts() {
         return (
           <li key={name} data-spell={name}>
             <b>{name}</b> {level ? <small className="hint">{/^\d+$/.test(level) ? `level ${level}` : level}</small> : null}
+            {editable && spell && spell.data.castinitiative !== undefined && spell.data.castinitiative !== "" ? (
+              // A spell with a casting time in initiative (FG 2E's castinitiative): initiative cast with it (the caster is Casting until its turn).
+              <button type="button" className="d2e-init" data-action="spell-init" title={`Initiative casting ${name}: d10 + its casting time (${spell.data.castinitiative}); hit before it goes off, the spell is lost`} onClick={(event) => session.ct("init", { recordId: record.id, spell: name, ...(event.shiftKey ? { force: true } : {}) })}>
+                {String(spell.data.castinitiative)}
+              </button>
+            ) : null}
             {editable ? (
               <button
                 type="button"

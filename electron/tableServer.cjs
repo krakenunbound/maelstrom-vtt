@@ -3618,7 +3618,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
               // From a sheet (its weapon row's INIT): the character's own entry, and the weapon.
               const which = msg.which ? String(msg.which) : msg.id ? String(msg.id) : msg.recordId ? combat.entries().find((item) => item.recordId === String(msg.recordId))?.id : "";
               if (!which) throw new Error("Not in the fight: add this character to the combat tracker first.");
-              return combat.rollInit(which, seat, { ...(typeof msg.weapon === "string" && msg.weapon ? { weapon: msg.weapon.slice(0, 60) } : {}), ...(msg.force ? { force: true } : {}) });
+              return combat.rollInit(which, seat, { ...(typeof msg.weapon === "string" && msg.weapon ? { weapon: msg.weapon.slice(0, 60) } : {}), ...(typeof msg.spell === "string" && msg.spell ? { spell: msg.spell.slice(0, 120) } : {}), ...(msg.force ? { force: true } : {}) });
             }
             case "next":
               return combat.next(seat);
