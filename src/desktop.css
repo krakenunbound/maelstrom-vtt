@@ -2936,6 +2936,9 @@ label.set-row { cursor: pointer; }
 .quick-slots[data-dock="top"] { top: 10px; bottom: auto; }
 .quick-slots[data-dock="left"] { left: 10px; top: 50%; bottom: auto; transform: translateY(-50%); }
 .quick-slots[data-dock="right"] { left: auto; right: 10px; top: 50%; bottom: auto; transform: translateY(-50%); }
+/* Beside the sidebar on the right, not over it (its width: names, or icons only). */
+.desktop:has(> .sidebar-state-0) .quick-slots[data-dock="right"] { right: calc(172px + 10px); }
+.desktop:has(> .sidebar-state-1) .quick-slots[data-dock="right"] { right: calc(58px + 10px); }
 .quick-slots.upright { flex-direction: column; max-width: none; max-height: calc(100% - 20px); overflow-x: hidden; overflow-y: auto; }
 .quick-slots.upright .quick-slots-grip { flex-direction: row; width: auto; height: 12px; align-self: stretch; justify-content: center; }
 .quick-slots.upright .quick-slots-grip i { width: 2px; height: auto; align-self: stretch; }

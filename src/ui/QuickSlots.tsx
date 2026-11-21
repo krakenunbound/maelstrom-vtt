@@ -251,7 +251,12 @@ export function QuickSlots({ session }: { session: Session }) {
   // Drag the grip: the bar comes off the dock and goes where it is put.
   const grab = (event: React.PointerEvent) => {
     const element = bar.current;
-    if (!element || event.button !== 0 || style.locked) return;
+    if (!element || event.button !== 0) return;
+    // Locked: no drag, and no text selected by the attempt.
+    if (style.locked) {
+      event.preventDefault();
+      return;
+    }
     event.preventDefault();
     // Where it is on screen (docked, it is centred by a transform that offsetLeft leaves out), so it stays under the pointer.
     // In CSS pixels (a player's UI scale zooms the page).

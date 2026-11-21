@@ -348,7 +348,8 @@ try {
   await page.waitForSelector('.quick-slots[data-dock="right"].upright', { timeout: 5000 });
   const right = await page.locator(".quick-slots").boundingBox();
   const view = page.viewportSize() ?? { width: 1280, height: 800 };
-  if (!(right.height > right.width && right.x + right.width > view.width * 0.8)) throw new Error(`upright on the right: ${JSON.stringify(right)}`);
+  const sidebar = await page.locator(".sidebar").boundingBox();
+  if (!(right.height > right.width && right.x + right.width > view.width * 0.7 && right.x + right.width <= sidebar.x)) throw new Error(`upright on the right, beside the sidebar: ${JSON.stringify(right)} sidebar ${JSON.stringify(sidebar)}`);
   await page.click('[data-action="quickslots-move"]', { button: "right" });
   await page.click('[data-bar-action="lock"]');
   await page.waitForSelector('.quick-slots[data-locked="true"]', { timeout: 5000 });
