@@ -19,6 +19,22 @@ Status of the work (2026-11-20, 0.1.0-beta.1):
 | Resource tracking (GM's ask) | Done (alpha.91): bookkeeping (ammunition, consumables, rations and water, light from the pack, encumbrance and bag space, each with a GM switch) and D5 rest | |
 | Dice, chat and combat | D1-D10 (alpha.91) | the smaller items still open |
 
+## FG maps from a module or pack (2026-11-21, played with Ghosts of Saltmarsh)
+
+| FG | Maelstrom | State |
+|---|---|---|
+| Walls, doors, secret doors, one-way walls | Walls with Foundry senses | Done |
+| Terrain walls (see into, not through) | Limited walls, never doors | Done |
+| A newer module's picture placed from its top left | Every layer read from the picture's place | Done |
+| Pins (shortcuts) to story, maps, encounters | Map pins that open them, named for the entry | Done |
+| Encounter spots on the map | Tokens where FG put them | Done |
+| Lighting switch, ambient light and colour, ambient mask | Scene darkness, ambient tint, lit areas | Done |
+| Default grid (on, no size) | 50 px | Done |
+| Distance per square (`distancebaseunit`) | Grid distance | To do (handoff) |
+| Token lock, player drawing switch | Movement lock, a player-drawing setting | To do (handoff) |
+| Text and picture layers' own lighting switches | Lit labels, unlit tiles | To do (handoff) |
+| Link scale, vision preview | Opening zoom, GM preview | To do (handoff) |
+
 ## Asked by the GM (2026-11-15): Done (unreleased)
 - Resource tracking, each with a GM option to turn it off ("fun mode", Settings > Bookkeeping, `kraken_table_options bookkeeping`):
   - ammunition spent per attack (arrows, bolts, bullets, sling stones, a firearm's magazine), refused when out, low warning, recovery after a fight per ruleset (5E half; Traveller none) offered on the sheet

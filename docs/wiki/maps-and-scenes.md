@@ -14,6 +14,10 @@ Click any picture to open it in the image window:
 
 Nothing shown is a dead end. Every place that opens a picture opens the same master, so walls you draw in one place are there in all the others. The map window can be moved, resized and popped out to another monitor. A picture from a book opens only once that book is active (see [Records, books and packs](records-books-and-packs.md)).
 
+### Fantasy Grounds maps
+
+A map from a Fantasy Grounds module or pack comes in as FG has it: walls, doors (and secret doors), terrain (trees and rocks you see into but not through), lights, weather, text, its pins (each opens its story entry, another map or its encounter, named for the room) and FG's lighting. A map with FG's lighting on opens dark, so the players see it by their lights and darkvision; FG's ambient light (sunlight, dusk, moonlight) sets how dark it is and tints it, and its ambient mask lights only its area (a sunlit cave mouth before a dark cave). Your own darkness setting in Scene settings still overrides it. An encounter run from the book puts its creatures where FG placed them.
+
 ### Foundry map sets and Universal VTT maps
 
 **Open map** (the GM's) also opens maps made for other VTTs:
