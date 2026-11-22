@@ -35,6 +35,7 @@ import {
   wealthRoll,
 } from "../../shared/dnd5e/wizard.mjs";
 import { GM } from "../ui/gmTitle";
+import { backgroundKit2014, entryText, legacyKit, legacyKitItems } from "../../shared/dnd5e/kits2014.mjs";
 
 // The D&D 5E character wizard, after Fantasy Grounds' 5E wizard (and the same
 // for Descending Darkness, which FG plays through the 5E ruleset): six tabs,
@@ -57,6 +58,58 @@ type Stat = (typeof STATS)[number];
 type Tab = (typeof TABS)[number];
 type Decision = { id: string; type: string; label: string; options: string[]; adj?: number; category?: string; feature?: string };
 type Kit = { letter: string; items: { name: string; count: number; data: Row }[]; wealth: number };
+// A Legacy (2014) kit (shared/dnd5e/kits2014.mjs): items given, and choices of options; a kind's item the player picks.
+type KitEntry = { name?: string; count: number; data?: Row; kind?: string; label?: string; options?: string[] };
+type LegacyKit = { included: KitEntry[]; choices: KitEntry[][][] };
+type KitPicks = Record<string, string>;
+
+// A Legacy kit on the Equipment page: what it gives, each choice's options, and a select for a kind ("any simple weapon").
+function LegacyKitView({ kit, picks, onPicks, what }: { kit: LegacyKit; picks: KitPicks; onPicks: (next: KitPicks) => void; what: string }) {
+  const pick = (entry: KitEntry, key: string) => (
+    <select value={picks[key] ?? ""} data-kit-pick={`${what}:${key}`} aria-label={`Choose ${entry.label}`} onChange={(event) => onPicks({ ...picks, [key]: event.target.value })}>
+      <option value="">{`Choose ${entry.label}`}</option>
+      {(entry.options ?? []).map((option) => (
+        <option key={option}>{option}</option>
+      ))}
+    </select>
+  );
+  return (
+    <div className="w5-legacy-kit" data-legacy-kit={what}>
+      {kit.included.length ? (
+        <div className="w5-kit-included">
+          {kit.included.map((entry, index) => (
+            <span key={index}>{entry.kind ? pick(entry, `i${index}`) : entryText(entry)}</span>
+          ))}
+        </div>
+      ) : null}
+      {kit.choices.map((choice, index) => {
+        const picked = picks[`c${index}`];
+        const option = picked !== undefined ? choice[Number(picked)] : undefined;
+        return (
+          <div key={index} className="w5-kit-choice" data-kit-choice={`${what}:${index}`}>
+            <b>Choice #{index + 1}</b>
+            <span className="w5-kit-options">
+              {choice.map((entries, at) => (
+                <button
+                  key={at}
+                  type="button"
+                  className={String(at) === picked ? "ccw-button on" : "ccw-button"}
+                  aria-pressed={String(at) === picked}
+                  data-kit-option={`${what}:${index}:${at}`}
+                  onClick={() => onPicks({ ...Object.fromEntries(Object.entries(picks).filter(([key]) => !key.startsWith(`c${index}:`))), [`c${index}`]: String(at) })}
+                >
+                  {entries.map(entryText).join(" + ")}
+                </button>
+              ))}
+            </span>
+            {option?.some((entry) => entry.kind) ? <span className="w5-kit-picks">{option.map((entry, at) => (entry.kind ? <span key={at}>{pick(entry, `c${index}:${at}`)}</span> : null))}</span> : null}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 type Species = { name: string; is2024: boolean; size: string; speed: number; darkvision: number; languages: { base: string[] }; skills: { base: string[] }; traits: Row[]; decisions: Decision[]; increases: Record<string, number> };
 type Background = { name: string; is2024: boolean; abilities: string[]; decisions: Decision[]; skills: { base: string[] }; tools: { base: string[] }; languages: { base: string[] }; feat: string; kits: Kit[]; gold: number; features: string[] };
 type ClassInfo = { name: string; is2024: boolean; saves: string[]; armor: string; weapons: string; tools: string; skills: { base: string[] }; features: { id: string; name: string; level: number; text: string; subclass: string }[]; decisions: Decision[]; kits: Kit[]; wealthRoll: string };
@@ -170,6 +223,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
   const [spells, setSpells] = useState<string[]>([]);
   const [spellFilter, setSpellFilter] = useState({ name: "", level: "" });
   const [kits, setKits] = useState<{ class?: string; background?: string }>({});
+  const [kitPicks, setKitPicks] = useState<{ class: KitPicks; background: KitPicks }>({ class: {}, background: {} });
   const [rolled, setRolled] = useState(0);
   const [custom, setCustom] = useState<Record<string, number>>({});
   const [extra, setExtra] = useState<[string, number][]>([]);
@@ -316,6 +370,11 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
   const kitClass = classKits.find((kit) => kit.letter === kits.class) ?? null;
   const kitBackground = backgroundKits.find((kit) => kit.letter === kits.background) ?? null;
   const showRolled = Boolean(klass) && classKits.length === 0;
+  // A Legacy class's kit (the ruleset's table) and a Legacy background's (read from its equipment sentence).
+  const legacyClassKit = klass && classKits.length === 0 ? (legacyKit(classRecord, items) as LegacyKit | null) : null;
+  const legacyBackgroundKit = bg && !bg.is2024 && backgroundKits.length === 0 ? (backgroundKit2014(backgroundRecord?.data.equipment, items) as LegacyKit | null) : null;
+  const legacyClassItems = legacyClassKit ? (legacyKitItems(legacyClassKit, kitPicks.class, items) as { items: KitEntry[]; open: string[] }) : null;
+  const legacyBackgroundItems = legacyBackgroundKit ? (legacyKitItems(legacyBackgroundKit, kitPicks.background, items) as { items: KitEntry[]; open: string[] }) : null;
   const processKits = classKits.length > 0 || rolled === 0;
   const wealthDice = wealthRoll(klass?.wealthRoll) as { dice: string; times: number } | null;
   const classGold = processKits ? kitClass?.wealth ?? 0 : 0;
@@ -327,7 +386,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
     if (found) found[1] += count;
     else inventory.push([itemName, count]);
   };
-  if (processKits) for (const item of [...(kitClass?.items ?? []), ...(kitBackground?.items ?? [])]) addTo(item.name, item.count);
+  if (processKits) for (const item of [...(kitClass?.items ?? []), ...(kitBackground?.items ?? []), ...(legacyClassItems?.items ?? []), ...(legacyBackgroundItems?.items ?? [])]) addTo(String(item.name), item.count);
   for (const [itemName, count] of extra) addTo(itemName, count);
   // The items bought are paid for (FG gives them free): spent, what is left, and whether one more fits the purse.
   const gearSpent = gearCost(extra, items) as number;
@@ -351,7 +410,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
     equipment: [],
     commit: [],
   };
-  const equipmentAlert = processKits && ((classKits.length > 0 && !kitClass) || (backgroundKits.length > 0 && !kitBackground));
+  const equipmentAlert = processKits && ((classKits.length > 0 && !kitClass) || (backgroundKits.length > 0 && !kitBackground) || Boolean(legacyClassItems?.open.length) || Boolean(legacyBackgroundItems?.open.length));
   const warnings = [...alerts.species, ...alerts.class, ...alerts.abilities, ...alerts.background];
   const badge = (page: Tab) => (page === "commit" ? false : page === "equipment" ? equipmentAlert : alerts[page].length > 0);
 
@@ -431,6 +490,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
         tools: [...pick("toolprof", "species"), ...pick("toolprof", "background")],
         feats: chosen("feat"),
         kits: processKits ? { ...(kits.class ? { class: kits.class } : {}), ...(kits.background ? { background: kits.background } : {}) } : {},
+        ...(processKits && (legacyClassKit || legacyBackgroundKit) ? { kitPicks } : {}),
         gear: extra,
         payGear: true,
         coins: custom,
@@ -831,7 +891,12 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
                 ).map(([kind, title, options, picked, owner]) => (
                   <div key={kind} className="w5-kit" data-kit-kind={kind}>
                     <Plate>{title}</Plate>
-                    {!owner ? <p className="hint">Choose a {kind} first.</p> : options.length === 0 ? <p className="hint">{kind === "background" && bg && !bg.kits.length ? `${bg.gold} ${main} from its equipment.` : "No starting kit."}</p> : null}
+                    {!owner ? <p className="hint">Choose a {kind} first.</p> : null}
+                    {owner && options.length === 0 && (kind === "class" ? legacyClassKit : legacyBackgroundKit) ? (
+                      <LegacyKitView kit={(kind === "class" ? legacyClassKit : legacyBackgroundKit) as LegacyKit} picks={kitPicks[kind]} what={kind} onPicks={(next) => setKitPicks({ ...kitPicks, [kind]: next })} />
+                    ) : owner && options.length === 0 ? (
+                      <p className="hint">{kind === "background" && bg && !bg.kits.length ? `${bg.gold} ${main} from its equipment.` : "No starting kit."}</p>
+                    ) : null}
                     {picked ? (
                       <div className="ccw-row" data-kit-chosen={`${kind}:${picked.letter}`}>
                         <button type="button" className="ccw-add" aria-label={`Change the ${kind} kit`} data-kit-reset={kind} onClick={() => setKits({ ...kits, [kind]: undefined })}>

@@ -14,6 +14,7 @@ import { createRequire } from "node:module";
 import { zipSync, strToU8 } from "fflate";
 import { ancestriesOf, classInfo, classSpells, speciesInfo, subclassesOf } from "../shared/dnd5e/wizard.mjs";
 import { buildFromSpec } from "../shared/dnd5e/rules.mjs";
+import { backgroundKit2014, legacyKit, legacyKitItems } from "../shared/dnd5e/kits2014.mjs";
 
 const require = createRequire(import.meta.url);
 const { readModule } = require("../electron/importers/fgModule.cjs");
@@ -116,5 +117,48 @@ assert(hero.hp.total === 8 + 3 + 1, `Hill Dwarf cleric's hit points (8 + Con 3 +
 assert(hero.hpperlevel === 1 && hero.deity === "A god of the forge" && hero.ideals === "Tradition.", "a hit point a level kept; the wizard's details on the sheet");
 assert(/heavy armor/.test(hero.proficiencylist.armor), "heavy armor on the sheet");
 done.push("a Hill Dwarf cleric built: its toughness, heavy armor and details");
+// The 2014 starting kits: the class's (the ruleset's table) and the background's (its equipment sentence).
+const gear = [
+  ["Mace", "Weapon", "Simple Melee Weapons"],
+  ["Warhammer", "Weapon", "Martial Weapons"],
+  ["Club", "Weapon", "Simple Melee Weapons"],
+  ["Crossbow, Light", "Weapon", "Simple Ranged Weapons"],
+  ["Crossbow Bolts (20)", "Adventuring Gear", "Ammunition"],
+  ["Scale Mail", "Armor", "Medium Armor"],
+  ["Leather", "Armor", "Light Armor"],
+  ["Chain Mail", "Armor", "Heavy Armor"],
+  ["Shield", "Armor", "Shield"],
+  ["Priest's Pack", "Adventuring Gear", "Equipment Packs"],
+  ["Explorer's Pack", "Adventuring Gear", "Equipment Packs"],
+  ["Amulet", "Adventuring Gear", "Holy Symbol"],
+  ["Emblem", "Adventuring Gear", "Holy Symbol"],
+  ["Book", "Adventuring Gear", "Standard"],
+  ["Incense (One Block)", "Adventuring Gear", "Standard"],
+  ["Clothes, Vestments", "Adventuring Gear", "Standard"],
+  ["Clothes, Common", "Adventuring Gear", "Standard"],
+  ["Pouch", "Adventuring Gear", "Standard"],
+  ["Rope, Silk (50 Feet)", "Adventuring Gear", "Standard"],
+  ["Dagger", "Weapon", "Simple Melee Weapons"],
+].map(([name, type, subtype]) => ({ type: "item", name, data: { name, type, subtype } }));
+const kit = legacyKit(cleric, gear);
+assert(kit.included.map((entry) => entry.name ?? entry.kind).join(",") === "Shield,holy symbol" && kit.choices.length === 4, "a 2014 Cleric's kit: a shield, a holy symbol, four choices");
+const holy = kit.included[1];
+assert(holy.options.join(",") === "Amulet,Emblem", `the holy symbols the books hold: ${holy.options}`);
+const halfway = legacyKitItems(kit, { c0: "1", c1: "2" }, gear);
+assert(halfway.open.length === 3, `still to choose: ${halfway.open}`);
+const picks = { i1: "Emblem", c0: "1", c1: "2", c2: "1", "c2:0": "Club", c3: "0" };
+const chosen = legacyKitItems(kit, picks, gear);
+assert(chosen.open.length === 0 && chosen.items.map((entry) => entry.name).join(",") === "Shield,Emblem,Warhammer,Chain Mail,Club,Priest's Pack", `the Cleric's kit chosen: ${chosen.items.map((entry) => entry.name)}`);
+const acolyte = "A holy symbol (a gift to you when you entered the priesthood), a prayer book or prayer wheel, 5 sticks of incense, vestments, a set of common clothes, and a belt pouch containing 15 gp";
+const bgKit = backgroundKit2014(acolyte, gear);
+assert(bgKit.included.map((entry) => (entry.kind ? entry.kind : `${entry.count} ${entry.name}`)).join(",") === "holy symbol,1 Book,5 Incense (One Block),1 Clothes, Vestments,1 Clothes, Common,1 Pouch", `the Acolyte's kit: ${JSON.stringify(bgKit.included.map((entry) => entry.name ?? entry.kind))}`);
+assert(backgroundKit2014("A belaying pin (club), 50 feet of silk rope, a trophy (a dagger, broken blade, or banner)", gear).included.map((entry) => `${entry.count} ${entry.name}`).join(",") === "1 Club,1 Rope, Silk (50 Feet)", "a bracket naming the thing kept, a story's alternatives not; 50 feet of rope is one rope");
+const kitted = buildFromSpec(
+  { name: "Kit", species: "Dwarf", ancestry: "Hill Dwarf", class: "Cleric", background: "", level: 1, scores: { strength: 10, dexterity: 10, constitution: 14, intelligence: 10, wisdom: 15, charisma: 10 }, kitPicks: { class: picks } },
+  { ...lib, items: gear },
+).data;
+const carried = Object.values(kitted.inventorylist).map((entry) => entry.name);
+assert(["Shield", "Emblem", "Warhammer", "Chain Mail", "Club"].every((name) => carried.includes(name)), `built with its kit: ${carried}`);
+done.push("2014 starting kits: a class's included items and choices (a kind picked from the books), a background's read from its sentence, built onto the sheet");
 fs.rmSync(dir, { recursive: true, force: true });
 console.log(`ok legacy 5e books: ${done.join("; ")}`);

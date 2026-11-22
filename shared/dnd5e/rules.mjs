@@ -17,6 +17,7 @@
 //   spellcasting {stat, dc, attack}, slots {l1: {max, used}}, spells [names],
 //   deathsaves {success, failure}, hitdice {die, total, used}.
 
+import { backgroundKit2014, legacyKit, legacyKitItems } from "./kits2014.mjs";
 import { ancestriesOf, subclassesOf, backgroundInfo, classInfo, currenciesOf, gearCost, mainCurrency, payFrom, speciesInfo, totalWealth } from "./wizard.mjs";
 
 export const RULESET = "dnd5e";
@@ -664,6 +665,12 @@ export function buildFromSpec(spec, lib, rulesetId = RULESET) {
   const classKit = processKits ? pickKit(klass.kits, spec.kits?.class, `${cls.name}`) : null;
   const backgroundKit = processKits && bg ? pickKit(bg.kits, spec.kits?.background, `${bg.name}`) : null;
   for (const item of [...(classKit?.items ?? []), ...(backgroundKit?.items ?? [])]) add(item.name, item.count, item.data);
+  // A Legacy (2014) class's kit (the ruleset's table) and background's (its equipment sentence), as the wizard chose.
+  if (processKits && spec.kitPicks) {
+    const legacyClass = klass.kits.length ? null : legacyKit(cls, lib.items ?? []);
+    const legacyBackground = bg && !bg.is2024 && !bg.kits.length ? backgroundKit2014(background?.data?.equipment, lib.items ?? []) : null;
+    for (const [kit, picks] of [[legacyClass, spec.kitPicks.class], [legacyBackground, spec.kitPicks.background]]) if (kit) for (const item of legacyKitItems(kit, picks ?? {}, lib.items ?? []).items) add(item.name, item.count, item.data);
+  }
   for (const [name, count = 1] of spec.gear ?? []) {
     const item = find(lib.items, name);
     if (!item) problems.push(`No item ${name}.`);

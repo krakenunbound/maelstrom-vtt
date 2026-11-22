@@ -3115,3 +3115,11 @@ label.set-row { cursor: pointer; }
 .w5-detail-text { display: grid; gap: 2px; margin-top: 6px; }
 .w5-detail-label { display: flex; align-items: center; gap: 8px; font-size: 0.85em; }
 .w5-detail-text textarea { width: 100%; resize: vertical; }
+
+/* A Legacy (2014) starting kit: what it gives, then each choice's options as buttons. */
+.w5-legacy-kit { display: grid; gap: 6px; }
+.w5-kit-included { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; }
+.w5-kit-choice { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; align-items: center; padding: 4px 6px; border: 1px solid var(--panel-edge); border-radius: 4px; }
+.w5-kit-options { display: flex; flex-wrap: wrap; gap: 4px; }
+.w5-kit-options .on { outline: 2px solid var(--brass, #c8a050); }
+.w5-kit-picks { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px; }
