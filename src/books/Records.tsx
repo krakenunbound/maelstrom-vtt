@@ -409,6 +409,7 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
             </form>
           </div>
         ) : null}
+        {gm && list === "npc" ? <NpcImport session={session} onMade={(record) => onOpen(record)} /> : null}
         {gm && only ? (
           // FG's + on a campaign list: a new record of the list's kind, opened to fill in.
           <form
@@ -775,5 +776,35 @@ export function RecordWindow({ session, id, record: given, book }: { session: Se
       </>
       )}
     </article>
+  );
+}
+
+// FG's Import NPC from text: a 5E stat block pasted (2014 or 2024), a campaign NPC made of it and opened.
+function NpcImport({ session, onMade }: { session: Session; onMade: (record: TableRecord) => void }) {
+  const [text, setText] = useState("");
+  const [status, setStatus] = useState("");
+  return (
+    <details className="table-import npc-import">
+      <summary>Import from a stat block (paste it)</summary>
+      <textarea value={text} onChange={(event) => setText(event.target.value)} placeholder="Paste a 5E stat block: its name on the first line, then size, type and alignment, AC, HP, the abilities…" aria-label="The stat block, pasted" rows={8} />
+      <button
+        type="button"
+        data-action="npc-import"
+        disabled={!text.trim()}
+        onClick={() =>
+          void session
+            .content<TableRecord & { problems?: string[] }>("npc-import", { text })
+            .then((record) => {
+              setStatus(record.problems?.length ? `Made ${record.name}. Not found: ${record.problems.join(" ")}` : `Made ${record.name}.`);
+              setText("");
+              onMade(record);
+            })
+            .catch((error: unknown) => setStatus(error instanceof Error ? error.message : "Could not read that."))
+        }
+      >
+        Import
+      </button>
+      {status ? <p className="hint" role="status">{status}</p> : null}
+    </details>
   );
 }

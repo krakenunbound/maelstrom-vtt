@@ -28,6 +28,7 @@ const MESSAGES = {
   "record-copy": "kraken_record_duplicate",
   story: "kraken_story",
   "table-roll": "kraken_table",
+  "npc-import": "kraken_npc_import",
   identify: "kraken_item_identify",
   encounter: "kraken_encounter",
   parcel: "kraken_parcel",

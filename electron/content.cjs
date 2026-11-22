@@ -441,7 +441,17 @@ function questAction(table, args) {
 }
 
 // The table's messages (one per tool), the GM's except a table roll.
+// FG's Import NPC from text: a 5E stat block pasted (2014 or 2024 layout) becomes the campaign's own NPC record,
+// as the books keep theirs; what the parser could not find is said.
+async function npcImport(table, args) {
+  const { parseStatBlock } = await import("../shared/dnd5e/statblock.mjs");
+  const parsed = parseStatBlock(String(args.text ?? "").slice(0, 40000));
+  const record = table.records.create({ type: "npc", name: parsed.name, visibility: "gm", data: { ...parsed.data, version: parsed.version } }, table.seat);
+  return { ...record, problems: parsed.problems };
+}
+
 const MESSAGES = {
+  "npc-import": (table, msg) => npcImport(table, msg),
   "record-copy": (table, msg, ctx) => copyRecord(table, msg, ctx.readBook),
   story: (table, msg) => storyAction(table, msg),
   "table-roll": (table, msg, ctx) => tableAction(table, msg, ctx.seat, ctx.from),
@@ -458,4 +468,4 @@ async function message(table, msg, ctx) {
   return handler(table, args, ctx);
 }
 
-module.exports = { message, copyRecord, storyAction, tableAction, rollOn, findTable, identify, parcelAction, parcelContents, encounterAction, encounterXp, questAction, unidentified, itemName };
+module.exports = { npcImport, message, copyRecord, storyAction, tableAction, rollOn, findTable, identify, parcelAction, parcelContents, encounterAction, encounterXp, questAction, unidentified, itemName };

@@ -14110,6 +14110,11 @@ At Will: Detect Magic, Hold Monster, Ice Knife (level 2 version), Shapechange (B
 						<bonus type="number">0</bonus>
 						<savemodifier type="number">5</savemodifier>
 					</dexterity>
+					<constitution>
+						<score type="number">22</score>
+						<bonus type="number">6</bonus>
+						<savemodifier type="number">0</savemodifier>
+					</constitution>
 					<intelligence>
 						<score type="number">8</score>
 						<bonus type="number">-1</bonus>

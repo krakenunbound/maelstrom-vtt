@@ -361,7 +361,7 @@ and utility windows, and player management against Maelstrom's.
 | Effects window: lights, conditions, custom effects, click or drag to apply, GM-only, expiry, units, apply mode | Conditions, buffs, debuffs, lights, your own; click or drag; who may add | Partly (no units or apply mode on custom effects) |
 | Sound sets: triggers by chat pattern, content sounds on a record, Syrinscape | Sound window: library, triggers on hidden rolls, scene sounds, map sounds, playlists, Syrinscape | Better |
 | Item templates, Item Forge (base items and magic templates make new items) | Not found | Missing |
-| NPC import from stat block text; species import from text | Character import from files | Missing |
+| NPC import from stat block text; species import from text | NPCs list: Import from a stat block (2014 and 2024 layouts; every SRD creature reads back the same) | Partly (no species import) |
 | Story templates: text with `[Table]` rolls generates a story | Story list: From a template: `[Table]`, `[Table\|column]`, `[1d6]`, `[2x]` rolled into a new story | Same |
 | Options: groups, per user and GM, export and import a set | Settings: you, the table, combat, tokens, house rules; Export settings and Import settings | Same |
 | Currencies (name, weight, value), languages, MOTD, Setup, Token Lights, decal | Currency names, languages, MOTD, lights in Effects, decal, wallpaper, GM icon, themes | Partly (no coin weight or value) |
@@ -381,7 +381,7 @@ Any game can add its own the same way; nothing in the core names a game.
 All eight areas are compared, read from FG's ruleset files (CoreRPG and 5E) and
 Maelstrom's code, and what was missing is built (each area's commits name its
 check script). Still missing, by size: FG's module export from a campaign, the
-Item Forge and item templates, NPC and species import from stat-block text, the
+Item Forge and item templates, species import from text, the
 2024 Bastion tab, named holidays on calendar days, a random-encounter Generate,
 module sets, and the rows marked Partly. The **Check live** rows want FG open on
 the 5E campaign through the bridge, side by side with Maelstrom.

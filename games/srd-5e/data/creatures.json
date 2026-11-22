@@ -18969,6 +18969,11 @@
     "mod": 0,
     "save": 5
    },
+   "constitution": {
+    "score": 22,
+    "mod": 6,
+    "save": 6
+   },
    "intelligence": {
     "score": 8,
     "mod": -1,

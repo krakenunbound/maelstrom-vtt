@@ -135,6 +135,13 @@ const TOOLS = [
     inputSchema: object({ action: { type: "string", enum: ["create", "set", "party"] }, id: string("The quest"), name: string("Its name"), xp: number("Its XP"), text: string("Its text"), status: { type: "string", enum: ["open", "done"] }, visibility: { type: "string", enum: ["gm", "all"] } }, ["action"]),
     run: (args, ctx) => out(content.questAction(needTable(ctx), args)),
   },
+  {
+    name: "kraken_npc_import",
+    description:
+      "FG's Import NPC from text: a 5E stat block pasted as text (2014: 'Armor Class', 'STR DEX CON...', 'Challenge'; 2024: 'AC ... Initiative', 'Str 8 -1 -1', 'CR ... (XP ...; PB ...)') becomes a campaign NPC record (GM only), its traits, actions, bonus actions, reactions and legendary actions as entries. Returns the record and what could not be read (problems).",
+    inputSchema: object({ text: string("The whole stat block, its name on the first line") }, ["text"]),
+    run: async (args, ctx) => out(await content.npcImport(needTable(ctx), args)),
+  },
 ];
 
 module.exports = { TOOLS };
