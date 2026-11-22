@@ -164,7 +164,8 @@ function findTable(table, link, seat = null) {
   const player = seat && seat.role !== "dm";
   const campaign = table.records.list(player ? { seat } : {}).filter((record) => isTable(record.data));
   const matchOf = (record) => (want && (record.id === want || record.data?.fgPath === want || String(record.data?.fgPath ?? "").replace(/@.*$/, "") === want.replace(/@.*$/, ""))) || (name && record.name.toLowerCase() === name);
-  const found = campaign.find(matchOf) ?? (player ? null : (table.bookTables?.() ?? []).find(matchOf));
+  // A player: the campaign's tables shared with them, then those of the books shared with them (a handbook's).
+  const found = campaign.find(matchOf) ?? (table.bookTables?.(player ? { shared: true } : undefined) ?? []).find(matchOf);
   return found ? { name: found.name, data: found.data, id: found.id } : null;
 }
 // The table asked for: a record (id), a book's (path), or by name; a player only one they can see.

@@ -4463,9 +4463,10 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     houseRule: (key) => houseRule(key),
     houseRuleKeys: () => (rulesetManifest()?.settings ?? []).filter((entry) => "key" in entry).map((entry) => entry.key),
     // The active books' random tables (the 2E krits find their Krits & Fumbles book's), read once per set of active books.
-    bookTables: () => {
-      const names = [...shelf.active].map((id) => books?.info(id)).filter((info) => info && fits(info)).map((info) => books?.file?.(info.id) || info.name);
-      const key = names.join("|");
+    // shared: only the books shared with the players (a player rolls a table of the handbook they can read).
+    bookTables: ({ shared = false } = {}) => {
+      const names = [...shelf.active].filter((id) => !shared || shelf.shared.has(id)).map((id) => books?.info(id)).filter((info) => info && fits(info)).map((info) => books?.file?.(info.id) || info.name);
+      const key = `${shared}|${names.join("|")}`;
       if (bookTablesCache.key !== key) {
         bookTablesCache = {
           key,

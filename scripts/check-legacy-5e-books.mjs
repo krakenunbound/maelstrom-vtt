@@ -62,6 +62,8 @@ const records = [
       b: { name: "Life Domain", class: "Cleric", features: { x: { name: "Disciple of Life", level: 1, text: "<p>Healing.</p>" }, y: { name: "Bonus Proficiency", level: 1, text: "<p>You gain proficiency with heavy armor.</p>" } } },
     },
   },
+  { id: "test-legacy:reference.refmanualdata.intro", type: "refpage", name: "Introduction", visibility: "all", source: "Test Legacy", data: { name: "Introduction", text: "<p>A test book.</p>", fgPath: "reference.refmanualdata.intro@Test Legacy" } },
+  { id: "test-legacy:reference.tables.tab_testideal", type: "table", name: "Test Acolyte Ideal", visibility: "all", source: "Test Legacy", data: { name: "Test Acolyte Ideal", dice: "d6", resultscols: 1, tablerows: { a: { fromrange: 1, torange: 6, results: { a: { result: "Faith in the old ways." } } } }, fgPath: "reference.tables.tab_testideal@Test Legacy" } },
   ...[
     ["Bless", "Cleric, Paladin"],
     ["Animal Friendship", "Bard, Cleric Nature Domain, Druid"],
@@ -70,7 +72,7 @@ const records = [
 ];
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "kraken-legacy-"));
 const file = path.join(dir, "Test Legacy.kpack");
-fs.writeFileSync(file, zipSync({ "kraken-pack.json": strToU8(JSON.stringify({ format: FORMAT, version: VERSION, name: "Test Legacy", ruleset: "D&D 5E" })), "records.json": strToU8(JSON.stringify(records)) }));
+fs.writeFileSync(file, zipSync({ "kraken-pack.json": strToU8(JSON.stringify({ format: FORMAT, version: VERSION, name: "Test Legacy", ruleset: "D&D 5E", hasBook: true })), "records.json": strToU8(JSON.stringify(records)) }));
 const read = readModule(file).records;
 const of = (type) => read.filter((record) => record.type === type);
 
@@ -181,6 +183,16 @@ done.push("2014 starting kits: a class's included items and choices (a kind pick
   await new Promise((resolve) => setTimeout(resolve, 1500));
   assert(subraces(before) === 2, `reopened, read again by this reader: ${subraces(before)}`);
   assert(before.persisted().books.readWith[id] !== "an older reader", "and stamped with it");
+  // A player rolls a table of a book shared with them by its name (the wizard's ideals), never of a book kept the GM's.
+  const content = require("../electron/content.cjs");
+  const player = { seat: { role: "player", name: "Tess" }, from: "Tess" };
+  const roll = (ctx) => content.message(table.agent, { type: "table-roll", action: "roll", name: "Test Acolyte Ideal" }, ctx);
+  await table.agent.shareBook("Test Legacy", false);
+  assert(await roll(player).then(() => false, () => true), "a GM's book's table is not the player's to roll");
+  assert((await roll({ seat: { role: "dm", name: "GM" }, from: "GM" })).result === "Faith in the old ways.", "the GM rolls it");
+  await table.agent.shareBook("Test Legacy", true);
+  assert((await roll(player)).result === "Faith in the old ways.", "shared, the player rolls it by name");
+  done.push("a player rolls a table of a book shared with them by name (the wizard's ideals), not a GM's book's");
   await table.stop?.();
   await before.stop?.();
   done.push("a campaign whose books an older reader read gets them read again when it opens");

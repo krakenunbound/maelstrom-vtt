@@ -106,6 +106,7 @@ export type KrakenApi = {
   // The GM app's UI scale: its windows' own zoom (pop-outs and Map Studio too).
   setUiScale?: (factor: number) => void;
   popOutMinimized?: (name: string) => Promise<boolean>;
+  fullScreen?: () => Promise<boolean>;
   saveView: (id: string, view: KrakenView | null) => Promise<void>;
   pickDecal: (kind?: "decal" | "wallpaper" | "gmicon" | "tile" | "tower") => Promise<KrakenDecal | null>;
   addDecal: (name: string, bytes: Uint8Array, kind?: "decal" | "wallpaper" | "gmicon" | "tile" | "tower") => Promise<KrakenDecal>;

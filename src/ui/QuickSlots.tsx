@@ -176,6 +176,12 @@ export function QuickSlots({ session }: { session: Session }) {
       if (!fkey) return;
       const index = Number(fkey[1]) - 1;
       const slot = live.current.slots[index];
+      // F11 with no slot: full screen, as in a browser (the GM's app has no browser to do it).
+      if (!slot && index === 10 && window.kraken?.fullScreen) {
+        event.preventDefault();
+        void window.kraken.fullScreen();
+        return;
+      }
       if (!slot) return;
       event.preventDefault();
       live.current.open(slot);

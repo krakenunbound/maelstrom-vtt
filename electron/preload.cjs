@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld("kraken", {
   popOutShow: (name) => ipcRenderer.invoke("popout-show", name),
   setUiScale: (factor) => ipcRenderer.send("ui-scale", factor),
   popOutMinimized: (name) => ipcRenderer.invoke("popout-minimized", name),
+  // Full screen and back (the GM's window); answers whether it is now full screen.
+  fullScreen: () => ipcRenderer.invoke("full-screen"),
   addresses: () => ipcRenderer.invoke("addresses"),
   network: () => ipcRenderer.invoke("network"),
   campaigns: () => ipcRenderer.invoke("campaigns"),

@@ -148,6 +148,13 @@ ipcMain.handle("popout-show", (_event, name) => {
   child.focus();
   return true;
 });
+// Full screen and back (F11 when its quick slot is empty, as a browser's): the window the page is in.
+ipcMain.handle("full-screen", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return false;
+  win.setFullScreen(!win.isFullScreen());
+  return win.isFullScreen();
+});
 // Whether a window of its own is minimized (its sidebar button brings it back rather than closing it).
 ipcMain.handle("popout-minimized", (_event, name) => {
   const child = popOutWindows.get(String(name ?? ""));

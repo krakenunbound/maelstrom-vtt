@@ -292,17 +292,17 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
 
   // The background's tables of traits, ideals, bonds and flaws (its supporting tables, named in the book).
   const detailTables = useMemo(() => {
-    const names = String(backgroundRecord?.data.supportingtables ?? "").split(",").map((item) => item.trim().toLowerCase()).filter(Boolean);
-    const tables = records.filter((item) => item.type === "table" && names.includes(item.name.toLowerCase()));
-    const find = (word: RegExp) => tables.find((item) => word.test(item.name)) ?? null;
+    // Rolled by name on the host: a campaign table, or the book's own (a handbook shared with the players).
+    const names = String(backgroundRecord?.data.supportingtables ?? "").split(",").map((item) => item.trim()).filter(Boolean);
+    const find = (word: RegExp) => names.find((item) => word.test(item)) ?? null;
     return { personalitytraits: find(/personality/i), ideals: find(/ideal/i), bonds: find(/bond/i), flaws: find(/flaw/i) };
-  }, [backgroundRecord, records]);
+  }, [backgroundRecord]);
   const rollDetail = (key: keyof typeof detailTables) => {
     const tableRecord = detailTables[key];
     if (!tableRecord) return;
     setRollingDetail(key);
     session
-      .content<{ result: string }>("table-roll", { action: "roll", data: tableRecord.data, name: tableRecord.name })
+      .content<{ result: string }>("table-roll", { action: "roll", name: tableRecord })
       .then((result) => setDetails((now) => ({ ...now, [key]: now[key] && key === "personalitytraits" ? `${now[key]}\n${result.result}` : result.result })))
       .catch((error) => setProblem(error instanceof Error ? error.message : "Could not roll that."))
       .finally(() => setRollingDetail(""));
@@ -1034,7 +1034,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
                   <span className="w5-detail-label">
                     {label}
                     {detailTables[key] ? (
-                      <button type="button" className="ccw-button" data-roll-detail={key} disabled={Boolean(rollingDetail)} title={`Roll on ${detailTables[key]?.name} (the roll goes to chat)`} onClick={() => rollDetail(key)}>
+                      <button type="button" className="ccw-button" data-roll-detail={key} disabled={Boolean(rollingDetail)} title={`Roll on ${detailTables[key]} (the roll goes to chat)`} onClick={() => rollDetail(key)}>
                         {rollingDetail === key ? "Rolling…" : "Roll"}
                       </button>
                     ) : null}
