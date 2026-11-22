@@ -2721,9 +2721,12 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     // A multiclass warlock's Pact Magic is a pool of its own (pactslots): the spell slots first, then the pact's.
     let pool = "slots";
     if (isCharacter && level > 0) {
-      const freeIn = (key) => Object.entries(data[key] ?? {}).map(([at, slot]) => [Number(at.slice(1)), slot]).filter(([at, slot]) => at >= level && num(slot.used, 0) < num(slot.max, 0)).sort((a, b) => a[0] - b[0])[0];
+      // FG's upcast: the slot chosen (its level or higher), else the lowest free one.
+      const wanted = Math.round(num(castOpts.slot, 0));
+      if (wanted && wanted < level) throw new Error(`${spell.name} needs a level ${level} slot or higher.`);
+      const freeIn = (key) => Object.entries(data[key] ?? {}).map(([at, slot]) => [Number(at.slice(1)), slot]).filter(([at, slot]) => (wanted ? at === wanted : at >= level) && num(slot.used, 0) < num(slot.max, 0)).sort((a, b) => a[0] - b[0])[0];
       const free = freeIn("slots") ?? freeIn("pactslots");
-      if (!free) throw new Error(`${caster.name} has no spell slot of level ${level} or higher left.`);
+      if (!free) throw new Error(wanted ? `${caster.name} has no level ${wanted} slot left.` : `${caster.name} has no spell slot of level ${level} or higher left.`);
       if (!freeIn("slots")) pool = "pactslots";
       slotLevel = free[0];
     }

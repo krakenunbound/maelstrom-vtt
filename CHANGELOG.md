@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Spells beside FG's powers:** each spell on the 5E sheet shows its rows in words (cast, attack with the caster's bonus, save with the DC, damage, healing, effect, and how a higher slot or the caster's level scales them); a slot level chosen beside Cast upcasts it (the spell scaled, that slot spent; kraken_combat cast slot), also through a placed template. check-upcast-fg
 - **The lists beside FG's:** a book's record dropped on its list is copied into the campaign; a text file dropped on NPCs, Races or Items is imported (stat blocks, races, items) and opened; a book's record reverts to its book's on the right-click (kraken_record_revert); each row shows the rules version it is written for (2014, 2024). check-lists-fg
 - **Links on the 5E sheet:** the Notes tab's race, background and feats open their records; each feature and race trait opens its own text (from its class's or race's record, found by name, so characters made before have them too), the record a click away. The core links part takes `within` and `prefer`.
 - **Currency weight and value:** Settings > Currency sets each coin's weight (counted in the load in place of the game's coins to the pound) and value in the first coin (the sheet's coins and the party parcel show their worth); kraken_table_options currencyInfo. check-currency-fg

@@ -1591,7 +1591,7 @@ function MapViewInner({
         if (templateAsk) {
           // The spell's template goes where it is aimed: the host targets everyone inside and casts.
           const point = worldAt(cssX(event.clientX), cssY(event.clientY));
-          if (point) actions.ct("cast", { ...(templateAsk.recordId ? { recordId: templateAsk.recordId } : { id: templateAsk.id }), power: templateAsk.power, template: { x: Math.round(point.x), y: Math.round(point.y) } });
+          if (point) actions.ct("cast", { ...(templateAsk.recordId ? { recordId: templateAsk.recordId } : { id: templateAsk.id }), power: templateAsk.power, ...(templateAsk.slot ? { slot: templateAsk.slot } : {}), template: { x: Math.round(point.x), y: Math.round(point.y) } });
           onTemplateDone();
           setAim(null);
           return;

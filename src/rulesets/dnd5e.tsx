@@ -1,3 +1,4 @@
+import { spellRows } from "../../shared/dnd5e/spellrows.mjs";
 import { useState } from "react";
 import { classLine, signed, spellSlug } from "../../shared/dnd5e/rules.mjs";
 import { num, rows, useSheet, type Row } from "../core/sheet/context";
@@ -33,6 +34,9 @@ export function Dnd5eSpells() {
   const levelOf = (name: string) => num(book.find((item) => item.name.toLowerCase() === name.toLowerCase())?.data.level);
   const levels = [...new Set(known.map(levelOf))].sort((a, b) => a - b);
   const preparedCount = known.filter((name) => levelOf(name) > 0 && num(prepared[spellSlug(name)]) > 0).length;
+  // FG's upcast: the slot levels with one free (spell slots and the pact's), for a spell of a level.
+  const freeLevels = [...new Set([...rows(data.slots), ...rows(data.pactslots)].filter(([, slot]) => num(slot.used) < num(slot.max)).map(([key]) => Number(key.slice(1))))].sort((a, b) => a - b);
+  const [slotFor, setSlotFor] = useState<Record<string, number>>({});
   return (
     <section className="cc-panel cc-page" data-tab-page="spells">
       {casting ? (
@@ -94,12 +98,35 @@ export function Dnd5eSpells() {
                   <li key={name} data-spell={name}>
                     {level ? <input type="checkbox" checked={num(prepared[slug]) > 0} disabled={!editable} title="Prepared" aria-label={`${name} prepared`} onChange={(event) => change(`prepared.${slug}`, event.target.checked ? 1 : 0)} /> : null}
                     <b>{name}</b>
+                    {editable && level > 0 && freeLevels.filter((at) => at >= level).length > 1 ? (
+                      // FG's upcast: which slot it is cast with (the lowest free by default).
+                      <select aria-label={`${name}: cast with a slot of level`} title="Cast with a slot of this level (higher: it does more)" data-spell-slot={name} value={slotFor[name] ?? 0} onChange={(event) => setSlotFor({ ...slotFor, [name]: Number(event.target.value) })}>
+                        <option value={0}>Lowest slot</option>
+                        {freeLevels
+                          .filter((at) => at >= level)
+                          .map((at) => (
+                            <option key={at} value={at}>
+                              Level {at}
+                            </option>
+                          ))}
+                      </select>
+                    ) : null}
                     {editable ? (
-                      <button type="button" data-action="cast" onClick={() => session.ct("cast", { recordId: record.id, power: name })}>
+                      <button type="button" data-action="cast" onClick={() => session.ct("cast", { recordId: record.id, power: name, ...(slotFor[name] ? { slot: slotFor[name] } : {}) })}>
                         Cast
                       </button>
                     ) : null}
                     <p className="hint">{plain(spell?.data.description).slice(0, 220)}</p>
+                    {/* FG's power action rows, each in words. */}
+                    {spell ? (
+                      <ul className="five-spell-rows" data-spell-rows={name}>
+                        {spellRows(spell.data.actions as Record<string, unknown>, casting ? { dc: num(casting.dc), attack: num(casting.attack) } : {}).map((row, index) => (
+                          <li key={index} data-spell-row={row.type}>
+                            {row.text}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
                   </li>
                 );
               })}

@@ -1426,7 +1426,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   function tokenOfEntry(entry) {
     return map.tokens().find((token) => token.id === entry.tokenId) ?? map.tokens().find((token) => entry.recordId && token.recordId === entry.recordId) ?? null;
   }
-  async function castWithTemplate(who, power, at, seat, from) {
+  async function castWithTemplate(who, power, at, seat, from, slot = 0) {
     await Promise.all([map.ready, combat.ready]);
     const info = combat.spellInfo(who, power);
     if (!info) throw new Error(`No spell ${power}.`);
@@ -1453,7 +1453,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     const targeted = combat.targetIds(caster.id, ids, { role: "dm", name: "GM" });
     let cast;
     try {
-      cast = await combat.cast(who, power, "", seat, from, { fromTemplate: true });
+      cast = await combat.cast(who, power, "", seat, from, { fromTemplate: true, ...(slot ? { slot } : {}) });
     } finally {
       // The template's creatures were the spell's alone: the caster's own targets come back
       // (so the next area spell asks for its template again).
@@ -4083,7 +4083,9 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
               const who = msg.recordId ? { recordId: String(msg.recordId) } : { entryId: String(msg.id) };
               const from = client.role === "dm" ? "Combat" : client.name;
               // Its area placed where the caster points, then cast at everyone inside.
-              if (msg.template && typeof msg.template === "object") return castWithTemplate(who, String(msg.power), msg.template, seat, from);
+              // FG's upcast: the slot level the caster chose.
+              const slot = Math.max(0, Math.min(9, Math.round(num(msg.slot, 0))));
+              if (msg.template && typeof msg.template === "object") return castWithTemplate(who, String(msg.power), msg.template, seat, from, slot);
               // From a screen that can place templates (place: true), a spell with an area
               // cast by a creature on the map with no targets picked asks for its template
               // first (FG: target first; Foundry: place the template). Picked targets cast at once.
@@ -4091,11 +4093,11 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
                 const info = combat.spellInfo(who, String(msg.power));
                 const casterToken = info?.casterEntry && map.scene() ? tokenOfEntry(info.casterEntry) : null;
                 if (info?.area && casterToken && !info.casterEntry.targets.length) {
-                  send(ws, { type: "template-request", power: String(msg.power), recordId: msg.recordId ? String(msg.recordId) : null, id: msg.id ? String(msg.id) : null, name: info.name, area: info.area, casterTokenId: casterToken.id, color: client.role === "dm" ? (prefs.get("@gm").color ?? "#ff9e3d") : tokenColorOf(client.name) });
+                  send(ws, { type: "template-request", power: String(msg.power), ...(slot ? { slot } : {}), recordId: msg.recordId ? String(msg.recordId) : null, id: msg.id ? String(msg.id) : null, name: info.name, area: info.area, casterTokenId: casterToken.id, color: client.role === "dm" ? (prefs.get("@gm").color ?? "#ff9e3d") : tokenColorOf(client.name) });
                   return;
                 }
               }
-              return combat.cast(who, String(msg.power), msg.castAction ? String(msg.castAction) : "", seat, from);
+              return combat.cast(who, String(msg.power), msg.castAction ? String(msg.castAction) : "", seat, from, slot ? { slot } : {});
             }
             case "death-save":
               // 5E: a Dying character's death saving throw (the player rolls their own).
@@ -4404,7 +4406,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     // A spell with an area: its template placed where its caster points (at:
     // {x, y} world pixels, or a whole template {shape, x, y, size, angle}), the
     // creatures inside become the caster's targets, then the spell is cast.
-    castWithTemplate: (who, power, at, seat, from) => castWithTemplate(who, power, at, seat, from),
+    castWithTemplate: (who, power, at, seat, from, slot = 0) => castWithTemplate(who, power, at, seat, from, slot),
     // An entry's side changed on the tracker: its token follows (map.update tells the tracker back, which already agrees).
     syncTokenFaction(entry) {
       const token = entry.tokenId ? map.tokens().find((item) => item.id === entry.tokenId) : null;

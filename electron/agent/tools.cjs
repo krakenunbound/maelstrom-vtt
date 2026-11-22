@@ -1281,6 +1281,7 @@ const TOOLS = [
       advantage: { type: "string", enum: ["", "advantage", "disadvantage"], description: "save (5E): roll with advantage or disadvantage; the tracker's effects still count" },
       power: string("cast: the powers key of the character (recordId) or of the NPC on the tracker (id); an NPC's caster level is its hit dice and its uses per day are counted"),
       castAction: string("cast: the power's actions key"),
+      slot: number("cast (5E): the slot level to cast with (FG's upcast; its level or higher; default the lowest free)"),
       id: string("Tracker entry id"),
       recordId: string("Character or NPC record id"),
       count: number("How many of that NPC"),
@@ -1421,8 +1422,8 @@ const TOOLS = [
       else if (action === "attack") return out({ results: await combat.attack(args.recordId ? { recordId: args.recordId } : { entryId: args.id }, args.weapon, seat, "Agent", { full: Boolean(args.full), mode: args.mode ?? "", invokes: Array.isArray(args.invokes) ? args.invokes : [] }), combat: combat.viewFor(seat) });
       else if (action === "attack-together") return out({ together: await combat.attackTogether(args.ids ?? [], args.targetId, seat, "Agent"), combat: combat.viewFor(seat) });
       else if (action === "save") return out({ save: await combat.save(args.id, args.attribute, args.cl ?? (require("../fate.cjs").isFateRuleset(agent.ruleset?.()) ? undefined : 0), "Agent", undefined, args.advantage ?? ""), combat: combat.viewFor(seat) });
-      else if (action === "cast" && args.template) return out({ ...(await agent.castWithTemplate(args.recordId ? { recordId: args.recordId } : { entryId: args.id }, args.power, args.template, seat, "Agent")), combat: combat.viewFor(seat) });
-      else if (action === "cast") return out({ cast: await combat.cast(args.recordId ? { recordId: args.recordId } : { entryId: args.id }, args.power, args.castAction ?? "", seat, "Agent"), combat: combat.viewFor(seat) });
+      else if (action === "cast" && args.template) return out({ ...(await agent.castWithTemplate(args.recordId ? { recordId: args.recordId } : { entryId: args.id }, args.power, args.template, seat, "Agent", Number(args.slot) || 0)), combat: combat.viewFor(seat) });
+      else if (action === "cast") return out({ cast: await combat.cast(args.recordId ? { recordId: args.recordId } : { entryId: args.id }, args.power, args.castAction ?? "", seat, "Agent", Number(args.slot) ? { slot: Number(args.slot) } : {}), combat: combat.viewFor(seat) });
       else if (action === "krits") return out(await combat.krits(args.settings, seat));
       else if (action === "krit-test") return out({ krit: await combat.kritTest(args.kind, args.id, args.targetId, seat, args.table || args.roll || args.entryRoll || args.attackKind ? { table: args.table, roll: args.roll, entryRoll: args.entryRoll, kind: args.attackKind } : undefined), combat: combat.viewFor(seat) });
       else if (action === "damage-roll") return out({ damage: await combat.damageRoll(args.recordId ? { recordId: args.recordId } : { entryId: args.id }, args.weapon, seat, "Agent"), combat: combat.viewFor(seat) });

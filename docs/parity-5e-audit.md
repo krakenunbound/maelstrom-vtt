@@ -192,7 +192,7 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | Spell slots: maximums by hand, used boxes; Pact Magic apart | Used boxes, the maximum by hand (kept beyond the class's), Pact Magic named | Done |
 | Powers by group and level, Preparation mode, prepared ticks and count | Spells by level (cantrips first), a prepared box each, the prepared count, Cast | Done (no separate mode: always shown) |
 | Class resources: uses and period (daily, encounter, once) | Class resources: name, uses ticked off, most, back on a short or a long rest (rests give them back) | Done (short or long; no once) |
-| A power's cast, attack, save, damage, heal and effect rows, upcast | Cast at targets (templates, saves, damage) | Partly (no rows to see, no upcast choice) |
+| A power's cast, attack, save, damage, heal and effect rows, upcast | Cast at targets (templates, saves, damage); each spell's rows in words under it (cast, attack, save, damage, heal, effect, how a higher slot or level scales them); a slot level chosen beside Cast (kraken_combat cast slot) | Yes |
 
 ## 3. Combat tracker
 
