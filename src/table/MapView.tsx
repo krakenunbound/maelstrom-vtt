@@ -1573,6 +1573,8 @@ function MapViewInner({
         if (touches.current.size < 2) pinch.current = null;
       }}
       onPointerCancelCapture={(event) => {
+        // A drag the system took away (a touch turned into a scroll, the window lost): the token stays where it was.
+        if (drag && drag.pointerId === event.pointerId) setDrag(null);
         if (event.pointerType !== "touch") return;
         touches.current.delete(event.pointerId);
         if (touches.current.size < 2) pinch.current = null;
