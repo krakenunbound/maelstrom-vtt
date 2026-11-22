@@ -1,3 +1,4 @@
+import { ModuleExport } from "./ModuleExport";
 import { Fragment, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { shelfTree } from "../../shared/packs/organize.mjs";
 import { createPortal } from "react-dom";
@@ -271,7 +272,7 @@ export function BooksWindow({ session, onOpenAdventure, start = "books" }: { ses
   // fits the ruleset, and Packs) and Books (only the campaign's active books;
   // a player, only those the GM opened to them).
   const modules = start !== "books";
-  const [tab, setTab] = useState<"books" | "activation" | "packs">(start);
+  const [tab, setTab] = useState<"books" | "activation" | "packs" | "export">(start);
   // Packs are made by the GM's own app (the host), from the FG modules on its computer.
   const canPack = gm && typeof window !== "undefined" && Boolean(window.kraken?.packs);
   const shelfKey = `${session.bookShelf.active.join("|")}/${session.bookShelf.shared.join("|")}@${session.contentAt}`;
@@ -319,6 +320,9 @@ export function BooksWindow({ session, onOpenAdventure, start = "books" }: { ses
                 Packs
               </button>
             ) : null}
+            <button type="button" role="tab" aria-selected={tab === "export"} className={tab === "export" ? "dice-chip on" : "dice-chip"} data-books-tab="export" title="The campaign's own records as a module another campaign makes active" onClick={() => setTab("export")}>
+              Export
+            </button>
           </div>
           {onOpenAdventure ? (
             <button type="button" className="ghost" data-launch="adventure" title="Open a prepared map bundle (.zip, or a zip holding several) on the table. You can also drop one on the table." onClick={onOpenAdventure}>
@@ -328,12 +332,13 @@ export function BooksWindow({ session, onOpenAdventure, start = "books" }: { ses
         </div>
       ) : null}
       {gm && tab === "packs" && canPack ? <PacksPanel ruleset={ruleset} /> : null}
-      {gm && tab === "packs" ? null : activation ? (
+      {gm && tab === "export" ? <ModuleExport session={session} /> : null}
+      {gm && (tab === "packs" || tab === "export") ? null : activation ? (
         <p className="hint books-intro" title={GM("A Player's Handbook starts open to the players. Adventures are the GM's alone: show the players their pictures and maps from the book instead.")}>
           The modules for {ruleset || "this campaign's game"}. <b>Active</b> puts a book in this campaign; <b>Players</b> lets the players read it too. {GM("Adventures stay the GM's.")}
         </p>
       ) : null}
-      <div className="books-list" role="list" hidden={gm && tab === "packs"}>
+      <div className="books-list" role="list" hidden={gm && (tab === "packs" || tab === "export")}>
         {error ? <p className="hint">{error}</p> : null}
         {list && shown.length === 0 ? <p className="hint">{empty}</p> : null}
         {!list && !error ? <p className="hint">Gathering the books…</p> : null}
@@ -388,7 +393,7 @@ export function BooksWindow({ session, onOpenAdventure, start = "books" }: { ses
           </div>
         ) : null}
       </div>
-      <input type="search" className="books-search" hidden={gm && tab === "packs"} placeholder="Search" aria-label="Search books" value={search} onChange={(event) => setSearch(event.target.value)} />
+      <input type="search" className="books-search" hidden={gm && (tab === "packs" || tab === "export")} placeholder="Search" aria-label="Search books" value={search} onChange={(event) => setSearch(event.target.value)} />
     </div>
   );
   // A book as FG's library shows it: its cover, its title under it, and (Activation) whether it is in use.

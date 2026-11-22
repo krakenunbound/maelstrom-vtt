@@ -508,7 +508,20 @@ async function itemImport(table, args) {
   return { made, problems: parsed.problems };
 }
 
+// FG's module export: the campaign's own records (whole kinds, or chosen records) into a pack in the packs folder
+// (electron/exportPack.cjs), for any campaign of this game (or any game) to make active.
+function moduleExport(table, args) {
+  const { exportPack, EXPORTABLE } = require("./exportPack.cjs");
+  const kinds = new Set([].concat(args.types ?? []).map(String));
+  const ids = new Set([].concat(args.ids ?? []).map(String));
+  const records = table.records.list({}).filter((record) => !record.source && EXPORTABLE.has(record.type) && (kinds.has(record.type) || ids.has(record.id)));
+  const made = exportPack({ records, name: args.name, title: args.title, category: args.category, author: args.author, ruleset: table.ruleset?.() ?? "", anyGame: Boolean(args.anyGame), forPlayers: Boolean(args.forPlayers) });
+  table.booksChanged?.();
+  return made;
+}
+
 const MESSAGES = {
+  "module-export": (table, msg) => moduleExport(table, msg),
   "item-import": (table, msg) => itemImport(table, msg),
   "race-import": (table, msg) => raceImport(table, msg),
   "item-forge": (table, msg, ctx) => itemForge(table, msg, ctx.readBook),
@@ -529,4 +542,4 @@ async function message(table, msg, ctx) {
   return handler(table, args, ctx);
 }
 
-module.exports = { itemImport, raceImport, itemForge, npcImport, message, copyRecord, storyAction, tableAction, rollOn, findTable, identify, parcelAction, parcelContents, encounterAction, encounterXp, questAction, unidentified, itemName };
+module.exports = { moduleExport, itemImport, raceImport, itemForge, npcImport, message, copyRecord, storyAction, tableAction, rollOn, findTable, identify, parcelAction, parcelContents, encounterAction, encounterXp, questAction, unidentified, itemName };

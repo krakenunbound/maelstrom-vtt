@@ -32,6 +32,7 @@ const MESSAGES = {
   "item-forge": "kraken_item_forge",
   "race-import": "kraken_race_import",
   "item-import": "kraken_item_import",
+  "module-export": "kraken_module_export",
   identify: "kraken_item_identify",
   encounter: "kraken_encounter",
   parcel: "kraken_parcel",

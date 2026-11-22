@@ -84,6 +84,8 @@ function isAdventure(info) {
 const GM_ONLY = /monster|bestiary|creature|codex|keeper|dungeon ?master|\bdm\b|\bgm\b|game ?master|\badventures?\b|module|encounter|scenario|campaign|one-shot|treasure|developer/i;
 const PLAYERS = /player|handbook|adventurer|backpack|common room|character|pregen/i;
 function forPlayers(info) {
+  // A pack that says (one exported from a campaign): as it says.
+  if (typeof info.players === "boolean") return info.players;
   const words = `${info.title} ${info.category}`;
   const guide = /player'?s'? (guide|handbook|reference|core)/i.test(words);
   return guide || (PLAYERS.test(words) && !GM_ONLY.test(words));
@@ -179,7 +181,7 @@ function coverAmong(pictures) {
 
 // What a module is, from its definition.xml (and whether it has a book); a
 // Kraken pack, from its own description.
-const DESCRIBED = 5;
+const DESCRIBED = 6;
 function describe(file) {
   if (packs.isPack(file)) {
     const manifest = packs.readManifest(file);
@@ -204,6 +206,8 @@ function describe(file) {
       ...(typeof manifest.parent === "string" ? { parent: manifest.parent } : {}),
       // The world's calendar it brings (shared/calendars.mjs settingCalendar).
       calendar: typeof manifest.calendar === "string" ? manifest.calendar : "",
+      // Whether the players may read it, when the pack says (exported from a campaign).
+      ...(typeof manifest.forPlayers === "boolean" ? { players: manifest.forPlayers } : {}),
       pack: true,
     };
   }
@@ -366,15 +370,24 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
   const opened = new Map(); // id -> the read book, the last few
 
   // The folders' own times: a book copied in or taken out changes them, so
-  // the shelf reads again (a pack dropped into the packs folder shows at once).
+  // the shelf reads again (a pack dropped into the packs folder shows at once). The packs folders' game folders
+  // too (Packs/D&D 5E): a pack written into one (a module exported from a campaign) changes only its time.
   const folders = () => [folder, ...also, ...(packsFolder ? [packsFolder] : [])];
-  const stamp = () => folders().map((dir) => {
+  const timeOf = (dir) => {
     try {
       return Math.round(fs.statSync(dir).mtimeMs);
     } catch {
       return 0;
     }
-  }).join("|");
+  };
+  const gameFolders = (dir) => {
+    try {
+      return fs.readdirSync(dir, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => timeOf(path.join(dir, entry.name)));
+    } catch {
+      return [];
+    }
+  };
+  const stamp = () => [...folders().map(timeOf), ...[...also, ...(packsFolder ? [packsFolder] : [])].flatMap(gameFolders)].join("|");
   let stamped = "";
   function load() {
     if (known) {

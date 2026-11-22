@@ -2710,6 +2710,13 @@ label.set-row { cursor: pointer; }
 .table-editor > .cc-inline { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 6px; }
 .table-editor .cc-inline .cc-field { width: 5rem; }
 .table-import { margin: 6px 0; }
+.module-export { display: grid; gap: 8px; padding: 4px 2px; min-width: 0; overflow-y: auto; }
+.module-export-fields input { width: 100%; min-width: 0; box-sizing: border-box; }
+.module-export-fields { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 8px; align-items: center; }
+.module-export-kinds { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: 2px 10px; border: 1px solid var(--panel-edge); border-radius: 8px; padding: 6px 10px; }
+.module-export-singles ul { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 2px; }
+.module-export-singles li { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.module-export > button[type="submit"] { justify-self: start; }
 .forge-slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 6px; margin: 4px 0; }
 .forge-slots > .record-drop { min-width: 0; margin: 0; display: block; }
 .forge-slot { min-height: 48px; }

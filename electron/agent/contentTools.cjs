@@ -170,6 +170,25 @@ const TOOLS = [
     inputSchema: object({ list: string("The table (optional): type, subtype, column names, rows"), text: string("The descriptions for the table's items, or magic items as printed") }),
     run: async (args, ctx) => out(await content.itemImport(needTable(ctx), args)),
   },
+  {
+    name: "kraken_module_export",
+    description:
+      "FG's module export (/export): the campaign's own records into a Maelstrom pack (.kpack, its module) in the packs folder, under the game's folder (or Any), so another campaign makes it active in Modules (GM only). types: whole kinds (npc, item, itemtemplate, spell, vehicle, character (as pregenerated characters), story (as story entries), battle (encounters), treasureparcel, table, class, race, race_subrace, background, feat...); ids: single records. Links between exported records point into the pack; pictures keep pointing where they are. name (required, also the file's name), title, category, author, anyGame (any game's campaigns), forPlayers (the players may read it; else the GM's, or an adventure when it has story). A pack not exported from a campaign is never written over. Returns the file and what it holds.",
+    inputSchema: object(
+      {
+        name: string("The module's name (its file's name too)"),
+        title: string("Its title in the lists (default the name)"),
+        category: string("Its category (default Campaign Exports)"),
+        author: string("Its author"),
+        types: { type: "array", items: { type: "string" }, description: "Whole kinds of the campaign's records" },
+        ids: { type: "array", items: { type: "string" }, description: "Single records by id" },
+        anyGame: { type: "boolean", description: "For any game's campaigns, not only this game's" },
+        forPlayers: { type: "boolean", description: "The players may read it" },
+      },
+      ["name"],
+    ),
+    run: async (args, ctx) => out(content.moduleExport(needTable(ctx), args)),
+  },
 ];
 
 module.exports = { TOOLS };
