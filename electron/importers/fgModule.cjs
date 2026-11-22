@@ -389,12 +389,15 @@ const REFERENCE_TYPES = {
   classes: "class", races: "race", feats: "feat", skills: "skill", spells: "spell", equipment: "item", tables: "table",
   classdata: "class", racedata: "race", skilldata: "skill", spelldata: "spell", npcdata: "npc", equipmentdata: "item", magicitemdata: "item", magicrefitemdata: "item",
   backgrounddata: "background", questdata: "quest", encounters: "encounter", hiddenstory: "hiddenstory",
+  // FG's 5E store books (the 2014 PHB and DMG): feats, subclasses, the DMG's encounters, random encounters and story
+  // templates.
+  featdata: "feat", class_specializationdata: "class_specialization", battles: "battle", battlerandoms: "battlerandom", storytemplates: "storytemplate",
 };
 const REFERENCE_SECTION = new RegExp(String.raw`<reference[\s>][\s\S]*?<(${Object.keys(REFERENCE_TYPES).join("|")})[\s>]`);
 function spreadReference(records) {
   const out = [];
   for (const record of records) {
-    const match = record.type === "refindex" ? /^reference\.([a-z]+)@(.*)$/.exec(String(record.data?.fgPath ?? "")) : null;
+    const match = record.type === "refindex" ? /^reference\.([a-z_]+)@(.*)$/.exec(String(record.data?.fgPath ?? "")) : null;
     const type = match ? REFERENCE_TYPES[match[1]] : null;
     if (!type) {
       out.push(record);

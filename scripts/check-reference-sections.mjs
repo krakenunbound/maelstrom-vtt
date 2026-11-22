@@ -29,12 +29,20 @@ try {
       <equipmentdata><category name="Armor">${item("id-00001", "Shield")}</category><category name="Gear">${item("id-00002", "Rope")}${item("id-00003", "Torch")}</category>${item("id-00004", "Bundle")}</equipmentdata>
       <hiddenstory>${`<id-00001><name type="string">Note</name><text type="formattedtext"><p>Hi</p></text></id-00001>`}</hiddenstory>
       <spells>${spell("id-00009", "Magic Missile")}</spells>
+      <featdata><category name="">${item("id-00001", "Alert")}${item("id-00002", "Lucky")}</category></featdata>
+      <class_specializationdata>${item("id-00001", "Champion")}</class_specializationdata>
+      <battles>${item("id-00001", "Goblin Ambush")}</battles>
+      <battlerandoms>${item("id-00001", "Forest Encounters")}</battlerandoms>
+      <storytemplates>${item("id-00001", "Rumour")}</storytemplates>
     </reference></root>`,
   );
   const { records } = readModule(folder);
   const byType = (type) => records.filter((record) => record.type === type);
   const spells = byType("spell");
   assert(spells.length === 4, `4 spells (3 in two categories, 1 3.5E-style), got ${spells.length}`);
+  // FG's 5E store books (the 2014 PHB and DMG): feats, subclasses, encounters, random encounters, story templates.
+  for (const [type, count] of [["feat", 2], ["class_specialization", 1], ["battle", 1], ["battlerandom", 1], ["storytemplate", 1]]) assert(byType(type).length === count, `${count} ${type}, got ${byType(type).length}`);
+  assert(byType("class_specialization")[0].data.fgPath === "reference.class_specializationdata.id-00001@Test Sections", `a section with an underscore keeps its path: ${byType("class_specialization")[0].data.fgPath}`);
   const sleep = spells.find((record) => record.name === "Sleep");
   assert(sleep?.data.fgPath === "reference.spelldata.id-00002@Test Sections", `Sleep keeps its FG path, got ${sleep?.data.fgPath}`);
   assert(sleep?.data.fgCategory === "Arcane", `Sleep stays in its category, got ${sleep?.data.fgCategory}`);

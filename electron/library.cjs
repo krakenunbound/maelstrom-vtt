@@ -11,7 +11,8 @@ const { readModule } = require("./importers/fgModule.cjs");
 const KINDS = { image: "image", map: "image", npc: "npc", battle: "battle", parcel: "treasureparcels", table: "tables", story: "encounter" };
 // FG's random encounters (battlerandom: each creature's count a dice expression, "1d4+1", "$PC") are listed with the
 // encounters, to Generate an encounter from.
-const ALSO = { battle: ["battlerandom"] };
+// (a rulebook's tables, reference.tables in FG's store books, are records of type "table")
+const ALSO = { battle: ["battlerandom"], table: ["table"] };
 const cache = new Map();
 // The GM's shelf: a book named by its id, its name or its title is read from
 // its own file (a pack, a module whose file name is not its name, a bundled book).
@@ -162,7 +163,7 @@ function storyEntry(fgPath) {
 
 // A book's random tables, as records (the 2E krits read their book's).
 function tables(moduleName) {
-  return moduleRecords(moduleName).filter((record) => record.type === KINDS.table);
+  return moduleRecords(moduleName).filter((record) => record.type === KINDS.table || ALSO.table.includes(record.type));
 }
 
 module.exports = { rollCount, useShelf, resolved: (name) => resolveBook(name), tables, list, find, moduleOf, ensureNpc, addBattle, giveParcel, rollTable, storyEntry, KINDS };
