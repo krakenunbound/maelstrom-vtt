@@ -184,7 +184,16 @@ function tableTarget(table, args, seat) {
     const record = library.find(library.moduleOf(String(args.path)), String(args.path));
     return { name: record.name, data: record.data, id: record.id };
   }
-  const found = findTable(table, { name: args.name }, seat);
+  let found = findTable(table, { name: args.name }, seat);
+  // A table a record the seat can see names as its own (a background's supporting tables of traits, ideals, bonds and
+  // flaws, which the character wizard rolls): rolled from the active books, shared with the players or not.
+  if (!found && seat && seat.role !== "dm") {
+    const wanted = String(args.name ?? "").trim().toLowerCase();
+    const names = (record) => String(record.data?.supportingtables ?? "").split(",").some((item) => item.trim().toLowerCase() === wanted);
+    const named = wanted !== "" && table.records.list({ seat }).some(names);
+    const book = named ? (table.bookTables?.() ?? []).find((record) => record.name.toLowerCase() === wanted) : null;
+    if (book) found = { name: book.name, data: book.data, id: book.id };
+  }
   if (!found) throw new Error(`No table called ${args.name ?? ""}.`);
   return found;
 }

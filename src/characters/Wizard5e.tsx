@@ -56,7 +56,7 @@ import { backgroundKit2014, entryText, legacyKit, legacyKitItems } from "../../s
 type Row = Record<string, unknown>;
 type Stat = (typeof STATS)[number];
 type Tab = (typeof TABS)[number];
-type Decision = { id: string; type: string; label: string; options: string[]; adj?: number; category?: string; feature?: string };
+type Decision = { id: string; type: string; label: string; options: string[]; adj?: number; category?: string; feature?: string; list?: string };
 type Kit = { letter: string; items: { name: string; count: number; data: Row }[]; wealth: number };
 // A Legacy (2014) kit (shared/dnd5e/kits2014.mjs): items given, and choices of options; a kind's item the player picks.
 type KitEntry = { name?: string; count: number; data?: Row; kind?: string; label?: string; options?: string[] };
@@ -317,6 +317,11 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
       return feats.filter((feat) => feat.name !== "Ability Score Improvement" && (!item.category || String(feat.data.category ?? "").toLowerCase() === item.category.toLowerCase()) && !taken.has(feat.name)).map((feat) => feat.name);
     }
     if (item.type === "subclass") return (subclassesOf(classRecord, subclasses) as TableRecord[]).map((record) => record.name);
+    // A race's cantrip from a class's list (a High Elf's wizard cantrip): that list's cantrips the character does not know.
+    if (item.type === "cantrip") {
+      const taken = [...spells, ...allDecisions.filter((other) => other.type === "cantrip" && other.id !== item.id).map((other) => choices[other.id])];
+      return (classSpells(spellsAll, item.list ?? "", 0) as TableRecord[]).filter((spell) => !taken.includes(spell.name)).map((spell) => spell.name);
+    }
     const others = allDecisions.filter((other) => other.type === item.type && other.id !== item.id && (item.type !== "asi" || other.id.split(":").slice(0, -1).join(":") === item.id.split(":").slice(0, -1).join(":"))).map((other) => choices[other.id]);
     if (item.type === "expertise") return skillsHave.filter((key) => !others.map(skillKey).includes(key)).map((key) => SKILLS[key as keyof typeof SKILLS][0]);
     if (item.type === "skill") {
@@ -495,7 +500,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
         payGear: true,
         coins: custom,
         ...(showRolled && rolled > 0 ? { wealth: rolled } : {}),
-        spells,
+        spells: [...spells, ...chosen("cantrip").filter((spell) => !spells.includes(spell))],
         warnings,
         details,
         ...art,

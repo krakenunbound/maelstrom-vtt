@@ -93,14 +93,22 @@ assert(kin.increases.constitution === 2 && kin.increases.wisdom === 1, `Hill Dwa
 assert(kin.languages.base.join(",") === "Common,Dwarvish", `Dwarf's languages: ${kin.languages.base}`);
 const tool = kin.decisions.find((item) => item.type === "toolprof");
 assert(tool?.options.join("|") === "Smith's Tools|Brewer's Supplies|Mason's Tools", `the tool choice: ${tool?.options}`);
-const elf = speciesInfo(of("race").find((record) => record.name === "Elf"));
+const elfRecord = () => of("race").find((record) => record.name === "Elf");
+const elf = speciesInfo(elfRecord());
 assert(elf.skills.base.includes("perception"), "Keen Senses: Perception");
 const human = speciesInfo(of("race").find((record) => record.name === "Human"));
 assert(Object.values(human.increases).every((n) => n === 1) && Object.keys(human.increases).length === 6, `Human: +1 to each: ${JSON.stringify(human.increases)}`);
 assert(human.decisions.some((item) => item.type === "language"), "Human: one language of choice");
 const halfElf = speciesInfo(of("race").find((record) => record.name === "Half-Elf"));
 assert(halfElf.decisions.filter((item) => item.type === "asi").length === 2 && halfElf.decisions.filter((item) => item.type === "skill").length === 2, "Half-Elf: two +1s and two skills to choose");
-done.push("a 2014 race's languages, skills, ability increases and tool choice from its traits");
+// A subrace's own choices (a High Elf's): a cantrip from the wizard's list, one extra language.
+const highElf = speciesInfo(elfRecord(), { name: "High Elf", data: { traits: [{ name: "Cantrip", text: "<p>You know one cantrip of your choice from the wizard spell list. Intelligence is your spellcasting ability for it.</p>" }, { name: "Extra Language", text: "<p>You can speak, read, and write one extra language of your choice.</p>" }] } });
+assert(highElf.decisions.filter((item) => item.type === "cantrip" && item.list === "Wizard").length === 1, `High Elf: a wizard cantrip to choose: ${JSON.stringify(highElf.decisions)}`);
+assert(highElf.decisions.filter((item) => item.type === "language").length === 1, "High Elf: one extra language to choose");
+assert(human.decisions.filter((item) => item.type === "language").length === 1, "Human: still one language, not two");
+const trained = speciesInfo({ name: "Elf", data: { traits: [{ name: "Elf Weapon Training", text: "<p>You have proficiency with the longsword, shortsword, shortbow, and longbow.</p>" }, { name: "Keen Senses", text: "<p>You have proficiency in the Perception skill.</p>" }] } });
+assert(trained.weapons.join(",") === "longsword,shortsword,shortbow,longbow", `an Elf's Weapon Training: ${trained.weapons}`);
+done.push("a 2014 race's languages, skills, ability increases and tool choice from its traits (a subrace's cantrip and extra language too)");
 
 // Subclasses of the class's edition; a domain's spells; a feature's armour.
 const cleric = of("class")[0];
@@ -205,7 +213,13 @@ done.push("2014 starting kits read from the book: a class's equipment list (choi
   assert((await roll({ seat: { role: "dm", name: "GM" }, from: "GM" })).result === "Faith in the old ways.", "the GM rolls it");
   await table.agent.shareBook("Test Legacy", true);
   assert((await roll(player)).result === "Faith in the old ways.", "shared, the player rolls it by name");
-  done.push("a player rolls a table of a book shared with them by name (the wizard's ideals), not a GM's book's");
+  // Not shared, but named by a background the player sees (the wizard's Roll beside a 2014 background's ideals): rolled.
+  await table.agent.shareBook("Test Legacy", false);
+  const named = table.agent.records.list().find((record) => record.type === "background" && String(record.data?.supportingtables ?? "").includes("Test Acolyte Ideal"));
+  const background = named ?? table.agent.records.create({ type: "background", name: "Test Acolyte", visibility: "all", data: { supportingtables: "Test Acolyte Ideal" } }, table.agent.seat);
+  assert(table.agent.records.list({ seat: player.seat }).some((record) => record.id === background.id), "the background is the player's to see");
+  assert((await roll(player)).result === "Faith in the old ways.", "a table its background names: the player rolls it, the book not shared");
+  done.push("a player rolls a table of a book shared with them by name (the wizard's ideals), not a GM's book's, unless a background they see names it");
   await table.stop?.();
   await before.stop?.();
   done.push("a campaign whose books an older reader read gets them read again when it opens");

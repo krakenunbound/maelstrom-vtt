@@ -724,7 +724,8 @@ export function buildFromSpec(spec, lib, rulesetId = RULESET) {
     abilities,
     skills,
     proficiencies: { martial: martialClass(cls) },
-    proficiencylist: { armor: klass.armor, weapons: klass.weapons, tools },
+    // The class's armor and weapons, and those the race's traits give (an Elf's Weapon Training).
+    proficiencylist: { armor: [klass.armor, ...(kin?.armor ?? [])].filter((part) => part && part !== "None").join(", ") || klass.armor, weapons: [klass.weapons, ...(kin?.weapons ?? [])].filter(Boolean).join(", "), tools },
     languages,
     feats,
     traits: (kin?.traits ?? []).map((trait) => String(trait.name)),

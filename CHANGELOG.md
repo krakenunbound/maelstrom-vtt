@@ -8,6 +8,8 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **The character wizard reads every choice a 2014 race gives:** a High Elf's cantrip from the wizard's list and its extra language are picked in the wizard (they showed as text only); a race's weapon and armor training (an Elf's longsword, shortsword, shortbow and longbow) is on the sheet. check-legacy-5e-books
+- **A player rolls a background's traits, ideals, bonds and flaws** from the active handbook even when the GM has not shared it with the players: the background they can see names the tables (the Roll buttons said "No table called Sage Personality Trait"). check-legacy-5e-books
 - **A token's picture sits on the map itself:** art cut out on a transparent ground (a generated creature) shows as it is, no longer on a dark disc that hid dark art.
 - **A creature on the map and on the tracker stay one:** shown or hidden on the map, it is shown or hidden on the tracker too (it stayed hidden there); a creature given its own picture from the art library (a generated token for an adventure's monster) shows it on the tracker as on the map. The combat tracker first opens at the table's left edge, the map to its right. check-creature-token-sync
 - **A 5E character built from a spec keeps every class skill chosen:** the builder read a class's skill list with its own looser reading ("Choose four from Acrobatics, ..." lost Acrobatics and counted two); it reads it as the character wizard does now (a Rogue's four, a Bard's any three). check-legacy-5e-books

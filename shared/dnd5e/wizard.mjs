@@ -153,6 +153,7 @@ const DECISION_LABEL = {
   subclass: "Select Subclass",
   asiorfeat: "Select Option",
   asioption: "Select Ability Score Option",
+  cantrip: "Select Cantrip",
 };
 const picksOf = (prefix, type, picks, options, extra = {}) => Array.from({ length: picks }, (_, index) => decision(`${prefix}:${type}:${index}`, type, DECISION_LABEL[type], options, extra));
 
@@ -161,7 +162,7 @@ export function speciesInfo(species, ancestry) {
   if (!species) return null;
   const version = is2024(species);
   const traits = [...rows(species.data?.traits).map((trait) => ({ ...trait, from: species.name })), ...rows(ancestry?.data?.traits).map((trait) => ({ ...trait, from: ancestry?.name }))];
-  const out = { name: species.name, is2024: version, size: "Medium", sizeOptions: [], speed: Number(/\d+/.exec(String(species.data?.speed ?? ""))?.[0] ?? 30), darkvision: 0, languages: { base: [], options: [], picks: 0 }, skills: { base: [] }, traits, decisions: [], feats: [], increases: {} };
+  const out = { name: species.name, is2024: version, size: "Medium", sizeOptions: [], speed: Number(/\d+/.exec(String(species.data?.speed ?? ""))?.[0] ?? 30), darkvision: 0, languages: { base: [], options: [], picks: 0 }, skills: { base: [] }, weapons: [], armor: [], traits, decisions: [], feats: [], increases: {} };
   if (version) {
     const sizes = parseSizes(species.data?.size);
     if (sizes.length > 1) {
@@ -204,12 +205,30 @@ export function speciesInfo(species, ancestry) {
       const text = plain(languageTrait.text).split(/\.\s/)[0];
       const known = ["Common", ...STANDARD_LANGUAGES, ...EXOTIC_LANGUAGES];
       out.languages.base = known.filter((language) => new RegExp(`\\b${language}\\b`, "i").test(text));
-      const extra = /(\w+) (?:extra|other|additional) languages? of your choice/i.exec(text);
-      if (extra) {
-        out.languages.picks = countWord(extra[1]) || 1;
-        out.languages.options = known.filter((language) => !out.languages.base.includes(language));
-        out.decisions.push(...picksOf("species:languages", "language", out.languages.picks, out.languages.options));
-      }
+    }
+    // A language of the player's choice, in the Languages trait or one of its own (a High Elf's Extra Language).
+    for (const trait of traits) {
+      const extra = /(\w+) (?:extra|other|additional) languages? of your choice/i.exec(plain(trait.text));
+      if (!extra) continue;
+      const known = ["Common", ...STANDARD_LANGUAGES, ...EXOTIC_LANGUAGES];
+      const picks = countWord(extra[1]) || 1;
+      out.languages.picks += picks;
+      out.languages.options = known.filter((language) => !out.languages.base.includes(language));
+      out.decisions.push(...picksOf(`species:${simplify(trait.name)}`, "language", picks, out.languages.options));
+    }
+    // Weapons and armor a trait gives ("You have proficiency with the longsword, shortsword, shortbow, and longbow",
+    // an Elf's Weapon Training; "with light and medium armor", a Mountain Dwarf's).
+    for (const trait of traits) {
+      const given = /you have proficiency with (?:the )?([^.]+)\./i.exec(plain(trait.text))?.[1];
+      if (!given || /tools?|supplies|kit/i.test(given)) continue;
+      if (/armor/i.test(given)) out.armor.push(given.replace(/\s+armor$/i, " armor").trim());
+      else out.weapons.push(...given.split(/,\s*(?:and\s+|or\s+)?|\s+and\s+/).map((part) => part.replace(/^(?:the|a|an)\s+/i, "").trim()).filter(Boolean));
+    }
+    // A cantrip of the player's choice from a class's list (a High Elf's: "one cantrip of your choice from the wizard
+    // spell list"): offered from that class's cantrips.
+    for (const trait of traits) {
+      const cantrip = /(\w+) cantrips? of your choice from the (\w+) spell list/i.exec(plain(trait.text));
+      if (cantrip) out.decisions.push(...picksOf(`species:${simplify(trait.name)}`, "cantrip", countWord(cantrip[1]) || 1, [], { list: titled(cantrip[2]) }));
     }
     for (const trait of traits) {
       const text = plain(trait.text);
