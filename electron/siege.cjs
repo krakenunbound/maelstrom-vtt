@@ -275,6 +275,19 @@ async function importCharacter(table, fileText, { owner = "", seat } = {}) {
   if (body.length > MAX_IMPORT) throw new Error("That file is too big for a character (8 MB at most).");
   const { interchange } = await siege();
   const { convertXml } = require("./importers/fgModule.cjs");
+  // A 5E campaign takes an FG 5E character whole, as FG's /importchar does (not mapped to another game).
+  const game = typeof table.ruleset === "function" ? table.ruleset() : "";
+  if (dnd5e.isD20Ruleset(game) && /<character[\s>]/.test(body)) {
+    const read = convertXml(body);
+    const character = read?.character ?? read?.root?.character;
+    const { isFg5eCharacter, fromFg5eCharacter } = await import(require("url").pathToFileURL(require("path").join(__dirname, "..", "shared", "dnd5e", "fgcharacter.mjs")).href);
+    if (isFg5eCharacter(character)) {
+      const rules = await dnd5e.rules5e();
+      const data = rules.derive(fromFg5eCharacter(character, { skillKey: rules.skillKey, spellSlug: rules.spellSlug, rulesetId: dnd5e.D20[game] }));
+      const record = table.records.create({ type: "character", name: data.name, owner, visibility: owner ? "owner" : "gm", data }, seat ?? table.seat);
+      return { record, format: "fg", report: `Imported from Fantasy Grounds as a ${game} character.` };
+    }
+  }
   const library = siegeLibrary(table.records);
   const { format, character, report } = interchange.readCharacterFile(body, library, { fgXml: convertXml });
   // A portrait or token from another collection may not be in this GM's.
