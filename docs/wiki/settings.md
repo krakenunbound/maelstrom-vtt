@@ -73,6 +73,11 @@ Ammunition, Consumables, Rations and water, Light from the pack, Encumbrance and
 
 - **Creatures' health** and **Characters' health:** what players see, as a bar, a dot, either on hover, or off.
 - **Token names:** on hover, always, or off.
+- **Health you see:** your own view of health on tokens (the tracker always shows you everything).
+- **Creatures' effects**, **Characters' effects** and **Effects you see:** an icon for each effect, one mark with how many, either only on hover, or nothing. Off, players are not sent the signs at all; flames, frost and glows stay visible.
+- **Token size:** a token's picture fills 80% of its squares, or all of them.
+- **Whose turn it is, on the map:** the token whose turn it is wears a glow, a turning ring, or nothing.
+- **Facing arrows:** the small arrow on a token that faces a way.
 - **Diagonals:** every square counts one, 5-10-5, or a straight line.
 
 What is off is never sent to a player's browser. See [Tokens, vision and lighting](tokens-vision-and-lighting.md).

@@ -290,9 +290,22 @@ export function EffectGlyph({ icon, size = 18 }: { icon: string; size?: number }
 }
 
 /** Small condition chips around the lower rim: up to max icons, then "+n". */
-export function TokenBadges(props: { badges: Badge[]; span: number; max?: number }): JSX.Element | null {
-  const { badges, span, max = 5 } = props;
-  if (!badges.length) return null;
+export function TokenBadges(props: { badges: Badge[]; span: number; max?: number; show?: "on" | "hover" | "mark" | "markhover" | "off" }): JSX.Element | null {
+  const { badges, span, max = 5, show = "on" } = props;
+  if (!badges.length || show === "off") return null;
+  const hover = show.endsWith("hover") ? " hover-only" : "";
+  // A mark: one sign with how many effects, their names on its tooltip (FG's effect mark).
+  if (show.startsWith("mark")) {
+    const size = Math.round(Math.min(28, Math.max(12, span * 0.18)));
+    const tone = badges.some((badge) => badge.tone === "bad") ? "bad" : badges.some((badge) => badge.tone === "good") ? "good" : "neutral";
+    return (
+      <div className={`token-badges${hover}`}>
+        <span className="token-badge token-effect-mark" data-tone={tone} title={badges.map((badge) => badge.title).join(", ")} style={{ left: "12%", top: "88%", width: size, height: size, fontSize: size * 0.62 }}>
+          <b>{badges.length}</b>
+        </span>
+      </div>
+    );
+  }
   const shown = badges.length > max ? badges.slice(0, max) : badges;
   const rest = badges.slice(shown.length);
   const count = shown.length + (rest.length ? 1 : 0);
@@ -308,7 +321,7 @@ export function TokenBadges(props: { badges: Badge[]; span: number; max?: number
     return { left: `${50 + 47 * Math.sin(a)}%`, top: `${50 + 47 * Math.cos(a)}%`, width: size, height: size, fontSize: size };
   };
   return (
-    <div className="token-badges">
+    <div className={`token-badges${hover}`}>
       {shown.map((badge, i) => (
         <span key={`${badge.icon}-${i}`} className="token-badge" data-tone={badge.tone ?? "neutral"} title={badge.rounds != null ? `${badge.title} (${badge.rounds} ${badge.rounds === 1 ? "round" : "rounds"} left)` : badge.title} style={place(i)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

@@ -346,6 +346,18 @@ function savedOptions(value) {
     healthNpc: HEALTH_SHOWS.includes(options.healthNpc) ? options.healthNpc : "dot",
     healthPc: HEALTH_SHOWS.includes(options.healthPc) ? options.healthPc : "dot",
     names: ["off", "hover", "always"].includes(options.names) ? options.names : "hover",
+    // FG's TGMH: what the GM sees of health on tokens (dot by default).
+    healthGm: ["bar", "barhover", "dot", "dothover", "off"].includes(options.healthGm) ? options.healthGm : "dot",
+    // FG's TGME, TNPCE, TPCE: effects on tokens for the GM, and for players on the GM's creatures and on the
+    // characters: icons, icons on hover, a mark (one sign with the count), a mark on hover, or off.
+    effectsGm: EFFECT_SHOWS.includes(options.effectsGm) ? options.effectsGm : "on",
+    effectsNpc: EFFECT_SHOWS.includes(options.effectsNpc) ? options.effectsNpc : "on",
+    effectsPc: EFFECT_SHOWS.includes(options.effectsPc) ? options.effectsPc : "on",
+    // FG's TFAC (the facing arrow on tokens), TASG (a token's picture fills 80% of its squares, or all of them)
+    // and INITIND (the mark on the token whose turn it is: a glow, a turning ring, or none).
+    ...(options.facingIndicator === false ? { facingIndicator: false } : {}),
+    tokenFill: String(options.tokenFill) === "100" ? "100" : "80",
+    initIndicator: ["glow", "ring", "off"].includes(options.initIndicator) ? options.initIndicator : "glow",
     // Bookkeeping (electron/bookkeeping.cjs), each part the GM may switch off for a relaxed table:
     // ammunition, consumables, rations and water, light from the pack, encumbrance; and the 5E
     // variant encumbrance (off unless chosen).
@@ -407,6 +419,7 @@ function bookkeepingOptions(value) {
 }
 // numbers: the bar on tokens, and the hit points themselves in the tracker.
 const HEALTH_SHOWS = ["bar", "barhover", "dot", "dothover", "numbers", "off"];
+const EFFECT_SHOWS = ["on", "hover", "mark", "markhover", "off"];
 function wizard2eOptions(value) {
   const raw = value && typeof value === "object" ? value : {};
   const methods = Array.isArray(raw.methods) ? [...new Set(raw.methods.map((n) => Math.round(Number(n))).filter((n) => n >= 1 && n <= 6))].sort() : [1, 2, 3, 4, 5, 6];
@@ -885,7 +898,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     if (options.paused !== wasPaused) addChat({ id: "table", from: "Table", text: options.paused ? "The GM has paused the game." : "The game goes on.", at: Date.now(), kind: "story" });
     onChange("table");
     // What tokens show (names, health) and how distance counts are in each seat's map.
-    if (["diagonal", "healthNpc", "healthPc", "names"].some((key) => key in next)) sendMaps();
+    if (["diagonal", "healthNpc", "healthPc", "healthGm", "names", "effectsGm", "effectsNpc", "effectsPc"].some((key) => key in next)) sendMaps();
     // A bookkeeping switch changed: the load's effects (and the games whose rules count the load) follow.
     if ("bookkeeping" in next && bookkeepingApi) void bookkeepingApi.switched(wasBooks, options.bookkeeping).catch(() => undefined);
     // What the tracker shows players of the creatures' health follows the same option.

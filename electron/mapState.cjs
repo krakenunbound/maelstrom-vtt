@@ -1114,9 +1114,10 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
     const chosen = (isPc(token) ? options.healthPc : options.healthNpc) ?? "dot";
     const set = chosen === "numbers" ? "bar" : chosen;
     const names = options.names ?? "hover";
-    if (seat.role === "dm") return { health: set === "off" ? "dothover" : set, names: names === "off" ? "hover" : names, name: token.name };
+    const effects = String((seat.role === "dm" ? options.effectsGm : isPc(token) ? options.effectsPc : options.effectsNpc) ?? "on");
+    if (seat.role === "dm") return { health: options.healthGm ?? "dot", names: names === "off" ? "hover" : names, name: token.name, effects };
     const own = token.owner !== "" && token.owner === seat.name;
-    return { health: set, names, name: own ? token.name : names === "off" ? "" : token.unidentified || token.name };
+    return { health: set, names, name: own ? token.name : names === "off" ? "" : token.unidentified || token.name, effects };
   }
 
   function movesOut(token) {
@@ -1159,7 +1160,10 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       seesFt: visionRange(token),
     };
     const visual = visualFor(token, seat);
-    if (visual) out.effects = visual;
+    // Effects off for this seat: no signs on the token (what can be seen, flames or a glow, stays).
+    if (visual && shows.effects === "off") visual.badges = [];
+    if (visual && (visual.fx.length || visual.badges.length || visual.list)) out.effects = visual;
+    out.effectsShow = shows.effects;
     // A character's token picture, else its portrait (FG's token from the sheet).
     const data = token.recordId ? records.get(token.recordId)?.data : null;
     // A character with none of its own: its race and class's (Kraken's pair).

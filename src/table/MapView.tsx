@@ -102,8 +102,6 @@ type Point = { x: number; y: number };
 
 const MIN_SCALE = 0.02;
 const MAX_SCALE = 8;
-// FG draws a token at 80% of its space (token auto-scale option TASG "80").
-const TOKEN_FILL = 0.8;
 // A player opens the map at a zoom where a square is this many screen pixels.
 const PLAYER_SQUARE_PX = 64;
 
@@ -349,6 +347,7 @@ function MapViewInner({
   templateAsk = null,
   onTemplateDone = () => undefined,
   fxMode = "full",
+  tokenLook = { facing: true, fill: 0.8, initIndicator: "glow" },
   me = "",
   startEditing = false,
   gmSeat = gm,
@@ -387,6 +386,9 @@ function MapViewInner({
   onTemplateDone?: () => void;
   // Token effects: animated, icons only, or none (the GM's setting).
   fxMode?: "full" | "icons" | "off";
+  // The GM's token look for every seat (FG's TFAC, TASG, INITIND): the facing arrow, how much of its squares a
+  // token's picture fills, the mark on the token whose turn it is.
+  tokenLook?: { facing: boolean; fill: number; initIndicator: "glow" | "ring" | "off" };
   // This seat's name (a player rubs out only their own lines).
   me?: string;
 }) {
@@ -2405,7 +2407,7 @@ function MapViewInner({
           return (
             <div
               key={token.id}
-              className={["token", ...tokenFxClasses((token.effects?.fx ?? []) as FxKey[], fxMode), token.sensed ? "token-sensed" : "", token.held ? "token-held" : "", canDrag ? "token-draggable" : "", token.mine ? "token-mine" : "", token.active ? "token-active" : "", targeted.includes(token.id) ? "token-targeted" : "", selected === token.id ? "token-selected" : "", picked.includes(token.id) ? "token-picked" : "", token.hidden ? "token-hidden" : "", isDragged ? "token-lifted" : ""]
+              className={["token", ...tokenFxClasses((token.effects?.fx ?? []) as FxKey[], fxMode), token.sensed ? "token-sensed" : "", token.held ? "token-held" : "", canDrag ? "token-draggable" : "", token.mine ? "token-mine" : "", token.active && tokenLook.initIndicator !== "off" ? (tokenLook.initIndicator === "ring" ? "token-active token-active-ring" : "token-active") : "", targeted.includes(token.id) ? "token-targeted" : "", selected === token.id ? "token-selected" : "", picked.includes(token.id) ? "token-picked" : "", token.hidden ? "token-hidden" : "", isDragged ? "token-lifted" : ""]
                 .filter(Boolean)
                 .join(" ")}
               data-token={token.id}
@@ -2450,12 +2452,12 @@ function MapViewInner({
               <div
                 className="token-disc"
                 style={{
-                  width: `${TOKEN_FILL * 100}%`,
-                  height: `${TOKEN_FILL * 100}%`,
+                  width: `${tokenLook.fill * 100}%`,
+                  height: `${tokenLook.fill * 100}%`,
                   borderColor: token.color,
                   borderWidth: Math.max(2, span * 0.05),
                   background: token.art ? "#222" : token.color,
-                  fontSize: span * TOKEN_FILL * 0.38,
+                  fontSize: span * tokenLook.fill * 0.38,
                 }}
               >
                 {token.art && token.video ? (
@@ -2467,8 +2469,8 @@ function MapViewInner({
                 )}
               </div>
               {token.effects ? <TokenFx fx={token.effects.fx as FxKey[]} span={span} mode={fxMode} /> : null}
-              {token.effects && fxMode !== "off" ? <EffectBadges badges={token.effects.badges.map((badge) => ({ ...badge, tone: badge.tone as "good" | "bad" | "neutral" }))} span={span} /> : null}
-              {token.facing != null ? (
+              {token.effects && fxMode !== "off" ? <EffectBadges badges={token.effects.badges.map((badge) => ({ ...badge, tone: badge.tone as "good" | "bad" | "neutral" }))} span={span} show={token.effectsShow} /> : null}
+              {token.facing != null && tokenLook.facing ? (
                 <i className="token-facing" data-facing={token.facing} style={{ transform: `rotate(${token.facing}deg)` }} aria-hidden>
                   <b style={{ borderBottomColor: token.color, borderWidth: `0 ${span * 0.09}px ${span * 0.13}px` }} />
                 </i>

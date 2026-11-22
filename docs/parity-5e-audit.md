@@ -106,16 +106,16 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 
 | FG option | FG default | Maelstrom | Verdict |
 |---|---|---|---|
-| Token: Initiative indicator (INITIND) | off | Not found | Missing |
-| Token: Auto-scale to grid (TASG) | 80 | Token size by squares | Check live (the 80%) |
-| Token: Facing indicator (TFAC) | off | Facing on tokens | Check live (indicator switch) |
+| Token: Initiative indicator (INITIND) | off | `initIndicator`: a glow (default), a turning ring, nothing | Done |
+| Token: Auto-scale to grid (TASG) | 80 | `tokenFill`: 80% (default) or whole squares | Done |
+| Token: Facing indicator (TFAC) | off | `facingIndicator` (on by default: Maelstrom's tokens face a way) | Done |
 | Token: Fog of war (TFOW) | pc | Line of sight per scene | Check live |
-| Token (GM): Show effects (TGME) | on | Effects on tokens | Check live (switch) |
-| Token (GM): Show health (TGMH) | dot | Health on tokens | Check live (GM choice) |
+| Token (GM): Show effects (TGME) | on | `effectsGm`: icons, on hover, one mark, a mark on hover, off | Done |
+| Token (GM): Show health (TGMH) | dot | `healthGm`; before, the GM saw the players' choice | Done |
 | Token: Name display (TNAM) | tooltip | `names` (off, hover, always) | Same |
-| Token (Player): Show enemy effects (TNPCE) | on | Effects on tokens | Check live |
+| Token (Player): Show enemy effects (TNPCE) | on | `effectsNpc`: as TGME; off sends players no signs | Done |
 | Token (Player): Show enemy health (TNPCH) | dot | `healthNpc` | Same |
-| Token (Player): Show ally effects (TPCE) | on | Effects on tokens | Check live |
+| Token (Player): Show ally effects (TPCE) | on | `effectsPc` | Done |
 | Token (Player): Show ally health (TPCH) | dot | `healthPc` | Same |
 | Token: Party vision and movement (TPTY) | off | Not found | Missing (shared party vision) |
 

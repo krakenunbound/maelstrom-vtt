@@ -725,7 +725,7 @@ export function App() {
           session={session}
           scene={
             scene ? (
-              <MapView scene={scene} gm={dm && !testing && !previewing} map={session.map} records={recordList} pings={session.pings} floats={session.floats} bubbles={session.bubbles} notice={session.notice} actions={mapActions} targeted={targeted} targeters={targeters} targetLinks={targetLinks} templateAsk={session.templateAsk} onTemplateDone={session.clearTemplateAsk} fxMode={session.options.tokenEffects ?? "full"} me={testing ? "@test" : myName} startEditing={dm && Boolean(prep) && !testing} gmSeat={dm} readAloud={session.readAloudNow} onReadAloudDone={session.dismissReadAloud} viewPull={session.viewPull} />
+              <MapView scene={scene} gm={dm && !testing && !previewing} map={session.map} records={recordList} pings={session.pings} floats={session.floats} bubbles={session.bubbles} notice={session.notice} actions={mapActions} targeted={targeted} targeters={targeters} targetLinks={targetLinks} templateAsk={session.templateAsk} onTemplateDone={session.clearTemplateAsk} fxMode={session.options.tokenEffects ?? "full"} tokenLook={{ facing: session.options.facingIndicator !== false, fill: session.options.tokenFill === "100" ? 1 : 0.8, initIndicator: session.options.initIndicator ?? "glow" }} me={testing ? "@test" : myName} startEditing={dm && Boolean(prep) && !testing} gmSeat={dm} readAloud={session.readAloudNow} onReadAloudDone={session.dismissReadAloud} viewPull={session.viewPull} />
             ) : null
           }
           sceneId={scene?.id ?? ""}

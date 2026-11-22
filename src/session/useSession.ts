@@ -41,6 +41,8 @@ export type MapToken = {
   // FG's token options, as the host chose for this seat: how health and the name are drawn.
   healthShow?: "bar" | "barhover" | "dot" | "dothover" | "off";
   namesShow?: "off" | "hover" | "always";
+  // How its effects are signed for this seat (FG's TGME, TNPCE, TPCE): icons, on hover, one mark, a mark on hover, off.
+  effectsShow?: "on" | "hover" | "mark" | "markhover" | "off";
   // Height in the scene's units (0: on the ground).
   elevation?: number;
   // The GM's: the name players see instead, and the token's own senses line.
@@ -284,7 +286,7 @@ export type SoundItem = { id: string; kind: string; group: string; name: string 
 export type SoundLibrary = { sounds: SoundItem[]; groups: { id: string; count: number }[]; folder: string; triggers?: SoundTrigger[] };
 // Bookkeeping, each part the GM may switch off (electron/bookkeeping.cjs); variant: 5E variant encumbrance.
 export type BookkeepingOptions = { ammo: boolean; consumables: boolean; rations: boolean; light: boolean; encumbrance: boolean; variant: boolean };
-export type TableOptions = { paused?: boolean; towerReveal: boolean; towerExternal?: boolean; towerStyle?: string; deathMarkers?: { on: boolean; default: string; byType: Record<string, string> }; motd?: { text: string; links: QuickSlot[] }; decal: string; wallpaper: string; wallpaperFit?: WallpaperFit; gmIcon: string; soundHidden: "off" | "combat" | "all"; soundRepeat: number; diceHold?: number; tokenEffects?: "full" | "icons" | "off"; playerEffects?: "none" | "lights" | "conditions" | "all"; autoApply?: boolean; languages?: string[]; currencies?: string[]; modifierPresets?: { label: string; value: number }[]; theme?: string; bookkeeping?: BookkeepingOptions; wizard35?: Wizard35Options; wizard2e?: Wizard2eOptions; rules?: Record<string, string | boolean> };
+export type TableOptions = { healthGm?: string; effectsGm?: string; effectsNpc?: string; effectsPc?: string; facingIndicator?: boolean; tokenFill?: "80" | "100"; initIndicator?: "glow" | "ring" | "off"; paused?: boolean; towerReveal: boolean; towerExternal?: boolean; towerStyle?: string; deathMarkers?: { on: boolean; default: string; byType: Record<string, string> }; motd?: { text: string; links: QuickSlot[] }; decal: string; wallpaper: string; wallpaperFit?: WallpaperFit; gmIcon: string; soundHidden: "off" | "combat" | "all"; soundRepeat: number; diceHold?: number; tokenEffects?: "full" | "icons" | "off"; playerEffects?: "none" | "lights" | "conditions" | "all"; autoApply?: boolean; languages?: string[]; currencies?: string[]; modifierPresets?: { label: string; value: number }[]; theme?: string; bookkeeping?: BookkeepingOptions; wizard35?: Wizard35Options; wizard2e?: Wizard2eOptions; rules?: Record<string, string | boolean> };
 // The D&D 3.5E character wizard's options (the GM's, as FG's KrakenCharWizard35E).
 export type Wizard35Options = { methods: number[]; rollLock: boolean; lowReroll: boolean; vault: boolean };
 // The AD&D 2E character wizard's options (the GM's): ability rolls once only, the PHB methods allowed, gold above 1st level.

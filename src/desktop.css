@@ -2943,3 +2943,12 @@ label.set-row { cursor: pointer; }
 .quick-slots.upright .quick-slots-grip { flex-direction: row; width: auto; height: 12px; align-self: stretch; justify-content: center; }
 .quick-slots.upright .quick-slots-grip i { width: 2px; height: auto; align-self: stretch; }
 .quick-slots[data-locked="true"] .quick-slots-grip { cursor: default; opacity: 0.5; }
+
+/* FG's INITIND as a ring: a dashed brass ring turning round the token whose turn it is. */
+.token-active-ring .token-disc { box-shadow: none; }
+.token-active-ring::after { content: ""; position: absolute; inset: 2%; border: 3px dashed var(--brass); border-radius: 50%; pointer-events: none; animation: token-ring-turn 6s linear infinite; }
+@keyframes token-ring-turn { to { rotate: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .token-active-ring::after { animation: none; } }
+/* An effect mark (FG's TGME "mark"): one sign with the number of effects. */
+.token-effect-mark { display: grid; place-items: center; border-radius: 50%; }
+.token-effect-mark b { position: static; font-weight: 700; line-height: 1; }

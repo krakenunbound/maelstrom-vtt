@@ -1603,6 +1603,13 @@ const TOOLS = [
       healthNpc: { type: "string", enum: ["bar", "barhover", "dot", "dothover", "numbers", "off"], description: "What players see of the GM's creatures' health, on tokens and in the combat tracker alike: a bar (the tracker: the status and the share left), a dot (the tracker: the status words), numbers (the tracker: the hit points; tokens: a bar), off (nothing)" },
       healthPc: { type: "string", enum: ["bar", "barhover", "dot", "dothover", "numbers", "off"] },
       names: { type: "string", enum: ["off", "hover", "always"] },
+      healthGm: { type: "string", enum: ["bar", "barhover", "dot", "dothover", "off"], description: "FG's TGMH: what the GM sees of health on tokens (default dot)" },
+      effectsGm: { type: "string", enum: ["on", "hover", "mark", "markhover", "off"], description: "FG's TGME: effects on tokens as the GM sees them: icons, icons on hover, one mark with the count, a mark on hover, off" },
+      effectsNpc: { type: "string", enum: ["on", "hover", "mark", "markhover", "off"], description: "FG's TNPCE: what players see of the GM's creatures' effects on tokens (off sends none)" },
+      effectsPc: { type: "string", enum: ["on", "hover", "mark", "markhover", "off"], description: "FG's TPCE: what players see of the characters' effects on tokens" },
+      facingIndicator: { type: "boolean", description: "FG's TFAC: the facing arrow on tokens (default on)" },
+      tokenFill: { type: "string", enum: ["80", "100"], description: "FG's TASG: a token's picture fills 80% of its squares (default) or all of them" },
+      initIndicator: { type: "string", enum: ["glow", "ring", "off"], description: "FG's INITIND: the mark on the token whose turn it is" },
       bookkeeping: {
         type: "object",
         description: "Settings > Bookkeeping, each on unless switched off (a relaxed table's 'fun mode' hand-waves it): ammo (an attack spends its arrows, bolts, bullets, rounds; none left refuses it), consumables (potions, scrolls, charges used up), rations (food and water eaten each day and on a long rest, the game's penalty for going without), light (a torch or a lantern's oil out of the pack when lit), encumbrance (the load's level and its penalties on the creature; off, Basic Fantasy's movement and Cairn's full inventory count nothing), variant (5E's variant encumbrance, off by default). A partial object changes only what it names.",
