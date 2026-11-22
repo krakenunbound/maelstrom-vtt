@@ -660,6 +660,14 @@ export function ChatDock({ session }: { session: Session }) {
   // the GM's Share posts a record's words with it.
   const [attached, setAttached] = useState<QuickSlot | null>(null);
   const [share, setShare] = useState(false);
+  // Lines this seat sent (FG's Up and Down in the entry), the newest last; recall: the one shown now (-1: none).
+  const sent = useRef<string[]>([]);
+  const recall = useRef(-1);
+  const remember = (line: string) => {
+    const text = line.trim();
+    if (text && sent.current.at(-1) !== text) sent.current = [...sent.current, text].slice(-50);
+    recall.current = -1;
+  };
   const [linkOver, setLinkOver] = useState(false);
   // A right-click menu over the tray: how many of a die to roll, or the modifier's quick values.
   const [menu, setMenu] = useState<{ x: number; y: number; sides: number | null; custom?: boolean } | null>(null);
@@ -1115,6 +1123,11 @@ export function ChatDock({ session }: { session: Session }) {
         {session.chat.map((line, index) => (
           <Line key={`${line.at}-${index}`} line={line} gmIcon={gmIconUrl} session={session} />
         ))}
+        {session.role !== "dm" && session.gmTyping ? (
+          <p className="chat-typing hint" role="status" aria-live="polite">
+            The GM is typing…
+          </p>
+        ) : null}
       </div>
       <form
         className="chat-entry"
@@ -1136,8 +1149,10 @@ export function ChatDock({ session }: { session: Session }) {
             setDraft("");
             return;
           }
+          remember(draft);
           runLine(draft);
           setDraft("");
+          if (session.role === "dm") session.sendTyping(false);
         }}
         onDragOver={(event) => {
           const types = [...event.dataTransfer.types];
@@ -1200,13 +1215,37 @@ export function ChatDock({ session }: { session: Session }) {
           onChange={(event) => {
             setDraft(event.target.value);
             if (helpOpen && !event.target.value.startsWith("/")) setHelpOpen(false);
+            // FG's "GM is typing": the players see it while the GM's entry has words (not a command).
+            if (session.role === "dm") session.sendTyping(Boolean(event.target.value.trim()) && !event.target.value.startsWith("/"));
           }}
           onKeyDown={(event) => {
+            if (event.nativeEvent.isComposing) return;
             if (event.key === "Tab" && suggestions.length > 0 && /^\/\S*$/.test(draft)) {
               event.preventDefault();
               setDraft(`/${finish(suggestions[0])} `);
             }
             if (event.key === "Escape") setHelpOpen(false);
+            // FG's send keys: Ctrl+Enter the GM's story or a player's action, Ctrl+Shift+Enter an emote, Alt+Enter OOC.
+            if (event.key === "Enter" && (event.ctrlKey || event.metaKey || event.altKey) && draft.trim() && !draft.trim().startsWith("/")) {
+              event.preventDefault();
+              const command = event.altKey ? "ooc" : event.shiftKey ? "emote" : session.role === "dm" ? "story" : "action";
+              remember(draft);
+              runLine(`/${command} ${draft.trim()}`);
+              setDraft("");
+              return;
+            }
+            // FG's Up and Down: the lines sent before, newest first.
+            if ((event.key === "ArrowUp" || event.key === "ArrowDown") && !(suggestions.length > 0 && draft.startsWith("/")) && sent.current.length) {
+              const at = event.key === "ArrowUp" ? Math.max(0, (recall.current < 0 ? sent.current.length : recall.current) - 1) : recall.current < 0 ? -1 : recall.current + 1;
+              if (event.key === "ArrowDown" && (recall.current < 0 || at >= sent.current.length)) {
+                recall.current = -1;
+                setDraft("");
+              } else {
+                recall.current = at;
+                setDraft(sent.current[at]);
+              }
+              event.preventDefault();
+            }
           }}
           placeholder={speakAs ? `Speaking as ${speakAs}: say something, or /help` : "Say something, /r 1d20+2 Strength, or /help"}
         />

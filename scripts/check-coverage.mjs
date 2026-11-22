@@ -122,7 +122,8 @@ const MESSAGES = {
   "scene-sound": "kraken_sound",
 };
 // Messages that are the connection itself, not something a person does.
-const PLUMBING = new Set(["join"]);
+// join: taking a seat; typing: the GM's entry has words in it (a live hint, not an action).
+const PLUMBING = new Set(["join", "typing"]);
 
 const source = readFileSync(new URL("../electron/tableServer.cjs", import.meta.url), "utf8");
 const handled = new Set([...source.matchAll(/msg\.type === "([a-z-]+)"/g)].map((match) => match[1]));

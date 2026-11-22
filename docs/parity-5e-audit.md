@@ -292,6 +292,33 @@ FG's Library, Modules window, record lists (`masterindex`), record windows and r
 | Library-wide or in-book full-text search | Search the text: every page of the book, the words around each find | Better (FG searches names and keywords) |
 | Players: only shared records, unidentified names, no GM buttons | The same; spells by their class | Same |
 
+## 6. Chat and dice
+
+FG's chat window, slash commands, dice tray, modifier box, Modifiers window, dice tower and manual dice
+(CoreRPG; 5E adds its keys) against Maelstrom's chat dock, `chatCommands.ts`, tray, modifier box and tower.
+
+| FG control | Maelstrom | Verdict |
+|---|---|---|
+| Entry, Enter sends, Tab completes a name | Entry, Tab completes a command, command suggestions | Better |
+| Up and Down recall sent lines | Up and Down: the last 50 lines this seat sent | Same |
+| Ctrl+Enter story (GM) or action, Ctrl+Shift+Enter emote, Alt+Enter OOC, the mode icon | The same keys, and /story, /action, /emote, /ooc | Same (no mode icon) |
+| Speaker list (GM voices), language list | Speak as, language, roll mode lists | Better (roll mode) |
+| "GM is typing" for players | The GM is typing… under the players' chat (not for commands) | Same |
+| Speech, emote, act, OOC, story, mood, whisper, languages (understood by) | The same, scripts with translations | Same |
+| Rolls with tags, secret and tower rolls, results by option | Roll cards with dice, the same | Same |
+| Drop an image, sound or dice skin on chat | Links attached; pictures by link | Partly |
+| Slash: /w, /r, /mod, /rollon, /option, /afk, /id, /gmid, /die, /roll, /emote, /ooc, /story, /mood, /vote, /reload, /save, /clear, /version, /help | All of them (/reply for /r) and more (/check, /save DC, /award, /pause, /kick, /volume...) | Better |
+| /exportchar, /importchar, /exportnpc, /importnpc, /export, /flushdb, /console, /cq | Import and export in the windows; no FG queue or console | n/a (windows do it) |
+| Tray dice, drag to gather, right-click roll N, custom d2, d3 | The same, custom d2, d3, d16, d30; pick up N | Same |
+| Damage dice coloured by damage type; NPC dice by creature type | NPC and damage dice sets | Partly (not by type) |
+| Dice window: skins, colours, sizes, per-die tray toggles | Sets, colours, sizes, your own design, character dice | Better |
+| Modifier box: total, wheel, right-click clear, drag out, drop rolls, 6 slots | The same, quick values, named entries | Same |
+| 5E keys: ADV, DIS, +2, -2, +5, -5 | All six; +5 and -5 stack with +2 and -2 | Same |
+| Modifiers window: Opportunity, Cover, Sup. Cover, Critical, Max, Half; custom rows | Keys for each; the GM's preset buttons | Same |
+| Dice tower: drop a roll; drop text to whisper the GM | Drop dice; external tower | Partly (no text) |
+| Manual dice: a queue window, OK, Roll, Faux roll (GM), Cancel | A dialog per roll, Roll, Cancel | Partly (tray and chat rolls) |
+| Portraits: whisper, ring the bell (GM), kick; drop a number or text on a portrait | Whisper, Ring bell, View as, Kick, Ban; a record dropped shares it, words or a number dropped are whispered to them | Better |
+
 ## How house rules work in Maelstrom
 
 A game declares its house rules in its manifest (`settings` with a `key`: a switch

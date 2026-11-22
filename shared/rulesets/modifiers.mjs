@@ -30,6 +30,9 @@ export const KEYS = {
   plus1: { id: "plus1", label: "+1", tip: "+1 on the next roll", add: 1, group: "bonus" },
   plus2: { id: "plus2", label: "+2", tip: "+2 on the next roll", add: 2, group: "bonus" },
   minus2: { id: "minus2", label: "-2", tip: "-2 on the next roll", add: -2, group: "bonus" },
+  // FG 5E's +5 and -5: one of the two, stacking with +2 or -2 (a +7 is +5 and +2).
+  plus5: { id: "plus5", label: "+5", tip: "+5 on the next roll", add: 5, group: "bonus5" },
+  minus5: { id: "minus5", label: "-5", tip: "-5 on the next roll", add: -5, group: "bonus5" },
   opp: { id: "opp", label: "Opp", tip: "An opportunity attack: the next attack is marked so", on: ["attack"] },
   cover: { id: "cover", label: "Cover", tip: "The target has half cover: -2 on the next attack", add: -2, on: ["attack"], group: "cover" },
   scover: { id: "scover", label: "S. cover", tip: "The target has three-quarters cover: -5 on the next attack", add: -5, on: ["attack"], group: "cover" },

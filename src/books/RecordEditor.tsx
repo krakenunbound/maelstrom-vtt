@@ -50,7 +50,8 @@ export function shareWithPlayer(session: Session, record: TableRecord, name: str
 export function shareDrop(session: Session, player: string) {
   return {
     onDragOver: (event: React.DragEvent) => {
-      if (!hasLink(event)) return;
+      // A link to share, or words (a number) to whisper to them (FG's text dropped on a portrait).
+      if (!hasLink(event) && ![...event.dataTransfer.types].includes("text/plain")) return;
       event.preventDefault();
       event.currentTarget.classList.add("share-drop");
     },
@@ -58,7 +59,13 @@ export function shareDrop(session: Session, player: string) {
     onDrop: (event: React.DragEvent) => {
       event.currentTarget.classList.remove("share-drop");
       const link = linkFrom(event);
-      if (!link) return;
+      if (!link) {
+        const words = event.dataTransfer.getData("text/plain").trim().slice(0, 500);
+        if (!words) return;
+        event.preventDefault();
+        session.sendChat(words, { to: [player] });
+        return;
+      }
       event.preventDefault();
       if (link.kind === "picture") return session.showImage(link.book, link.file, link.label, [player]);
       const record = link.kind === "record" || link.kind === "note" ? session.records[link.record] : null;

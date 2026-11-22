@@ -548,6 +548,9 @@ export function useSession() {
   // The GM pulled the players' maps to a place; the GM shared a map (its name, for the title card).
   const [viewPull, setViewPull] = useState<ViewPull | null>(null);
   const [mapShareName, setMapShareName] = useState("");
+  // FG's "GM is typing" (players'): on while the GM's entry has words; it lapses after a few seconds unless renewed.
+  const [gmTyping, setGmTyping] = useState(false);
+  const gmTypingTimer = useRef<number | null>(null);
   const [chat, setChat] = useState<ChatLine[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [playerScene, setPlayerScene] = useState<MapScene | null>(null);
@@ -737,6 +740,11 @@ export function useSession() {
             setReadAloudLog((current) => [...current, item].slice(-30));
           }
           if (msg.type === "options" && msg.options) setOptions(msg.options as TableOptions);
+          if (msg.type === "typing") {
+            if (gmTypingTimer.current) window.clearTimeout(gmTypingTimer.current);
+            setGmTyping(Boolean(msg.on));
+            if (msg.on) gmTypingTimer.current = window.setTimeout(() => setGmTyping(false), 6000);
+          }
           if (msg.type === "map-share") {
             setMapShared((count) => count + 1);
             setMapShareName(typeof msg.name === "string" ? msg.name : "");
@@ -1558,6 +1566,17 @@ export function useSession() {
   const approveMoves = useCallback((ids: string[] | "all", accept: boolean) => send({ type: "move-approve", ...(ids === "all" ? { all: true } : { ids }), accept }), [send]);
   // The GM: the map opens on every player's screen.
   // to: only these players (FG's share with chosen players); none: everyone.
+  // The GM's entry has words in it (on) or not: told to the players at most every few seconds.
+  const typingSent = useRef(0);
+  const sendTyping = useCallback(
+    (on: boolean) => {
+      const now = Date.now();
+      if (on && now - typingSent.current < 3000) return;
+      typingSent.current = on ? now : 0;
+      send({ type: "typing", on });
+    },
+    [send],
+  );
   const shareMap = useCallback((to?: string[]) => send({ type: "map-share", ...(to?.length ? { to } : {}) }), [send]);
 
   useEffect(() => {
@@ -1595,6 +1614,8 @@ export function useSession() {
     handRaised,
     viewPull,
     mapShareName,
+    gmTyping,
+    sendTyping,
     kickPlayer,
     unbanPlayer,
     ringPlayer,

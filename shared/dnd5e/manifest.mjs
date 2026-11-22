@@ -36,7 +36,7 @@ export default {
   engine: "shared/dnd5e/rules.mjs",
   host: { module: "electron/dnd5e.cjs" },
   // The modifier box's keys beside the chat (shared/rulesets/modifiers.mjs).
-  dice: { modifiers: { presets: ["adv", "dis", "plus2", "minus2", "opp", "cover", "scover", "crit", "max", "half"] } },
+  dice: { modifiers: { presets: ["adv", "dis", "plus2", "minus2", "plus5", "minus5", "opp", "cover", "scover", "crit", "max", "half"] } },
   // The sheet's words ({@word}) and its highest level.
   labels: { species: "Race", speciesLower: "race", ac: "AC", acLong: "Armor Class", hp: "Hit Points", hpLower: "hit points", maxLevel: "20" },
   sheet: {

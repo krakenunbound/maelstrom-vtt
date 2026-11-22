@@ -3138,6 +3138,13 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       }
 
       // Level up from a sheet: the owner or the GM.
+      // FG's "GM is typing": the GM's entry has words in it (on) or not; the players are told (it lapses by itself).
+      if (msg.type === "typing") {
+        if (client.role !== "dm") return;
+        for (const [ws, other] of clients) if (other.role !== "dm") send(ws, { type: "typing", on: Boolean(msg.on) });
+        return;
+      }
+
       if (msg.type === "level-up") {
         const record = records.get(msg.id, seatOf(client));
         if (!record || (client.role !== "dm" && record.owner !== client.name)) {
