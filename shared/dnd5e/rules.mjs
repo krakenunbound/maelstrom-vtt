@@ -287,14 +287,31 @@ export function npcAttacks(data) {
     const desc = String(action?.desc ?? "");
     const roll = /(Melee or Ranged|Melee|Ranged)\s*(?:Weapon |Spell )?Attack(?: Roll)?\s*:\s*([+-]\d+)/i.exec(desc);
     if (!roll) continue;
-    const hit = /Hit\s*:\s*\d+\s*\(([^)]+)\)\s*([A-Za-z]+)\s+damage/i.exec(desc);
-    const flat = !hit ? /Hit\s*:\s*(\d+)\s+([A-Za-z]+)\s+damage/i.exec(desc) : null;
+    // The hit's first damage, in its sentence ("Hit: The target takes 55 (10d10) piercing damage"); "bludgeoning or
+    // slashing damage (claw's choice)": its first type; "slashing, magic damage": slashing.
+    const diced = /Hit\s*:[^.]*?\b\d+\s*\(([^)]+)\)\s*(?:([A-Za-z]+)(?:,\s*magic)?(?:\s+or\s+[A-Za-z]+)?\s+)?damage/i.exec(desc);
+    const plain = /Hit\s*:[^.]*?\b(\d+)\s+([A-Za-z]+)(?:,\s*magic)?(?:\s+or\s+[A-Za-z]+)?\s+damage/i.exec(desc);
+    // Whichever comes first ("Hit: 1 piercing damage plus 7 (3d4) poison damage": the 1 piercing).
+    const hit = diced && (!plain || diced[0].length <= plain[0].length) ? diced : null;
+    const flat = hit ? null : plain;
     const damage = hit ? hit[1].replace(/\s+/g, "") : flat ? flat[1] : "";
+    // FG reads every damage of the hit ("plus 7 (2d6) fire damage", "+ 7 (2d6) cold damage"): the rest, each with its
+    // own type; a two-handed alternative ("or 8 (1d10 + 3) bludgeoning damage plus 3 (1d6) fire damage if used with two
+    // hands") is left out, so its damage is not counted twice.
+    const first = hit ?? flat;
+    const after = first
+      ? desc
+          .slice((first.index ?? 0) + first[0].length)
+          .split(/(?<=[.])\s/)[0]
+          .replace(/,?\s*or\s+\d+\s*\([^)]*\)\s*[A-Za-z]+\s+damage(?:\s+(?:plus|\+)\s+\d+\s*\([^)]*\)\s*[A-Za-z]+\s+damage)?(?:\s+if\s[^,.]*)?/gi, "")
+      : "";
+    const extra = [...after.matchAll(/(?:\bplus|\+|\band)\s+\d+\s*\(([^)]+)\)\s*([A-Za-z]+)(?:,\s*magic)?(?:\s+or\s+[A-Za-z]+)?\s+damage/gi)].map((match) => ({ dice: match[1].replace(/\s+/g, ""), type: match[2].toLowerCase() }));
     out[key] = {
       name: String(action.name ?? "Attack"),
       bonus: Number(roll[2]),
       damage,
       dmgtype: String((hit ?? flat)?.[2] ?? "").toLowerCase(),
+      ...(extra.length ? { extra } : {}),
       type: /^ranged/i.test(roll[1]) ? "ranged" : "melee",
     };
   }

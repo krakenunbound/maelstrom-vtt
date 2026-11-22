@@ -37,12 +37,20 @@ export function CreatureDetails({ session, recordId, name, spent = [], onSpend, 
   const play = (rowName: string, clause: Clause) => {
     const own = attacks.find((attack) => attack.name.toLowerCase().startsWith(rowName.toLowerCase().replace(/\s*\(.*$/, "")));
     if (clause.kind === "attack") return own && entryId ? session.ct("attack", { id: entryId, weapon: own.key }) : session.roll(`1d20${signed(clause.bonus)}`, `[ATTACK] ${rowName}`, "", false, "public", name);
-    if (clause.kind === "damage") return own && entryId ? session.ct("damage-roll", { id: entryId, weapon: own.key }) : session.roll(clause.formula, `[DAMAGE${clause.damageType ? ` (${clause.damageType})` : ""}] ${rowName}`, "", false, "public", name);
+    // On the tracker: the creature's own attack of that name rolls its damage; any other damage of an action (a breath)
+    // lands on its targets, halved or not at all for those who saved against this action.
+    if (clause.kind === "damage") {
+      if (own && entryId) return session.ct("damage-roll", { id: entryId, weapon: own.key });
+      if (entryId) return session.ct("power-damage", { id: entryId, power: rowName, formula: clause.formula, damageType: clause.damageType });
+      return session.roll(clause.formula, `[DAMAGE${clause.damageType ? ` (${clause.damageType})` : ""}] ${rowName}`, "", false, "public", name);
+    }
     if (clause.kind === "heal") return session.roll(clause.formula, `[HEAL] ${rowName}`, "", false, "public", name);
-    for (const target of targets) session.ct("save", { id: target, attribute: clause.stat, cl: clause.dc });
+    // A condition: on its targets that failed this action's save (all of them without one).
+    if (clause.kind === "effect") return entryId ? session.ct("power-effect", { id: entryId, power: rowName, effect: { label: clause.condition, duration: clause.duration ?? 0, ...(clause.units ? { units: clause.units } : {}) } }) : undefined;
+    for (const target of targets) session.ct("save", { id: target, attribute: clause.stat, cl: clause.dc, ...(entryId ? { source: entryId, power: rowName, half: Boolean(clause.half) } : {}) });
   };
   const describe = (clause: Clause) =>
-    clause.kind === "attack" ? `Roll the attack (d20 ${signed(clause.bonus)})` : clause.kind === "damage" ? `Roll the damage (${clause.formula}${clause.damageType ? ` ${clause.damageType}` : ""})` : clause.kind === "heal" ? `Roll the healing (${clause.formula})` : targets.length ? `Ask its ${targets.length} target${targets.length === 1 ? "" : "s"} for a DC ${clause.dc} ${clause.stat} save` : "Target someone to ask for this save";
+    clause.kind === "attack" ? `Roll the attack (d20 ${signed(clause.bonus)})` : clause.kind === "damage" ? `Roll the damage (${clause.formula}${clause.damageType ? ` ${clause.damageType}` : ""})` : clause.kind === "heal" ? `Roll the healing (${clause.formula})` : clause.kind === "effect" ? (entryId ? `Put ${clause.condition}${clause.duration ? ` (${clause.duration}${clause.units ? ` ${clause.units}` : " round"}${clause.duration === 1 ? "" : "s"})` : ""} on its targets that failed this action's save` : "Add it to the combat tracker to put this on its targets") : targets.length ? `Ask its ${targets.length} target${targets.length === 1 ? "" : "s"} for a DC ${clause.dc} ${clause.stat} save${clause.half ? " (half damage on a success)" : ""}` : "Target someone to ask for this save";
   const actions = rowsOf(data.actions);
   // Reach: the record's own, else the longest "reach N ft." among its actions, else 5 ft.
   const reaches = actions.map((row) => Number(/reach (\d+)\s*ft/i.exec(row.desc)?.[1])).filter(Number.isFinite);

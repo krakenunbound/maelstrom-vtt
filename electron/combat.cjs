@@ -2218,7 +2218,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     const attack = r5.npcAttacks(record(entry)?.data)[key];
     if (!attack) throw new Error("No such attack.");
     const dice = /^(\d*d\d+)([+-]\d+)?$/.exec(attack.damage);
-    return { actor: entry.name, name: attack.name, type: attack.type, bonus: attack.bonus, damage: dice ? dice[1] : attack.damage, damageBonus: dice?.[2] ? Number(dice[2]) : 0, dmgtype: attack.dmgtype, entry };
+    return { actor: entry.name, name: attack.name, type: attack.type, bonus: attack.bonus, damage: dice ? dice[1] : attack.damage, damageBonus: dice?.[2] ? Number(dice[2]) : 0, dmgtype: attack.dmgtype, extra: attack.extra ?? [], entry };
   }
   function targetsOf(entry) {
     return (entry?.targets ?? []).map((id) => state.entries.find((item) => item.id === id)).filter(Boolean);
@@ -2661,6 +2661,18 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       anyCrit ||= group.crit;
       for (const target of group.targets) await landOn(card, target, amount, `[DAMAGE] ${plan.name}`, { ...opts, critical: group.crit });
       if (!group.targets.length) publish(card);
+      // FG's other damage of the hit (a dragon's bite: 2d6 fire beside its piercing), each type on its own: rolled for
+      // the same targets (its dice doubled on a critical), resistances by its own type.
+      for (const part of plan.extra ?? []) {
+        const partCard = newCard("damage", part.type, plan.name);
+        const partFormula = group.crit ? (fixedNpc ? `${fixedOf(part.dice)}+${diceOnly(part.dice)}` : doubled(part.dice)) : fixedNpc ? fixedOf(part.dice) : part.dice;
+        const partRoll = table().roll(partFormula, `[DAMAGE]${kind} ${plan.name}${group.crit ? " [CRITICAL]" : ""} [TYPE: ${part.type}]`, from, gmSecret(plan.entry), { by: plan.actor, card: partCard.id });
+        const partAmount = Math.max(0, partRoll.total);
+        partCard.total = partAmount;
+        total = Math.max(total, amount + partAmount);
+        for (const target of group.targets) await landOn(partCard, target, partAmount, `[DAMAGE] ${plan.name}`, { ...opts, critical: group.crit });
+        if (!group.targets.length) publish(partCard);
+      }
     }
     if (plan.entry && table().options?.().clearTargets === "action") plan.entry.targets = [];
     spendApplied(plan.entry, true);
@@ -3173,7 +3185,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
                 : d35() && seat.role === "dm" && record(entry)?.type === "npc" && r35
                 ? r35.npcStats(record(entry).data).attacks.map((attack, index) => ({ key: String(index), name: attack.name, bonus: attack.bonuses[0] ?? 0, bonuses: attack.bonuses, damage: `${attack.damage}${attack.crit.range < 20 || attack.crit.mult > 2 ? ` (${attack.crit.range < 20 ? `${attack.crit.range}-20` : "20"}/x${attack.crit.mult})` : ""}${attack.extra ? ` ${attack.extra}` : ""}`.trim() }))
                 : five() && seat.role === "dm" && record(entry)?.type === "npc" && r5
-                ? Object.entries(r5.npcAttacks(record(entry).data)).map(([key, attack]) => ({ key, name: attack.name, bonus: attack.bonus, damage: `${attack.damage} ${attack.dmgtype}`.trim() }))
+                ? Object.entries(r5.npcAttacks(record(entry).data)).map(([key, attack]) => ({ key, name: attack.name, bonus: attack.bonus, damage: [`${attack.damage} ${attack.dmgtype}`.trim(), ...(attack.extra ?? []).map((part) => `${part.dice} ${part.type}`)].join(" + ") }))
                 : seat.role === "dm" && record(entry)?.type === "npc"
                 ? Object.entries(record(entry).data?.attacks ?? {}).map(([key, attack]) => ({ key, name: String(attack.name ?? "Attack"), bonus: num(record(entry).data?.bth, 0) + num(attack.bth, 0), damage: String(attack.damage ?? "") }))
                 : undefined,
@@ -4182,6 +4194,53 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     // A save (SiegeCore ActionSiege, type save): d20 + the attribute bonus +
     // level + SAVE effects against CB (12 prime, 18 not) + CL. An NPC's level
     // is its hit dice and its primes its primeset (physical, mental, both).
+    // FG's NPC power clauses: a save asked of a creature's targets for one of its actions is remembered against that
+    // action, so its damage lands halved or not at all on those who saved ("half as much damage on a successful
+    // one") and its condition only on those who failed.
+    notePowerSave(sourceId, power, targetId, success, half) {
+      const source = find(sourceId);
+      if (!source.powerSaves || source.powerSaves.power !== power) source.powerSaves = { power, half: Boolean(half), results: {} };
+      source.powerSaves.results[targetId] = Boolean(success);
+      if (half) source.powerSaves.half = true;
+    },
+    async powerDamage(sourceId, { power, formula, type }, seat, from = "Combat") {
+      mustGM(seat);
+      const source = find(sourceId);
+      const name = String(power ?? "").slice(0, 80) || "Damage";
+      const kind = String(type ?? "").toLowerCase().replace(/[^a-z]/g, "");
+      if (!/^[\dd+\-\s]+$/i.test(String(formula ?? "")) || !/\d/.test(String(formula ?? ""))) throw new Error("What damage?");
+      const saves = source.powerSaves?.power === name ? source.powerSaves : null;
+      const card = newCard("damage", kind, name);
+      const roll = table().roll(String(formula).replace(/\s+/g, ""), `[DAMAGE] ${name}${kind ? ` [TYPE: ${kind}]` : ""}`, from, gmSecret(source), { by: source.name, card: card.id });
+      const amount = Math.max(0, roll.total);
+      card.total = amount;
+      const targets = targetsOf(source);
+      for (const target of targets) {
+        const saved = saves ? saves.results[target.id] : undefined;
+        const taken = saved ? (saves.half ? Math.floor(amount / 2) : 0) : amount;
+        if (saved && !saves.half) {
+          table().say(`[DAMAGE] ${name} -> ${target.name}: saved, no damage`, "Combat", Boolean(target.hidden) || !resultsShown(source, target));
+          continue;
+        }
+        await landOn(card, target, taken, `[DAMAGE] ${name}${saved ? " (half)" : ""}`, {}, { save: saves ? (saved ? "half" : "failed") : undefined });
+      }
+      if (!targets.length) publish(card);
+      changed();
+      return { total: amount, targets: targets.map((target) => target.name) };
+    },
+    powerEffect(sourceId, { power, effect }, seat) {
+      mustGM(seat);
+      const source = find(sourceId);
+      const name = String(power ?? "");
+      const saves = source.powerSaves?.power === name ? source.powerSaves : null;
+      const landed = [];
+      for (const target of targetsOf(source)) {
+        if (saves?.results[target.id]) continue;
+        const made = this.addEffect(target.id, effect, seat);
+        if (!made?.immune) landed.push(target.name);
+      }
+      return { effect: String(effect?.label ?? ""), on: landed };
+    },
     async save(entryId, stat, cl, from, castName, advantage = "") {
       // Fate: a creature's skill (or approach) rolled, against cl as the opposition when given.
       if (fateOn()) return fc.rollEntry(find(entryId), String(stat ?? ""), cl, from);

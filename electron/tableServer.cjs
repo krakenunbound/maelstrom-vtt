@@ -4078,8 +4078,17 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
               const entry = combat.entries().find((item) => item.id === msg.id);
               if (!entry) throw new Error("No one like that is in the fight.");
               if (client.role !== "dm" && !combat.viewFor(seat).entries.find((item) => item.id === entry.id)?.mine) throw new Error("You can roll saves for your own character.");
-              return combat.save(entry.id, String(msg.attribute), msg.cl, client.role === "dm" ? entry.name : client.name, undefined, String(msg.advantage ?? ""));
+              const saved = await combat.save(entry.id, String(msg.attribute), msg.cl, client.role === "dm" ? entry.name : client.name, undefined, String(msg.advantage ?? ""));
+              // A save asked for a creature's action (its clause): remembered for that action's damage and condition.
+              if (client.role === "dm" && msg.source && msg.power && saved && typeof saved.success === "boolean") combat.notePowerSave(String(msg.source), text(msg.power, "").slice(0, 80), entry.id, saved.success, Boolean(msg.half));
+              return saved;
             }
+            case "power-damage":
+              // An NPC action's damage clause: once, on its targets (halved or none for those who saved).
+              return combat.powerDamage(String(msg.id), { power: text(msg.power, ""), formula: text(msg.formula, "").slice(0, 60), type: text(msg.damageType, "").slice(0, 30) }, seat, client.role === "dm" ? "Combat" : client.name);
+            case "power-effect":
+              // An NPC action's condition: on its targets that failed the action's save (all of them without one).
+              return combat.powerEffect(String(msg.id), { power: text(msg.power, ""), effect: msg.effect ?? {} }, seat);
             case "cast": {
               const who = msg.recordId ? { recordId: String(msg.recordId) } : { entryId: String(msg.id) };
               const from = client.role === "dm" ? "Combat" : client.name;
