@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **A token's picture sits on the map itself:** art cut out on a transparent ground (a generated creature) shows as it is, no longer on a dark disc that hid dark art.
 - **A creature on the map and on the tracker stay one:** shown or hidden on the map, it is shown or hidden on the tracker too (it stayed hidden there); a creature given its own picture from the art library (a generated token for an adventure's monster) shows it on the tracker as on the map. The combat tracker first opens at the table's left edge, the map to its right. check-creature-token-sync
 - **A 5E character built from a spec keeps every class skill chosen:** the builder read a class's skill list with its own looser reading ("Choose four from Acrobatics, ..." lost Acrobatics and counted two); it reads it as the character wizard does now (a Rogue's four, a Bard's any three). check-legacy-5e-books
 - **Full screen (F11) in the GM's app**, as in a browser: the table with nothing round it; F11's quick slot, when filled, keeps the key.

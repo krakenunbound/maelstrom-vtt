@@ -2576,7 +2576,9 @@ function MapViewInner({
                   height: `${tokenLook.fill * 100}%`,
                   borderColor: token.color,
                   borderWidth: Math.max(2, span * 0.05),
-                  background: token.art ? "#222" : token.color,
+                  // A picture shows on the map itself (a creature cut out on a transparent ground reads as it is, not on a
+                  // dark disc); no picture: the token's colour.
+                  background: token.art ? "transparent" : token.color,
                   fontSize: span * tokenLook.fill * 0.38,
                 }}
               >
