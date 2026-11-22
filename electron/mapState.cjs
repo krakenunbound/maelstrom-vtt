@@ -339,6 +339,8 @@ function cleanDeathMarker(raw) {
 }
 const MAX_DEATH_MARKERS = 300;
 const TWO_POINT = new Set(["line", "arrow", "rect", "ellipse", "circle", "cone"]);
+// How long a pointer (a fading drawing) stays: FG's pointers last a few seconds.
+const POINTER_MS = 6000;
 function cleanDrawing(raw) {
   if (!raw || typeof raw !== "object" || !Array.isArray(raw.points)) return null;
   const points = raw.points.slice(0, 4000).map(Number);
@@ -1967,6 +1969,18 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       list.push(line);
       if (list.length > MAX_DRAWINGS) list.splice(0, list.length - MAX_DRAWINGS);
       changed();
+      // FG's pointer: a shape everyone sees for a moment, then gone (a drawing that fades).
+      if (input?.fade) {
+        const sceneId = scene.id;
+        setTimeout(() => {
+          const drawings = state.drawings?.[sceneId];
+          const at = Array.isArray(drawings) ? drawings.findIndex((item) => item.id === line.id) : -1;
+          if (at >= 0) {
+            drawings.splice(at, 1);
+            changed();
+          }
+        }, POINTER_MS).unref?.();
+      }
       return line;
     },
     // A shape's two points moved (its handles dragged): its drawer's, or the GM's any.

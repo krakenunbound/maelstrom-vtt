@@ -228,6 +228,40 @@ Maelstrom's (`src/combat/CombatTracker.tsx`, `electron/combat.cjs`).
 | Delay turn (not in FG) | Delay and Act now | Better |
 | Players: end turn, ctrl+click targeting, health by option, effects without the GM's | The same; their own initiative roll (d20) | Same |
 
+## 4. Maps and tokens
+
+FG's image window and tokens (CoreRPG; much of it inside the FGU engine) against Maelstrom's map
+(`src/table/MapView.tsx`, `electron/mapState.cjs`). The map settings were compared before (FG's lighting,
+token lock, drawing, preview: `check-fg-classic-maps`).
+
+| FG control | Maelstrom | Verdict |
+|---|---|---|
+| Lock, Image Data panel (grid, layers, walls, lights) | Lock opens the map editor: walls, doors, lights, mask, grid, text, paint, FX, image layers | Better |
+| Share: public, or with chosen players | Share with players, or with those ticked (the others are sent no map) | Done |
+| Identified map name for players | Not found | Missing (small) |
+| Navigation pad, zoom to fit | Navigation pad, Fit, zoom | Same |
+| Player vision preview, token movement lock, approvals | The same | Same |
+| Shortcut view (map pins), clear death markers | Pins, Clear death markers | Same |
+| Target mode, target friends / enemies, clear targets, selection mode | The same, box targeting | Same |
+| Drawing and eraser (players when unlocked) | Draw (shapes, colours), Erase, players' drawing switch | Better |
+| Mask mode (fog painting) | Mask: rectangle, polygon, square; reveal or hide | Partly (no freehand brush) |
+| Ping | Ping, pull the players' view | Better |
+| Token view (first person), 3D camera | Not found | n/a (FG's 3D engine) |
+| Right-drag pointers: arrow, circle, square, cone, line, seen by all | Draw's pointer switch: an arrow, line, square, circle or cone everyone sees, gone after 6 s; right-drag stays the ruler | Done |
+| Distance readout, diagonal rule | Ruler, per-scene rule, height, difficult terrain | Better |
+| Drag a token, snap; waypoints while dragging | Drag, snap (Alt: no snap), walk / dash colouring, group moves, keys | Partly (no waypoints in a drag) |
+| Ctrl+click target, targeting arrows | The same, with range colouring | Better |
+| Double-click a token: its sheet | A character's sheet (the GM's and its player's), an NPC's record (the GM's) | Done |
+| Alt+wheel height, Ctrl+wheel scale, facing | The same; Shift+wheel facing | Same |
+| Hover: name, health, effects, reach underlay | Name, health, effects by option; a reach ring (the GM's for every creature, players' for friends) | Done |
+| Faction underlay, token colour, height label, facing, initiative indicator, auto-scale | The same (token display options) | Same |
+| Death markers | The same, by creature type | Same |
+| Tracker faction chip dropped on the map: the faction in formation | Friends, Neutral, Foes chips on the tracker: the side placed three across, each tied to its row | Done |
+| Record or tracker token dropped on the map | Token tray, tracker rows, records | Same |
+| Quick Map from an encounter | Map Studio's generator | Better |
+| Token right-click (engine): delete, visibility, facing, lock, scale | Token menu: name, light, vision, players' name, senses, sight, undo, elevation, combat, target, effects, hide, size 1 to 4, faction, remove | Partly (sizes past 4 by the wheel only) |
+| Fog of war by PC tokens; party vision; vision and light from effects | Explored fog, party vision, senses and lights | Same |
+
 ## How house rules work in Maelstrom
 
 A game declares its house rules in its manifest (`settings` with a `key`: a switch

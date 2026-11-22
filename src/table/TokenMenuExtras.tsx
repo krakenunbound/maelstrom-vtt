@@ -2,7 +2,7 @@ import { useState } from "react";
 import { parseSenses } from "../../shared/map/geometry.mjs";
 import type { MapToken } from "../session/useSession";
 
-type Patch = { unidentified?: string; senses?: string; elevation?: number; noSight?: boolean; sightAngle?: number };
+type Patch = { name?: string; unidentified?: string; senses?: string; elevation?: number; noSight?: boolean; sightAngle?: number };
 
 // A text field that sends its value on Enter or when it loses focus (never
 // mid-word in a Chinese, Japanese or Korean input method).
@@ -40,6 +40,8 @@ export function TokenMenuExtras({ token, gm, recordSenses, units, update, undo }
   const names: Record<string, string> = { darkvision: "Darkvision", blindsight: "Blindsight", tremorsense: "Tremorsense", truesight: "Truesight", devilsight: "Devil's Sight" };
   return (
     <>
+      {/* FG's token rename (the GM's): what the token is called on the map. */}
+      {gm ? <CommitField label="Name" value={token.name} placeholder="Name" onCommit={(value) => value.trim() && update({ name: value.trim() })} /> : null}
       {gm ? <CommitField label="Players call it" value={token.unidentified ?? ""} placeholder={token.name} onCommit={(value) => update({ unidentified: value })} /> : null}
       {gm ? <CommitField label="Senses" value={token.senses ?? ""} placeholder={recordSenses || "Darkvision 60 ft"} onCommit={(value) => update({ senses: value })} /> : null}
       {gm ? (

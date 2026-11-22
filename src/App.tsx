@@ -158,9 +158,9 @@ export function App() {
           // The map toolbar's Share: with an image open in the image window (only the GM sees it), that image
           // is put on the table first, then shared; else the table's map is shared.
           if (key === "shareMap")
-            return () => {
-              if (live.current.prepNow) void live.current.playImage().then(() => sessionRef.current.shareMap());
-              else sessionRef.current.shareMap();
+            return (to?: string[]) => {
+              if (live.current.prepNow) void live.current.playImage().then(() => sessionRef.current.shareMap(to));
+              else sessionRef.current.shareMap(to);
             };
           return (sessionRef.current as unknown as Record<string | symbol, unknown>)[key];
         },

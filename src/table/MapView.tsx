@@ -12,7 +12,7 @@ import { diagonalRule, gridDistance, gridDistance3, gridFromSquare, gridKind, gr
 import type { DecalItem, EditWall, MapDoor, MapLabel, MapTemplate, MapTile, MapToken, Ping, Float, Bubble, PictureKind, SceneLightRecord, TableMap, TableRecord, TemplateAsk, WallKind } from "../session/useSession";
 import { useBookWindows } from "../books/Books";
 import { createPortal } from "react-dom";
-import { useWindowSlot } from "../ui/Windows";
+import { useWindowSlot, useWindows } from "../ui/Windows";
 import { MapEditor, kindColor, placePicture, type EditTab, type EditTool, type LabelStyle, type PaintStyle } from "./MapEditor";
 import { Lighting } from "./Lighting";
 import { FogOfWar } from "./FogOfWar";
@@ -165,10 +165,10 @@ export type MapActions = {
   // The GM's sounds placed on the map, and the sound library to pick from.
   mapSound?: (action: string, payload?: Record<string, unknown>) => void;
   soundList?: () => Promise<import("../session/useSession").SoundLibrary>;
-  shareMap?: () => void;
+  shareMap?: (to?: string[]) => void;
   // The GM's player vision preview (the players' view of this map).
   visionPreview?: (on: boolean) => void;
-  draw: (points: number[], color: string | null, width: number, shape?: DrawShape) => void;
+  draw: (points: number[], color: string | null, width: number, shape?: DrawShape, fade?: boolean) => void;
   updateDrawing?: (id: string, points: number[]) => void;
   eraseDrawing: (id: string) => void;
   clearDrawings: () => void;
@@ -399,6 +399,26 @@ function MapViewInner({
   );
   const [tool, setTool] = useState<Tool>("pan");
   const bookWindows = useBookWindows();
+  const windows = useWindows();
+  // FG's double-click on a token: its sheet (a character, the GM's or its player's) or its record (the GM's).
+  const openTokenRecord = (token: MapToken) => {
+    const record = token.recordId ? records.find((item) => item.id === token.recordId) : null;
+    if (!record) return;
+    if (record.type === "character" && (gm || token.mine)) windows.open("sheet", record.name, record.id);
+    else if (gm) windows.open("record", record.name, record.id);
+  };
+  // FG's reach underlay: a ring on hover, the creature's reach (an NPC's own or the longest "reach N ft." of its
+  // actions; 5 ft else), in squares beyond its edge.
+  const reachSquares = (token: MapToken) => {
+    const record = token.recordId ? records.find((item) => item.id === token.recordId) : null;
+    const data = (record?.data ?? {}) as Record<string, unknown>;
+    const own = Number(/(\d+)/.exec(String(data.reach ?? ""))?.[1]);
+    const fromActions = Object.values((data.actions ?? {}) as Record<string, { desc?: string }>)
+      .map((row) => Number(/reach (\d+)\s*ft/i.exec(String(row?.desc ?? ""))?.[1]))
+      .filter(Number.isFinite);
+    const feet = Number.isFinite(own) && own > 0 ? own : fromActions.length ? Math.max(...fromActions) : 5;
+    return feet / (scene.grid.distance > 0 ? scene.grid.distance : 5);
+  };
   // A map pin (FG's shortcut): its story entry opens in the book; an encounter goes to the tracker.
   // Another map: its picture in the image window. Any other record (a story entry, a creature): its window.
   function openPin(link: { kind: string; id: string }, text = "") {
@@ -473,6 +493,8 @@ function MapViewInner({
   const [drawColor, setDrawColor] = useState<string | null>(null);
   const [stroke, setStroke] = useState<{ pointerId: number; points: number[]; shape?: DrawShape } | null>(null);
   // What the pen draws (kept on this screen), and a shape's handle being dragged.
+  // FG's pointers: what is drawn now fades after a few seconds (an arrow, a circle, a cone shown to the table).
+  const [fadeMode, setFadeMode] = useState(false);
   const [drawShape, setDrawShape] = useState<DrawShape>(() => {
     try {
       const kept = window.localStorage.getItem("kraken-draw-shape") as DrawShape | null;
@@ -1963,7 +1985,7 @@ function MapViewInner({
             return;
           }
           const points = stroke.points.length >= 4 ? stroke.points : [...stroke.points, stroke.points[0] + 1, stroke.points[1] + 1];
-          actions.draw(points, drawColor, Math.max(2, Math.round(4 / camera.scale)), stroke.shape ?? "free");
+          actions.draw(points, drawColor, Math.max(2, Math.round(4 / camera.scale)), stroke.shape ?? "free", fadeMode);
           setStroke(null);
           return;
         }
@@ -1987,7 +2009,7 @@ function MapViewInner({
           event.stopPropagation();
           return;
         }
-        if (["application/x-kraken-record", "application/x-kraken-ct", "application/x-kraken-damage", "application/x-kraken-card"].some((type) => [...event.dataTransfer.types].includes(type)) || carriesCreatureDrop([...event.dataTransfer.types])) {
+        if (["application/x-kraken-record", "application/x-kraken-ct", "application/x-kraken-faction", "application/x-kraken-damage", "application/x-kraken-card"].some((type) => [...event.dataTransfer.types].includes(type)) || carriesCreatureDrop([...event.dataTransfer.types])) {
           event.preventDefault();
           event.stopPropagation();
         }
@@ -2072,6 +2094,15 @@ function MapViewInner({
               window.dispatchEvent(new CustomEvent("kraken-card-used", { detail: used.id ?? "" }));
             }
           }
+          return;
+        }
+        // A side from the combat tracker (FG's faction chip): all of it in formation where it fell.
+        const faction = event.dataTransfer.getData("application/x-kraken-faction");
+        if (faction && gm) {
+          event.preventDefault();
+          event.stopPropagation();
+          const at = worldAt(cssX(event.clientX), cssY(event.clientY));
+          if (at) actions.ct("place-faction", { faction, x: at.x, y: at.y });
           return;
         }
         // A creature from the combat tracker (the GM's): its token where it fell.
@@ -2426,6 +2457,11 @@ function MapViewInner({
               data-record={token.recordId ?? ""}
               title={token.hidden ? `${token.name} (hidden from players)` : token.name}
               style={{ left: token.x - span / 2, top: token.y - span / 2, width: span, height: span }}
+              onDoubleClick={(event) => {
+                if (!token.recordId) return;
+                event.stopPropagation();
+                openTokenRecord(token);
+              }}
               onPointerDown={(event) => {
                 if (event.button === 2) return;
                 // Laying a template (by hand, or a spell's): the press is the map's, even on a token.
@@ -2495,6 +2531,10 @@ function MapViewInner({
                 </svg>
               ) : null}
               <TokenBadges token={token} span={span} labelSize={Math.max(size * 0.2, 12 / camera.scale)} units={units} />
+              {/* FG's reach underlay on hover: the GM's for every creature, a player's for friends and their own. */}
+              {gm || token.mine || token.faction === "friend" ? (
+                <i className="token-reach hover-only" aria-hidden style={{ width: span + 2 * reachSquares(token) * tokenUnit, height: span + 2 * reachSquares(token) * tokenUnit }} />
+              ) : null}
             </div>
           );
         })}
@@ -3015,6 +3055,9 @@ function MapViewInner({
                   </svg>
                 </button>
               ))}
+              <button type="button" className={fadeMode ? "tool on" : "tool"} aria-pressed={fadeMode} data-action="pointer-mode" title={fadeMode ? "Pointer: what you draw now fades after a few seconds (click: drawings that stay)" : "Drawings stay (click: a pointer that fades after a few seconds)"} aria-label="Pointer (fades)" onClick={() => setFadeMode((on) => !on)}>
+                <Icon name="target" size={16} />
+              </button>
             </span>
           ) : null}
           {tool === "draw" ? (
@@ -3058,6 +3101,7 @@ function MapViewInner({
             <button type="button" className="tool" data-action="map-share" aria-label="Share with players" title="Share with players: the map opens on every player's screen, even where it was closed" onClick={() => actions.shareMap?.()}>
               <Icon name="share" />
             </button>
+            <ShareWith players={((actions as unknown as { players?: { name: string; role: string }[] }).players ?? []).filter((seat) => seat.role === "player").map((seat) => seat.name)} onShare={(to) => actions.shareMap?.(to)} />
             <button type="button" className={pinsShown ? "tool on" : "tool"} data-action="map-pins" aria-pressed={pinsShown} aria-label="Pins" title={pinsShown ? "Pins shown (the map's shortcuts to its story and encounters): click to hide them" : "Pins hidden: click to show the map's shortcuts"} onClick={() => (setPinsShown(!pinsShown), keepFlag("kraken-map-pins", !pinsShown))}>
               <Icon name="flag" />
             </button>
@@ -3176,5 +3220,32 @@ function MapViewInner({
       <p className="map-hint">Drag to pan · wheel to zoom · right-drag to measure (left click or Space: a waypoint) · double-click (or the ping tool) to ping · Ctrl+click a token to target it{gm || mine.length > 0 ? " · arrows move the selected token" : ""}</p>
       {imageFailed || !scene.imageUrl ? <p className="map-note">This scene has no background image.</p> : null}
     </div>
+  );
+}
+
+// FG's share with chosen players: the map opens for those ticked alone (the others see none).
+function ShareWith({ players, onShare }: { players: string[]; onShare: (to: string[]) => void }) {
+  const [chosen, setChosen] = useState<string[]>([]);
+  if (!players.length) return null;
+  return (
+    <details className="tool-share-with">
+      <summary className="tool" aria-label="Share with chosen players" title="Share with chosen players">
+        <Icon name="share" size={14} />
+        <small>…</small>
+      </summary>
+      <div className="tool-share-list" role="group" aria-label="Share with">
+        {players.map((name) => (
+          <label key={name}>
+            <input type="checkbox" checked={chosen.includes(name)} onChange={(event) => setChosen((list) => (event.target.checked ? [...list, name] : list.filter((item) => item !== name)))} /> {name}
+          </label>
+        ))}
+        <button type="button" data-action="map-share-to" disabled={!chosen.length} onClick={(event) => {
+          onShare(chosen);
+          (event.currentTarget.closest("details") as HTMLDetailsElement | null)?.removeAttribute("open");
+        }}>
+          Share with them
+        </button>
+      </div>
+    </details>
   );
 }

@@ -2982,3 +2982,16 @@ label.set-row { cursor: pointer; }
 .ct-init-swap:hover { opacity: 1; }
 .ct-used { margin-inline-start: 6px; font-size: 0.8em; padding: 0 6px; }
 .ct-used.on { color: #ff9a6e; }
+/* FG's reach underlay: a ring round a token on hover, its reach beyond its edge. */
+.token .token-reach { position: absolute; left: 50%; top: 50%; translate: -50% -50%; border-radius: 50%; border: 2px dashed rgba(210, 161, 90, 0.7); background: rgba(210, 161, 90, 0.06); pointer-events: none; z-index: -1; }
+/* FG's share with chosen players, beside the map's Share. */
+.tool-share-with { position: relative; }
+.tool-share-with > summary { list-style: none; display: inline-flex; align-items: center; gap: 2px; cursor: pointer; }
+.tool-share-with > summary::-webkit-details-marker { display: none; }
+.tool-share-list { position: absolute; z-index: 20; top: 100%; left: 0; display: grid; gap: 4px; padding: 8px; min-width: 160px; background: var(--panel, #1b1f27); border: 1px solid var(--brass, #b08a52); border-radius: 6px; }
+/* FG's faction chips on the tracker: dragged onto the map. */
+.ct-faction-chips { display: inline-flex; gap: 4px; }
+.ct-faction-chip { cursor: grab; padding: 2px 8px; border-radius: 10px; font-size: 0.8em; border: 1px solid currentColor; user-select: none; }
+.ct-faction-chip.friend { color: #6fcf7a; }
+.ct-faction-chip.neutral { color: #e8c46a; }
+.ct-faction-chip.foe { color: #ff6f5e; }

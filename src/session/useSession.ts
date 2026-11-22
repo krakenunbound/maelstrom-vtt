@@ -1465,7 +1465,8 @@ export function useSession() {
     [send],
   );
   const updateSettings = useCallback((patch: import("../table/SceneSettings").SceneSettingsPatch) => send({ type: "scene-settings", patch }), [send]);
-  const draw = useCallback((points: number[], color: string | null, width: number, shape?: string) => send({ type: "draw", points, ...(color ? { color } : {}), width, ...(shape && shape !== "free" ? { shape } : {}) }), [send]);
+  // fade: FG's pointer, gone after a few seconds.
+  const draw = useCallback((points: number[], color: string | null, width: number, shape?: string, fade?: boolean) => send({ type: "draw", points, ...(color ? { color } : {}), width, ...(shape && shape !== "free" ? { shape } : {}), ...(fade ? { fade: true } : {}) }), [send]);
   // A shape's two points moved (its handles dragged): the drawer's own, or the GM's any.
   const updateDrawing = useCallback((id: string, points: number[]) => send({ type: "draw-update", id, points }), [send]);
   const eraseDrawing = useCallback((id: string) => send({ type: "draw-erase", id }), [send]);
@@ -1556,7 +1557,8 @@ export function useSession() {
   const doorFound = useCallback((id: string, on: boolean) => send({ type: "door-found", id, on }), [send]);
   const approveMoves = useCallback((ids: string[] | "all", accept: boolean) => send({ type: "move-approve", ...(ids === "all" ? { all: true } : { ids }), accept }), [send]);
   // The GM: the map opens on every player's screen.
-  const shareMap = useCallback(() => send({ type: "map-share" }), [send]);
+  // to: only these players (FG's share with chosen players); none: everyone.
+  const shareMap = useCallback((to?: string[]) => send({ type: "map-share", ...(to?.length ? { to } : {}) }), [send]);
 
   useEffect(() => {
     window.__kraken = {

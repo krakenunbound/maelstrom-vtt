@@ -572,6 +572,10 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     else heldBack.delete(id);
   };
   const sceneHiddenNow = () => Boolean(scene && heldBack.has(scene.id));
+  // FG's share with chosen players: a map shared with some of them only (scene id -> their names); none: everyone.
+  const sharedTo = new Map(Object.entries(saved.sharedTo && typeof saved.sharedTo === "object" ? saved.sharedTo : {}).filter(([, names]) => Array.isArray(names) && names.length).map(([id, names]) => [id, names.map((name) => String(name)).slice(0, 40)]));
+  // Whether this seat is shown no map: held back from everyone, or shared with others alone.
+  const hiddenFor = (client) => client.role !== "dm" && (sceneHiddenNow() || Boolean(scene && sharedTo.get(scene.id) && !sharedTo.get(scene.id).includes(client.name)));
   const emptyView = () => ({ sceneId: null, tokens: [], doors: [], vision: null, sight: false, locked: false, darkness: 0, lights: [], seeing: [], sceneLights: [], drawings: [], labels: [], tiles: [], fx: [], groups: [] });
   const clients = new Map();
   // Players whose connection dropped, their seats kept for a reconnect (linger below), by name.
@@ -1331,7 +1335,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       let explored = false;
       for (const [ws, client] of clients) {
         if (client.role !== "dm") {
-          const hidden = sceneHiddenNow();
+          const hidden = hiddenFor(client);
           const view = hidden ? emptyView() : map.viewFor(seatOf(client), client.assetToken);
           send(ws, { type: "map", ...view });
           // Fog of war: what this player sees now joins what they have seen (kept here, sent to them alone).
@@ -2339,7 +2343,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   function sceneFor(client) {
     if (!scene) return null;
     // Not shared: a player is sent no map.
-    if (client.role !== "dm" && sceneHiddenNow()) return null;
+    if (hiddenFor(client)) return null;
     const { walls, tokens, lights, regions: _regions, ...shown } = scene;
     return {
       ...shown,
@@ -2608,7 +2612,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
           ruleset,
           you: { id: client.id, name: client.name, role: client.role, assetToken: client.assetToken, ...(client.accountToken ? { accountToken: client.accountToken } : {}), account: Boolean(accounts?.has(client.name)) },
           players: playerList(),
-          map: client.role !== "dm" && sceneHiddenNow() ? emptyView() : map.viewFor(seatOf(client), client.assetToken),
+          map: hiddenFor(client) ? emptyView() : map.viewFor(seatOf(client), client.assetToken),
           combat: forPlayer(client, combat.viewFor(seatOf(client))),
           calendar: calendar.view(seatOf(client)),
           clocks: clocks.view(seatOf(client)),
@@ -3564,7 +3568,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
           } else if (msg.type === "scene-settings") {
             working.updateSettings(msg.patch ?? {}, seat);
           } else if (msg.type === "draw") {
-            working.draw({ points: msg.points, color: msg.color, width: msg.width, shape: msg.shape, fill: msg.fill, fillAlpha: msg.fillAlpha, alpha: msg.alpha, group: msg.group }, seat);
+            working.draw({ points: msg.points, color: msg.color, width: msg.width, shape: msg.shape, fill: msg.fill, fillAlpha: msg.fillAlpha, alpha: msg.alpha, group: msg.group, fade: Boolean(msg.fade) }, seat);
           } else if (msg.type === "draw-update") {
             working.reshape(String(msg.id ?? ""), Array.isArray(msg.points) ? msg.points : [], seat);
           } else if (msg.type === "draw-erase") {
@@ -3715,6 +3719,33 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
               return combat.update(String(msg.id), msg.patch ?? {}, seat);
             case "remove":
               return combat.remove(String(msg.id), seat);
+            case "place-faction": {
+              // FG's faction chip dragged onto the map: every creature of that side, in formation (three across), from
+              // where it fell; each as its row dragged there would be (a character's one token moved, not doubled).
+              if (client.role !== "dm") throw new Error("Only the GM places creatures.");
+              if (!map.scene()) throw new Error("Open a map first.");
+              const faction = ["friend", "neutral", "foe"].includes(msg.faction) ? msg.faction : "foe";
+              const grid = Number(map.scene().grid?.size) || 100;
+              const side = combat.entries().filter((item) => item.faction === faction);
+              if (!side.length) throw new Error(`No ${faction} in the fight.`);
+              const placed = [];
+              for (const [index, entry] of side.entries()) {
+                const x = num(msg.x, NaN) + (index % 3) * grid;
+                const y = num(msg.y, NaN) + Math.floor(index / 3) * grid;
+                const own = entry.tokenId ? map.tokens().find((token) => token.id === entry.tokenId) : null;
+                const isCharacter = records.get(entry.recordId)?.type === "character";
+                const old = own ?? (isCharacter ? map.tokens().find((token) => token.recordId === entry.recordId) : null);
+                if (old) {
+                  if (!own) combat.update(entry.id, { tokenId: old.id }, seat);
+                  map.move(old.id, { x, y }, seat, { snap: true });
+                } else {
+                  const token = map.place({ recordId: entry.recordId, name: entry.name, x, y, hidden: entry.hidden, faction: entry.faction, allowSecond: true }, seat);
+                  combat.update(entry.id, { tokenId: token.id }, seat);
+                }
+                placed.push(entry.name);
+              }
+              return { placed };
+            }
             case "place-token": {
               // The GM drags a creature from the tracker onto the map: its token
               // goes where it fell, tied to that entry (players can then target it).
@@ -3956,12 +3987,15 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       // The GM shares the map (FG's Share on an image): it opens on every player's screen, closed or not.
       if (msg.type === "map-share") {
         if (client.role !== "dm" || !scene) return;
-        // Shared: no longer held back, and open on every player's screen.
+        // Shared: no longer held back, and open on every player's screen (to: only these players, FG's share with chosen players).
         holdBack(scene.id, false);
+        const to = Array.isArray(msg.to) ? msg.to.map((name) => text(name, "").slice(0, 40)).filter(Boolean).slice(0, 40) : [];
+        if (to.length) sharedTo.set(scene.id, to);
+        else sharedTo.delete(scene.id);
         onChange("table");
         broadcastScene();
         sendMaps();
-        broadcast({ type: "map-share", name: scene.name });
+        for (const [ws, other] of clients) if (!hiddenFor(other)) send(ws, { type: "map-share", name: scene.name, ...(to.length ? { to } : {}) });
         return;
       }
 
@@ -3972,7 +4006,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         // As the ruler: not to the players while the GM is on a private image or the map is held back.
         const privateToGm = client.role === "dm" && gmMap() === prep;
         const out = { type: "ping", x, y, from: client.name, color: playerColorOf(client), sceneId: scene?.id ?? null };
-        for (const [ws, other] of clients) if (other.role === "dm" || !(privateToGm || sceneHiddenNow())) send(ws, out);
+        for (const [ws, other] of clients) if (other.role === "dm" || !(privateToGm || hiddenFor(other))) send(ws, out);
         return;
       }
 
@@ -4307,14 +4341,18 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     // The GM's portraits and tokens (artLibrary.cjs), as the pickers show them.
     art: (kind) => (art ? art.list(kind) : []),
     // The map shared: open on every player's screen (the GM's Share with players).
-    shareMap(on = true) {
+    shareMap(on = true, to = []) {
       if (!scene) throw new Error("No scene is on the table.");
       holdBack(scene.id, !on);
+      // to: only these players (FG's share with chosen players); none: everyone.
+      const names = Array.isArray(to) ? to.map((name) => text(name, "").slice(0, 40)).filter(Boolean).slice(0, 40) : [];
+      if (on && names.length) sharedTo.set(scene.id, names);
+      else if (on) sharedTo.delete(scene.id);
       onChange("table");
       broadcastScene();
       sendMaps();
-      if (on) broadcast({ type: "map-share", name: scene.name });
-      return on ? { shared: scene.name } : { notShared: scene.name };
+      if (on) for (const [ws, other] of clients) if (!hiddenFor(other)) send(ws, { type: "map-share", name: scene.name, ...(names.length ? { to: names } : {}) });
+      return on ? { shared: scene.name, ...(names.length ? { to: names } : {}) } : { notShared: scene.name };
     },
     // A ruler shown to the table (the agent measuring), and cleared.
     ruler(points) {
@@ -4589,7 +4627,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     const out = { type: "ruler", from: text(client.name, "GM").slice(0, 24), id: String(client.id ?? client.name), sceneId: scene?.id ?? null, color: client.color ?? playerColorOf(client), points: clearing ? [] : points };
     for (const [ws, other] of clients) {
       if (other === client) continue;
-      if (other.role !== "dm" && (privateToGm || sceneHiddenNow())) continue;
+      if (other.role !== "dm" && (privateToGm || hiddenFor(other))) continue;
       send(ws, out);
     }
   }
@@ -4646,6 +4684,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         options,
         map: map.persisted(),
         heldBack: [...heldBack],
+        sharedTo: Object.fromEntries(sharedTo),
         // (The one-map form an older save kept, cleared: the save merges over what was there.)
         hiddenSceneId: null,
         combat: combat.persisted(),

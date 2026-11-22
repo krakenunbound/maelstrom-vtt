@@ -780,6 +780,17 @@ function InitiativeTracker({ session }: { session: Session }) {
             <ConfirmButton action="remove-foes" label="Delete foes" ask="Delete every foe" disabled={!combat.entries.some((entry) => entry.faction === "foe")} onConfirm={() => session.ct("remove-faction", { faction: "foe" })} />
             <ConfirmButton action="remove-nonfriend" label="Delete non-friendly" ask="Delete all but friends" disabled={!combat.entries.some((entry) => entry.faction !== "friend")} onConfirm={() => session.ct("remove-faction", { faction: "nonfriend" })} />
             <ConfirmButton action="clear-effects" label="Clear effects" ask="Take off every effect" disabled={!combat.entries.some((entry) => entry.effects.length > 0)} onConfirm={() => session.ct("clear-effects")} />
+            {/* FG's faction chips: drag one onto the map, the whole side goes there in formation. */}
+            <span className="ct-faction-chips" aria-label="Drag a side onto the map">
+              {(["friend", "neutral", "foe"] as const).map((side) => (
+                <span key={side} className={`ct-faction-chip ${side}`} draggable data-faction={side} title={`Drag onto the map: every ${side} in formation`} onDragStart={(event) => {
+                  event.dataTransfer.setData("application/x-kraken-faction", side);
+                  event.dataTransfer.effectAllowed = "copy";
+                }}>
+                  {side === "friend" ? "Friends" : side === "neutral" ? "Neutral" : "Foes"}
+                </span>
+              ))}
+            </span>
             {/* FG's Clear Expiring Effects: those with rounds left go; lasting ones stay. */}
             <ConfirmButton action="clear-timed-effects" label="Clear timed effects" ask="Take off every effect with rounds left" disabled={!combat.entries.some((entry) => entry.effects.some((effect) => (effect.duration ?? 0) > 0))} onConfirm={() => session.ct("clear-timed-effects")} />
             {/* FG's show or hide every NPC at once (all but the friends). */}
