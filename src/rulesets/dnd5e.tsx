@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { signed } from "../../shared/dnd5e/rules.mjs";
 import { num, rows, useSheet, type Row } from "../core/sheet/context";
 import { GM } from "../ui/gmTitle";
@@ -100,23 +101,54 @@ export function Dnd5eDying() {
   );
 }
 
-// 5E at 0 hit points: the death saves, and their roll in a fight.
+// 5E at 0 hit points: the death saves (FG's three boxes each, ticked by hand), and their roll in a fight.
 export function Dnd5eDeathSaves() {
-  const { data, session, record, editable } = useSheet();
+  const { data, session, record, editable, change } = useSheet();
   const saves = (data.deathsaves ?? {}) as Row;
   const inFight = session.combat.entries.find((entry) => entry.recordId === record.id);
+  const boxes = (key: "success" | "failure", mark: string, word: string) => (
+    <span className={`five-death-${key}`}>
+      {[1, 2, 3].map((n) => (
+        <button key={n} type="button" className={num(saves[key]) >= n ? "on" : ""} disabled={!editable} aria-label={`${word} ${n}`} aria-pressed={num(saves[key]) >= n} onClick={() => change(`deathsaves.${key}`, num(saves[key]) === n ? n - 1 : n)}>
+          {mark}
+        </button>
+      ))}
+    </span>
+  );
   return (
     <div className="five-big five-death" data-death-saves>
       <small>Death saves</small>
-      <span>
-        {"✓".repeat(num(saves.success))}
-        {"✗".repeat(num(saves.failure))}
-      </span>
+      {boxes("success", "✓", "Success")}
+      {boxes("failure", "✗", "Failure")}
       {inFight && editable ? (
         <button type="button" data-action="death-save" onClick={() => session.ct("death-save", { id: inFight.id })}>
           Roll
         </button>
       ) : null}
+    </div>
+  );
+}
+
+// FG's hit dice on the sheet: the die, how many are left, and one rolled (spent) apart from a rest.
+export function Dnd5eHitDice() {
+  const { data, session, record, editable } = useSheet();
+  const dice = (data.hitdice ?? {}) as Row;
+  const total = num(dice.total) || num(data.level) || 1;
+  const left = Math.max(0, total - num(dice.used));
+  const [status, setStatus] = useState("");
+  return (
+    <div className="five-big five-hitdice" data-stat="hitdice" title="Hit Point Dice: a short rest spends them, or roll one here">
+      <small>Hit dice</small>
+      <b>
+        {left}/{total}
+      </b>
+      <span className="hint">d{num(dice.die) || 8}</span>
+      {editable ? (
+        <button type="button" data-action="hit-die" disabled={!left} onClick={() => void session.bookkeeping(record.id, "hitdie", {}).then(() => setStatus("")).catch((error: unknown) => setStatus(error instanceof Error ? error.message : String(error)))}>
+          Roll one
+        </button>
+      ) : null}
+      {status ? <span className="hint" role="status">{status}</span> : null}
     </div>
   );
 }

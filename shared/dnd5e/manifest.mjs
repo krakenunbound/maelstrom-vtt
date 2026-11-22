@@ -18,7 +18,7 @@ const PARTY_GROUP = { stats: [], rolls: [{ kind: "check", label: "Check", option
 const SIX = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"];
 const titled = (/** @type {string} */ word) => word[0].toUpperCase() + word.slice(1);
 // A roll with the strip's DC (advantage is the chat bar's ADV and DIS keys, the modifier stack).
-/** @param {"save" | "check" | "skill"} roll @param {Record<string, unknown>} [more] */
+/** @param {"save" | "check" | "skill" | "init"} roll @param {Record<string, unknown>} [more] */
 const roll = (roll, more = {}) => ({ roll, dc: "dc", ...more });
 /** @type {Record<string, string[]>} */
 const SKILL_LIST = SKILLS;
@@ -99,7 +99,7 @@ export default {
                 part: "derived",
                 className: "d5e-combat",
                 boxes: [
-                  { label: "{@ac}", show: "shield", path: "ac.total", hook: "ac", title: "{@acLong}[: {ac.armor}][ and a shield{?ac.shield}]" },
+                  { label: "{@ac}", show: "shield", path: "ac.total", hook: "ac", title: "{@acLong}[: {ac.armor}][ and a shield{?ac.shield}]", lines: [{ items: [{ before: "Misc", field: { path: "ac.misc", kind: "number", label: "{@ac} adjustment", title: "Added to the {@acLong} (a ring, a spell, cover)" } }] }] },
                   {
                     label: "{@hp}",
                     show: "remaining",
@@ -108,13 +108,25 @@ export default {
                     quick: true,
                     hook: "hp",
                     danger: true,
-                    lines: [{ items: [{ before: "Wounds", field: { path: "hp.wounds", kind: "number", label: "Wounds" } }] }, { items: [{ before: "Temp", field: { path: "hp.temp", kind: "number", label: "Temporary {@hpLower}" } }] }],
+                    lines: [{ items: [{ before: "Wounds", field: { path: "hp.wounds", kind: "number", label: "Wounds" } }] }, { items: [{ before: "Temp", field: { path: "hp.temp", kind: "number", label: "Temporary {@hpLower}" } }] }, { items: [{ before: "Max", field: { path: "hp.total", kind: "number", label: "Maximum {@hpLower}", title: "The {@hpLower} maximum (a level up adds to it)" } }] }],
                   },
-                  { label: "Initiative", show: "value", path: "initiative.total", hook: "init", format: "signed" },
-                  { label: "Speed", show: "text", path: "speed", text: "{speed}" },
+                  {
+                    label: "Initiative",
+                    show: "value",
+                    path: "initiative.total",
+                    hook: "init",
+                    format: "signed",
+                    lines: [{ items: [{ before: "Misc", field: { path: "initiative.misc", kind: "number", label: "Initiative adjustment", title: "Added to initiative (Alert, a magic item)" } }] }],
+                    // FG's Roll Initiative: a Dexterity check with the initiative; on the tracker, its place.
+                    actions: [{ hook: "roll-init", label: "Roll", title: "Roll initiative (on the combat tracker, it sets your place)", action: roll("init") }],
+                  },
+                  { label: "Speed", show: "field", path: "speed", field: { path: "speed", kind: "text", label: "Speed", title: "Speed (30 ft., fly 60 ft.)" } },
                   { label: "Passive Perception", show: "value", path: "passive", hook: "passive" },
                   // Inspiration (2014) or Heroic Inspiration (2024): the GM gives it, the player spends it for advantage.
-                  { label: "Inspiration", show: "text", path: "inspiration", text: "", hook: "inspiration", title: "Inspiration: the GM gives it; spend it for advantage on a roll", lines: [{ items: [{ before: "Has it", field: { path: "inspiration", kind: "check", label: "Inspiration", title: "Has Inspiration" } }] }] },
+                  // FG's Inspiration counter: as many as the house rule HRIS allows (1, 2, 3 or 5); a change goes to the chat.
+                  { label: "Inspiration", show: "field", path: "inspiration", hook: "inspiration", title: "Inspiration: the GM gives it; spend it for advantage on a roll", field: { path: "inspiration", kind: "number", label: "Inspiration", title: "How many Inspiration (the GM's house rule sets the most)" } },
+                  // Hit dice: the die, how many are left, and one rolled (spent) apart from a rest.
+                  { custom: "dnd5e.hitDice", when: { feature: "deathSaves" } },
                   // Descending Darkness's Dread, its bleeding out at 0 Health; 5E's death saves.
                   { custom: "dnd5e.dread", when: { feature: "dread" } },
                   { custom: "dnd5e.dying", when: { all: [{ feature: "dying.bleed" }, { zero: { path: "hp.total", minus: "hp.wounds" } }] } },
@@ -186,7 +198,26 @@ export default {
         id: "notes",
         page: "panel",
         parts: [
-          { part: "notes", fields: [{ path: "alignment", kind: "text", label: "Alignment" }, { path: "notes", kind: "textarea", label: "Notes", fieldClass: "tall" }] },
+          {
+            part: "notes",
+            fields: [
+              { path: "alignment", kind: "text", label: "Alignment" },
+              { path: "deity", kind: "text", label: "Deity" },
+              { path: "size", kind: "text", label: "Size" },
+              { path: "gender", kind: "text", label: "Gender" },
+              { path: "age", kind: "text", label: "Age" },
+              { path: "height", kind: "text", label: "Height" },
+              { path: "weight", kind: "text", label: "Weight" },
+              { path: "senses", kind: "text", label: "Senses" },
+              { path: "specialdefenses", kind: "text", label: "Special defenses", title: "Resistances, immunities and the like" },
+              { path: "personalitytraits", kind: "textarea", label: "Personality traits" },
+              { path: "ideals", kind: "textarea", label: "Ideals" },
+              { path: "bonds", kind: "textarea", label: "Bonds" },
+              { path: "flaws", kind: "textarea", label: "Flaws" },
+              { path: "appearance", kind: "textarea", label: "Appearance" },
+              { path: "notes", kind: "textarea", label: "Notes", fieldClass: "tall" },
+            ],
+          },
           // What the character wizard gave: feats, languages, proficiencies, traits and features.
           { part: "tags", label: "Feats", hook: "feats", from: ["feats"] },
           { part: "tags", label: "Languages", hook: "languages", from: ["languages"] },
@@ -200,11 +231,11 @@ export default {
   // What the sheet may change (the host's whitelist, electron/dnd5e.cjs): "*" one id-n key, "#" a digit, "%" a word,
   // "(a|b)" either; remove: the lists whose rows the sheet may drop. Death saves, hit dice and concentration are the agent's.
   edit: {
-    text: ["playername", "alignment", "appearance", "notes", "senses", "speed", "background", "species", "gender", "age", "height", "weight", "concentration"],
+    text: ["playername", "alignment", "appearance", "notes", "senses", "speed", "background", "species", "gender", "age", "height", "weight", "concentration", "deity", "size", "specialdefenses", "personalitytraits", "ideals", "bonds", "flaws"],
     number: [
       "abilities.(strength|dexterity|constitution|intelligence|wisdom|charisma).(score|saveprof)",
       "skills.%.prof",
-      "hp.(wounds|temp)",
+      "hp.(wounds|temp|total)",
       "exp",
       "ac.misc",
       "initiative.misc",
@@ -222,9 +253,12 @@ export default {
     remove: ["inventorylist"],
   },
   wizard: "dnd5e.wizard",
+  // Rolls the sheet may ask for beyond check, save and skill: initiative.
+  rollKinds: ["init"],
   // House rules (the GM's Settings > House rules; FG 5E's options of the same keys, their choices and defaults).
   settings: [
     { key: "GAVE", group: "Game", label: "Rules version", kind: "select", default: "2024", options: [{ value: "2024", label: "2024" }, { value: "2014", label: "2014" }], hint: "Exhaustion and a long rest's hit dice follow this edition." },
+    { key: "HRIS", group: "Character", label: "Inspiration", kind: "select", default: "", options: [{ value: "", label: "Standard (1)" }, { value: "2", label: "2" }, { value: "3", label: "3" }, { value: "5", label: "5" }], hint: "How many Inspiration a character may hold." },
     { key: "HRST", group: "Combat", label: "Auto death saves", kind: "toggle", default: true, hint: "A dying character rolls its death saving throw at the start of its turn." },
     { key: "NPCD", group: "Combat", label: "NPC damage", kind: "select", default: "off", options: [{ value: "off", label: "Rolled" }, { value: "fixed", label: "Fixed (average)" }] },
     { key: "HRFFM", group: "Combat", label: "Ranged attack next to an enemy at disadvantage", kind: "toggle", default: true, hint: "Unless the attacker has Sharpshooter (2024), Spell Sniper (2024, spells) or Crossbow Expert (2014)." },

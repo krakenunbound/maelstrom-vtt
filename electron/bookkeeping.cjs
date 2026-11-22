@@ -651,9 +651,31 @@ function createBookkeeping(table) {
   });
 
   // One character's bookkeeping action (the sheet's buttons, the message, the tool).
+  // FG's hit die roll from the sheet: one Hit Point Die spent apart from a rest (its die + the game's modifier,
+  // at least 1), healing that much.
+  async function spendHitDie(record, seat) {
+    await ready;
+    mine(record, seat);
+    const dice = declOf(record)?.rest?.short?.hitDice;
+    if (!dice) throw new Error(`${manifestOf(record).names?.[0] ?? "This game"} has no Hit Point Dice.`);
+    const data = structuredClone(record.data);
+    const die = num(at(data, dice.die), 8);
+    const left = Math.max(0, num(at(data, dice.total), num(data.level, 1)) - num(at(data, dice.used), 0));
+    if (!left) throw new Error(`${record.name} has no Hit Point Dice left.`);
+    const mod = num(at(data, dice.mod ?? ""), 0);
+    const from = seat.role === "dm" ? record.name : seat.name;
+    const rolled = table.roll(`1d${die}${mod ? (mod > 0 ? `+${mod}` : `${mod}`) : ""}`, `[HIT DIE] ${record.name} spends a Hit Point Die`, from);
+    const before = num(at(data, "hp.wounds"), 0);
+    setAt(data, "hp.wounds", Math.max(0, before - Math.max(1, rolled.total)));
+    setAt(data, dice.used, num(at(data, dice.used), 0) + 1);
+    await save(record, data);
+    return { healed: before - num(at(data, "hp.wounds"), 0), left: left - 1, total: rolled.total };
+  }
   async function act(record, action, args = {}, seat) {
     await ready;
     switch (action) {
+      case "hitdie":
+        return spendHitDie(record, seat);
       case "view":
         mine(record, seat);
         return view(record);

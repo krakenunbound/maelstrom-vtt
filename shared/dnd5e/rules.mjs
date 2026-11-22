@@ -395,6 +395,8 @@ export function derive(input) {
 
 // A d20 test (check, save, skill) for a character: the modifier and its label.
 export function testModifier(data, kind, key) {
+  // Initiative: a Dexterity check with the sheet's initiative (its misc included), FG's Roll Initiative.
+  if (kind === "init") return { modifier: num(data.initiative?.total, num(data.abilities?.dexterity?.bonus, 0)), label: "[INIT]" };
   if (kind === "save") return { modifier: num(data.abilities?.[key]?.save, 0), label: `[SAVE] ${titled(key)}` };
   if (kind === "skill") {
     const skill = data.skills?.[key];

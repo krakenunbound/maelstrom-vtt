@@ -35,7 +35,7 @@ async function build5e(table, spec, owner, seat) {
 // disadvantage (2d20, the higher or lower kept); dc to say success or failure.
 async function check5e(table, record, { kind = "check", attribute, skill, dc, bonus = 0, advantage = "", label } = {}, from) {
   const rules = await rules5e();
-  const key = kind === "skill" ? rules.skillKey(skill) : String(attribute ?? "").toLowerCase();
+  const key = kind === "skill" ? rules.skillKey(skill) : kind === "init" ? "dexterity" : String(attribute ?? "").toLowerCase();
   if (kind !== "skill" && !rules.STATS.includes(key)) throw new Error("Pick an ability.");
   const { modifier, label: tag } = rules.testModifier(record.data, kind, key);
   const total = modifier + (Number(bonus) || 0);
@@ -55,6 +55,11 @@ async function check5e(table, record, { kind = "check", attribute, skill, dc, bo
   const success = against === null ? null : rolled.total >= against;
   const words = `${label ? `${label} ` : ""}${tag}${reliable ? " [RELIABLE]" : ""}${shaken.dread ? " [DREAD]" : ""}${advantage ? ` [${advantage.toUpperCase()}]` : ""}${against !== null ? ` [DC ${against}] [${success ? "SUCCESS" : "FAILURE"} ${rolled.total} vs ${against}]` : ""}`;
   table.postRoll(rolled, words, from || record.name, false, { by: record.name, ...(against !== null ? { result: success ? "SUCCESS" : "FAILURE", against } : {}) });
+  // Initiative rolled from the sheet sets the character's place on the tracker (FG's).
+  if (kind === "init") {
+    const entry = table.combat?.viewFor?.({ role: "dm", name: "GM" })?.entries?.find((item) => item.recordId === record.id);
+    if (entry) await table.combat.update(entry.id, { initresult: rolled.total }, table.seat);
+  }
   return { total: rolled.total, d20: rolled.terms[0].rolls, modifier: total, dc: against, success };
 }
 
@@ -102,6 +107,13 @@ async function edit5e(table, record, changes, seat) {
       setPath(data, key, /(^slots\.l\d\.used|^hitdice\.used|^deathsaves\.)/.test(key) ? Math.max(0, n) : n);
     } else if (EDIT_PATHS.remove.some((pattern) => pattern.test(key)) && value === null) delete data[key.split(".")[0]]?.[key.split(".")[1]];
     else throw new Error(`The sheet cannot change ${key}.`);
+  }
+  // FG's Inspiration counter: 0 up to the house rule's most (HRIS: 1, 2, 3 or 5); a change is said in the chat.
+  if (changes.some((change) => change?.path === "inspiration")) {
+    const most = Number(table.houseRule?.("HRIS")) || 1;
+    data.inspiration = Math.max(0, Math.min(most, Math.round(Number(data.inspiration) || 0)));
+    const before = Math.round(Number(record.data.inspiration) || 0);
+    if (data.inspiration !== before) table.say?.(`[INSPIRATION] ${name}: ${data.inspiration > before ? "gains" : "spends"} Inspiration (${data.inspiration} of ${most}).`, seat.role === "dm" ? "GM" : name);
   }
   return table.records.update(record.id, { name, data: rules.derive(data) }, table.seat, { replace: true });
 }

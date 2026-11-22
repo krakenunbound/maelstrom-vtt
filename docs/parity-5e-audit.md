@@ -119,6 +119,81 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 | Token (Player): Show ally health (TPCH) | dot | `healthPc` | Same |
 | Token: Party vision and movement (TPTY) | off | `partyVision`: players see through every player's token and may move them; the GM's creatures stay the GM's | Done |
 
+## 2. Character sheet
+
+FG's 5E sheet (`campaign/record_char*.xml`, read from the ruleset files) against Maelstrom's
+(`shared/dnd5e/manifest.mjs` sheet, `src/rulesets/dnd5e.tsx`). FG's tabs: Main, Skills,
+Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells, Inventory, Notes.
+
+### Main and header
+
+| FG control | Maelstrom | Verdict |
+|---|---|---|
+| Portrait, name | Portrait (picker, drag as a link), token picture, name | Better |
+| Inspiration counter, maximum by HRIS (1 to 5), a chat line on change | A count held to the house rule HRIS (standard 1, 2, 3, 5), a chat line | Done |
+| Class & level summary; Classes window (each class: level, caster multiplier, pact magic, hit die, used) | One class package, "Wizard 3" | Missing (multiclass) |
+| Level up opens the wizard | Level up (+): rolls the hit die, posts it | Partly (no choices on level up) |
+| XP, next level | Experience / next | Same |
+| PROF | Prof | Same |
+| Background, species links and text | Read-only text | Partly (no links) |
+| Abilities: score, modifier, check, save, save proficiency | The same, a DC box for every roll | Better |
+| Senses (text) | Senses on the Notes tab, the line under the boxes | Done |
+| Passive Perception | Passive Perception | Same |
+| AC with Combat Details (armor, shield, DEX cap, 2nd ability, misc, proficient, stealth disadvantage) | AC from armor and shield, a Misc box | Partly (no DEX cap or 2nd ability by hand) |
+| Initiative: misc, proficiency, roll button | Misc box; Roll, which on the tracker sets the character's place | Done (no proficiency toggle) |
+| Speed: base, armor, misc, special move | Speed typed in the box | Partly (one text) |
+| Special defenses (text) | Special defenses on the Notes tab | Done |
+| HP: wounds, max, temp; numbers dropped on them | Current / max with a bar, Damage and Heal, wounds, temp and max boxes | Better (Damage and Heal) |
+| Hit dice per class: die, dice left, roll (spend) one; Hit Dice details (stat, 2nd stat, misc) | Hit dice box: the die, left of total, Roll one | Partly (one class; no stat choice) |
+| Death saves: roll button, 3 success and 3 failure boxes | Three boxes each, ticked by hand; Roll in a fight (and HRST rolls it itself) | Done |
+
+### Skills
+
+| FG control | Maelstrom | Verdict |
+|---|---|---|
+| Proficiency: none, proficient, double, half | None, proficient, expertise | Partly (no half: Jack of All Trades) |
+| Ability per skill (changeable), misc, total, roll | Fixed ability, total, roll | Partly (no misc, no ability change) |
+| Add or delete skills (custom skills) | The 18 | Missing |
+
+### Abilities (Maelstrom: Notes)
+
+| FG control | Maelstrom | Verdict |
+|---|---|---|
+| Feats, features, traits, proficiencies, languages: add, delete, open | Read-only lists; feats by dropping | Partly (editable lists, links) |
+
+### Inventory
+
+| FG control | Maelstrom | Verdict |
+|---|---|---|
+| Items: count, name, unidentified name, location (container), carried, link | Count, carried, containers (drag, Put in), thumbnails, party stash | Better (containers, stash) |
+| Weight per item | Load meter only | Missing (column) |
+| Attuned per item, attunement count (HRAS base, class, misc), red over the limit | Not found | Missing |
+| Treasure: coins, add your own currency rows | The game's coins | Partly (no custom rows) |
+| Encumbrance: load, encumbered, heavy, maximum, lift/push/drag | Load meter, the variant | Partly (no lift/push/drag figure) |
+
+### Notes
+
+| FG control | Maelstrom | Verdict |
+|---|---|---|
+| Gender, age, height, weight, size, alignment, deity | All of them on the Notes tab | Done |
+| Personality traits, ideals, bonds, flaws, appearance, notes | All of them | Done |
+| Logs: faction, DCI, adventures list | Not found | Missing |
+| Bastion (HRBASTION) | Not found | Missing |
+
+### Actions (Maelstrom: Combat and Spells)
+
+| FG control | Maelstrom | Verdict |
+|---|---|---|
+| Weapons from the inventory, attack and damage rolls, drag to roll | Attack and damage rolls at targets, drag onto a creature, versatile hands | Better (targets) |
+| Weapon options: crit range, extra crit dice, two-weapon fighting | Not found | Missing |
+| Weapon editor: attack ability, bonus, proficiency; damage rows | Not found | Missing |
+| Ammunition counter per weapon | Spent from the inventory | Better (real ammunition) |
+| Weapon mastery | Not found | Missing (2024) |
+| Spell slots: maximums by hand, used boxes; Pact Magic apart | Used boxes; pact slots as a level row | Partly |
+| Powers by group and level, Preparation mode, prepared ticks and count | A flat list, Cast | Missing (prepared, by level) |
+| Class resources: uses and period (daily, encounter, once) | Not found | Missing (Rage, Ki, Channel Divinity) |
+| A power's cast, attack, save, damage, heal and effect rows, upcast | Cast at targets (templates, saves, damage) | Partly (no rows to see, no upcast choice) |
+
 ## How house rules work in Maelstrom
 
 A game declares its house rules in its manifest (`settings` with a `key`: a switch
