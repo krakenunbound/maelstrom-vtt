@@ -1392,4 +1392,5 @@ any computer).
 - Six start-screen scenes.
 - README and guides in `docs/`.
 
-Earlier releases are described in their commits and in [PLAN.md](PLAN.md).
+Earlier releases are described in their commits and in [PLAN.md](PLAN.md).- **A map put on the table opens in a window on the table's right side**, the left column kept for the combat tracker and the chat (it covered the whole table, chat and tracker included); behind every window is still a choice in its title bar; a map moved between the two keeps its view (it came back at 10%, framed on nothing). It moves by its title bar's empty space too, not only by its name (the map's toolbar in the bar took every press). verify-map-play-ui
+- **Read aloud on every boxed passage of a book page**: the GM's chat button now comes to boxes drawn after the page first opened (an adventure's pages load their text late, so the Entrance Hall had none); only the box's words go to chat, not the GM's notes below it. verify-book-contents-ui
