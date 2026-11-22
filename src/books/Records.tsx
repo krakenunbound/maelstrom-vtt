@@ -411,6 +411,7 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
           </div>
         ) : null}
         {gm && list === "npc" ? <NpcImport session={session} onMade={(record) => onOpen(record)} /> : null}
+        {gm && list === "race" && rulesetFor(session.ruleset ?? "").raceImport ? <RaceImport session={session} onMade={(record) => onOpen(record)} /> : null}
         {gm && (list === "item" || list === "itemtemplate") && rulesetFor(session.ruleset ?? "").forge ? <ItemForge session={session} onMade={(record) => onOpen(record)} /> : null}
         {gm && only ? (
           // FG's + on a campaign list: a new record of the list's kind, opened to fill in.
@@ -535,7 +536,7 @@ export function FormattedText({ text, onLink, onOpen }: { text: string; onLink?:
 
 // The fields a record window leaves out: FG's bookkeeping, or shown on their own.
 const HIDDEN = new Set(["name", "fgPath", "fgCategory", "version", "picture", "public", "token", "isidentified", "locked", "ccgen", "nonid_name", "nonidentified", "abilities", "packagetype", "token3Dflat", "text"]);
-const LABELS: Record<string, string> = { savingthrows: "Saving throws", castingtime: "Casting time", ac: "AC", hp: "Hit points", hd: "Hit dice", cr: "Challenge", xp: "XP", acbonus: "AC bonus", bth: "BtH", subtype: "Subtype", damagetype: "Damage type" };
+const LABELS: Record<string, string> = { savingthrows: "Saving throws", abilityadjust: "Ability increases", castingtime: "Casting time", ac: "AC", hp: "Hit points", hd: "Hit dice", cr: "Challenge", xp: "XP", acbonus: "AC bonus", bth: "BtH", subtype: "Subtype", damagetype: "Damage type" };
 const labelOf = (key: string) => LABELS[key] ?? key.replace(/[_-]+/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (letter) => letter.toUpperCase());
 const isText = (value: unknown) => typeof value === "string" && /<\/?(p|b|i|h|list|li|table|frame|linklist)\b/.test(value);
 const STATS = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"];
@@ -913,6 +914,43 @@ function ItemForge({ session, onMade }: { session: Session; onMade: (record: Tab
           Reset
         </button>
       </div>
+      <p className="hint" role="status">
+        {status}
+      </p>
+    </details>
+  );
+}
+
+// FG's race import: a race pasted as text, a campaign race (and its subraces) made of it and opened.
+function RaceImport({ session, onMade }: { session: Session; onMade: (record: TableRecord) => void }) {
+  const [text, setText] = useState("");
+  const [status, setStatus] = useState("");
+  const own = useId();
+  return (
+    <details className="table-import race-import">
+      <summary>Import a race (paste it)</summary>
+      <label htmlFor={own} className="sr-only">
+        The race, pasted
+      </label>
+      <textarea id={own} value={text} onChange={(event) => setText(event.target.value)} placeholder={"Paste a race: its name on the first line, its description, then \u201c<Race> Traits\u201d and each trait (Darkvision. You have\u2026); subraces after (High Elf, or Drow Traits)"} rows={8} />
+      <button
+        type="button"
+        data-action="race-import"
+        disabled={!text.trim()}
+        onClick={() =>
+          void session
+            .content<TableRecord & { subraces?: TableRecord[]; problems?: string[] }>("race-import", { text })
+            .then((record) => {
+              const subs = record.subraces?.length ? ` and ${record.subraces.map((sub) => sub.name).join(", ")}` : "";
+              setStatus(`Made ${record.name}${subs}.${record.problems?.length ? ` ${record.problems.join(" ")}` : ""}`);
+              setText("");
+              onMade(record);
+            })
+            .catch((error: unknown) => setStatus(error instanceof Error ? error.message : "Could not read that."))
+        }
+      >
+        Import
+      </button>
       <p className="hint" role="status">
         {status}
       </p>

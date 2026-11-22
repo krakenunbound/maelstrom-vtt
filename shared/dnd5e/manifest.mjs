@@ -36,6 +36,8 @@ export default {
   engine: "shared/dnd5e/rules.mjs",
   // The Item Forge's rules (base items and templates into new magic items): content.cjs's item-forge.
   forge: "shared/dnd5e/forge.mjs",
+  // A race pasted as text into race records (its subraces too): content.cjs's race-import.
+  raceImport: "shared/dnd5e/raceblock.mjs",
   host: { module: "electron/dnd5e.cjs" },
   // The modifier box's keys beside the chat (shared/rulesets/modifiers.mjs).
   dice: { modifiers: { presets: ["adv", "dis", "plus2", "minus2", "plus5", "minus5", "opp", "cover", "scover", "crit", "max", "half"] } },

@@ -156,6 +156,13 @@ const TOOLS = [
     ),
     run: async (args, ctx) => out(await content.itemForge(needTable(ctx), args)),
   },
+  {
+    name: "kraken_race_import",
+    description:
+      "FG's race import (5E): a race pasted as text becomes a campaign race record (GM only), with a subrace record for each subrace. The name on the first line; its description until '<Race> Traits'; each trait a line beginning with its name and a full stop ('Darkvision. You have...'); a subrace a line '<Word> <Race>' ('High Elf') or a '<Subrace> Traits' header. 2024's 'Creature Type:', 'Size:' and 'Speed:' lines fill the race's fields. Returns the race, its subraces and what could not be read (problems).",
+    inputSchema: object({ text: string("The whole race as text, its name on the first line") }, ["text"]),
+    run: async (args, ctx) => out(await content.raceImport(needTable(ctx), args)),
+  },
 ];
 
 module.exports = { TOOLS };

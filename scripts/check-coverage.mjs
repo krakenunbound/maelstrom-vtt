@@ -30,6 +30,7 @@ const MESSAGES = {
   "table-roll": "kraken_table",
   "npc-import": "kraken_npc_import",
   "item-forge": "kraken_item_forge",
+  "race-import": "kraken_race_import",
   identify: "kraken_item_identify",
   encounter: "kraken_encounter",
   parcel: "kraken_parcel",

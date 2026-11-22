@@ -135,7 +135,7 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | Level up opens the wizard | Level up (+): rolls the hit die, posts it | Partly (no choices on level up) |
 | XP, next level | Experience / next | Same |
 | PROF | Prof | Same |
-| Background, species links and text | Read-only text | Partly (no links) |
+| Background, race links and text | Read-only text | Partly (no links) |
 | Abilities: score, modifier, check, save, save proficiency | The same, a DC box for every roll | Better |
 | Senses (text) | Senses on the Notes tab, the line under the boxes | Done |
 | Passive Perception | Passive Perception | Same |
@@ -361,7 +361,8 @@ and utility windows, and player management against Maelstrom's.
 | Effects window: lights, conditions, custom effects, click or drag to apply, GM-only, expiry, units, apply mode | Conditions, buffs, debuffs, lights, your own; click or drag; who may add | Partly (no units or apply mode on custom effects) |
 | Sound sets: triggers by chat pattern, content sounds on a record, Syrinscape | Sound window: library, triggers on hidden rolls, scene sounds, map sounds, playlists, Syrinscape | Better |
 | Item templates, Item Forge (base items and magic templates make new items) | Items and Item Templates lists: Item Forge (drop or pick base items and templates, items and spells as templates; the SRD's +1, +2, or +3 with a chosen bonus); the names, rarity, bonus, properties, damage, AC, cost and text combine, a spell makes a Spell Scroll of it, templates alone make a template; the forged item works on the sheet | Better (chosen bonus, costs kept, templates from any item) |
-| NPC import from stat block text; species import from text | NPCs list: Import from a stat block (2014 and 2024 layouts; every SRD creature reads back the same) | Partly (no species import) |
+| NPC import from stat block text; race import from text | NPCs list: Import from a stat block (2014 and 2024 layouts; every SRD creature reads back the same); Races list: Import a race (2014 and 2024 layouts, its subraces as their own records, linked; Creature Type, Size, Speed and Ability Score Increase into the race's fields; every SRD race and subrace reads back the same) | Better (subraces of one word, options kept inside their trait, fields filled) |
+| Item import from text (FG's Import Item) | Not found | Missing |
 | Story templates: text with `[Table]` rolls generates a story | Story list: From a template: `[Table]`, `[Table\|column]`, `[1d6]`, `[2x]` rolled into a new story | Same |
 | Options: groups, per user and GM, export and import a set | Settings: you, the table, combat, tokens, house rules; Export settings and Import settings | Same |
 | Currencies (name, weight, value), languages, MOTD, Setup, Token Lights, decal | Currency names, languages, MOTD, lights in Effects, decal, wallpaper, GM icon, themes | Partly (no coin weight or value) |
@@ -380,7 +381,7 @@ Any game can add its own the same way; nothing in the core names a game.
 
 All eight areas are compared, read from FG's ruleset files (CoreRPG and 5E) and
 Maelstrom's code, and what was missing is built (each area's commits name its
-check script). Still missing, by size: FG's module export from a campaign, species import from text, the
+check script). Still missing, by size: FG's module export from a campaign, item import from text, the
 2024 Bastion tab, named holidays on calendar days, a random-encounter Generate,
 module sets, and the rows marked Partly. The **Check live** rows want FG open on
 the 5E campaign through the bridge, side by side with Maelstrom.

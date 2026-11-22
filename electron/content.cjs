@@ -480,7 +480,24 @@ async function itemForge(table, args, readBook = table.readBookRecord) {
   return { made: records, problems };
 }
 
+// FG's race import: a race pasted as text (its description, "<Race> Traits", each trait, its subraces) becomes the
+// campaign's race record and a subrace record for each, read by the game's own reader (its manifest's raceImport);
+// the race's text lists its subraces as links.
+async function raceImport(table, args) {
+  const { rulesetFor } = require("../shared/rulesets/registry.mjs");
+  const reader = rulesetFor(table.ruleset?.() ?? "").raceImport;
+  if (!reader) throw new Error("This game has no race import.");
+  const { parseRace } = await import(require("node:url").pathToFileURL(require("node:path").join(__dirname, "..", reader)).href);
+  const parsed = parseRace(String(args.text ?? "").slice(0, 60000));
+  const subraces = parsed.subraces.map((sub) => table.records.create({ type: "race_subrace", name: text(sub.name), visibility: "gm", data: sub.data }, table.seat));
+  const links = subraces.map((sub) => `<link class="race_subrace" recordname="kraken:${encodeURIComponent(JSON.stringify({ kind: "record", record: sub.id, label: sub.name }))}">${sub.name.replace(/[<>&"]/g, "")}</link>`).join("");
+  const data = { ...parsed.data, text: `${parsed.data.text}${subraces.length ? `<h>Subraces</h><linklist>${links}</linklist>` : ""}` };
+  const record = table.records.create({ type: "race", name: text(parsed.name), visibility: "gm", data }, table.seat);
+  return { ...record, subraces, problems: parsed.problems };
+}
+
 const MESSAGES = {
+  "race-import": (table, msg) => raceImport(table, msg),
   "item-forge": (table, msg, ctx) => itemForge(table, msg, ctx.readBook),
   "npc-import": (table, msg) => npcImport(table, msg),
   "record-copy": (table, msg, ctx) => copyRecord(table, msg, ctx.readBook),
@@ -499,4 +516,4 @@ async function message(table, msg, ctx) {
   return handler(table, args, ctx);
 }
 
-module.exports = { itemForge, npcImport, message, copyRecord, storyAction, tableAction, rollOn, findTable, identify, parcelAction, parcelContents, encounterAction, encounterXp, questAction, unidentified, itemName };
+module.exports = { raceImport, itemForge, npcImport, message, copyRecord, storyAction, tableAction, rollOn, findTable, identify, parcelAction, parcelContents, encounterAction, encounterXp, questAction, unidentified, itemName };
