@@ -221,6 +221,7 @@ const sheet = {
 /** @type {import("../rulesets/types").RulesetManifest} */
 export default {
   id: "cnc",
+  manualDie: "1d20",
   // Where a character keeps its classes: its class packages (SiegeCore's).
   classes: { rows: "packages", where: { packagetype: "class" }, name: "name", level: "level" },
   names: ["Castles & Crusades"],

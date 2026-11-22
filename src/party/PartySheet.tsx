@@ -232,7 +232,18 @@ export function PartySheet({ session, compact = false }: { session: Session; com
                     {member.abilities?.length ? (
                       <span className="party-abilities" data-party-abilities={member.id}>
                         {member.abilities.map((ability) => (
-                          <span key={ability.key} className="party-ability" title={`${ability.key} ${ability.score}`}>
+                          // FG's: the GM double-clicks a member's ability for its check (Shift: its save).
+                          <span
+                            key={ability.key}
+                            className="party-ability"
+                            title={gm ? `${ability.key} ${ability.score}: double-click for a ${ability.key} check (Shift: save)` : `${ability.key} ${ability.score}`}
+                            data-party-ability={ability.key}
+                            onDoubleClick={(event) => {
+                              if (!gm) return;
+                              const stat = attributes.find((name) => name.slice(0, 3).toUpperCase() === ability.key) ?? ability.key.toLowerCase();
+                              session.partyRoll({ kind: event.shiftKey ? "save" : "check", attribute: stat, dc: checkCl, mode: "roll", members: [member.id] });
+                            }}
+                          >
                             <small>{ability.key}</small>
                             {ability.score}
                             <i className={ability.bonus > 0 ? "up" : ability.bonus < 0 ? "down" : ""}>{ability.bonus >= 0 ? `+${ability.bonus}` : ability.bonus}</i>

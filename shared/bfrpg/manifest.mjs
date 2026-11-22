@@ -23,6 +23,7 @@ const DETAILS = ["playername", "deity", "languages", "gender", "age", "height", 
 /** @type {import("../rulesets/types").RulesetManifest} */
 export default {
   id: "bfrpg",
+  manualDie: "1d20",
   // Where a character keeps its class: one class, its level beside it.
   classes: { field: "className", level: "level" },
   names: ["Basic Fantasy"],

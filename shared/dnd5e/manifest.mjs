@@ -26,6 +26,7 @@ const SKILL_LIST = SKILLS;
 /** @type {import("../rulesets/types").RulesetManifest} */
 export default {
   id: "dnd5e",
+  manualDie: "1d20",
   // Where a character keeps its classes (FG's classes list), for the roster, Character Selection and spells.
   // FG's characters keep a classes list; Maelstrom's builder a class package.
   classes: [{ rows: "classes", name: "name", level: "level" }, { rows: "packages", where: { packagetype: "Class" }, name: "name", level: "level" }],

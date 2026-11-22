@@ -342,6 +342,8 @@ function savedOptions(value) {
     clearTargets: ["never", "action", "turn"].includes(options.clearTargets) ? options.clearTargets : "never",
     // FG's Remove on miss (RMMT): off, on, or multi (FG's default: only when an attack had several targets).
     removeOnMiss: ["off", "on", "multi"].includes(options.removeOnMiss) ? options.removeOnMiss : "multi",
+    // FG's dice by type: damage dice in their damage type's colours, a creature's in its type's (on by default).
+    typedDice: options.typedDice !== false,
     // Conditions and effects on tokens: animated, icons only, or not drawn (every seat).
     tokenEffects: ["full", "icons", "off"].includes(options.tokenEffects) ? options.tokenEffects : "full",
     // What players may put on their own characters from the Effects list: nothing, lights, lights and conditions, or everything.
@@ -1476,10 +1478,52 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     return !line.secret || client.role === "dm" || (line.shownTo && line.shownTo === client.name);
   };
 
+  // FG's dice by type: a damage roll's dice in its damage type's colours, a creature's in its creature type's (the
+  // table's typedDice, on by default), over the roller's own set.
+  const TYPED_DAMAGE = {
+    fire: { body: "#b3261e", ink: "#ffd27a", accent: "#ff8a3d", effect: "fire" },
+    cold: { body: "#7fbfe6", ink: "#0b2340", accent: "#e6f6ff", effect: "frost" },
+    lightning: { body: "#2b2f8f", ink: "#fff27a", accent: "#9fd0ff", effect: "spark" },
+    thunder: { body: "#4a5a78", ink: "#e0e8ff", accent: "#9fb4d8", effect: "charge" },
+    acid: { body: "#7fc93a", ink: "#132a06", accent: "#d8ff8a", effect: "wisp" },
+    poison: { body: "#3f7a2a", ink: "#d6ffb0", accent: "#9ae66e", effect: "wisp" },
+    necrotic: { body: "#18181f", ink: "#9bff9b", accent: "#4a6a4a", effect: "shadow" },
+    radiant: { body: "#f2d35b", ink: "#5a3b00", accent: "#fff6c8", effect: "holy" },
+    force: { body: "#7b3fc4", ink: "#f0e0ff", accent: "#c9a8ff", effect: "arcane" },
+    psychic: { body: "#c94f9b", ink: "#ffffff", accent: "#ffb3e0", effect: "glow" },
+  };
+  const TYPED_CREATURE = {
+    undead: TYPED_DAMAGE.necrotic,
+    fiend: TYPED_DAMAGE.fire,
+    celestial: TYPED_DAMAGE.radiant,
+    aberration: TYPED_DAMAGE.psychic,
+    fey: { body: "#3f9a5a", ink: "#f0ffe8", accent: "#b8ffcf", effect: "sparkles" },
+    elemental: TYPED_DAMAGE.lightning,
+    construct: { body: "#8a8f99", ink: "#1d2026", accent: "#d0d4da", effect: "none" },
+    dragon: { body: "#7a1414", ink: "#ffd27a", accent: "#e0a030", effect: "embers" },
+    ooze: TYPED_DAMAGE.acid,
+    plant: { body: "#4f6b2a", ink: "#e8f5c8", accent: "#a6c46a", effect: "none" },
+  };
+  const typedLook = (base, tint) => (base && tint ? diceLook({ ...base, ...tint }) ?? base : base);
+  function lookFor(entry, roller, hand) {
+    const chosen = lookForOwn(entry, roller, hand);
+    if (options.typedDice === false) return chosen;
+    const label = String(entry.roll?.label ?? "");
+    const kind = /\[TYPE:\s*([a-z]+)/i.exec(label)?.[1]?.toLowerCase();
+    if (/^\[DAMAGE\]/.test(label) && kind && TYPED_DAMAGE[kind]) return typedLook(chosen ?? hand.look, TYPED_DAMAGE[kind]);
+    // A creature's roll (the GM's, as a creature of the tracker or an NPC): its type's colours.
+    const from = String(entry.roll?.by || entry.from || "");
+    if (roller.role === "dm" && from && !/^\[DAMAGE\]/.test(label)) {
+      const creature = records.list({ type: "npc" }).find((record) => sameName(record.name, from.replace(/\s+\d+$/, "")));
+      const type = String(creature?.data?.type ?? "").toLowerCase().split(/[\s(]/)[0];
+      if (TYPED_CREATURE[type]) return typedLook(chosen ?? hand.look, TYPED_CREATURE[type]);
+    }
+    return chosen;
+  }
   // Which of the roller's dice sets a roll is thrown with: damage dice for a
   // damage roll; the GM's NPC dice for a roll as a creature (not the GM, not a
   // character); else their own.
-  function lookFor(entry, roller, hand) {
+  function lookForOwn(entry, roller, hand) {
     const label = String(entry.roll?.label ?? "");
     // Who the roll is for: a tracker roll names its actor (by); else who it is from. The tracker's own voice decides nothing.
     const from = String(entry.roll?.by || entry.from || "");
@@ -1517,7 +1561,25 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   }
   // A seat by who sits in it, not by its connection (new on every reload): the GM, or a player's name.
   const seatKey = (client) => (client.role === "dm" ? "@gm" : String(client.name ?? "").toLowerCase());
+  // Manual dice for a sheet's or the tracker's roll: the faces the roller typed in go first (dice.force), any not used
+  // are dropped after it; the rolls it made are marked [MANUAL].
+  let manualNow = 0;
+  const manualOf = (msg) => (Array.isArray(msg.manual) ? msg.manual.slice(0, 40).map((value) => Math.round(Number(value))).filter((value) => Number.isFinite(value) && value >= 1 && value <= 1000) : []);
+  async function withManual(msg, go) {
+    const faces = manualOf(msg);
+    if (!faces.length) return go();
+    dice.clearForced?.();
+    dice.force(faces);
+    manualNow++;
+    try {
+      return await go();
+    } finally {
+      manualNow--;
+      dice.clearForced?.();
+    }
+  }
   function addChat(entry) {
+    if (manualNow && entry.roll && !/\[MANUAL\]/.test(String(entry.roll.label ?? ""))) entry.roll = { ...entry.roll, label: `${String(entry.roll.label ?? "")} [MANUAL]`.trim() };
     // The roller's roll mode (the chat bar's): the GM and them, the GM alone, or them alone.
     const asked = entry.roll && !entry.secret && !entry.self && !entry.to && !entry.tower ? modifiers.modeNow() : null;
     if (asked) {
@@ -3477,7 +3539,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
           send(ws, { type: "error", reason: "You cannot roll for that character." });
           return;
         }
-        siegeCheck(agentHandle, record, { attribute: msg.attribute, cl: msg.cl, bonus: msg.bonus, label: msg.label, addLevel: typeof msg.addLevel === "boolean" ? msg.addLevel : undefined, ...(["check", "save", "skill", "morale", ...(require("../shared/rulesets/registry.mjs").rulesetOfRecord(record.data?.ruleset).rollKinds ?? [])].includes(msg.kind) ? { kind: msg.kind, skill: text(msg.skill, ""), dc: num(msg.dc, 0), advantage: ["advantage", "disadvantage", "boon", "bane"].includes(msg.advantage) ? msg.advantage : "" } : {}) }, client.role === "dm" ? record.name : client.name).catch((error) =>
+        withManual(msg, () => siegeCheck(agentHandle, record, { attribute: msg.attribute, cl: msg.cl, bonus: msg.bonus, label: msg.label, addLevel: typeof msg.addLevel === "boolean" ? msg.addLevel : undefined, ...(["check", "save", "skill", "morale", ...(require("../shared/rulesets/registry.mjs").rulesetOfRecord(record.data?.ruleset).rollKinds ?? [])].includes(msg.kind) ? { kind: msg.kind, skill: text(msg.skill, ""), dc: num(msg.dc, 0), advantage: ["advantage", "disadvantage", "boon", "bane"].includes(msg.advantage) ? msg.advantage : "" } : {}) }, client.role === "dm" ? record.name : client.name)).catch((error) =>
           send(ws, { type: "error", reason: error instanceof Error ? error.message : "Could not roll that." }),
         );
         return;
@@ -4082,7 +4144,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
               throw new Error("Unknown tracker action.");
           }
         };
-        run().catch((error) => send(ws, { type: "error", reason: error instanceof Error ? error.message : "Could not do that." }));
+        withManual(["attack", "save", "death-save"].includes(msg.action) ? msg : {}, run).catch((error) => send(ws, { type: "error", reason: error instanceof Error ? error.message : "Could not do that." }));
         return;
       }
 

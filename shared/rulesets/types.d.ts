@@ -438,6 +438,9 @@ export interface RulesetManifest {
   // Initiative: who acts first ("low": the lowest, 2E; else the highest) and the die a side's roll uses (the tracker's sides option).
   initiativeOrder?: "low" | "high";
   initiativeDie?: number;
+  // Manual dice (each person's "Type in my own dice"): the die a check, save or attack from the sheet or the tracker
+  // throws, asked for before the roll ("1d20"; advantage asks for two). None: those rolls are the host's.
+  manualDie?: string;
   // The game's own settings: a house rule (key, its choices, the default; the GM's Settings > House rules, the
   // agent's kraken_table_options rules; the host reads it with houseRule(key)), or a panel of its own.
   settings?: ({ key: string; label: string; hint?: string; kind: "toggle" | "select" | "checklist"; default: unknown; options?: (string | { value: string; label: string })[]; group?: string } | { component: Ref; gm?: boolean })[];

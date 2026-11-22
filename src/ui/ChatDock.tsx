@@ -422,6 +422,19 @@ const TOWER_PLACE = "kraken-tower-place";
 type TowerPlace = { x: number; y: number; locked: boolean };
 // In CSS pixels: a player's UI scale (the page's zoom) makes the screen that many CSS pixels wider.
 const towerFits = (x: number, y: number) => ({ x: Math.round(Math.min(window.innerWidth / pageZoom() - 80, Math.max(0, x))), y: Math.round(Math.min(window.innerHeight / pageZoom() - 100, Math.max(0, y))) });
+// FG's dice tower: text dropped on it goes to the GM as a whisper (a note passed under the table).
+const towerTextDrop = (session: Session) => ({
+  onDragOver: (event: React.DragEvent) => {
+    if ([...event.dataTransfer.types].includes("text/plain") && ![...event.dataTransfer.types].some((type) => type.startsWith("text/kraken") || type.startsWith("application/x-kraken"))) event.preventDefault();
+  },
+  onDrop: (event: React.DragEvent) => {
+    const words = event.dataTransfer.getData("text/plain").trim();
+    if (!words || [...event.dataTransfer.types].some((type) => type.startsWith("text/kraken") || type.startsWith("application/x-kraken"))) return;
+    event.preventDefault();
+    session.sendChat(words.slice(0, 2000), { to: ["GM"] });
+  },
+});
+
 function towerPlace(): TowerPlace {
   try {
     const saved = JSON.parse(window.localStorage.getItem(TOWER_PLACE) ?? "null");
@@ -554,6 +567,7 @@ function ExternalTower({ session, on, drop, title, towerRef, onToggle }: { sessi
         style={{ left: place.x, top: place.y }}
         onPointerDown={grab}
         onContextMenu={openMenu}
+        {...(session.role === "dm" ? {} : towerTextDrop(session))}
       >
         <TowerArt on={on} busy={drop} style={style} picture={picture} litPicture={litPicture} size={picture ? 104 : 80} />
         {place.locked ? (
@@ -1361,7 +1375,7 @@ export function ChatDock({ session }: { session: Session }) {
         ))}
         <ModifierBox session={session} onMenu={(x, y) => setMenu({ x, y, sides: null })} />
         {external ? null : (
-          <button type="button" ref={towerButton} className={["tower", tower ? "on" : "", ghost?.overTower ? "drop" : ""].filter(Boolean).join(" ")} aria-pressed={tower} title={towerTitle} onClick={() => setTower(!tower)}>
+          <button type="button" ref={towerButton} className={["tower", tower ? "on" : "", ghost?.overTower ? "drop" : ""].filter(Boolean).join(" ")} aria-pressed={tower} title={towerTitle} onClick={() => setTower(!tower)} {...(session.role === "dm" ? {} : towerTextDrop(session))}>
             <Icon name="tower" size={20} />
           </button>
         )}

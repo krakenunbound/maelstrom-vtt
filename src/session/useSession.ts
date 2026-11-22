@@ -3,6 +3,7 @@ import { adoptAccountUi, accountUiChanged } from "./accountUi";
 import { dicePacks } from "../dice/dicePacks";
 import type { MapScene } from "../table/MapView";
 import { sound, type Soundscape } from "../sound/soundEngine";
+import { rulesetFor } from "../../shared/rulesets/registry.mjs";
 import { diceStore, rolling, throwIntent } from "../dice/diceStore";
 import { rulerStore } from "../table/Ruler";
 import { exploredStore } from "../table/explored";
@@ -521,6 +522,17 @@ export function useSession() {
   const [soundscape, setSoundscape] = useState<Soundscape>({ ambience: [], music: null });
   // The campaign's ruleset ("Castles & Crusades", "D&D 5E", "Worldbuilding"): it picks the sheet.
   const [ruleset, setRuleset] = useState("");
+  const rulesetNow = useRef("");
+  rulesetNow.current = ruleset;
+  // FG's manual entry for the sheet's and the tracker's rolls (this person's "Type in my own dice"): the faces of the
+  // ruleset's own die (its manualDie; two with advantage or disadvantage) asked first, sent with the roll; cancelled,
+  // no roll.
+  const withManual = (advantage: unknown, go: (manual?: number[]) => void) => {
+    const die = diceStore.settings().manualDice ? (rulesetFor(rulesetNow.current).manualDie ?? "") : "";
+    if (!die) return void go();
+    const formula = advantage && /^1d/.test(die) ? `2${die.slice(1)}` : die;
+    void import("../dice/ManualDice").then(({ manualDice }) => manualDice.ask(formula).then((values) => values !== null && go(values.length ? values : undefined)));
+  };
   // The GM's: the open scene's own sound, if it has one.
   const [sceneSound, setSceneSound] = useState<{ sceneId: string | null; kept: Soundscape | null }>({ sceneId: null, kept: null });
   const [bookSounds, setBookSounds] = useState<Record<string, PageSounds>>({});
@@ -833,7 +845,9 @@ export function useSession() {
             if (line.recordId && !line.roll && !line.to?.length && !line.secret && line.text.trim() && (!line.kind || ["say", "emote", "mood"].includes(line.kind))) {
               const bubble = { id: ++pingCounter.current, recordId: line.recordId, text: line.text.trim().slice(0, 240), kind: line.kind ?? "say" };
               setBubbles((current) => [...current.filter((item) => item.recordId !== bubble.recordId), bubble].slice(-12));
-              window.setTimeout(() => setBubbles((current) => current.filter((item) => item.id !== bubble.id)), Math.min(10000, 3500 + bubble.text.length * 55));
+              // As long as it takes to read, or the person's own time (Settings: Speech bubble time).
+              const seconds = Number(diceStore.settings().speechSeconds) || 0;
+              window.setTimeout(() => setBubbles((current) => current.filter((item) => item.id !== bubble.id)), seconds ? seconds * 1000 : Math.min(10000, 3500 + bubble.text.length * 55));
             }
           }
           // Every record this seat may see, again (the GM shared a book with the players, or stopped).
@@ -1275,7 +1289,8 @@ export function useSession() {
   const siegeCheck = useCallback((id: string, attribute: string, cl = 0, save = false, extra?: { label?: string; bonus?: number; addLevel?: boolean; kind?: string; skill?: string; dc?: number; advantage?: string }) => {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(JSON.stringify({ type: "siege-check", id, attribute, cl, ...(save ? { label: `${attribute[0].toUpperCase()}${attribute.slice(1)} save` } : {}), ...(extra ?? {}), ...throwIntent() }));
+    const intent = throwIntent();
+    withManual(extra?.advantage, (manual) => socket.send(JSON.stringify({ type: "siege-check", id, attribute, cl, ...(save ? { label: `${attribute[0].toUpperCase()}${attribute.slice(1)} save` } : {}), ...(extra ?? {}), ...(manual ? { manual } : {}), ...intent })));
   }, []);
 
   // Dual class or reclass at a level up (the Adventurer's Backpack).
@@ -1539,6 +1554,12 @@ export function useSession() {
         const { action: castAction, ...rest } = payload;
         return send({ type: "ct", place: true, ...rest, action, ...(castAction ? { castAction } : {}), ...throwIntent() });
       }
+      // A roll of the creature's own die (an attack, a save, a death save): manual dice asked first.
+      if (["attack", "save", "death-save"].includes(action) && diceStore.settings().manualDice && rulesetFor(rulesetNow.current).manualDie) {
+        const intent = throwIntent();
+        withManual(payload.advantage, (manual) => send({ type: "ct", action, ...payload, ...(manual ? { manual } : {}), ...intent }));
+        return true;
+      }
       return send({ type: "ct", action, ...payload, ...throwIntent() });
     },
     [send],
@@ -1555,7 +1576,7 @@ export function useSession() {
   const partyIdentify = useCallback((id: string, on = true) => send({ type: "party-identify", id, on }), [send]);
   const partyGroup = useCallback((kind: "check" | "save", attribute: string, cl: number) => send({ type: "party-group", kind, attribute, cl }), [send]);
   // The party sheet's group roll for every game: a check, save or skill; rolled now, or asked of the players.
-  const partyRoll = useCallback((spec: { kind: "check" | "save" | "skill"; attribute?: string; skill?: string; dc?: number; mode: "roll" | "ask" }) => send({ type: "party-group", ...spec }), [send]);
+  const partyRoll = useCallback((spec: { kind: "check" | "save" | "skill"; attribute?: string; skill?: string; dc?: number; mode: "roll" | "ask"; members?: string[] }) => send({ type: "party-group", ...spec }), [send]);
   const setDoor = useCallback((id: string, state?: number) => send({ type: "door", id, state }), [send]);
   const setSight = useCallback((on: boolean) => send({ type: "sight", on }), [send]);
   const setLocked = useCallback((on: boolean) => send({ type: "lock", on }), [send]);

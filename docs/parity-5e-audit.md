@@ -87,7 +87,7 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 | Desktop: Display location (TOAST_LOCATION) | | Not found | Missing |
 | Desktop: Turn change (TOAST_TURN) | off | Turn card | Same |
 | Token: Combat actions (TOKEN_COMBAT) | off | `tokenFloats`, each person's own (on by default) | Done |
-| Speech: Map display duration (TOKEN_SPEECH) | off | Bubbles last by the length of what is said; on or off with `speechBubbles` | Partly (no set duration) |
+| Speech: Map display duration (TOKEN_SPEECH) | off | Bubbles last by the length of what is said, or a set 3, 5, 10 or 20 seconds (`speechSeconds`, each person's); on or off with `speechBubbles` | Yes |
 
 ### Per user: settings
 
@@ -98,7 +98,7 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 | Desktop: Combat list size (DESKTOPCTSIZE) | 6 | Not found | Check live |
 | Effect: Short summary display (EFFSHORT) | on | Effects on the tracker | Check live |
 | Input: Use Alt key for game actions (KALT) | on | Not found | Check live |
-| Dice: Manual entry (MANUALROLL) | off | `manualDice`, each person's own: a dialog for the faces, the host rolls with them, [MANUAL] in chat | Partly (tray and chat rolls; sheet and tracker rolls to follow) |
+| Dice: Manual entry (MANUALROLL) | off | `manualDice`, each person's own: a dialog for the faces, the host rolls with them, [MANUAL] in chat; the tray's, chat's, sheet's (checks, saves, skills, initiative) and tracker's (attacks, saves, death saves) rolls, the ruleset's die (`manualDie`) | Yes |
 | Combat: Remove on miss (RMMT) | multi | `clearTargets` (never, action, turn); Remove on miss: with several targets (FG's default), always, never | Same |
 | Desktop: Restore windows on start (WSAV) | on | Windows remembered | Check live |
 
@@ -306,17 +306,17 @@ FG's chat window, slash commands, dice tray, modifier box, Modifiers window, dic
 | "GM is typing" for players | The GM is typing… under the players' chat (not for commands) | Same |
 | Speech, emote, act, OOC, story, mood, whisper, languages (understood by) | The same, scripts with translations | Same |
 | Rolls with tags, secret and tower rolls, results by option | Roll cards with dice, the same | Same |
-| Drop an image, sound or dice skin on chat | Links attached; pictures by link | Partly |
+| Drop an image, sound or dice skin on chat | Links attached; a picture link shows the picture in the line | Partly (sounds and dice skins by link) |
 | Slash: /w, /r, /mod, /rollon, /option, /afk, /id, /gmid, /die, /roll, /emote, /ooc, /story, /mood, /vote, /reload, /save, /clear, /version, /help | All of them (/reply for /r) and more (/check, /save DC, /award, /pause, /kick, /volume...) | Better |
 | /exportchar, /importchar, /exportnpc, /importnpc, /export, /flushdb, /console, /cq | Import and export in the windows; no FG queue or console | n/a (windows do it) |
 | Tray dice, drag to gather, right-click roll N, custom d2, d3 | The same, custom d2, d3, d16, d30; pick up N | Same |
-| Damage dice coloured by damage type; NPC dice by creature type | NPC and damage dice sets | Partly (not by type) |
+| Damage dice coloured by damage type; NPC dice by creature type | NPC and damage dice sets; Settings > Dice by type (`typedDice`, on): damage dice in their damage type's colours, a creature's in its creature type's | Yes |
 | Dice window: skins, colours, sizes, per-die tray toggles | Sets, colours, sizes, your own design, character dice | Better |
 | Modifier box: total, wheel, right-click clear, drag out, drop rolls, 6 slots | The same, quick values, named entries | Same |
 | 5E keys: ADV, DIS, +2, -2, +5, -5 | All six; +5 and -5 stack with +2 and -2 | Same |
 | Modifiers window: Opportunity, Cover, Sup. Cover, Critical, Max, Half; custom rows | Keys for each; the GM's preset buttons | Same |
-| Dice tower: drop a roll; drop text to whisper the GM | Drop dice; external tower | Partly (no text) |
-| Manual dice: a queue window, OK, Roll, Faux roll (GM), Cancel | A dialog per roll, Roll, Cancel | Partly (tray and chat rolls) |
+| Dice tower: drop a roll; drop text to whisper the GM | Drop dice; external tower; a player's text dropped on the tower whispers the GM | Yes |
+| Manual dice: a queue window, OK, Roll, Faux roll (GM), Cancel | A dialog per roll (tray, chat, sheet, tracker), Roll, Cancel | Partly (no queue or faux roll) |
 | Portraits: whisper, ring the bell (GM), kick; drop a number or text on a portrait | Whisper, Ring bell, View as, Kick, Ban; a record dropped shares it, words or a number dropped are whispered to them | Better |
 
 ## 7. Party sheet
@@ -328,7 +328,7 @@ FG's 5E party sheet (`ps_*` in CoreRPG and 5E's `manager_ps2.lua`) against Maels
 |---|---|---|
 | Members: drop a PC to add, delete; portrait opens the sheet | Drop, Add a character, Party from who's here, ×; drag a row onto the map | Better |
 | Row: name, race, class and level, HP and HD bars, scores, modifiers, AC, passive Perception, defenses, senses | The same, special defenses under the senses | Same |
-| Modifiers: the GM double-clicks a member's for a check (Shift: save) | Group roll for everyone | Partly |
+| Modifiers: the GM double-clicks a member's for a check (Shift: save) | Group roll for everyone; the GM double-clicks a member's ability for their check (Shift: save) | Yes |
 | Group rolls: ability, save, skill with DCs; results per PC | One group roll (check, save, skill, a DC), a tally, or Ask the players (they roll on a chat card) | Better (tally, asking) |
 | Party attack: d20 + bonus at each PC's AC | Attack the party: d20 + bonus at each member's AC, HIT or MISS | Same |
 | Hide roll results (secret group rolls) | Not found | Missing |

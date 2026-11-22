@@ -26,6 +26,7 @@ const SKILL_MORE = "[; trained only{?trained}][; armor check {acp}]";
 /** @type {import("../rulesets/types").RulesetManifest} */
 export default {
   id: "dnd35",
+  manualDie: "1d20",
   // Where a character keeps its classes (FG's classes list), for the roster, Character Selection and spells.
   classes: { rows: "classes", name: "name", level: "level" },
   // Spells give each class's level in level ("Sor/Wiz 2, Clr 3").

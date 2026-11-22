@@ -59,7 +59,7 @@ function YouAtTheTable() {
       <UiScaleRow />
       <Toggle label="Chime on your turn" hint="A soft chime when your turn comes round in combat." setting="turn-sound" checked={settings.turnSound !== false} onChange={(on) => diceStore.update({ turnSound: on })} />
       <Toggle label="Chime on a whisper" hint="A soft chime when someone whispers to you." setting="whisper-sound" checked={settings.whisperSound !== false} onChange={(on) => diceStore.update({ whisperSound: on })} />
-      <Toggle label="Type in my own dice" hint="Roll your own dice at the table: a roll from the dice tray or the chat asks for the faces they show." setting="manual-dice" checked={Boolean(settings.manualDice)} onChange={(on) => diceStore.update({ manualDice: on })} />
+      <Toggle label="Type in my own dice" hint="Roll your own dice at the table: a roll from the dice tray, the chat, a character sheet or the combat tracker asks for the faces they show." setting="manual-dice" checked={Boolean(settings.manualDice)} onChange={(on) => diceStore.update({ manualDice: on })} />
       <Toggle label="Read aloud on screen" hint={GM("The GM's read-aloud text also pops up over the map in a bubble (it is always in the chat).")} setting="read-aloud-popup" checked={settings.readAloud !== false} onChange={(on) => diceStore.update({ readAloud: on })} />
       <Toggle label="Banner on your turn" hint="Your name across the screen when it is your turn." setting="turn-banner" checked={settings.turnBanner !== false} onChange={(on) => diceStore.update({ turnBanner: on })} />
       <Toggle label="Whose turn it is" hint="The portrait of whoever acts next, and the round as it begins, for a moment on every turn." setting="turn-card" checked={settings.turnCard !== false} onChange={(on) => diceStore.update({ turnCard: on })} />
@@ -72,6 +72,15 @@ function YouAtTheTable() {
       </SettingRow>
       <Toggle label="Damage and healing over tokens" hint="The numbers float up from a token as it is hurt or healed." setting="token-floats" checked={settings.tokenFloats !== false} onChange={(on) => diceStore.update({ tokenFloats: on })} />
       <Toggle label="Speech over tokens" hint="What a character or creature says shows in a bubble over its token as well as in the chat." setting="speech-bubbles" checked={settings.speechBubbles !== false} onChange={(on) => diceStore.update({ speechBubbles: on })} />
+      <SettingRow label="Speech bubble time" hint="How long a bubble stays over a token.">
+        <select value={settings.speechSeconds ?? 0} onChange={(event) => diceStore.update({ speechSeconds: Number(event.target.value) })} aria-label="Speech bubble time" data-setting="speech-seconds">
+          <option value={0}>As long as it takes to read</option>
+          <option value={3}>3 seconds</option>
+          <option value={5}>5 seconds</option>
+          <option value={10}>10 seconds</option>
+          <option value={20}>20 seconds</option>
+        </select>
+      </SettingRow>
     </SettingsSection>
   );
 }
@@ -197,6 +206,7 @@ export function SettingsWindow({ session }: { session: Session }) {
               <option value="turn">At the end of the creature's turn</option>
             </select>
           </SettingRow>
+          <Toggle label="Dice by type" hint="Damage dice in their damage type's colours (fire red, cold blue, necrotic black...), a creature's dice in its type's (undead, fiends, celestials...), over each person's own set." setting="typed-dice" checked={(session.options as { typedDice?: boolean }).typedDice !== false} onChange={(on) => session.setTableOptions({ typedDice: on } as never)} />
           <SettingRow label="Remove on miss" hint="After an attack, the targets it missed come off the attacker's targets: never, always, or only when it had several targets.">
             <select value={(session.options as { removeOnMiss?: string }).removeOnMiss ?? "multi"} onChange={(event) => session.setTableOptions({ removeOnMiss: event.target.value } as never)} aria-label="Remove on miss" data-setting="remove-on-miss">
               <option value="multi">With several targets</option>

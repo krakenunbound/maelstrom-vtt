@@ -36,6 +36,8 @@ export function ChatLinkChip({ link, session }: { link: QuickSlot; session: Sess
     >
       <Icon name={LINK_ICON[link.kind] ?? "book"} size={13} />
       {link.label}
+      {/* FG's picture dropped on the chat: the picture itself, small, for whoever may see it (a click opens it). */}
+      {allowed && link.kind === "picture" && link.book && session.bookUrl("picture", link.book, link.file) ? <img className="chat-link-picture" src={session.bookUrl("picture", link.book, link.file)} alt="" loading="lazy" data-chat-picture={link.file} /> : null}
     </button>
   );
 }
