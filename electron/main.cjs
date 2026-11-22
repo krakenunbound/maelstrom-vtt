@@ -502,7 +502,8 @@ function createWindow() {
         .executeJavaScript(script)
         .then((text) => {
           const folded = text.toLowerCase();
-          const ok = folded.includes("kraken") && folded.includes("my campaigns");
+          // The start screen (Maelstrom since the rebrand; Kraken before).
+          const ok = (folded.includes("maelstrom") || folded.includes("kraken")) && folded.includes("my campaigns");
           if (!ok) {
             console.error("SMOKE_FAIL");
             console.error(text.slice(0, 500));
