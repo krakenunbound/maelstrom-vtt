@@ -2975,3 +2975,5 @@ label.set-row { cursor: pointer; }
 .five-classes li { display: flex; align-items: center; gap: 6px; }
 .five-add-class { display: flex; gap: 6px; flex-wrap: wrap; }
 .five-casting-classes { gap: 12px; }
+/* FG 5E's React? box on a tracker row. */
+.ct-reaction { display: inline-flex; align-items: center; gap: 3px; font-size: 0.85em; }

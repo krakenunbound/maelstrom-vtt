@@ -194,6 +194,40 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | Class resources: uses and period (daily, encounter, once) | Class resources: name, uses ticked off, most, back on a short or a long rest (rests give them back) | Done (short or long; no once) |
 | A power's cast, attack, save, damage, heal and effect rows, upcast | Cast at targets (templates, saves, damage) | Partly (no rows to see, no upcast choice) |
 
+## 3. Combat tracker
+
+FG's 5E tracker (CoreRPG's `ct/` with 5E's sections, read from the ruleset files) against
+Maelstrom's (`src/combat/CombatTracker.tsx`, `electron/combat.cjs`).
+
+| FG control | Maelstrom | Verdict |
+|---|---|---|
+| Next actor, next round, round counter (GM edits) | Next turn, next round, round box, Back and Round back (undo) | Better (undo) |
+| Next round's menu: advance 5, 10, 15, 20 | One round at a time | Missing |
+| Menu: roll all / NPC / PC initiative, clear initiative | Buttons | Same |
+| Menu: delete non-friendly, foes only; clear all effects | Buttons | Same |
+| Menu: clear expiring effects | Clear timed effects (those with rounds left) | Done |
+| Menu: short and long rest for everyone | Rest the party (round 0) | Same |
+| Faction chips dragged onto a map: tokens in formation | Not found | Missing |
+| Show or hide all NPCs (header) | Hide all creatures / Show all creatures (all but friends) | Done |
+| Row: active marker, drag it to another row | Turn arrow, dragged | Same |
+| Row: token (click outline, Ctrl+click target, drag to map) | Portrait (focus), Ctrl+click target, row dragged to the map | Same |
+| Row: identified toggle, the players' name while unidentified | The token's unidentified name | Check live (the tracker row's name) |
+| Row: visibility eye (non-friends) | Eye | Same |
+| Row: record link (PC sheet or NPC) | NPC Record; a character's Sheet | Done |
+| Row: faction cycler | Faction button | Same |
+| Row: HP, temp, wounds as numbers (dropped numbers apply) | HP now/max, temp shown; damage and heal in an NPC's detail | Partly (no wounds or temp typed; nothing for characters) |
+| Row: initiative typed (re-sorts), dragged to swap | Initiative box (sent on every key) | Partly (no swap) |
+| Offense: "React?" box (reaction used) | React box on the row (the GM's and its owner's), back at the start of its turn | Done |
+| Offense: init bonus (rolls), AC, DT, speed | Bonus, AC in the detail | Partly |
+| Offense: NPC actions, bonus actions, reactions, legendary, lair, innate spells, slots; a clause rolled by double-click, [USED], recharge | Attack and damage buttons, power buttons with uses, the stat block's lists to read | Partly (no recharge, no clause rolls) |
+| Defense: ability scores (check, Shift save), resistances, immunities, vulnerabilities, condition immunities typed | Read in the detail; a save picker with a DC | Partly (not typed) |
+| Space and reach | Read-only, NPCs | Partly |
+| Effects: add, active / inactive / skip once, GM-only, apply (once a turn, a round, an action, a roll), uses, label, duration, initiative it ticks on, whose turn, expiry (turn start or end, short or long rest), its targets, applied by | Add: text, rounds, ends (rounds, when hurt, a short or long rest, a long rest), GM only, on its targets; the buff bar (remove, rounds, put out) | Partly (no apply limits, no skip once) |
+| Targets: the target icons, add by drag, all allies / non-allies, clear | Target chips, the target button, Ctrl+click, faction and box targeting | Same |
+| Death saves, concentration (no control in FG) | Death save button with the count; concentration checked on damage | Better |
+| Delay turn (not in FG) | Delay and Act now | Better |
+| Players: end turn, ctrl+click targeting, health by option, effects without the GM's | The same; their own initiative roll (d20) | Same |
+
 ## How house rules work in Maelstrom
 
 A game declares its house rules in its manifest (`settings` with a `key`: a switch

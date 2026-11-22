@@ -1,3 +1,4 @@
+import { useWindows } from "../ui/Windows";
 import { RestParty } from "../bookkeeping/RestParty";
 import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { speakingAs } from "../ui/ChatDock";
@@ -64,6 +65,10 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
   const [amount, setAmount] = useState("");
   const [effect, setEffect] = useState("");
   const [rounds, setRounds] = useState("");
+  const [effectGmOnly, setEffectGmOnly] = useState(false);
+  const [effectOnTargets, setEffectOnTargets] = useState(false);
+  const [effectEnds, setEffectEnds] = useState("");
+  const windows = useWindows();
   const [open, setOpen] = useState(false);
   const [saveStat, setSaveStat] = useState("wisdom");
   // The GM's save box: the stats the game saves with, the modifier's word, the button (its manifest's tracker.saves).
@@ -311,6 +316,13 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
             <Icon name="next" size={15} />
           </button>
         ) : null}
+        {tracker?.reaction && (gm || entry.mine) ? (
+          // FG 5E's React? box: its reaction spent this round; it comes back as its turn starts.
+          <label className="ct-reaction" title={tracker.reaction.title}>
+            <input type="checkbox" checked={Boolean(entry.reacted)} data-action="reaction" aria-label={`${entry.name}: ${tracker.reaction.label}`} onChange={(event) => session.ct("reaction", { id: entry.id, on: event.target.checked })} />
+            {tracker.reaction.label}
+          </label>
+        ) : null}
         {/* The game's row buttons (a dying character's save, Turn undead on the cleric's turn, an NPC's morale), as its manifest lists them. */}
         <TrackerButtons actions={tracker?.rowActions} scope={scope} className="ct-death-save" />
         {gm ? (
@@ -441,6 +453,12 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
       {gm && open ? (
         <div className="ct-more">
           {record?.type === "npc" ? <CreatureDetails session={session} recordId={record.id} name={entry.name} /> : null}
+          {record?.type === "character" ? (
+            // FG's row link: the character's sheet.
+            <button type="button" data-action="open-sheet" onClick={() => windows.open("sheet", record.name, record.id)}>
+              <Icon name="scroll" size={14} /> Sheet
+            </button>
+          ) : null}
           <form
             className="ct-adjust"
             onSubmit={(event) => {
@@ -461,13 +479,26 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
             onSubmit={(event) => {
               event.preventDefault();
               if (!effect.trim()) return;
-              session.ct("effect", { id: entry.id, effect: { label: effect.trim(), duration: Number(rounds) || 0 } });
+              session.ct("effect", { id: entry.id, effect: { label: effect.trim(), duration: Number(rounds) || 0, ...(effectGmOnly ? { gmOnly: true } : {}), ...(effectOnTargets && entry.targets.length ? { targets: entry.targets } : {}), ...(effectEnds ? { ends: effectEnds } : {}) } });
               setEffect("");
               setRounds("");
             }}
           >
             <input aria-label="Effect" value={effect} placeholder="Effect, e.g. Bless; ATK: 1" onChange={(event) => setEffect(event.target.value)} />
             <input aria-label="Rounds" type="number" min={0} value={rounds} placeholder="rnds" onChange={(event) => setRounds(event.target.value)} style={{ width: "4.2rem" }} />
+            {/* FG's effect: who sees it, the creatures it counts against (this one's targets), when it ends. */}
+            <select aria-label="Effect ends" value={effectEnds} onChange={(event) => setEffectEnds(event.target.value)}>
+              <option value="">Ends by rounds</option>
+              <option value="damage">When hurt</option>
+              <option value="short">On a short or long rest</option>
+              <option value="long">On a long rest</option>
+            </select>
+            <label title="Only you see it">
+              <input type="checkbox" checked={effectGmOnly} onChange={(event) => setEffectGmOnly(event.target.checked)} aria-label="GM only" /> GM only
+            </label>
+            <label title="It counts only on rolls against this creature's targets (Hunter's Mark on the ranger)">
+              <input type="checkbox" checked={effectOnTargets} disabled={!entry.targets.length} onChange={(event) => setEffectOnTargets(event.target.checked)} aria-label="On its targets" /> On its targets
+            </label>
             <button type="submit">Add effect</button>
           </form>
           <div className="ct-adjust">
@@ -705,6 +736,18 @@ function InitiativeTracker({ session }: { session: Session }) {
             <ConfirmButton action="remove-foes" label="Delete foes" ask="Delete every foe" disabled={!combat.entries.some((entry) => entry.faction === "foe")} onConfirm={() => session.ct("remove-faction", { faction: "foe" })} />
             <ConfirmButton action="remove-nonfriend" label="Delete non-friendly" ask="Delete all but friends" disabled={!combat.entries.some((entry) => entry.faction !== "friend")} onConfirm={() => session.ct("remove-faction", { faction: "nonfriend" })} />
             <ConfirmButton action="clear-effects" label="Clear effects" ask="Take off every effect" disabled={!combat.entries.some((entry) => entry.effects.length > 0)} onConfirm={() => session.ct("clear-effects")} />
+            {/* FG's Clear Expiring Effects: those with rounds left go; lasting ones stay. */}
+            <ConfirmButton action="clear-timed-effects" label="Clear timed effects" ask="Take off every effect with rounds left" disabled={!combat.entries.some((entry) => entry.effects.some((effect) => (effect.duration ?? 0) > 0))} onConfirm={() => session.ct("clear-timed-effects")} />
+            {/* FG's show or hide every NPC at once (all but the friends). */}
+            {(() => {
+              const others = combat.entries.filter((entry) => entry.faction !== "friend");
+              const anyShown = others.some((entry) => !entry.hidden);
+              return (
+                <button type="button" data-action="npcs-visibility" disabled={!others.length} title={anyShown ? "Hide every creature but the friends from the players" : "Show every creature to the players"} onClick={() => others.filter((entry) => Boolean(entry.hidden) !== anyShown).forEach((entry) => session.ct("update", { id: entry.id, patch: { hidden: anyShown } }))}>
+                  <Icon name={anyShown ? "eye-off" : "eye"} size={14} /> {anyShown ? "Hide all creatures" : "Show all creatures"}
+                </button>
+              );
+            })()}
           </div>
           {/* The fight is over: the party may rest (the calendar moves on). */}
           {combat.round === 0 ? <RestParty session={session} className="ct-add ct-rest" /> : null}

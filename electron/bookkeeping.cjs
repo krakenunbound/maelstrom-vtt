@@ -585,7 +585,9 @@ function createBookkeeping(table) {
   // Effects that end with the rest come off the character (its entry and its token).
   function endEffects(record, kind) {
     const entry = table.combat.entries().find((item) => item.recordId === record.id);
-    if (entry) for (const effect of [...entry.effects]) if (effect.source !== SOURCE && lib.bk.endsOnRest(effect.label, kind)) table.combat.takeOff(entry.id, effect.id);
+    // An effect set to end on a rest (any rest for "short", a long one for "long"), or whose words say so.
+    const endsHere = (effect) => effect.ends === "short" || (effect.ends === "long" && kind === "long") || lib.bk.endsOnRest(effect.label, kind);
+    if (entry) for (const effect of [...entry.effects]) if (effect.source !== SOURCE && endsHere(effect)) table.combat.takeOff(entry.id, effect.id);
     try {
       const token = mapOf().scene() ? mapOf().tokens().find((item) => item.recordId === record.id) : null;
       if (token) mapOf().setTokenEffects(token.id, mapOf().tokenEffects(token.id).filter((effect) => effect.source === SOURCE || !lib.bk.endsOnRest(effect.label, kind)));

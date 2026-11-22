@@ -362,6 +362,8 @@ export interface TrackerSpec {
   replace?: Ref; // Forged: the Score panel instead of the tracker
   // The GM's "roll all" button and a player's own initiative button (default: Roll all, d10).
   initiative?: { rollAll: string; rollAllTitle?: string; own: string; ownTitle: string };
+  // FG 5E's React? box on a row (the GM's and the owner's): its reaction spent, back at the start of its turn.
+  reaction?: { label: string; title: string };
   // An Ironsworn character's initiative, in the game's words.
   control?: { on: string; off: string; title: string };
   // An NPC's attacks that always hit (Cairn): the button's words and title, its data-* name, and the die modes beside it.

@@ -174,7 +174,8 @@ function cleanEffect(raw) {
     ...(raw.icon ? { icon: text(raw.icon, "").slice(0, 24) } : {}),
     ...(raw.source ? { source: text(raw.source, "").slice(0, 60) } : {}),
     // Ends when its creature takes damage (Sleep).
-    ...(raw.ends === "damage" ? { ends: "damage" } : {}),
+    // Ends when its creature takes damage (Sleep), or on a short or a long rest (FG's effect expiry).
+    ...(["damage", "short", "long"].includes(raw.ends) ? { ends: raw.ends } : {}),
     // The rounds it started with (a light's warning comes at a tenth), whether
     // it is put out for now (a snuffed torch keeps its time), and whether it
     // has warned that it is nearly out.
@@ -237,6 +238,8 @@ function cleanEntry(raw) {
     lostTurn: Math.max(0, Math.round(num(raw.lostTurn, 0))),
     // Delay (the tracker row's Delay): out of the order until its Act now; actingNow: the entry it cut in after.
     ...(raw.delayed ? { delayed: true } : {}),
+    // FG 5E's React? box: its reaction spent this round (back at the start of its turn).
+    ...(raw.reacted ? { reacted: true } : {}),
     // 2E: the weapon its initiative was rolled with (FG's inititem), and that a player has rolled this round.
     ...(typeof raw.inititem === "string" && raw.inititem ? { inititem: raw.inititem.slice(0, 60) } : {}),
     ...(raw.initrolled ? { initrolled: true } : {}),
@@ -968,6 +971,8 @@ function createCombat({ saved, table, onChange = () => undefined }) {
 
   async function startTurn(entry, opts) {
     const secret = entry.hidden;
+    // Its reaction comes back as its turn starts.
+    delete entry.reacted;
     // A turn passes: templates of instant spells come off the map.
     table().onTurn?.();
     // FG's turn notice (RSHE): the creature's effects with it, all or its conditions; the GM's line with every
@@ -3032,6 +3037,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
             health: status,
             ...(bar !== undefined ? { bar } : {}),
             ...(entry.delayed ? { delayed: true } : {}),
+            ...(entry.reacted && (seat.role === "dm" || owner(entry) === seat.name) ? { reacted: true } : {}),
             ...(numbers ? { hp, wounds, ...(seat.role === "dm" || entry.faction === "friend" ? { ac } : {}), ...(temp ? { temp } : {}) } : {}),
             effects: entry.effects.filter((effect) => seat.role === "dm" || !effect.gmOnly).map(({ id, label, duration, targets, icon, source, total, paused, gmOnly }) => ({ id, label: targets?.length ? `${label} [-> ${targets.map((tid) => state.entries.find((item) => item.id === tid)?.name ?? "?").join(", ")}]` : label, duration, ...(icon ? { icon } : {}), ...(source ? { source } : {}), ...(total ? { total } : {}), ...(paused ? { paused } : {}), ...(gmOnly ? { gmOnly } : {}) })),
             targets: seat.role === "dm" || owner(entry) === seat.name ? entry.targets.filter((id) => shown.some((item) => item.id === id)) : [],
@@ -3543,6 +3549,27 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       return { round: state.round, active: state.active };
     },
     // Delay (the active creature's row): it leaves the order and the turn passes on; its owner or the GM.
+    // FG 5E's React? box: the GM or the creature's owner marks its reaction spent (or back).
+    reaction(id, on, seat) {
+      const entry = find(id);
+      if (seat.role !== "dm" && owner(entry) !== seat.name) throw new Error("That is not yours.");
+      if (on) entry.reacted = true;
+      else delete entry.reacted;
+      changed();
+      return entry;
+    },
+    // FG's Clear Expiring Effects: every effect with rounds left comes off (those without a duration stay).
+    clearTimedEffects(seat) {
+      mustGM(seat);
+      let removed = 0;
+      for (const entry of state.entries) {
+        const before = entry.effects.length;
+        entry.effects = entry.effects.filter((effect) => !(num(effect.duration, 0) > 0));
+        removed += before - entry.effects.length;
+      }
+      changed();
+      return { removed };
+    },
     async delay(id, seat) {
       const entry = find(id);
       if (seat.role !== "dm" && owner(entry) !== seat.name) throw new Error("That is not yours to delay.");

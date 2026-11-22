@@ -309,6 +309,9 @@ export default {
   party: { currency: ["PP", "GP", "EP", "SP", "CP"], xp: "xp", groupCheck: PARTY_GROUP },
   tracker: {
     saves: { keys: SIX, modLabel: "DC", modAria: "Save DC", button: "Roll save" },
+    // A player's own initiative is a d20 (Dexterity), the GM's button rolls everyone's.
+    initiative: { rollAll: "Roll all", own: "d20", ownTitle: "Roll my initiative" },
+    reaction: { label: "React", title: "Its reaction is spent this round (it comes back at the start of its turn)" },
     // A Dying character's death saving throw.
     rowActions: [
       { hook: "death-save", label: ["Death save ", { if: { defined: "deathsaves" }, then: "({deathsaves.success}✓ {deathsaves.failure}✗)", else: "" }], title: "Death saves: {deathsaves.success|0} successes, {deathsaves.failure|0} failures", when: { all: [{ status: "Dying" }, { gmOrMine: true }] }, call: { ct: "death-save" } },
@@ -326,6 +329,8 @@ export default {
       // Its save box says DC, as 5E's, but kept its old aria-label (the tracker's, before the manifest).
       tracker: {
         saves: { keys: SIX, modLabel: "DC", modAria: "Save CL", button: "Roll save" },
+        initiative: { rollAll: "Roll all", own: "d20", ownTitle: "Roll my initiative" },
+        reaction: { label: "React", title: "Its reaction is spent this round (it comes back at the start of its turn)" },
         // An ally steadies the dying (Wisdom 12); the GM's call without one.
         rowActions: [
           { hook: "stabilize", label: "Steady", title: "Steady them: an ally's Wisdom check against 12 stops the bleeding", when: { all: [{ status: "Dying" }, { any: [{ gm: true }, { viewerHasCharacter: true }] }] }, call: { ct: "stabilize", with: "viewer" } },

@@ -303,6 +303,8 @@ export type PlayerAccount = { name: string; createdAt: number; seenAt: number | 
 export type RosterEntry = { id: string; name: string; owner: string; released?: boolean; online: boolean; portrait: string | null; species: string; classes: string; level: number };
 
 export type CombatEntry = {
+  // Its reaction spent this round (FG 5E's React? box).
+  reacted?: boolean;
   // 5E: death saves of a Dying character.
   deathsaves?: { success: number; failure: number };
   id: string;

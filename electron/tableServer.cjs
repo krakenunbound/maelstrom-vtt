@@ -3762,6 +3762,10 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
             // A tracker row's Delay and Act now (its owner, or the GM).
             case "delay":
               return combat.delay(String(msg.id ?? ""), seat);
+            case "reaction":
+              return combat.reaction(String(msg.id ?? ""), Boolean(msg.on), seat);
+            case "clear-timed-effects":
+              return combat.clearTimedEffects(seat);
             case "act-now":
               return combat.actNow(String(msg.id ?? ""), seat);
             case "end":
