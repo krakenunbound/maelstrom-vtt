@@ -8,6 +8,10 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+## 0.1.0-beta.2: Their books and maps, whole
+
+Fantasy Grounds and Foundry content comes in as it was made: FG maps line up and keep their lighting, terrain, pins, encounters, switches and distances; Foundry map sets open whole with their music; module sounds join your library; fog of war is drawn on the GPU; AD&D 2E's sheet matches its FG ruleset control by control; and a guide shows an agent how to bring any game or content to Maelstrom. Played end to end with Ghosts of Saltmarsh and the 2E Keep on the Borderlands.
+
 - **FG maps' own switches:** a map saved with Token Movement Lock opens with players' moves waiting for the GM; one with player drawing off refuses players' drawings (their pen greys out); a new Scene settings switch, **Players may draw on the map** (the agent's `kraken_scene_settings playerDrawing`), turns it on or off for any map; a map saved with its vision preview opens in the GM's player preview. FG's text with lighting on goes dark with the map; a picture layer that ignores lights (a roof, a sign) is never dimmed.
 - **Fog of war on the GPU:** the players' fog (in sight clear, explored dimmed, unseen black, soft edges) is drawn by one shader on WebGPU or WebGL2 (a LAN address uses WebGL2), the old drawing when neither is there or the GPU is lost; the GM's player preview and a popped-out map window too.
 - **FG maps' distance per square:** a map's own distance (10 ft for most older modules' dungeons, 50 or 500 ft on region maps) sets the grid's distance when the record gives no scale.
