@@ -21,6 +21,9 @@ const playerArt = path.join(folder, "player-art");
 fs.mkdirSync(path.join(playerArt, "tokens", "GM"), { recursive: true });
 const PNG = Buffer.from("89504e470d0a1a0a0000000d4948445200000001000000010806000000", "hex");
 fs.writeFileSync(path.join(playerArt, "tokens", "GM", "Centipede.png"), PNG);
+// A token pack filed by type and kind, five folders down (Forgotten Adventures/Creatures/Beast/Reptiles).
+fs.mkdirSync(path.join(playerArt, "tokens", "Pack", "Creatures", "Beast", "Reptiles"), { recursive: true });
+fs.writeFileSync(path.join(playerArt, "tokens", "Pack", "Creatures", "Beast", "Reptiles", "Snake.png"), PNG);
 const roots = ["portrait", "token"].map((kind) => ({ dir: path.join(playerArt, `${kind}s`), kind, group: "Players", prefix: `players/${kind}s/` }));
 const server = createTableServer({ ruleset: "D&D 5E", art: createArtLibrary({ base: folder, roots }), playerArt: { folder: (kind) => path.join(playerArt, `${kind}s`) } });
 const scene = { id: "room", name: "Room", width: 500, height: 300, padding: 0, backgroundColor: "#000", grid: { size: 50, type: 1, color: "#000", alpha: 0.2, distance: 5, units: "ft" }, lights: [], tokens: [], walls: [] };
@@ -71,6 +74,7 @@ try {
   const bytes = Buffer.from(await art.arrayBuffer());
   assert(art.ok && bytes.equals(PNG), `the creature's library picture served: ${art.status} ${bytes.length}`);
   done.push("a creature's own picture from the art library shows on the tracker");
+  assert(server.agent.art("token").some((item) => item.name === "Snake"), "a token five folders down is in the library");
 } finally {
   gm?.ws.close();
   await server.stop?.();

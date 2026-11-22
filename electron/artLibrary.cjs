@@ -47,7 +47,8 @@ function createArtLibrary({ base, roots }) {
     for (const entry of entries) {
       if (out.length >= MAX_FILES) return;
       const full = path.join(dir, entry.name);
-      if (entry.isDirectory() && depth < 3) walk(full, depth + 1, out);
+      // Deep collections (a token pack by type and kind: Creatures/Beast/Reptiles) are read; the file cap bounds it.
+      if (entry.isDirectory() && depth < 6) walk(full, depth + 1, out);
       else if (entry.isFile() && IMAGE[path.extname(entry.name).toLowerCase()]) out.push(full);
     }
   }
