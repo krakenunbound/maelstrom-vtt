@@ -90,14 +90,15 @@ const TOOLS = [
   {
     name: "kraken_encounter",
     description:
-      "The campaign's encounters (FG's battle records), as the encounter window: action create (name); add-npc (id, npc: an NPC record, count: a number or dice rolled when it is added (a random encounter: 1d4+1), faction friend|neutral|foe; as an NPC dropped on it); set-npc (id, row, count, faction, unidentified: FG's identified magnifier, what the players call the creature until they know it, empty for identified; its tokens carry that name); remove-npc (id, row); xp (the total from its creatures, the game's own field); place (Place on this map: the open map's tokens of its creatures, where they stand now, kept as its spots on that map; spots { row: [{ x, y }] } to give them); run (Add to tracker: its NPCs onto the combat tracker, counts rolled, tokens hidden at its spots when this map has them; place false: tracker only); end (End encounter: its XP onto the party sheet's Encounters to award; xp to give another total).",
+      "The campaign's encounters (FG's battle records), as the encounter window: action create (name); generate (FG's Generate: id, or path for a book's random encounter: a new encounter with every count rolled now ($PC: the party's members), a creature that comes to 0 left out; name to give it another); add-npc (id, npc: an NPC record, count: a number or dice rolled when it is added (a random encounter: 1d4+1), faction friend|neutral|foe; as an NPC dropped on it); set-npc (id, row, count, faction, unidentified: FG's identified magnifier, what the players call the creature until they know it, empty for identified; its tokens carry that name); remove-npc (id, row); xp (the total from its creatures, the game's own field); place (Place on this map: the open map's tokens of its creatures, where they stand now, kept as its spots on that map; spots { row: [{ x, y }] } to give them); run (Add to tracker: its NPCs onto the combat tracker, counts rolled, tokens hidden at its spots when this map has them; place false: tracker only); end (End encounter: its XP onto the party sheet's Encounters to award; xp to give another total).",
     inputSchema: object(
       {
-        action: { type: "string", enum: ["create", "add-npc", "set-npc", "remove-npc", "xp", "place", "run", "end"] },
+        action: { type: "string", enum: ["create", "generate", "add-npc", "set-npc", "remove-npc", "xp", "place", "run", "end"] },
         id: string("The encounter"),
+        path: string("generate: a book's encounter or random encounter by its FG path (battlerandom.x@Book), instead of id"),
         name: string("create: its name"),
         npc: string("add-npc: an NPC record's id"),
-        count: string("A number or dice"),
+        count: string("A number, or dice and $PC (the party's members): 1d4+1, $PC+1"),
         faction: { type: "string", enum: ["friend", "neutral", "foe"] },
         row: string("The NPC's row key"),
         unidentified: string("set-npc: what the players call it until they know it (\"\": identified)"),

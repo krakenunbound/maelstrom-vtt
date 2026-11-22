@@ -9,6 +9,9 @@ const { readModule } = require("./importers/fgModule.cjs");
 
 // image: every picture (FG's Images & Maps: maps, handouts, portraits); map: only the maps.
 const KINDS = { image: "image", map: "image", npc: "npc", battle: "battle", parcel: "treasureparcels", table: "tables", story: "encounter" };
+// FG's random encounters (battlerandom: each creature's count a dice expression, "1d4+1", "$PC") are listed with the
+// encounters, to Generate an encounter from.
+const ALSO = { battle: ["battlerandom"] };
 const cache = new Map();
 // The GM's shelf: a book named by its id, its name or its title is read from
 // its own file (a pack, a module whose file name is not its name, a bundled book).
@@ -19,7 +22,7 @@ function useShelf(resolve) {
 function moduleRecords(moduleName) {
   let records = cache.get(moduleName);
   if (!records) {
-    records = readModule(resolveBook(moduleName), { only: new Set(Object.values(KINDS)) }).records;
+    records = readModule(resolveBook(moduleName), { only: new Set([...Object.values(KINDS), ...Object.values(ALSO).flat()]) }).records;
     cache.set(moduleName, records);
     if (cache.size > 4) cache.delete(cache.keys().next().value);
   }
@@ -33,12 +36,13 @@ function list(moduleName, kind, search = "") {
   const want = String(search).toLowerCase();
   const maps = kind === "map" || kind === "image" ? require("./importers/fgMaps.cjs") : null;
   return moduleRecords(moduleName)
-    .filter((record) => record.type === type && (!want || String(record.name).toLowerCase().includes(want)))
+    .filter((record) => (record.type === type || (ALSO[kind] ?? []).includes(record.type)) && (!want || String(record.name).toLowerCase().includes(want)))
     // A module's maps (not its handouts and portraits), each with its picture.
     .filter((record) => !maps || ((kind === "image" || maps.isMap(record)) && maps.mapPicture(record)))
     .map((record) => {
       const out = { path: record.data.fgPath, name: record.name, category: record.data.fgCategory ?? "" };
-      if (kind === "battle") out.npcs = rows(record.data.npclist).map((row) => `${row.count ?? 1} ${row.name}`).join(", ");
+      if (kind === "battle") out.npcs = rows(record.data.npclist).map((row) => `${row.expr || row.count || 1} ${row.name}`).join(", ");
+      if (record.type === "battlerandom") out.random = true;
       if (kind === "npc") out.summary = [record.data.hdtext ? `HD ${record.data.hdtext}` : "", record.data.ac != null && record.data.ac !== "" ? `AC ${record.data.ac.total ?? record.data.ac}` : "", record.data.attackstext ?? ""].filter(Boolean).join(" · ");
       if (kind === "parcel") out.summary = [...rows(record.data.itemlist).map((item) => item.name), ...rows(record.data.coinlist).map((coin) => `${coin.amount} ${coin.description ?? coin.name ?? ""}`)].join(", ").slice(0, 200);
       if (kind === "image") {
@@ -71,6 +75,18 @@ function ensureNpc(table, fgPath) {
   return table.records.create({ id: source.id, type: "npc", name: source.name, visibility: "gm", data: source.data }, table.seat);
 }
 
+// A creature's count: a number, or dice and sums ("1d4+1", "2d6-1"), $PC the party's members (FG's random
+// encounters), rolled on the host.
+function rollCount(table, expression) {
+  const party = require("./party.cjs");
+  const members = Array.isArray(party.partyRecord(table).data.members) ? party.partyRecord(table).data.members.length : 0;
+  const words = String(expression ?? "1").replace(/\$PC/gi, String(members)).replace(/\s+/g, "");
+  if (!words) return 1;
+  if (!/^[\d+\-dD]+$/.test(words)) throw new Error(`A count is a number or dice (1d4+1, $PC): ${expression}`);
+  if (/d/i.test(words)) return table.dice.roll(words).total;
+  return words.match(/[+-]?\d+/g)?.reduce((sum, term) => sum + Number(term), 0) ?? 0;
+}
+
 // An encounter onto the combat tracker; tokens where FG put them when that map is open.
 // battle: a module's encounter by its FG path, or a campaign encounter record
 // (kraken_encounter: its NPCs the campaign's own, a count that may be dice,
@@ -87,7 +103,7 @@ async function addBattle(table, fgPath, { place = true } = {}) {
     if (!linked) continue;
     const npcPath = linked.includes("@") || !ownBook ? linked : `${linked}@${ownBook}`;
     const record = table.records.get(npcPath)?.type === "npc" ? table.records.get(npcPath) : ensureNpc(table, npcPath);
-    const counted = /d/i.test(String(row.count ?? "")) ? table.dice.roll(String(row.count).replace(/\s+/g, "")).total : Number(row.count);
+    const counted = rollCount(table, row.expr || row.count);
     const count = Math.max(1, Math.min(20, counted || 1));
     // Kraken's own spots (a campaign encounter's, by scene), or FG's (by its image).
     const own = rows(row.maplink).filter((spot) => spot.scene && spot.scene === sceneId);
@@ -149,4 +165,4 @@ function tables(moduleName) {
   return moduleRecords(moduleName).filter((record) => record.type === KINDS.table);
 }
 
-module.exports = { useShelf, resolved: (name) => resolveBook(name), tables, list, find, moduleOf, ensureNpc, addBattle, giveParcel, rollTable, storyEntry, KINDS };
+module.exports = { rollCount, useShelf, resolved: (name) => resolveBook(name), tables, list, find, moduleOf, ensureNpc, addBattle, giveParcel, rollTable, storyEntry, KINDS };

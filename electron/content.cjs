@@ -360,15 +360,45 @@ function npcOf(table, row) {
   const recordname = String(row.link?.recordname ?? "");
   return table.records.get(recordname) ?? table.records.list({ type: "npc" }).find((record) => record.data?.fgPath === recordname) ?? null;
 }
+// FG's Generate (a random encounter's): a new encounter, each creature's count rolled (dice, $PC the party's size),
+// one that comes to 0 left out. From a campaign encounter (its counts may be dice) or a book's encounter or random
+// encounter (path: its FG path); its creatures linked as they were (a book's own by its name).
+function generateEncounter(table, args) {
+  const library = require("./library.cjs");
+  let source;
+  if (args.path) {
+    source = library.find(library.moduleOf(String(args.path)), String(args.path));
+    if (!["battle", "battlerandom"].includes(source.type)) throw new Error("That is not an encounter.");
+  } else source = must(table, args.id, "battle");
+  const book = source.source || (args.path ? library.moduleOf(String(args.path)) : "");
+  const npclist = {};
+  const rolled = [];
+  for (const [key, row] of rows(source.data?.npclist)) {
+    const count = library.rollCount(table, row.expr || row.count);
+    if (count <= 0) continue;
+    const { expr: _expr, maplink, ...kept } = row;
+    const recordname = String(row.link?.recordname ?? "");
+    // A book's creature named without its book ("npc.wolf"): the book's.
+    const link = row.link && book && recordname && !recordname.includes("@") && !table.records.get(recordname) ? { ...row.link, recordname: `${recordname}@${book}` } : row.link;
+    npclist[key] = { ...kept, count: String(count), ...(link ? { link } : {}), ...(maplink && !args.path ? { maplink } : {}) };
+    rolled.push(`${count} ${row.name}`);
+  }
+  const { fgPath: _path, fgCategory: _category, locked: _locked, npclist: _list, ...data } = source.data ?? {};
+  const made = table.records.create({ type: "battle", name: text(args.name) || source.name, visibility: "gm", data: { ...data, npclist } }, table.seat);
+  table.say?.(`[ENCOUNTER] Generated ${made.name}: ${rolled.join(", ") || "no one came"}.`, "GM", true);
+  return { ...made, rolled };
+}
+
 async function encounterAction(table, args, from = "GM") {
   const action = String(args.action ?? "");
   if (action === "create") return table.records.create({ type: "battle", name: text(args.name) || "New encounter", visibility: "gm", data: { npclist: {} } }, table.seat);
+  if (action === "generate") return generateEncounter(table, args);
   const battle = must(table, args.id, "battle");
   if (action === "add-npc") {
     const npc = must(table, args.npc, "npc");
     const list = battle.data.npclist ?? {};
     const count = String(args.count ?? 1).trim().slice(0, 20) || "1";
-    if (!/^\d+$/.test(count) && !/^[\d\s+\-dD]+$/.test(count)) throw new Error("A count is a number or dice (1d4+1).");
+    if (!/^\d+$/.test(count) && !/^[\d\s+\-dD]+$/.test(count.replace(/\$PC/gi, "1"))) throw new Error("A count is a number or dice (1d4+1, $PC).");
     return table.records.update(battle.id, { data: { npclist: { [nextKey(list)]: { name: npc.name, count, faction: ["friend", "neutral", "foe"].includes(args.faction) ? args.faction : "foe", link: { class: "npc", recordname: npc.id }, ...(args.token ? { token: text(args.token, 300) } : {}) } } } }, table.seat);
   }
   if (action === "remove-npc") return table.records.update(battle.id, { data: { npclist: { [String(args.row)]: null } } }, table.seat);
@@ -414,7 +444,7 @@ async function encounterAction(table, args, from = "GM") {
     return { encounter: battle.name, xp };
   }
   if (action === "xp") return { encounter: battle.name, xp: encounterXp(table, battle) };
-  throw new Error("kraken_encounter does create, add-npc, set-npc, remove-npc, place, run, end or xp.");
+  throw new Error("kraken_encounter does create, generate, add-npc, set-npc, remove-npc, place, run, end or xp.");
 }
 
 // --- Quests -------------------------------------------------------------------

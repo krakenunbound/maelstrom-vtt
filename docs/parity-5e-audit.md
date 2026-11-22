@@ -357,7 +357,7 @@ and utility windows, and player management against Maelstrom's.
 | Tables: add by size, import from text, columns, ranges, links, nested rolls, `[1d6]`, `[2x]`, hide results, /rollon | The same; import from pasted text | Same |
 | Tables: output to chat, story, parcel or encounter | Output on the roll bar: chat, a new story, parcel or encounter (the NPCs it names, counted) | Same |
 | Encounters: NPCs, counts, faction, ID name, tokens placed, CR, XP, add to tracker, Quick Map | NPCs, counts (dice), faction, players' name, placed spots, XP, add to tracker, end | Partly (no CR) |
-| Random encounters: dice counts, Generate a new encounter | Dice counts rolled when added | Partly (no Generate) |
+| Random encounters: dice counts, Generate a new encounter | Dice counts ($PC the party's size) rolled when added; Generate on any encounter and on a book's random encounters (listed with the encounters): a new encounter of the rolled counts, a 0 left out | Same |
 | Effects window: lights, conditions, custom effects, click or drag to apply, GM-only, expiry, units, apply mode | Conditions, buffs, debuffs, lights, your own; click or drag; who may add | Partly (no units or apply mode on custom effects) |
 | Sound sets: triggers by chat pattern, content sounds on a record, Syrinscape | Sound window: library, triggers on hidden rolls, scene sounds, map sounds, playlists, Syrinscape | Better |
 | Item templates, Item Forge (base items and magic templates make new items) | Items and Item Templates lists: Item Forge (drop or pick base items and templates, items and spells as templates; the SRD's +1, +2, or +3 with a chosen bonus); the names, rarity, bonus, properties, damage, AC, cost and text combine, a spell makes a Spell Scroll of it, templates alone make a template; the forged item works on the sheet | Better (chosen bonus, costs kept, templates from any item) |
@@ -382,6 +382,6 @@ Any game can add its own the same way; nothing in the core names a game.
 All eight areas are compared, read from FG's ruleset files (CoreRPG and 5E) and
 Maelstrom's code, and what was missing is built (each area's commits name its
 check script). Still missing, by size: the
-named holidays on calendar days, a random-encounter Generate,
+named holidays on calendar days,
 module sets, and the rows marked Partly. The **Check live** rows want FG open on
 the 5E campaign through the bridge, side by side with Maelstrom.

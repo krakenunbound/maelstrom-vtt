@@ -249,6 +249,7 @@ function CampaignRecords({ session, type, label, search }: { session: Session; t
 }
 
 export function AdventureList({ session, kind, onStory }: { session: Session; kind: Kind; onStory?: (path: string, name: string) => void }) {
+  const windows = useWindows();
   const [modules, setModules] = useState<BookInfo[] | null>(null);
   const [search, setSearch] = useState("");
   useEffect(() => {
@@ -295,7 +296,12 @@ export function AdventureList({ session, kind, onStory }: { session: Session; ki
                             <small className="hint"> {item.npcs ?? item.summary ?? ""}</small>
                           </span>
                         )}
-                        {kind === "story" ? null : kind === "battle" ? (
+                        {kind === "story" ? null : kind === "battle" && item.random ? (
+                          // FG's random encounter: Generate makes an encounter of it, every count rolled now.
+                          <button type="button" data-action="library-generate" title="Generate an encounter: every count rolled now ($PC the party's size), opened to run" onClick={() => void session.content<{ id: string; name: string }>("encounter", { action: "generate", path: item.path }).then((made) => windows.open("record", made.name, made.id)).catch(() => undefined)}>
+                            🎲 Generate
+                          </button>
+                        ) : kind === "battle" ? (
                           <button type="button" data-action="library-battle" title="Onto the combat tracker; on the open map, tokens where the book placed them (hidden)" onClick={() => session.libraryAction("battle", { path: item.path })}>
                             ⚔ Add
                           </button>

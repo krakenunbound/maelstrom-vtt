@@ -855,6 +855,7 @@ export function StoryView({ session, record, editable }: { session: Session; rec
 
 type NpcRow = { name?: string; count?: string | number; faction?: string; unidentified?: string; link?: { recordname?: string } };
 export function EncounterView({ session, record, editable }: { session: Session; record: TableRecord; editable: boolean }) {
+  const windows = useWindows();
   const [status, setStatus] = useState("");
   const [xp, setXp] = useState<number | null>(null);
   const rows = Object.entries((record.data.npclist ?? {}) as Record<string, NpcRow>).sort(([a], [b]) => a.localeCompare(b));
@@ -866,6 +867,10 @@ export function EncounterView({ session, record, editable }: { session: Session;
         if (action === "run") setStatus(`On the tracker: ${(result.added as string[]).join(", ")}.`);
         if (action === "place") setStatus(`${result.placed} spots kept for ${result.scene}.`);
         if (action === "end") setStatus(`${result.xp} XP to award on the party sheet.`);
+        if (action === "generate") {
+          setStatus(`Generated: ${(result.rolled as string[]).join(", ") || "no one came"}.`);
+          windows.open("record", String(result.name), String(result.id));
+        }
       })
       .catch((error) => setStatus(error instanceof Error ? error.message : "Could not do that."));
   const npcs = rows.map(([, row]) => String(row.link?.recordname ?? "")).join("|");
@@ -930,6 +935,9 @@ export function EncounterView({ session, record, editable }: { session: Session;
         </button>
         <button type="button" data-action="encounter-end" title="Its XP onto the party sheet, to award there" onClick={() => void act("end")}>
           <Icon name="flag" size={14} /> End encounter
+        </button>
+        <button type="button" data-action="encounter-generate" title="A new encounter of this one, every count rolled now (1d4+1, $PC the party's size), a creature that comes to 0 left out" onClick={() => void act("generate")}>
+          <Icon name="sparkle" size={14} /> Generate
         </button>
       </div>
       {status ? <p className="hint" role="status">{status}</p> : null}
