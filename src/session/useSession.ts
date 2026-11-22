@@ -67,7 +67,7 @@ export type MapToken = {
 // A sound placed on the map (radius in feet).
 export type MapSound = { id: string; name: string; sound: string; x: number; y: number; radius: number; volume: number; on: boolean };
 // A player's move waiting for the GM while movement is locked (FG's TokenMoveManager).
-export type MoveRequest = { id: string; name: string; by: string; from: { x: number; y: number }; to: { x: number; y: number }; at: number };
+export type MoveRequest = { id: string; name: string; by: string; from: { x: number; y: number }; to: { x: number; y: number }; via?: { x: number; y: number }[]; at: number };
 // A region of the map, the GM's (Map Studio's Traps & regions, a bundle's Foundry regions).
 export type MapRegion = { id: string; kind: "trap" | "pit" | "difficult" | "teleport"; name: string; note: string; points: number[]; on: boolean; cost?: number; to?: string | { x: number; y: number; sceneId?: string }; revealed?: boolean; trap?: TrapInfo };
 // What a trap does when it springs (Map Studio's Traps & regions): auto roll or apply, else the GM rolls.
@@ -1297,6 +1297,18 @@ export function useSession() {
     });
   }, []);
 
+  // The walk a dragged token would take there (the host's: a player is never sent the walls): square centres round
+  // the walls, or the straight line.
+  const tokenRoute = useCallback((id: string, x: number, y: number) => {
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return Promise.reject(new Error("Not connected."));
+    const req = ++opCounter.current;
+    return new Promise<{ points: { x: number; y: number }[]; routed: boolean; blocked?: boolean }>((resolve, reject) => {
+      opWaits.current.set(req, { resolve: (_id, payload) => resolve((payload as { result: { points: { x: number; y: number }[]; routed: boolean; blocked?: boolean } }).result), reject });
+      socket.send(JSON.stringify({ type: "token-route", id, x, y, req }));
+    });
+  }, []);
+
   // A SIEGE check for a character; the host rolls it and posts the result.
   const siegeCheck = useCallback((id: string, attribute: string, cl = 0, save = false, extra?: { label?: string; bonus?: number; addLevel?: boolean; kind?: string; skill?: string; dc?: number; advantage?: string }) => {
     const socket = socketRef.current;
@@ -1698,6 +1710,7 @@ export function useSession() {
     ruler,
     resetExplored,
     undoMove,
+    tokenRoute,
     approveMoves,
     trap,
     doorFound,

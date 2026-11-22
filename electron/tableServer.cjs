@@ -3757,6 +3757,16 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         return;
       }
 
+      // A drag's walk shown as it goes (a player is never sent the walls): the squares round them, or the straight line.
+      if (msg.type === "token-route") {
+        const reply = (ok, result, error) => send(ws, { type: "op-result", req: msg.req ?? null, ok, id: "", ...(ok ? { result } : { error }) });
+        try {
+          reply(true, mapOf(client).routeOf(String(msg.id ?? ""), { x: num(msg.x, NaN), y: num(msg.y, NaN) }, seatOf(client)));
+        } catch (error) {
+          reply(false, null, error instanceof Error ? error.message : "No way there.");
+        }
+        return;
+      }
       // The map: tokens, doors, line of sight and pings (mapState.cjs decides
       // who may do what).
       if (["token-place", "token-move", "token-remove", "token-update", "door", "sight", "lock", "scene-settings", "light-place", "light-update", "light-remove", "draw", "draw-update", "draw-erase", "draw-clear", "death-marker", "wall", "map-undo", "mask", "label", "map-group", "fx", "tile", "explored-reset", "token-undo", "move-approve", "map-sound", "trap", "door-found"].includes(msg.type)) {

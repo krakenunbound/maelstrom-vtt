@@ -369,6 +369,105 @@ export function soundWalls(walls, doors, from, to) {
   return count;
 }
 
+// A move on a square grid as it is walked: square by square from one centre to another, round the walls and closed
+// doors in the way (never cutting a corner past a wall), counted by the table's diagonal rule (1: every square 5 ft;
+// 1.5: every second diagonal 10 ft) and costAt(x, y) for difficult ground. The shortest such walk (A*), as square
+// centres, first and last included; null when no walk reaches it (or it is not a square grid). limit: squares tried.
+/** @param {any} scene @param {any[]} walls @param {any} doors @param {{x:number,y:number}} from @param {{x:number,y:number}} to @param {{ diagonal?: unknown, costAt?: ((x: number, y: number) => number) | null, limit?: number }} [options] */
+export function routeSquares(scene, walls, doors, from, to, { diagonal = 1, costAt = null, limit = 6000 } = {}) {
+  if (gridKind(scene) !== "square") return null;
+  const rule = diagonalRule(diagonal);
+  const size = gridSize(scene);
+  const sizeY = gridSizeY(scene);
+  const origin = gridOrigin(scene);
+  const cellOf = (point) => ({ col: Math.floor((point.x - origin.x) / size), row: Math.floor((point.y - origin.y) / sizeY) });
+  const centre = (col, row) => ({ x: origin.x + (col + 0.5) * size, y: origin.y + (row + 0.5) * sizeY });
+  const a = cellOf(from);
+  const b = cellOf(to);
+  if (a.col === b.col && a.row === b.row) return [centre(a.col, a.row)];
+  const moving = walls.filter((wall) => blocksMove(wall, doors));
+  const open = new Map();
+  const clear = (c1, r1, c2, r2) => {
+    const key = c1 < c2 || (c1 === c2 && r1 < r2) ? `${c1},${r1},${c2},${r2}` : `${c2},${r2},${c1},${r1}`;
+    let free = open.get(key);
+    if (free === undefined) {
+      free = firstBlock(moving, doors, centre(c1, r1), centre(c2, r2)) === null;
+      open.set(key, free);
+    }
+    return free;
+  };
+  // The walk's cost so far, in squares; under 1.5 which diagonal comes next (the state carries it).
+  const heuristic = (col, row) => {
+    const dx = Math.abs(col - b.col);
+    const dy = Math.abs(row - b.row);
+    return rule === 1.5 ? Math.max(dx, dy) + Math.floor(Math.min(dx, dy) / 2) : Math.max(dx, dy);
+  };
+  const keyOf = (col, row, parity) => `${col},${row},${parity}`;
+  const best = new Map([[keyOf(a.col, a.row, 0), 0]]);
+  const came = new Map();
+  const queue = [{ col: a.col, row: a.row, parity: 0, cost: 0, score: heuristic(a.col, a.row) }];
+  // On the map's picture only (never round a wall by its far side off the map), and not wandering far.
+  const pad = 40;
+  const corner = sceneOrigin(scene);
+  const picture = { minCol: Math.floor((corner.x - origin.x) / size), maxCol: Math.ceil((corner.x + Number(scene.width || 0) - origin.x) / size) - 1, minRow: Math.floor((corner.y - origin.y) / sizeY), maxRow: Math.ceil((corner.y + Number(scene.height || 0) - origin.y) / sizeY) - 1 };
+  const box = {
+    minCol: Math.max(picture.minCol, Math.min(a.col, b.col) - pad),
+    maxCol: Math.min(picture.maxCol, Math.max(a.col, b.col) + pad),
+    minRow: Math.max(picture.minRow, Math.min(a.row, b.row) - pad),
+    maxRow: Math.min(picture.maxRow, Math.max(a.row, b.row) + pad),
+  };
+  if (b.col < box.minCol || b.col > box.maxCol || b.row < box.minRow || b.row > box.maxRow) return null;
+  let tried = 0;
+  while (queue.length && tried < limit) {
+    // The cheapest by score (the queue stays small: a linear pick is quick enough for a drag).
+    let at = 0;
+    for (let index = 1; index < queue.length; index += 1) if (queue[index].score < queue[at].score || (queue[index].score === queue[at].score && queue[index].cost > queue[at].cost)) at = index;
+    const node = queue[at];
+    queue[at] = queue[queue.length - 1];
+    queue.pop();
+    const nodeKey = keyOf(node.col, node.row, node.parity);
+    if (node.cost > (best.get(nodeKey) ?? Infinity)) continue;
+    if (node.col === b.col && node.row === b.row) {
+      const path = [];
+      let key = nodeKey;
+      while (key) {
+        const [col, row] = key.split(",").map(Number);
+        path.push(centre(col, row));
+        key = came.get(key);
+      }
+      return path.reverse();
+    }
+    tried += 1;
+    for (let dx = -1; dx <= 1; dx += 1) {
+      for (let dy = -1; dy <= 1; dy += 1) {
+        if (!dx && !dy) continue;
+        const col = node.col + dx;
+        const row = node.row + dy;
+        if (col < box.minCol || col > box.maxCol || row < box.minRow || row > box.maxRow) continue;
+        const diagonalStep = dx !== 0 && dy !== 0;
+        if (!clear(node.col, node.row, col, row)) continue;
+        // A diagonal does not squeeze past a wall's corner: both squares beside it are open to it too.
+        if (diagonalStep && (!clear(node.col, node.row, col, node.row) || !clear(node.col, node.row, node.col, row) || !clear(col, node.row, col, row) || !clear(node.col, row, col, row))) continue;
+        let step = 1;
+        let parity = node.parity;
+        if (diagonalStep && rule === 1.5) {
+          step = parity === 1 ? 2 : 1;
+          parity = 1 - parity;
+        }
+        const place = centre(col, row);
+        // A hair more for a diagonal: of walks that count the same, the straighter one (no zigzag on screen).
+        const cost = node.cost + step * (costAt ? Number(costAt(place.x, place.y)) || 1 : 1) + (diagonalStep ? 0.001 : 0);
+        const key = keyOf(col, row, parity);
+        if (cost >= (best.get(key) ?? Infinity)) continue;
+        best.set(key, cost);
+        came.set(key, nodeKey);
+        queue.push({ col, row, parity, cost, score: cost + heuristic(col, row) });
+      }
+    }
+  }
+  return null;
+}
+
 // Where a dragged token ends up: its snapped drop point, or, when a wall is in
 // the way, the last square before the wall along its path (its start when
 // none is free). snap false keeps the exact point (Alt held).

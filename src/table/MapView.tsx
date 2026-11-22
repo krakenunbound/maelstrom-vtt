@@ -160,6 +160,8 @@ export type MapActions = {
   // Undo a token's last move; the GM's approval of moves asked for while movement is locked.
   undoMove?: (id: string) => void;
   approveMoves?: (ids: string[] | "all", accept: boolean) => void;
+  // The walk a drag would take (the host's, round the walls).
+  tokenRoute?: (id: string, x: number, y: number) => Promise<{ points: Point[]; routed: boolean; blocked?: boolean }>;
   // A trap's rolls, applied, let go, shown or hidden; a secret door found (the GM's).
   trap?: (action: string, payload?: Record<string, unknown>) => void;
   doorFound?: (id: string, on: boolean) => void;
@@ -1451,8 +1453,24 @@ function MapViewInner({
         }
       : null,
   );
-  // The dragged token's path: where it starts, its waypoints, where it lands.
-  const dragPath = drag && ghost ? [drag.start, ...(drag.waypoints ?? []), ghost].flatMap((point) => [point.x, point.y]) : [];
+  // The walk the drop would take (no waypoints, snapped, one token): asked of the host as the square under the pointer
+  // changes, so the drag shows the way round the walls that the move will take.
+  const [route, setRoute] = useState<{ key: string; points: Point[] } | null>(null);
+  const routeKey = drag && ghost && drag.snap && !drag.group?.length && !(drag.waypoints ?? []).length && drag.squares <= 1 ? `${drag.id}|${Math.round(ghost.x)}|${Math.round(ghost.y)}` : "";
+  useEffect(() => {
+    if (!routeKey || !drag || !ghost || !actions.tokenRoute) return;
+    let live = true;
+    actions
+      .tokenRoute(drag.id, ghost.x, ghost.y)
+      .then((answer) => live && setRoute({ key: routeKey, points: answer.points }))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [routeKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // The dragged token's path: where it starts, its waypoints (or the walk round the walls), where it lands.
+  const routed = route && route.key === routeKey && route.points.length > 2 ? route.points : null;
+  const dragPath = drag && ghost ? (routed ?? [drag.start, ...(drag.waypoints ?? []), ghost]).flatMap((point) => [point.x, point.y]) : [];
   // Who targets with the toolbar (FG's selection): the selected token's creature, when
   // this seat may act for it (the GM: any; a player: their own); else the host picks
   // (a player's own creature, the GM's whose turn it is).
@@ -2607,6 +2625,26 @@ function MapViewInner({
               style={{ left: ghost.x - (drag.squares * tokenUnit) / 2, top: ghost.y - (drag.squares * tokenUnit) / 2, width: drag.squares * tokenUnit, height: drag.squares * tokenUnit }}
             />
             <svg className="overlay measure" width={frame.worldWidth} height={frame.worldHeight} viewBox={`0 0 ${frame.worldWidth} ${frame.worldHeight}`}>
+              {/* Each square walked, lit by how far it is against the creature's speed: within it, within a dash, past both. */}
+              {(() => {
+                const speed = (records.find((record) => record.id === dragging.recordId)?.data as { speed?: unknown } | undefined)?.speed;
+                if (!/\d/.test(String(speed ?? "")) || kindOfGrid !== "square") return null;
+                const squaresWalked: { x: number; y: number; band: string | undefined }[] = [];
+                for (let index = 2; index < dragPath.length; index += 2) {
+                  const prior = { x: dragPath[index - 2], y: dragPath[index - 1] };
+                  const point = { x: dragPath[index], y: dragPath[index + 1] };
+                  // A straight leg: every square along it.
+                  const steps = Math.max(Math.round(Math.abs(point.x - prior.x) / size), Math.round(Math.abs(point.y - prior.y) / sizeY), 1);
+                  for (let step = 1; step <= steps; step += 1) {
+                    const at = snapCenter(scene, prior.x + ((point.x - prior.x) * step) / steps, prior.y + ((point.y - prior.y) * step) / steps, 1);
+                    const walked = pathDistance(scene, [...dragPath.slice(0, index), at.x, at.y], diagonalRule(diagonal), terrainCostAt(map.terrain)).total;
+                    squaresWalked.push({ ...at, band: speedBand(walked, speed) });
+                  }
+                }
+                return squaresWalked.map((square, index) => (
+                  <rect key={index} x={square.x - size / 2} y={square.y - sizeY / 2} width={size} height={sizeY} fill={square.band === "walk" ? "#3fbf5a" : square.band === "dash" ? "#e0c040" : "#d0493a"} fillOpacity={0.28} data-walk-square={square.band} />
+                ));
+              })()}
               <polyline points={dragPath.join(" ")} fill="none" stroke="#ffd36b" strokeWidth={Math.max(3 / camera.scale, size * 0.05)} strokeLinecap="round" strokeLinejoin="round" />
               {(drag.waypoints ?? []).map((point, index) => (
                 <circle key={index} cx={point.x} cy={point.y} r={Math.max(4 / camera.scale, size * 0.08)} fill="#ffd36b" data-drag-waypoint={index} />

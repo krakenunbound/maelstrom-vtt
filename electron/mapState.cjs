@@ -1027,7 +1027,10 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
   // A player's move while the GM has locked movement: asked for, until the GM says.
   function requestMove(token, to, seat) {
     const point = geometry.snapCenter(scene, to.x, to.y, token.squares);
-    state.moveRequests.set(logKey(token), { id: token.id, name: token.name, by: seat.name, from: { x: token.x, y: token.y }, to: point, at: Date.now() });
+    const from = { x: token.x, y: token.y };
+    // The walk round the walls, as the player's drag showed it: the GM sees it and Accept walks it.
+    const route = Number(token.squares) <= 1 && geometry.gridKind(scene) === "square" && geometry.firstBlock(wallsHere(), doorsHere(), from, point) !== null ? geometry.routeSquares(scene, wallsHere(), doorsHere(), from, point, { diagonal: diagonalNow(), costAt: terrainCost() }) : null;
+    state.moveRequests.set(logKey(token), { id: token.id, name: token.name, by: seat.name, from, to: point, ...(route && route.length > 2 ? { via: route.slice(1, -1) } : {}), at: Date.now() });
   }
   function requestsHere() {
     if (!scene) return [];
@@ -1648,7 +1651,7 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
     },
     // Moves a token. Players are stopped by walls and closed doors on a
     // line-of-sight scene; the GM is not (as in FG).
-    move(id, to, seat, { snap = true, collide } = {}) {
+    move(id, to, seat, { snap = true, collide, routed = false } = {}) {
       if (!scene) throw new Error("No scene is open.");
       const token = findToken(id);
       if (!canMove(token, seat)) throw new Error("That is not your token.");
@@ -1660,9 +1663,32 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
         return { token, blocked: false, requested: true };
       }
       const blockByWalls = collide ?? (seat.role !== "dm" && sightOn());
+      // A square grid, snapped, a wall or a closed door across the straight line: the token walks round it square by
+      // square (the shortest walk, as the drag showed it), its path kept as one move. None reaches it: a player is
+      // stopped at the wall as before; the GM goes straight (FG's GM moves through walls). Alt: straight, as dropped.
+      if (snap && !routed && Number(token.squares) <= 1 && geometry.gridKind(scene) === "square") {
+        const from = { x: token.x, y: token.y };
+        const target = geometry.snapCenter(scene, Number(to.x), Number(to.y), 1);
+        if (geometry.firstBlock(wallsHere(), doorsHere(), from, target) !== null) {
+          const route = geometry.routeSquares(scene, wallsHere(), doorsHere(), from, target, { diagonal: diagonalNow(), costAt: terrainCost() });
+          if (route && route.length > 2) return this.moveVia(id, route.slice(1), seat, { snap, collide, routed: true });
+        }
+      }
       const result = stepToken(token, to, seat, { snap, collide: blockByWalls });
       changed({ keepVision: true });
       return { token, ...result };
+    },
+    // The walk a move would take (the drag's preview, for a player who is never sent the walls): square centres round
+    // the walls, or the straight line when nothing is in the way. Only the seat's own tokens.
+    routeOf(id, to, seat) {
+      if (!scene) throw new Error("No scene is open.");
+      const token = findToken(id);
+      if (!canMove(token, seat)) throw new Error("That is not your token.");
+      const from = { x: token.x, y: token.y };
+      const target = Number(token.squares) <= 1 ? geometry.snapCenter(scene, num(to?.x, from.x), num(to?.y, from.y), 1) : { x: num(to?.x, from.x), y: num(to?.y, from.y) };
+      if (geometry.gridKind(scene) !== "square" || Number(token.squares) > 1 || geometry.firstBlock(wallsHere(), doorsHere(), from, target) === null) return { points: [from, target], routed: false };
+      const route = geometry.routeSquares(scene, wallsHere(), doorsHere(), from, target, { diagonal: diagonalNow(), costAt: terrainCost() });
+      return route ? { points: route, routed: true } : { points: [from, target], routed: false, blocked: true };
     },
     // FG's waypoints: a drag through points in order, leg by leg, each leg stopped by walls, a trap, a teleport; the
     // move ends where a leg stops. Locked for a player: one request, to where it ends.
@@ -1744,7 +1770,17 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
         if (!token) continue;
         if (accept) {
           // The move as its player would make it: walls stop it, traps spring.
-          const result = stepToken(token, request.to, { role: "player", name: request.by }, { snap: true, collide: sightOn() });
+          const player = { role: "player", name: request.by };
+          let result = { blocked: false };
+          dragNow = crypto.randomBytes(4).toString("hex");
+          try {
+            for (const step of [...(request.via ?? []), request.to]) {
+              result = stepToken(token, step, player, { snap: true, collide: sightOn() });
+              if (result.blocked || result.sprang || result.gone) break;
+            }
+          } finally {
+            dragNow = "";
+          }
           out.push({ id: token.id, name: token.name, accepted: true, ...(result.blocked ? { blocked: true } : {}), ...(result.sprang ? { sprang: result.sprang.name } : {}) });
         } else out.push({ id: token.id, name: token.name, accepted: false });
       }

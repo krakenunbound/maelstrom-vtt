@@ -97,6 +97,7 @@ const MESSAGES = {
   ruler: "kraken_ruler",
   "explored-reset": "kraken_line_of_sight",
   "token-undo": "kraken_token_move",
+  "token-route": "kraken_token_move",
   "move-approve": "kraken_token_move",
   trap: "kraken_region",
   "door-found": "kraken_door",

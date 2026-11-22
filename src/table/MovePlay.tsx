@@ -43,7 +43,7 @@ export function MoveRequestGhosts({ requests, tokens, width, height, scale }: Ov
         const color = token?.color ?? "#ffd36b";
         return (
           <g key={request.id} data-move-request={request.id}>
-            <line x1={request.from.x} y1={request.from.y} x2={request.to.x} y2={request.to.y} stroke={color} strokeWidth={3 / scale} strokeDasharray={`${10 / scale} ${6 / scale}`} />
+            <polyline points={[request.from, ...(request.via ?? []), request.to].map((point) => `${point.x},${point.y}`).join(" ")} fill="none" stroke={color} strokeWidth={3 / scale} strokeDasharray={`${10 / scale} ${6 / scale}`} strokeLinejoin="round" />
             <circle cx={request.to.x} cy={request.to.y} r={((token?.squares ?? 1) * 18) / Math.max(scale, 0.2)} fill={color} fillOpacity={0.18} stroke={color} strokeWidth={2 / scale} />
           </g>
         );
