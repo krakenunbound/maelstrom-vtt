@@ -241,7 +241,8 @@ export function PartySheet({ session, compact = false }: { session: Session; com
                             data-party-ability={ability.key}
                             onDoubleClick={(event) => {
                               if (!gm) return;
-                              const stat = attributes.find((name) => name.slice(0, 3).toUpperCase() === ability.key) ?? ability.key.toLowerCase();
+                              // Its full name ("STR": strength), from the game's list or the six.
+                              const stat = [...attributes, "strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"].find((name) => name.slice(0, 3).toUpperCase() === ability.key) ?? ability.key.toLowerCase();
                               session.partyRoll({ kind: event.shiftKey ? "save" : "check", attribute: stat, dc: checkCl, mode: "roll", members: [member.id] });
                             }}
                           >

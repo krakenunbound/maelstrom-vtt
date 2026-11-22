@@ -2818,7 +2818,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       for (let dart = 0; dart < darts && targets.length; dart++) {
         const target = targets[dart % targets.length];
         const card = newCard("damage", damageType, `${spell.name} (dart ${dart + 1})`);
-        const roll = table().roll(diceOf(damageRow.damagelist), `[DAMAGE] ${spell.name} (dart ${dart + 1})`, say, Boolean(target.hidden), { by: caster.name, card: card.id });
+        const roll = table().roll(diceOf(damageRow.damagelist), `[DAMAGE] ${spell.name} (dart ${dart + 1})${damageType ? ` [TYPE: ${damageType}]` : ""}`, say, Boolean(target.hidden), { by: caster.name, card: card.id });
         card.total = Math.max(0, roll.total);
         const taken = await landOn(card, target, roll.total, `[DAMAGE] ${spell.name}`);
         out.push({ target: target.name, damage: taken });

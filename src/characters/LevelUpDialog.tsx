@@ -32,6 +32,7 @@ export function LevelUpDialog() {
   const [first, setFirst] = useState("");
   const [second, setSecond] = useState("");
   const [feat, setFeat] = useState("");
+  const [expert, setExpert] = useState<string[]>([]);
   const record = ask ? ask.session.records[ask.id] : null;
   const plan = useMemo(() => {
     if (!ask || !record) return null;
@@ -46,6 +47,7 @@ export function LevelUpDialog() {
     setFirst("");
     setSecond("");
     setFeat("");
+    setExpert([]);
     if (ask && dialog.current && !dialog.current.open) dialog.current.showModal();
     if (!ask && dialog.current?.open) dialog.current.close();
   }, [ask]);
@@ -64,10 +66,11 @@ export function LevelUpDialog() {
   const room = (stat: string, n: number) => (Number(scores[stat]?.score) || 10) + n <= 20;
   const asi: Record<string, number> = !plan?.asi || improve === "feat" ? {} : improve === "two" ? (first ? { [first]: 2 } : {}) : first && second && first !== second ? { [first]: 1, [second]: 1 } : {};
   const asiDone = !plan?.asi || (improve === "feat" ? Boolean(feat) : Object.keys(asi).length > 0);
-  const ready = Boolean(plan) && (!plan?.subclasses || Boolean(subclass)) && asiDone && (!plan?.feat || Boolean(feat));
+  // A feat asked for where the books have none of its kind: not held up.
+  const ready = Boolean(plan) && (!plan?.subclasses || Boolean(subclass)) && asiDone && (!plan?.feat || Boolean(feat) || !plan.feats.length) && expert.filter(Boolean).length === Math.min(plan?.expertise ?? 0, plan?.skills.length ?? 0);
   const go = () => {
     if (!ask || !plan || !ready) return;
-    ask.session.levelUp(ask.id, ask.key, { hp, ...(subclass ? { subclass } : {}), ...(Object.keys(asi).length ? { asi } : {}), ...(feat && (improve === "feat" || plan.feat) ? { feat } : {}) });
+    ask.session.levelUp(ask.id, ask.key, { hp, ...(subclass ? { subclass } : {}), ...(Object.keys(asi).length ? { asi } : {}), ...(feat && (improve === "feat" || plan.feat) ? { feat } : {}), ...(expert.filter(Boolean).length ? { expertise: expert.filter(Boolean) } : {}) });
     close();
   };
   return (
@@ -118,9 +121,11 @@ export function LevelUpDialog() {
               <label>
                 <input type="radio" name={`${own}-asi`} checked={improve === "split"} onChange={() => setImprove("split")} data-level-asi="split" /> +1 to two
               </label>
-              <label>
-                <input type="radio" name={`${own}-asi`} checked={improve === "feat"} onChange={() => setImprove("feat")} data-level-asi="feat" /> A feat
-              </label>
+              {plan.feats.length ? (
+                <label>
+                  <input type="radio" name={`${own}-asi`} checked={improve === "feat"} onChange={() => setImprove("feat")} data-level-asi="feat" /> A feat
+                </label>
+              ) : null}
               {improve !== "feat" ? (
                 <span className="level-up-row">
                   <select value={first} onChange={(event) => setFirst(event.target.value)} aria-label="Score to raise" data-level-score="first">
@@ -145,7 +150,24 @@ export function LevelUpDialog() {
               ) : null}
             </fieldset>
           ) : null}
-          {(plan.asi && improve === "feat") || plan.feat ? (
+          {plan.expertise && plan.skills.length ? (
+            <fieldset>
+              <legend>Expertise</legend>
+              {Array.from({ length: Math.min(plan.expertise, plan.skills.length) }, (_, index) => (
+                <select key={index} value={expert[index] ?? ""} aria-label={`Expertise ${index + 1}`} data-level-expertise={index} onChange={(event) => setExpert((now) => Object.assign([...now], { [index]: event.target.value }))}>
+                  <option value="">Skill…</option>
+                  {plan.skills
+                    .filter((skill) => skill.key === expert[index] || !expert.includes(skill.key))
+                    .map((skill) => (
+                      <option key={skill.key} value={skill.key}>
+                        {skill.label}
+                      </option>
+                    ))}
+                </select>
+              ))}
+            </fieldset>
+          ) : null}
+          {((plan.asi && improve === "feat") || plan.feat) && plan.feats.length ? (
             <label className="level-up-row">
               {plan.feat && plan.feat !== "any" ? plan.feat : "Feat"}
               <select value={feat} onChange={(event) => setFeat(event.target.value)} required data-level-feat>

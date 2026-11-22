@@ -359,12 +359,13 @@ const TOOLS = [
       subclass: string("5E: the subclass chosen at the level that asks for one"),
       asi: { type: "object", description: "5E: an Ability Score Improvement, {strength: 2} or {dexterity: 1, constitution: 1}" },
       feat: string("5E: a feat in place of the Ability Score Improvement (or the level's own feat: Epic Boon, Fighting Style)"),
+      expertise: { type: "array", items: { type: "string" }, description: "5E: skills (keys, as stealth) the character is proficient in, doubled, where the level gives Expertise" },
     }, ["id"]),
     async run(args, ctx) {
       const agent = needTable(ctx);
       const record = agent.records.get(args.id);
       if (!record) throw new Error(`No record ${args.id}.`);
-      const { record: updated, gain, level } = await levelUp(agent, record, args.package, undefined, { hp: args.hp, subclass: args.subclass, asi: args.asi, feat: args.feat });
+      const { record: updated, gain, level } = await levelUp(agent, record, args.package, undefined, { hp: args.hp, subclass: args.subclass, asi: args.asi, feat: args.feat, expertise: args.expertise });
       return out({ id: updated.id, level, gain, hp: updated.data.hp.total, ...(dnd5e.is5e(updated) ? { prof: updated.data.prof } : dnd35.is35(updated) ? { bab: updated.data.bab } : adnd2e.is2e(updated) ? { thaco: updated.data.thaco } : require("../bfrpg.cjs").isBf(updated) ? { ab: updated.data.ab } : { bth: updated.data.bth }), expnext: updated.data.expnext });
     },
   },

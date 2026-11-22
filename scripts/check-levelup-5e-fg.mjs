@@ -70,8 +70,45 @@ try {
   await tool("kraken_level_up", { id: built.id, feat: "Grappler" });
   assert(data().feats.includes("Grappler"), `the feat: ${JSON.stringify(data().feats)}`);
   done.push("level 6: a General feat (an Origin one refused)");
+
+  // 5. A Wizard's first Fighter level: the Fighter's d10.
+  const sage = await tool("kraken_build_character", { spec: { name: "Sage", species: "Human", class: "Wizard", level: 3, scores: { strength: 13, dexterity: 14, constitution: 12, intelligence: 16, wisdom: 10, charisma: 8 } } });
+  const multi = levelUpPlan(agent.records.get(sage.id).data, lib, "Fighter");
+  assert(multi.die === 10 && multi.classLevel === 1, `a new class's own die: ${JSON.stringify({ die: multi.die, level: multi.classLevel })}`);
+  done.push("a new class: its own hit die");
+
+  // 6. A Rogue's 6th level: Expertise in two skills it is proficient in.
+  const rogue = await tool("kraken_build_character", { spec: { name: "Wren", species: "Human", class: "Rogue", level: 5, scores: { strength: 8, dexterity: 16, constitution: 12, intelligence: 14, wisdom: 12, charisma: 10 } } });
+  const rogueData = () => agent.records.get(rogue.id).data;
+  const plan6 = levelUpPlan(rogueData(), lib);
+  const proficient = plan6.skills.map((skill) => skill.key);
+  assert(plan6.expertise === 2 && proficient.length >= 2, `Expertise at Rogue 6: ${JSON.stringify({ expertise: plan6.expertise, skills: plan6.skills })}`);
+  assert(/proficient in/.test(await fails(tool("kraken_level_up", { id: rogue.id, expertise: ["religion"].filter((key) => !proficient.includes(key)) }))), "a skill not proficient in refused");
+  await tool("kraken_level_up", { id: rogue.id, expertise: proficient.slice(0, 2) });
+  assert(proficient.slice(0, 2).every((key) => rogueData().skills[key].prof === 2), `doubled: ${JSON.stringify(rogueData().skills)}`);
+  done.push("Expertise");
 } finally {
   await server.stop?.();
+}
+// 7. Descending Darkness (the same rules, its own books): a level up with its choices.
+const dark = createTableServer({ ruleset: "Descending Darkness" });
+await dark.listen({ port: 0, password: "" });
+try {
+  importModule(dark.agent.records, dark.agent.seat, path.join(ROOT, "games", "modules", "Descending Darkness Player's Handbook"));
+  const darkTool = async (name, args = {}) => {
+    const result = await callTool(name, args, { table: () => dark });
+    if (result.isError) throw new Error(`${name}: ${result.content[0].text}`);
+    return JSON.parse(result.content[0].text);
+  };
+  const className = dark.agent.records.list({ type: "class" })[0]?.name;
+  const hero = await darkTool("kraken_build_character", { spec: { name: "Vess", class: className, level: 1, scores: { strength: 14, dexterity: 14, constitution: 14, intelligence: 10, wisdom: 12, charisma: 10 } } });
+  const before = dark.agent.records.get(hero.id).data;
+  await darkTool("kraken_level_up", { id: hero.id, hp: "average" });
+  const after = dark.agent.records.get(hero.id).data;
+  assert(after.level === 2 && after.hp.total > before.hp.total, `Descending Darkness levelled: ${before.level} -> ${after.level}`);
+  done.push(`Descending Darkness (${className} 2)`);
+} finally {
+  await dark.stop?.();
 }
 console.log(`ok levelup 5e fg: ${done.join("; ")}`);
 process.exit(0);

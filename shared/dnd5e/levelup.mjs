@@ -2,6 +2,7 @@
 // to choose, an Ability Score Improvement or a feat) and the choices applied. The sheet's dialog and the host read the
 // same plan: the host checks the choices against it.
 import { classInfo } from "./wizard.mjs";
+import { hitDie, SKILLS } from "./rules.mjs";
 
 const num = (value, fallback = 0) => (Number.isFinite(Number(value)) && value !== "" && value !== null ? Number(value) : fallback);
 const rows = (node) => Object.entries(node && typeof node === "object" ? node : {}).filter(([, value]) => value && typeof value === "object");
@@ -35,10 +36,14 @@ export function levelUpPlan(data, lib, packageKey = "") {
     className: String(cls.name),
     key: owned ? owned[0] : null,
     classLevel,
-    die: Math.round(num(owned?.[1]?.hitdie, num(data.hitdice?.die, 8))),
+    // A class taken for the first time: its own die.
+    die: owned ? Math.round(num(owned[1].hitdie, num(data.hitdice?.die, 8))) : hitDie(cls),
     features: (info?.features ?? []).filter((feature) => feature.level === classLevel && !known.has(featureLine(feature, cls.name).toLowerCase())).map((feature) => ({ name: feature.name, level: feature.level, subclass: feature.subclass })),
     subclasses: subclasses && subclasses.length ? subclasses : null,
     asi: has("asiorfeat"),
+    // Expertise: so many skills the character is proficient in, doubled.
+    expertise: decisions.filter((item) => item.type === "expertise").length,
+    skills: rows(data.skills).filter(([key, skill]) => SKILLS[key] && num(skill.prof) === 1).map(([key]) => ({ key, label: SKILLS[key][0] })),
     feat: featDecision ? String(featDecision.category ?? "") || "any" : null,
     // The feats to choose from: the level's own kind (Fighting Style, Epic Boon), else General ones (a book's feats with
     // no kind: all); the improvement itself is the scores' choice; one taken and not repeatable, not again.
@@ -58,7 +63,7 @@ export function levelUpPlan(data, lib, packageKey = "") {
  * subclass (and its features to this level), +2 to one score or +1 to two (to 20 at most), or a feat.
  * @param {Record<string, any>} data the data after the level up
  * @param {NonNullable<ReturnType<typeof levelUpPlan>>} plan the plan made before it
- * @param {{ subclass?: string; asi?: Record<string, number>; feat?: string }} choices
+ * @param {{ subclass?: string; asi?: Record<string, number>; feat?: string; expertise?: string[] }} choices
  * @param {{ classes: any[]; subclasses: any[]; feats: any[] }} lib
  */
 export function applyLevelUp(data, plan, choices = {}, lib) {
@@ -85,6 +90,14 @@ export function applyLevelUp(data, plan, choices = {}, lib) {
       const score = num(next.abilities?.[stat]?.score, 10) + num(n);
       if (score > 20) throw new Error(`${stat[0].toUpperCase()}${stat.slice(1)} would pass 20.`);
       next.abilities[stat] = { ...next.abilities[stat], score };
+    }
+  }
+  const expert = [...new Set((Array.isArray(choices.expertise) ? choices.expertise : []).map(String))];
+  if (expert.length) {
+    if (expert.length > plan.expertise) throw new Error(`${plan.className} ${plan.classLevel} gives ${plan.expertise ? `expertise in ${plan.expertise}` : "no expertise"}.`);
+    for (const key of expert) {
+      if (!plan.skills.some((skill) => skill.key === key)) throw new Error(`Expertise needs a skill the character is proficient in (${key}).`);
+      next.skills[key] = { ...next.skills[key], prof: 2 };
     }
   }
   if (choices.feat) {

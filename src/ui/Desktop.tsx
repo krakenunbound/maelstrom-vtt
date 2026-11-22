@@ -873,9 +873,10 @@ export function Desktop({
         <Suspense fallback={null}>
           {/* FG's Limit rolls to chat window (DRMO): no dice across the table, the results in the chat alone. */}
           {(session.options as { diceInChat?: boolean }).diceInChat ? null : <DiceLayer holdSeconds={session.options.diceHold} />}
-          <ManualDiceDialog />
         </Suspense>
       ) : null}
+      {/* Asked for whether or not 3D dice are shown: a roll waiting for its faces never waits unseen. */}
+      <ManualDiceDialog />
     </div>
   );
 }

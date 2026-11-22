@@ -348,6 +348,14 @@ function Links({ spec }: { spec: Extract<Part, { part: "links" }> }) {
 function EntryLink({ name, text, record }: { name: string; text: string; record: { id: string; name: string } }) {
   const windows = useWindows();
   const id = useId();
+  // No Popover API (an older browser): the link opens the record the text is in.
+  if (!("popover" in HTMLElement.prototype)) {
+    return (
+      <button type="button" className="cc-link" data-link-entry={name} title={`${name}: from ${record.name}`} onClick={() => windows.open("record", record.name, record.id)} {...slotDrag({ kind: "record", record: record.id, label: record.name })}>
+        {name}
+      </button>
+    );
+  }
   return (
     <>
       <button type="button" className="cc-link" popoverTarget={id} data-link-entry={name} title={`${name}: from ${record.name}`} {...slotDrag({ kind: "record", record: record.id, label: record.name })}>

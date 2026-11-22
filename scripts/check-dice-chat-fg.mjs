@@ -41,6 +41,13 @@ const settle = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms));
 const done = [];
 const OWN = { theme: "classic", body: "#ffffff", ink: "#000000" };
 
+// 0. The games declare which rolls their manual die is for (2E, BFRPG, C&C initiative and Cairn's attacks are not d20s).
+const { rulesetFor } = await import("../shared/rulesets/registry.mjs");
+assert(rulesetFor("D&D 5E").manualDie === "1d20" && !rulesetFor("D&D 5E").manualKinds, "5E: every roll");
+assert(!rulesetFor("AD&D 2E").manualKinds.includes("init") && rulesetFor("AD&D 2E").manualKinds.includes("attack"), "2E: not its d10 initiative");
+assert(!rulesetFor("Cairn").manualKinds.includes("attack"), "Cairn: not its attacks");
+done.push("manual dice kinds by game");
+
 // 1. Speech bubble time.
 assert(cleanPrefs({ speechSeconds: 5 }, {}).speechSeconds === 5, "five seconds kept");
 assert(cleanPrefs({ speechSeconds: 7 }, {}).speechSeconds === undefined, "an odd time dropped");
@@ -72,7 +79,27 @@ try {
   await settle();
   assert(lastRoll(gm, /Fire Bolt again/)?.roll.look?.body === "#ffffff", "off: the roller's own set");
   await tool("kraken_table_options", { typedDice: true });
-  done.push("dice by type (damage, creature, off)");
+  // The tracker's own rolls from the GM's seat: a Zombie's attack in an undead's colours, its damage in its type's.
+  const zombie = agent.records.list({ type: "npc" }).find((record) => record.name === "Zombie");
+  await tool("kraken_combat", { action: "add", recordId: zombie.id });
+  await tool("kraken_combat", { action: "add", entry: { name: "Post", faction: "friend", hp: 50, ac: 5, init: 0 } });
+  let fight = (await tool("kraken_combat", { action: "view" })).entries;
+  const walker = fight.find((entry) => entry.name.startsWith("Zombie"));
+  await tool("kraken_combat", { action: "target", id: walker.id, targetId: fight.find((entry) => entry.name === "Post").id, on: true });
+  agent.records.update(zombie.id, { data: { actions: { "id-00001": { name: "Claw", desc: "Melee Weapon Attack: +3 to hit, reach 5 ft., one target. Hit: 4 (1d6 + 1) necrotic damage." } } } }, agent.seat);
+  fight = (await tool("kraken_combat", { action: "view" })).entries;
+  const claw = fight.find((entry) => entry.id === walker.id).attacks[0].key;
+  agent.dice.force([18]);
+  gm.send({ type: "ct", action: "attack", id: walker.id, weapon: claw, look: OWN });
+  await settle(400);
+  const swing = lastRoll(gm, /^\[ATTACK\]/);
+  assert(swing?.roll.look?.body === "#18181f", `the tracker's attack in an undead's colours: ${JSON.stringify(swing?.roll)}`);
+  gm.send({ type: "ct", action: "damage-roll", id: walker.id, weapon: claw, look: OWN });
+  await settle(400);
+  const hurt = lastRoll(gm, /^\[DAMAGE\]/);
+  assert(hurt?.roll.look?.body === "#18181f" && /\[TYPE: necrotic\]/.test(hurt.roll.label), `its necrotic damage in necrotic's colours: ${JSON.stringify(hurt?.roll)}`);
+  await tool("kraken_combat", { action: "end", removeNpcs: true }).catch(() => {});
+  done.push("dice by type (damage, creature, off; the tracker's own attack and damage)");
 
   // 3. The party sheet's roll for one member.
   const hero = await tool("kraken_build_character", { owner: "Ann", spec: { name: "Hero", species: "Human", class: "Fighter", level: 3, scores: { strength: 14, dexterity: 14, constitution: 14, intelligence: 10, wisdom: 10, charisma: 10 } } });
