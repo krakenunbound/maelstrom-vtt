@@ -78,7 +78,10 @@ const AT_BACK: WindowKind[] = [];
 function firstPlace(kind: WindowKind): Placement {
   if (kind === "map" && typeof document !== "undefined") {
     const surface = cssRect(document.querySelector(".desktop-surface"));
-    if (surface && surface.width > 200 && surface.height > 200) return { x: Math.round(surface.left + 6), y: Math.round(surface.top + 6), w: Math.round(surface.width - 12), h: Math.round(surface.height - 12) };
+    // The table's right side, the left column kept for the combat tracker and the chat (a wide screen; a narrow one
+    // gets the whole table). Behind every window is the map's other place, chosen from its title bar.
+    const left = surface && surface.width >= 1400 ? Math.round(Math.min(560, Math.max(420, surface.width * 0.26))) : 6;
+    if (surface && surface.width > 200 && surface.height > 200) return { x: Math.round(surface.left + left), y: Math.round(surface.top + 6), w: Math.round(surface.width - left - 6), h: Math.round(surface.height - 12) };
   }
   // A first opening stays left of the sidebar (Character Selection at its usual spot covered the sidebar's
   // buttons on a screen under ~1800 px); where the person moves it later is theirs.
@@ -90,13 +93,15 @@ function firstPlace(kind: WindowKind): Placement {
   return place;
 }
 
-// Whether the map fills the table behind the windows (kept per screen). Until the GM chooses, it does: a map put on the
-// table never covers the tracker, the chat or the sheets.
+// What in a window's title bar is a control of its own, not a handle to move the window by.
+const CONTROLS = "button, input, select, textarea, a, label, [role=button], [role=menu], [role=menuitem], [contenteditable=true], [data-no-drag]";
+
+// Whether the map fills the table behind the windows (kept per screen; a window of its own until chosen).
 function readBackdrop() {
   try {
-    return window.localStorage.getItem("kraken-map-backdrop") !== "0";
+    return window.localStorage.getItem("kraken-map-backdrop") === "1";
   } catch {
-    return true;
+    return false;
   }
 }
 
@@ -378,7 +383,20 @@ export function FloatingWindow({ item, children, link }: { item: OpenWindow; chi
 
   // The drag is followed on the whole main window, so it carries on after the
   // frame has left the page for a window of its own.
-  const begin = (mode: "move" | "size") => (event: React.PointerEvent) => {
+  // The content's tools are drawn into the title bar from its own side (a portal): their presses reach the title bar's
+  // handlers only as the page's own events. Pressed on the toolbar's empty space, not a control, the window moves.
+  const beginRef = useRef<(event: PointerEvent) => void>(() => undefined);
+  useEffect(() => {
+    if (!slot || item.popped) return;
+    const press = (event: PointerEvent) => {
+      const target = event.target as HTMLElement;
+      if (target === slot || target.closest(CONTROLS)) return;
+      beginRef.current(event);
+    };
+    slot.addEventListener("pointerdown", press);
+    return () => slot.removeEventListener("pointerdown", press);
+  }, [slot, item.popped]);
+  const begin = (mode: "move" | "size") => (event: React.PointerEvent | PointerEvent) => {
     if (event.button !== 0) return;
     if (mode === "move" && (event.target as HTMLElement).closest("button")) return;
     event.preventDefault();
@@ -415,6 +433,7 @@ export function FloatingWindow({ item, children, link }: { item: OpenWindow; chi
     window.addEventListener("pointerup", finish);
     window.addEventListener("pointercancel", finish);
   };
+  beginRef.current = begin("move");
 
   // FG's image back panel and Foundry's canvas: a map may fill the table behind every window (this screen's choice).
   const [backdrop, setBackdrop] = useState(() => item.kind === "map" && readBackdrop());
@@ -498,7 +517,16 @@ export function FloatingWindow({ item, children, link }: { item: OpenWindow; chi
           />
         ) : null}
         <span>{item.title}</span>
-        <div className="window-tools" ref={setSlot} onPointerDown={(event) => event.stopPropagation()} onDoubleClick={(event) => event.stopPropagation()} />
+        {/* A window's own tools in its title bar (the map's toolbar): its controls keep their presses; the bar's empty
+            space between them still moves the window, as the rest of the title does. */}
+        <div
+          className="window-tools"
+          ref={setSlot}
+          onPointerDown={(event) => {
+            if ((event.target as HTMLElement).closest(CONTROLS)) event.stopPropagation();
+          }}
+          onDoubleClick={(event) => event.stopPropagation()}
+        />
         {item.kind === "map" ? (
           <button type="button" className="window-close" data-action="map-backdrop" title="Behind every window: the map fills the table" aria-label={`${item.title}: behind every window`} onClick={() => setBack(true)}>
             <Icon name="map" size={16} />

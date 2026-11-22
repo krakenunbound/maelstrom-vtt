@@ -125,11 +125,35 @@ try {
   await seat.click('button[type="submit"]');
   await seat.waitForSelector(".sidebar");
   await seat.waitForSelector('.window[data-window="map"] .viewport', { timeout: 20000 });
-  // A map opens behind every window until the person chooses otherwise (it never covers the tracker or the chat);
-  // the steps below use it in a window of its own.
-  await seat.waitForSelector('.window[data-window="map"][data-backdrop="on"]', { timeout: 5000 });
-  await seat.click('.window[data-window="map"] [data-action="map-window"]');
-  await seat.waitForSelector('.window[data-window="map"] .window-title', { timeout: 5000 });
+  // A map opens in a window of its own on the table's right side, the left column kept for the tracker and the chat.
+  const opened = await seat.evaluate(() => {
+    const map = document.querySelector('.window[data-window="map"]').getBoundingClientRect();
+    const table = document.querySelector(".desktop-surface").getBoundingClientRect();
+    return { left: map.left - table.left, right: table.right - map.right, wide: table.width };
+  });
+  assert(opened.wide < 1400 || (opened.left >= 400 && opened.right < 20), `the map leaves the left column free: ${JSON.stringify(opened)}`);
+  // Its title bar's empty space moves it (the map's toolbar is drawn in it), not only the title.
+  {
+    const bar = await seat.evaluate(() => {
+      const tools = document.querySelector('.window[data-window="map"] .window-tools .map-controls');
+      const r = tools.getBoundingClientRect();
+      const win = document.querySelector('.window[data-window="map"]').getBoundingClientRect();
+      // A spot in the toolbar that is not a control.
+      for (let x = r.right - 2; x > r.left; x -= 3) {
+        const hit = document.elementFromPoint(x, r.top + r.height / 2);
+        if (hit && tools.contains(hit) && !hit.closest("button, input, select, label, a")) return { x, y: r.top + r.height / 2, left: win.left, top: win.top };
+      }
+      return null;
+    });
+    assert(bar, "an empty spot in the map's toolbar");
+    await seat.mouse.move(bar.x, bar.y);
+    await seat.mouse.down();
+    await seat.mouse.move(bar.x - 60, bar.y + 40, { steps: 6 });
+    await seat.mouse.up();
+    const after = await seat.evaluate(() => document.querySelector('.window[data-window="map"]').getBoundingClientRect().toJSON());
+    assert(Math.abs(after.left - (bar.left - 60)) < 3 && Math.abs(after.top - (bar.top + 40)) < 3, `dragged by the toolbar's empty space: ${JSON.stringify({ before: bar, after })}`);
+    report.push("the map opens beside the tracker and chat, and moves by its title bar's empty space");
+  }
   const seatMap = '.window[data-window="map"] .viewport';
   await seat.waitForSelector(`${seatMap} [data-token="${heroToken.id}"]`);
 

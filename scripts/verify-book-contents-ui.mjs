@@ -68,6 +68,15 @@ try {
   await tool("kraken_quickslots", { slots: [{ kind: "book", book: handbook.id, page: first.id, label: first.name }, null, null, null, null, null, null, null, null, null, null, null] });
   await page.click('[data-quick-slot="0"]');
   await page.waitForSelector(`[data-book-page="${first.id}"] .book-page-head h2`, { timeout: 20000 });
+  // Boxed text that arrives after the page first drew (a page's words fetched late) gets the GM's read-aloud button.
+  await page.evaluate(() => {
+    const quote = document.createElement("blockquote");
+    quote.textContent = "The road ends at a gate of rusted iron.";
+    quote.dataset.lateBox = "1";
+    document.querySelector("article.book-page").appendChild(quote);
+  });
+  await page.waitForSelector('article.book-page blockquote[data-late-box] > .read-aloud-button', { timeout: 3000 });
+  await page.evaluate(() => document.querySelector("blockquote[data-late-box]").remove());
 
   const tocOf = async () => await tool("kraken_books", { action: "contents", book: handbook.id });
   const idsIn = (chapters) => chapters.flatMap((chapter) => chapter.sections.flatMap((item) => item.pages.map((p) => p.id)));

@@ -41,7 +41,7 @@ export function useReadAloudFrames(ref: RefObject<HTMLElement | null>, deps: unk
     const root = ref.current;
     if (!root || !can) return;
     const added: HTMLElement[] = [];
-    root.querySelectorAll("blockquote").forEach((frame) => {
+    const mark = () => root.querySelectorAll("blockquote").forEach((frame) => {
       if (frame.querySelector(":scope > .read-aloud-button")) return;
       const button = document.createElement("button");
       button.type = "button";
@@ -50,12 +50,20 @@ export function useReadAloudFrames(ref: RefObject<HTMLElement | null>, deps: unk
       button.title = "Read aloud: to chat, and over the map for everyone";
       button.setAttribute("aria-label", "Read aloud");
       button.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M4 5h16v11H9l-5 4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>';
-      button.addEventListener("click", () => readAloud.send(frame.innerText, title));
+      button.addEventListener("click", () => readAloud.send((frame as HTMLElement).innerText, title));
       frame.classList.add("read-aloud-frame");
       frame.prepend(button);
       added.push(button);
     });
-    return () => added.forEach((button) => button.remove());
+    mark();
+    // A book's page arrives after it is opened (its text is fetched, a long section drawn in parts): each box gets
+    // its button as it appears, not only those there when the window first drew.
+    const watcher = new MutationObserver(() => mark());
+    watcher.observe(root, { childList: true, subtree: true });
+    return () => {
+      watcher.disconnect();
+      added.forEach((button) => button.remove());
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [can, ...deps]);
 }
