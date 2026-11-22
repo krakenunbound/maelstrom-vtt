@@ -315,7 +315,9 @@ export function Desktop({
     const at = session.combat.entries.findIndex((item) => item.recordId === id);
     return at < 0 ? Number.MAX_SAFE_INTEGER : at;
   };
-  const portraits = byInitiative ? [...session.roster].sort((a, b) => turnIndex(a.id) - turnIndex(b.id)) : session.roster;
+  // FG's CLSH: everyone's characters, or only those whose players are at the table.
+  const shownRoster = session.options.partyShown === "active" ? session.roster.filter((entry) => entry.online) : session.roster;
+  const portraits = byInitiative ? [...shownRoster].sort((a, b) => turnIndex(a.id) - turnIndex(b.id)) : shownRoster;
   // When their order changes the portraits slide to their new places (measured before and after), not jump.
   const stripRef = useRef<HTMLDivElement>(null);
   const chipPlaces = useRef(new Map<string, number>());
@@ -682,6 +684,8 @@ export function Desktop({
     if (!gm && key && key !== turnRang.current) {
       if (alerts.turnSound !== false) sound.yourTurn(session.ruleset);
       if (alerts.turnBanner !== false) setBanner({ key, name: myEntry?.name ?? "" });
+      // FG's CMAT: the map centres on this person's token at their turn, or centres and selects it.
+      if (myEntry?.tokenId && alerts.turnFocus !== "off") window.dispatchEvent(new CustomEvent(alerts.turnFocus === "select" ? "kraken:select-token" : "kraken:focus-token", { detail: myEntry.tokenId }));
     }
     if (!key) setBanner(null);
     turnRang.current = key;

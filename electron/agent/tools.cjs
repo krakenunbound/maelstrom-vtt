@@ -1603,6 +1603,9 @@ const TOOLS = [
       healthNpc: { type: "string", enum: ["bar", "barhover", "dot", "dothover", "numbers", "off"], description: "What players see of the GM's creatures' health, on tokens and in the combat tracker alike: a bar (the tracker: the status and the share left), a dot (the tracker: the status words), numbers (the tracker: the hit points; tokens: a bar), off (nothing)" },
       healthPc: { type: "string", enum: ["bar", "barhover", "dot", "dothover", "numbers", "off"] },
       names: { type: "string", enum: ["off", "hover", "always"] },
+      decalFit: { type: "string", enum: ["center", "fill", "fit"], description: "FG's DECALPOS: the background decal picture in the middle (default), covering the table, or as large as fits" },
+      partyVision: { type: "boolean", description: "FG's TPTY: players see through every player's token (shared party vision) and may move them all (default off)" },
+      partyShown: { type: "string", enum: ["all", "active"], description: "FG's CLSH: the characters along the top: all, or only those whose players are at the table" },
       healthGm: { type: "string", enum: ["bar", "barhover", "dot", "dothover", "off"], description: "FG's TGMH: what the GM sees of health on tokens (default dot)" },
       effectsGm: { type: "string", enum: ["on", "hover", "mark", "markhover", "off"], description: "FG's TGME: effects on tokens as the GM sees them: icons, icons on hover, one mark with the count, a mark on hover, off" },
       effectsNpc: { type: "string", enum: ["on", "hover", "mark", "markhover", "off"], description: "FG's TNPCE: what players see of the GM's creatures' effects on tokens (off sends none)" },
@@ -2554,6 +2557,9 @@ const TOOLS = [
       who: string("With color, turnSound or turnBanner: a player's name, to set that player's (their user settings) instead of the GM's"),
       turnSound: { type: "boolean", description: "When this person's turn comes round on the combat tracker: a soft chime (a console tone in the sci-fi games; Settings > You at the table)" },
       whisperSound: { type: "boolean", description: "A chime when someone whispers to this person (FG's Speech: Play sound on whisper; Settings > You at the table; default on)" },
+      turnFocus: { type: "string", enum: ["on", "select", "off"], description: "FG's CMAT: at this person's turn the map centres on their token (on, default), centres and selects it, or does nothing" },
+      tokenFloats: { type: "boolean", description: "FG's TOKEN_COMBAT: damage and healing float over tokens on this person's screen (default true)" },
+      speechBubbles: { type: "boolean", description: "FG's CHATMAP: speech shows in bubbles over the speaker's token (default true), else in the chat only" },
       manualDice: { type: "boolean", description: "FG's Dice: Manual entry: this person's rolls from the dice tray or the chat ask for the faces their own dice show (Settings > You at the table: Type in my own dice)" },
       turnBanner: { type: "boolean", description: "When this person's turn comes round: a banner across their screen" },
       readAloud: { type: "boolean", description: "The GM's read-aloud text also popped up over the map on this screen (always in chat)" },
@@ -2579,7 +2585,7 @@ const TOOLS = [
       }
       if (args.who !== undefined && args.who !== "" && args.who !== "GM") {
         const table = needTable(ctx);
-        const patch = { ...(args.color !== undefined ? { color: args.color ? args.color : null } : {}), ...(typeof args.turnSound === "boolean" ? { turnSound: args.turnSound } : {}), ...(typeof args.whisperSound === "boolean" ? { whisperSound: args.whisperSound } : {}), ...(typeof args.manualDice === "boolean" ? { manualDice: args.manualDice } : {}), ...(typeof args.turnBanner === "boolean" ? { turnBanner: args.turnBanner } : {}) };
+        const patch = { ...(args.color !== undefined ? { color: args.color ? args.color : null } : {}), ...(typeof args.turnSound === "boolean" ? { turnSound: args.turnSound } : {}), ...(typeof args.whisperSound === "boolean" ? { whisperSound: args.whisperSound } : {}), ...(typeof args.manualDice === "boolean" ? { manualDice: args.manualDice } : {}), ...(["on", "select", "off"].includes(args.turnFocus) ? { turnFocus: args.turnFocus } : {}), ...(typeof args.tokenFloats === "boolean" ? { tokenFloats: args.tokenFloats } : {}), ...(typeof args.speechBubbles === "boolean" ? { speechBubbles: args.speechBubbles } : {}), ...(typeof args.turnBanner === "boolean" ? { turnBanner: args.turnBanner } : {}) };
         return out({ who: args.who, prefs: table.prefs(args.who, patch) });
       }
       return out(await ctx.ui({ kind: "dice-settings", patch: args }));

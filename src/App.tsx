@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { rangesOf } from "../shared/map/ranges.mjs";
 import { dicePacks } from "./dice/dicePacks";
 import { bookOf } from "../shared/table/restore.mjs";
@@ -74,6 +74,9 @@ function diceSettings(patch: DiceSettingsPatch) {
     ...(typeof patch.readAloud === "boolean" ? { readAloud: patch.readAloud } : {}),
     ...(typeof patch.whisperSound === "boolean" ? { whisperSound: patch.whisperSound } : {}),
     ...(typeof patch.manualDice === "boolean" ? { manualDice: patch.manualDice } : {}),
+    ...(["on", "select", "off"].includes(patch.turnFocus ?? "") ? { turnFocus: patch.turnFocus } : {}),
+    ...(typeof patch.tokenFloats === "boolean" ? { tokenFloats: patch.tokenFloats } : {}),
+    ...(typeof patch.speechBubbles === "boolean" ? { speechBubbles: patch.speechBubbles } : {}),
     ...(key === "look" ? { look } : patch.same ? { [key]: null } : changes ? { [key]: look } : {}),
   });
   const now = diceStore.settings();
@@ -139,6 +142,8 @@ function toTable(loaded: LoadedAdventure, urls: string[]): TableAdventure {
 
 export function App() {
   const session = useSession();
+  // This person's own settings (floats and speech bubbles on the map).
+  const diceSettingsNow = useSyncExternalStore(diceStore.subscribe, diceStore.settings);
   // The game's word for the GM (AD&D: the DM), read by every window's words as they draw.
   setGmTitle(rulesetNamed(session.ruleset)?.gm);
   // What the map is given stays the same object until it changes, so the map
@@ -725,7 +730,7 @@ export function App() {
           session={session}
           scene={
             scene ? (
-              <MapView scene={scene} gm={dm && !testing && !previewing} map={session.map} records={recordList} pings={session.pings} floats={session.floats} bubbles={session.bubbles} notice={session.notice} actions={mapActions} targeted={targeted} targeters={targeters} targetLinks={targetLinks} templateAsk={session.templateAsk} onTemplateDone={session.clearTemplateAsk} fxMode={session.options.tokenEffects ?? "full"} tokenLook={{ facing: session.options.facingIndicator !== false, fill: session.options.tokenFill === "100" ? 1 : 0.8, initIndicator: session.options.initIndicator ?? "glow" }} me={testing ? "@test" : myName} startEditing={dm && Boolean(prep) && !testing} gmSeat={dm} readAloud={session.readAloudNow} onReadAloudDone={session.dismissReadAloud} viewPull={session.viewPull} />
+              <MapView scene={scene} gm={dm && !testing && !previewing} map={session.map} records={recordList} pings={session.pings} floats={diceSettingsNow.tokenFloats === false ? [] : session.floats} bubbles={diceSettingsNow.speechBubbles === false ? [] : session.bubbles} notice={session.notice} actions={mapActions} targeted={targeted} targeters={targeters} targetLinks={targetLinks} templateAsk={session.templateAsk} onTemplateDone={session.clearTemplateAsk} fxMode={session.options.tokenEffects ?? "full"} tokenLook={{ facing: session.options.facingIndicator !== false, fill: session.options.tokenFill === "100" ? 1 : 0.8, initIndicator: session.options.initIndicator ?? "glow" }} me={testing ? "@test" : myName} startEditing={dm && Boolean(prep) && !testing} gmSeat={dm} readAloud={session.readAloudNow} onReadAloudDone={session.dismissReadAloud} viewPull={session.viewPull} />
             ) : null
           }
           sceneId={scene?.id ?? ""}

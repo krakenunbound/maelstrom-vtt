@@ -854,8 +854,19 @@ function MapViewInner({
       const token = tokens.find((item) => item.id === (event as CustomEvent<string>).detail);
       if (token) lookAt(token);
     };
+    // Centred and selected (FG's CMAT "select", at this person's turn).
+    const onSelect = (event: Event) => {
+      const token = tokens.find((item) => item.id === (event as CustomEvent<string>).detail);
+      if (!token) return;
+      lookAt(token);
+      setSelected(token.id);
+    };
     window.addEventListener("kraken:focus-token", onFocus);
-    return () => window.removeEventListener("kraken:focus-token", onFocus);
+    window.addEventListener("kraken:select-token", onSelect);
+    return () => {
+      window.removeEventListener("kraken:focus-token", onFocus);
+      window.removeEventListener("kraken:select-token", onSelect);
+    };
   });
 
   function centeredOn(rect: DOMRect, point: Point, scale: number): Camera {
@@ -2401,7 +2412,7 @@ function MapViewInner({
         <MoveRequestGhosts requests={map.moveRequests} tokens={tokens} width={frame.worldWidth} height={frame.worldHeight} scale={camera.scale} />
         {tokens.map((token) => {
           // Locked, a player still drags: the move goes to the GM to approve.
-          const canDrag = gm || token.mine;
+          const canDrag = gm || token.mine || Boolean(token.party);
           const span = token.squares * tokenUnit;
           const isDragged = drag?.id === token.id && drag.moved;
           return (

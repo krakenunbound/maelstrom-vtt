@@ -40,9 +40,9 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 
 | FG option | FG default | Maelstrom | Verdict |
 |---|---|---|---|
-| Desktop: Show PCs (CLSH) | all | Portrait bar | Check live (FG: all, owned, off) |
+| Desktop: Show PCs (CLSH) | all | `partyShown`: all, or players at the table | Done |
 | Chat: Set GM voice to active CT (CTAV) | off | `gmVoiceActive`: the GM speaks as the creature whose turn it is (not a character), then back | Done |
-| Desktop: Background decal position (DECALPOS) | center | Decal always centred | Missing |
+| Desktop: Background decal position (DECALPOS) | center | `decalFit`: in the middle, covering the table, as large as fits | Done |
 | Dice: Limit rolls to chat window (DRMO) | off | `diceInChat`: no 3D dice, rolls straight to chat | Done |
 | Game: Rules Version (GAVE) | 2024 | House rule: exhaustion and a long rest's hit dice follow it (the tracker mixed 2024 exhaustion with 2014 rests before) | Done |
 | Party Sheet (Player): Show inventory details (PSIN) | off | Party sheet | Check live |
@@ -80,20 +80,20 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 
 | FG option | FG default | Maelstrom | Verdict |
 |---|---|---|---|
-| Speech: Display location (CHATMAP) | image | Speech bubbles on the map | Check live |
+| Speech: Display location (CHATMAP) | image | `speechBubbles`, each person's own: bubbles over the token, or the chat only | Done |
 | Speech: Play sound on whisper (CWHR) | on | `whisperSound`, each person's own | Done |
 | Desktop: Combat actions (TOAST_COMBAT) | off | Table toasts | Check live |
 | Desktop: Interface actions (TOAST_INTERFACE) | off | Table toasts | Check live |
 | Desktop: Display location (TOAST_LOCATION) | | Not found | Missing |
 | Desktop: Turn change (TOAST_TURN) | off | Turn card | Same |
-| Token: Combat actions (TOKEN_COMBAT) | off | Token floats (damage, healing) | Check live (switch) |
-| Speech: Map display duration (TOKEN_SPEECH) | off | Speech bubbles | Check live (duration) |
+| Token: Combat actions (TOKEN_COMBAT) | off | `tokenFloats`, each person's own (on by default) | Done |
+| Speech: Map display duration (TOKEN_SPEECH) | off | Bubbles last by the length of what is said; on or off with `speechBubbles` | Partly (no set duration) |
 
 ### Per user: settings
 
 | FG option | FG default | Maelstrom | Verdict |
 |---|---|---|---|
-| Turn: Token center and/or select (CMAT) | on | Not found | Missing |
+| Turn: Token center and/or select (CMAT) | on | `turnFocus`, each person's own: centre, centre and select, nothing | Done |
 | Color: Active character (COLOR) | | Player colour | Same |
 | Desktop: Combat list size (DESKTOPCTSIZE) | 6 | Not found | Check live |
 | Effect: Short summary display (EFFSHORT) | on | Effects on the tracker | Check live |
@@ -117,7 +117,7 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 | Token (Player): Show enemy health (TNPCH) | dot | `healthNpc` | Same |
 | Token (Player): Show ally effects (TPCE) | on | `effectsPc` | Done |
 | Token (Player): Show ally health (TPCH) | dot | `healthPc` | Same |
-| Token: Party vision and movement (TPTY) | off | Not found | Missing (shared party vision) |
+| Token: Party vision and movement (TPTY) | off | `partyVision`: players see through every player's token and may move them; the GM's creatures stay the GM's | Done |
 
 ## How house rules work in Maelstrom
 

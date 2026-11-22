@@ -1060,7 +1060,12 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
   }
 
   function canMove(token, seat) {
-    return seat.role === "dm" || (token.owner !== "" && token.owner === seat.name);
+    return seat.role === "dm" || (token.owner !== "" && token.owner === seat.name) || partyToken(token, seat);
+  }
+  // FG's TPTY (Token: Party vision and movement): with the GM's switch on, a player sees through every
+  // player's token and may move them all.
+  function partyToken(token, seat) {
+    return seat.role === "player" && Boolean(tableOptions().partyVision) && Boolean(token.owner) && !token.owner.startsWith("@");
   }
 
   // The effects on a token's creature: its tracker entry's while it is in the
@@ -1148,6 +1153,8 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       color: token.owner ? colorOf(token.owner) : FACTION_COLOR[token.faction],
       hidden: token.hidden,
       mine: seat.role === "player" && token.owner === seat.name,
+      // Another player's token this seat may move too (party movement).
+      ...(seat.role === "player" && token.owner !== seat.name && partyToken(token, seat) ? { party: true } : {}),
       health: shows.health === "off" ? null : health(token),
       // The GM's and its owner's: how many moves can be undone, and (on the
       // combat tracker) this turn's path, where it went since its turn began.
@@ -1245,7 +1252,7 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
     }
     const shown = all.filter((token) => !token.hidden && !invisibleTo(token, seat));
     // Player vision preview (the GM's): every player's tokens at once, as the table sees them.
-    const mine = shown.filter((token) => token.owner === seat.name || (seat.everyone && token.owner && !token.owner.startsWith("@")));
+    const mine = shown.filter((token) => token.owner === seat.name || ((seat.everyone || partyToken(token, seat)) && token.owner && !token.owner.startsWith("@")));
     // The tokens that see for their player: a token with no sight shows them nothing (all of them blind: nothing but themselves).
     const seers = mine.filter((token) => !token.noSight);
     // A seat with a token here (one the GM hid included) or whose character has been on this map (its token

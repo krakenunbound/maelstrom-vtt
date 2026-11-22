@@ -3,6 +3,8 @@
 //  - TGME, TNPCE, TPCE: effects on tokens for the GM, and for players on creatures and on characters: icons,
 //    on hover, one mark, a mark on hover, off (off sends no signs at all; what can be seen stays)
 //  - TFAC, TASG, INITIND: the facing arrow, the token's fill, the turn mark (table options every seat reads)
+//  - CMAT, TOKEN_COMBAT, CHATMAP: each person's own (kept under their name); DECALPOS, CLSH: the table's
+//  - TPTY: every player sees through all the players' tokens and may move them; the GM's creatures stay the GM's
 import "./loopback.mjs";
 import { createRequire } from "node:module";
 
@@ -67,6 +69,44 @@ try {
   const after = bad.options ?? bad;
   assert(after.error || (after.tokenFill === "80" && after.initIndicator === "glow"), `nonsense falls back: ${JSON.stringify(after)}`);
   done.push("facing arrows, token fill and the turn mark");
+
+  // CMAT, TOKEN_COMBAT, CHATMAP: each person's own, kept by the GM's app under their name.
+  const prefs = (await tool("kraken_dice_settings", { who: "Ann", turnFocus: "select", tokenFloats: false, speechBubbles: false })).prefs;
+  assert(prefs.turnFocus === "select" && prefs.tokenFloats === false && prefs.speechBubbles === false, `Ann's own: ${JSON.stringify(prefs)}`);
+  const odd = (await tool("kraken_dice_settings", { who: "Ann", turnFocus: "spin" })).prefs;
+  assert(odd.turnFocus === "select", `nonsense is not kept: ${JSON.stringify(odd.turnFocus)}`);
+  done.push("each person's turn focus, floats and speech bubbles");
+
+  // DECALPOS, CLSH.
+  const desk = await tool("kraken_table_options", { decalFit: "fill", partyShown: "active" });
+  const deskOptions = desk.options ?? desk;
+  assert(deskOptions.decalFit === "fill" && deskOptions.partyShown === "active", `stored: ${JSON.stringify({ d: deskOptions.decalFit, p: deskOptions.partyShown })}`);
+  const deskOdd = await tool("kraken_table_options", { decalFit: "tile", partyShown: "some" });
+  const deskAfter = deskOdd.options ?? deskOdd;
+  assert(deskAfter.decalFit === "center" && deskAfter.partyShown === "all", "nonsense falls back");
+  done.push("the decal's place and the characters along the top");
+
+  // TPTY: Bob's fighter behind a wall. Off, Ann sees by her own token alone and may not move his; on, both.
+  agent.map.setScene({ id: "halls", name: "Halls", width: 500, height: 500, padding: 0, backgroundColor: "#000", grid: { size: 50, type: 1, color: "#000", alpha: 0.2, distance: 5, units: "ft" }, walls: [{ id: "w", x1: 250, y1: 0, x2: 250, y2: 500, sight: 20, move: 20, door: 0, ds: 0 }], lights: [], tokens: [] });
+  const bobHero = agent.records.create({ type: "character", name: "Bob's Fighter", owner: "Bob", visibility: "owner", data: {} }, agent.seat);
+  const annHere = await tool("kraken_token_place", { recordId: hero.id, col: 1, row: 1 });
+  const bobHere = await tool("kraken_token_place", { recordId: bobHero.id, col: 7, row: 1 });
+  const monster = await tool("kraken_token_place", { recordId: orcRecord.id, col: 8, row: 3 });
+  const annSeat = { role: "player", name: "Ann" };
+  let seen = ann();
+  assert((seen.vision ?? []).length === 1 && !of(seen, bobHere.id)?.party, `alone: ${JSON.stringify({ v: seen.vision?.length, party: of(seen, bobHere.id)?.party })}`);
+  let refused = "";
+  try { agent.map.move(bobHere.id, { x: 375, y: 125 }, annSeat); } catch (error) { refused = String(error); }
+  assert(/not your token/.test(refused), "off: Bob's token is not Ann's to move");
+  await tool("kraken_table_options", { partyVision: true });
+  seen = ann();
+  assert((seen.vision ?? []).length === 2 && of(seen, bobHere.id)?.party === true, `party vision: ${JSON.stringify({ v: seen.vision?.length, party: of(seen, bobHere.id)?.party })}`);
+  agent.map.move(bobHere.id, { x: 375, y: 175 }, annSeat);
+  refused = "";
+  try { agent.map.move(monster.id, { x: 425, y: 225 }, annSeat); } catch (error) { refused = String(error); }
+  assert(/not your token/.test(refused), "the GM's creatures stay the GM's");
+  await tool("kraken_table_options", { partyVision: false });
+  done.push("party vision and movement");
 } finally {
   await server.stop?.();
 }

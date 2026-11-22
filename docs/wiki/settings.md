@@ -15,6 +15,9 @@ Opens the **Dice** window: your dice sets, colours, design, material, lettering,
 - **Banner on your turn:** your name across the screen when it is your turn.
 - **Chime on a whisper:** a soft chime when someone whispers to you.
 - **Type in my own dice:** for real dice at the table. A roll from the tray or the chat asks for the faces your dice show, and the roll uses them; chat marks it **[MANUAL]**. Sheet and tracker rolls still roll themselves.
+- **At your turn, the map:** centres on your token, centres on it and selects it, or stays where it is.
+- **Damage and healing over tokens:** the numbers floating up from a token.
+- **Speech over tokens:** what a character or creature says in a bubble over its token, as well as in the chat.
 
 ### Ability cards
 
@@ -43,6 +46,8 @@ Opens the **Dice** window: your dice sets, colours, design, material, lettering,
 - **Modifiers**: named numbers beside every player's modifier box, one a line (*Higher ground +1*).
 
 Decals, wallpapers and GM icons each offer Maelstrom's own, a set for each game, **Browse…** to import a picture of your own, or none.
+
+**Background decal** puts a decal picture in the middle of the table, covering it, or as large as fits. **Characters along the top** shows every character's portrait, or only those whose players are at the table.
 
 ![The hex grid wallpaper, the Maelstrom decal and the dice tower](../screenshots/desktop-hex.jpg)
 
@@ -78,6 +83,7 @@ Ammunition, Consumables, Rations and water, Light from the pack, Encumbrance and
 - **Token size:** a token's picture fills 80% of its squares, or all of them.
 - **Whose turn it is, on the map:** the token whose turn it is wears a glow, a turning ring, or nothing.
 - **Facing arrows:** the small arrow on a token that faces a way.
+- **Party vision and movement:** every player sees what all the characters' tokens see, and may move any of them (never your creatures).
 - **Diagonals:** every square counts one, 5-10-5, or a straight line.
 
 What is off is never sent to a player's browser. See [Tokens, vision and lighting](tokens-vision-and-lighting.md).

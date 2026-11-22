@@ -63,6 +63,15 @@ function YouAtTheTable() {
       <Toggle label="Read aloud on screen" hint={GM("The GM's read-aloud text also pops up over the map in a bubble (it is always in the chat).")} setting="read-aloud-popup" checked={settings.readAloud !== false} onChange={(on) => diceStore.update({ readAloud: on })} />
       <Toggle label="Banner on your turn" hint="Your name across the screen when it is your turn." setting="turn-banner" checked={settings.turnBanner !== false} onChange={(on) => diceStore.update({ turnBanner: on })} />
       <Toggle label="Whose turn it is" hint="The portrait of whoever acts next, and the round as it begins, for a moment on every turn." setting="turn-card" checked={settings.turnCard !== false} onChange={(on) => diceStore.update({ turnCard: on })} />
+      <SettingRow label="At your turn, the map" hint="When your turn comes round the map moves to your token, or moves to it and selects it, or stays where it is.">
+        <select value={settings.turnFocus ?? "on"} onChange={(event) => diceStore.update({ turnFocus: event.target.value as "on" })} aria-label="At your turn, the map" data-setting="turn-focus">
+          <option value="on">Centres on your token</option>
+          <option value="select">Centres on it and selects it</option>
+          <option value="off">Stays where it is</option>
+        </select>
+      </SettingRow>
+      <Toggle label="Damage and healing over tokens" hint="The numbers float up from a token as it is hurt or healed." setting="token-floats" checked={settings.tokenFloats !== false} onChange={(on) => diceStore.update({ tokenFloats: on })} />
+      <Toggle label="Speech over tokens" hint="What a character or creature says shows in a bubble over its token as well as in the chat." setting="speech-bubbles" checked={settings.speechBubbles !== false} onChange={(on) => diceStore.update({ speechBubbles: on })} />
     </SettingsSection>
   );
 }
@@ -162,6 +171,19 @@ export function SettingsWindow({ session }: { session: Session }) {
             </select>
           </SettingRow>
           <Toggle label="Party portraits in initiative order" hint="During a fight the portraits along the top of every screen re-arrange into turn order, the first to act on the left. Off: they keep the party's order." checked={Boolean((session.options as { partyByInitiative?: boolean }).partyByInitiative)} onChange={(on) => session.setTableOptions({ partyByInitiative: on } as never)} setting="party-by-initiative" />
+          <SettingRow label="Characters along the top" hint="Every character's portrait, or only those whose players are at the table.">
+            <select value={session.options.partyShown ?? "all"} onChange={(event) => session.setTableOptions({ partyShown: event.target.value } as never)} aria-label="Characters along the top" data-setting="party-shown">
+              <option value="all">All</option>
+              <option value="active">Players at the table</option>
+            </select>
+          </SettingRow>
+          <SettingRow label="Background decal" hint="A decal picture in the middle of the table, covering it, or as large as fits. Maelstrom's own emblem stays in the middle.">
+            <select value={session.options.decalFit ?? "center"} onChange={(event) => session.setTableOptions({ decalFit: event.target.value } as never)} aria-label="Background decal" data-setting="decal-fit">
+              <option value="center">In the middle</option>
+              <option value="fill">Covering the table</option>
+              <option value="fit">As large as fits</option>
+            </select>
+          </SettingRow>
           <Toggle label="Roll initiative every round" hint="A house rule: at each new round everyone rolls initiative again and the order changes." checked={Boolean((session.options as { initEachRound?: boolean }).initEachRound)} onChange={(on) => session.setTableOptions({ initEachRound: on } as never)} setting="init-each-round" />
           <Toggle label="Stop at the start of each round" hint="A new round waits for your next click before anyone acts, so you can handle what happens at the top of the round." checked={Boolean((session.options as { roundStop?: boolean }).roundStop)} onChange={(on) => session.setTableOptions({ roundStop: on } as never)} setting="round-stop" />
           <SettingRow label="Skip turns" hint="Whose turns the tracker passes over: dead and unconscious creatures, characters too, or no one.">
@@ -451,7 +473,8 @@ export function TableDecal({ session }: { session: Session }) {
   if (id === "") return null;
   if (id === "kraken") return <Emblem />;
   const url = session.decalUrl(id);
-  return url ? <img key={id} className="emblem decal" src={url} alt="" draggable={false} /> : <Emblem />;
+  // FG's DECALPOS: in the middle, covering the table, or as large as fits (Maelstrom's emblem stays in the middle).
+  return url ? <img key={id} className="emblem decal" data-fit={session.options.decalFit ?? "center"} src={url} alt="" draggable={false} /> : <Emblem />;
 }
 
 const KRAKEN: DecalItem = { id: "kraken", name: "Kraken", group: "Maelstrom" };

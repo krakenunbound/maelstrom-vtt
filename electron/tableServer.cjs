@@ -314,6 +314,12 @@ function savedOptions(value) {
     // The message of the day (FG's): what a player sees when they join: words, and links (a map, an NPC, a page).
     motd: options.motd && typeof options.motd === "object" ? { text: id(options.motd.text, "").slice(0, 8000), links: Array.isArray(options.motd.links) ? options.motd.links.filter((link) => link && typeof link === "object").slice(0, 40) : [] } : { text: "", links: [] },
     decal: id(options.decal, "kraken"),
+    // FG's DECALPOS: a decal picture in the middle (center), covering the table (fill), or as large as fits (fit).
+    decalFit: ["fill", "fit"].includes(options.decalFit) ? options.decalFit : "center",
+    // FG's CLSH: the characters along the top: everyone's, or only those whose players are at the table.
+    partyShown: options.partyShown === "active" ? "active" : "all",
+    // FG's TPTY: players see through every player's token and may move them all (off by default).
+    ...(options.partyVision ? { partyVision: true } : {}),
     wallpaper: id(options.wallpaper, ""),
     // How the wallpaper meets the screen, as Windows': fill (cover), fit, stretch, tile (the default), center.
     wallpaperFit: ["fill", "fit", "stretch", "tile", "center"].includes(options.wallpaperFit) ? options.wallpaperFit : "tile",
@@ -898,7 +904,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     if (options.paused !== wasPaused) addChat({ id: "table", from: "Table", text: options.paused ? "The GM has paused the game." : "The game goes on.", at: Date.now(), kind: "story" });
     onChange("table");
     // What tokens show (names, health) and how distance counts are in each seat's map.
-    if (["diagonal", "healthNpc", "healthPc", "healthGm", "names", "effectsGm", "effectsNpc", "effectsPc"].some((key) => key in next)) sendMaps();
+    if (["diagonal", "healthNpc", "healthPc", "healthGm", "names", "effectsGm", "effectsNpc", "effectsPc", "partyVision"].some((key) => key in next)) sendMaps();
     // A bookkeeping switch changed: the load's effects (and the games whose rules count the load) follow.
     if ("bookkeeping" in next && bookkeepingApi) void bookkeepingApi.switched(wasBooks, options.bookkeeping).catch(() => undefined);
     // What the tracker shows players of the creatures' health follows the same option.

@@ -2952,3 +2952,7 @@ label.set-row { cursor: pointer; }
 /* An effect mark (FG's TGME "mark"): one sign with the number of effects. */
 .token-effect-mark { display: grid; place-items: center; border-radius: 50%; }
 .token-effect-mark b { position: static; font-weight: 700; line-height: 1; }
+/* FG's DECALPOS: a decal picture covering the table, or as large as fits. */
+.emblem.decal[data-fit="fill"], .emblem.decal[data-fit="fit"] { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; filter: none; }
+.emblem.decal[data-fit="fill"] { object-fit: cover; }
+.emblem.decal[data-fit="fit"] { object-fit: contain; }

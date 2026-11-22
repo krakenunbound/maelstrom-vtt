@@ -42,6 +42,9 @@ function cleanPrefs(input, before, lookOf) {
   if (typeof input.turnSound === "boolean") out.turnSound = input.turnSound;
   if (typeof input.whisperSound === "boolean") out.whisperSound = input.whisperSound;
   if (typeof input.manualDice === "boolean") out.manualDice = input.manualDice;
+  if (["on", "select", "off"].includes(input.turnFocus)) out.turnFocus = input.turnFocus;
+  if (typeof input.tokenFloats === "boolean") out.tokenFloats = input.tokenFloats;
+  if (typeof input.speechBubbles === "boolean") out.speechBubbles = input.speechBubbles;
   if (typeof input.turnBanner === "boolean") out.turnBanner = input.turnBanner;
   if (typeof input.turnCard === "boolean") out.turnCard = input.turnCard;
   if (typeof input.readAloud === "boolean") out.readAloud = input.readAloud;

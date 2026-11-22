@@ -79,6 +79,7 @@ export function TokenOptionsSection({ session }: { session: Session }) {
           <option value="off">Nothing</option>
         </select>
       </SettingRow>
+      <Toggle label="Party vision and movement" hint="Every player sees what all the characters' tokens see, and may move any of them." checked={Boolean((options as { partyVision?: boolean }).partyVision)} onChange={(on) => set({ partyVision: on })} setting="party-vision" />
       <Toggle label="Facing arrows" hint="A small arrow on the rim of a token that faces a way (its picture turns either way)." checked={options.facingIndicator !== false} onChange={(on) => set({ facingIndicator: on })} setting="facing-indicator" />
       <SettingRow label="Token names" hint="Off: players see no names but their own. A token's unidentified name (its menu) is shown instead of its real one.">
         <select value={options.names ?? "hover"} onChange={(event) => set({ names: event.target.value })} aria-label="Token names" data-setting="token-names">
