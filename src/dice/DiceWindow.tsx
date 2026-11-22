@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from "react";
 import type { Session } from "../session/useSession";
 import { dicePacks } from "./dicePacks";
-import { characterDice, DESIGNS, diceStore, EFFECTS, FONTS, MATERIALS, PRESETS, SET_GROUPS, type DiceLook, type DiceSet } from "./diceStore";
+import { characterDice, DESIGNS, DICE_LOOK_DRAG, diceStore, EFFECTS, FONTS, MATERIALS, PRESETS, SET_GROUPS, type DiceLook, type DiceSet } from "./diceStore";
 import { SettingRow, Toggle } from "../ui/SettingsParts";
 
 // The preview's three.js loads with the window.
@@ -218,6 +218,13 @@ export function DiceWindow({ session }: { session: Session }) {
               data-preset={preset.name}
               style={{ ["--set-glow" as string]: preset.effect === "none" ? preset.accent : preset.effect === "fire" ? "#ff8a2a" : preset.effect === "frost" ? "#bfe8ff" : preset.effect === "shadow" ? "#7a3cff" : preset.accent }}
               onClick={() => setLook(lookOf(preset))}
+              // FG's dice skin: dragged onto the chat, it becomes the dropper's own dice.
+              draggable
+              onDragStart={(event) => {
+                event.dataTransfer.setData(DICE_LOOK_DRAG, JSON.stringify(lookOf(preset)));
+                event.dataTransfer.setData("text/plain", preset.name);
+                event.dataTransfer.effectAllowed = "copy";
+              }}
             >
               {picture ? <img src={picture} alt="" draggable={false} /> : <span className="dice-set-blank" style={{ background: preset.body, color: preset.ink, ...FONT_STYLE[preset.font] }}>20</span>}
               <span>{preset.name}</span>

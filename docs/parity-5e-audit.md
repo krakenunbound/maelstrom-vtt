@@ -306,7 +306,7 @@ FG's chat window, slash commands, dice tray, modifier box, Modifiers window, dic
 | "GM is typing" for players | The GM is typing… under the players' chat (not for commands) | Same |
 | Speech, emote, act, OOC, story, mood, whisper, languages (understood by) | The same, scripts with translations | Same |
 | Rolls with tags, secret and tower rolls, results by option | Roll cards with dice, the same | Same |
-| Drop an image, sound or dice skin on chat | Links attached; a picture link shows the picture in the line | Partly (sounds and dice skins by link) |
+| Drop an image, sound or dice skin on chat | Links attached; a picture link shows the picture in the line; a sound the GM drops plays for the table; a dice set from the Dice window dropped becomes the dropper's dice | Yes |
 | Slash: /w, /r, /mod, /rollon, /option, /afk, /id, /gmid, /die, /roll, /emote, /ooc, /story, /mood, /vote, /reload, /save, /clear, /version, /help | All of them (/reply for /r) and more (/check, /save DC, /award, /pause, /kick, /volume...) | Better |
 | /exportchar, /importchar, /exportnpc, /importnpc, /export, /flushdb, /console, /cq | Import and export in the windows; no FG queue or console | n/a (windows do it) |
 | Tray dice, drag to gather, right-click roll N, custom d2, d3 | The same, custom d2, d3, d16, d30; pick up N | Same |

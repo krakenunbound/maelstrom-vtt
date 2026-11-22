@@ -159,6 +159,8 @@ export const PRESETS: ({ name: string } & DiceLook)[] = [
 // they follow them to any browser, past a reload, a restart and signing in again.
 // readAloud: the GM's read-aloud also shown on this screen as a bubble (off: only in chat).
 // turnCard: whose turn it is (a portrait card) for every turn. turnSound, turnBanner: when this person's turn comes round on the combat tracker, a chime, and a banner across the screen.
+// A dice set's drag (FG's dice skin): its whole look.
+export const DICE_LOOK_DRAG = "text/kraken-dice-look";
 export type DiceSettings = { show: boolean; sound: boolean; volume: number; tray: number; roll: number; look: DiceLook; npc: DiceLook | null; damage: DiceLook | null; color: string | null; turnSound: boolean; turnBanner: boolean; turnCard?: boolean; readAloud?: boolean; whisperSound?: boolean; manualDice?: boolean; turnFocus?: "on" | "select" | "off"; tokenFloats?: boolean; speechBubbles?: boolean; speechSeconds?: number };
 export type DiceSet = "look" | "npc" | "damage";
 type SettingsPatch = Partial<Omit<DiceSettings, "look" | "npc" | "damage">> & { look?: Partial<DiceLook>; npc?: Partial<DiceLook> | null; damage?: Partial<DiceLook> | null };

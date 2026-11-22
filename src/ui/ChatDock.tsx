@@ -3,7 +3,7 @@ import { usePreviewed } from "./pickerPreview";
 import { BRAND } from "../../shared/brand.mjs";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ChatLine, DamageCard, RollResult, Session } from "../session/useSession";
-import { characterDice, diceStore, FATE_SIDES, fateFace, rolling, setThrow, tower as towerDrops, type DiceLook } from "../dice/diceStore";
+import { characterDice, DICE_LOOK_DRAG, diceStore, FATE_SIDES, fateFace, rolling, setThrow, tower as towerDrops, type DiceLook } from "../dice/diceStore";
 import { ladder } from "../../shared/fate/rules.mjs";
 import { commandsFor, runChat, type Command } from "./chatCommands";
 import { slotDrag } from "./QuickSlots";
@@ -18,6 +18,7 @@ import { TowerArt, towerLook } from "./TowerArt";
 import { agentCommands } from "./agentCommands";
 import { DieShape, Icon } from "./icons";
 import { useWindows } from "./Windows";
+import { playSoundForTable } from "./QuickSlots";
 import { rulesetFor } from "../../shared/rulesets/registry.mjs";
 import { gameLanguages, knownLanguages, sameLanguage } from "../../shared/text/languages.mjs";
 import { SCRIPTS, scriptOf, writeIn } from "../../shared/text/scripts.mjs";
@@ -1192,7 +1193,7 @@ export function ChatDock({ session }: { session: Session }) {
         }}
         onDragOver={(event) => {
           const types = [...event.dataTransfer.types];
-          if (!hasLink(event) && !types.includes("application/x-kraken-record") && !types.includes(TABLE_RESULT_DRAG)) return;
+          if (!hasLink(event) && !types.includes("application/x-kraken-record") && !types.includes(TABLE_RESULT_DRAG) && !types.includes(DICE_LOOK_DRAG)) return;
           event.preventDefault();
           event.dataTransfer.dropEffect = "copy";
           setLinkOver(true);
@@ -1207,7 +1208,25 @@ export function ChatDock({ session }: { session: Session }) {
             setDraft((now) => `${now.trim() ? `${now.trimEnd()} ` : ""}${result}`);
             return;
           }
-          const link = linkFrom(event) ?? (() => {
+          // FG's dice skin dropped on the chat: the dropper's own dice from now on.
+          const skin = event.dataTransfer.getData(DICE_LOOK_DRAG);
+          if (skin) {
+            event.preventDefault();
+            try {
+              diceStore.update({ look: JSON.parse(skin) as DiceLook });
+            } catch {
+              /* not a dice set */
+            }
+            return;
+          }
+          const dropped = linkFrom(event);
+          // FG's sound dropped on the chat by the GM: played for the table.
+          if (dropped?.kind === "sound" && session.role === "dm") {
+            event.preventDefault();
+            playSoundForTable(session, dropped.sound, dropped.soundKind);
+            return;
+          }
+          const link = dropped ?? (() => {
             const id = event.dataTransfer.getData("application/x-kraken-record");
             const record = id ? session.records[id] : undefined;
             return record ? ({ kind: record.type === "character" ? "sheet" : record.type === "note" ? "note" : "record", record: id, label: record.name } as QuickSlot) : null;
