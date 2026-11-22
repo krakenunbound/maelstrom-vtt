@@ -19,6 +19,14 @@ const at = (data, path) => String(path ?? "").split(".").filter(Boolean).reduce(
 export function characterClasses(manifest, data) {
   const spec = manifest?.classes;
   if (!spec || !data || typeof data !== "object") return [];
+  // More than one place (FG's classes list, a class package): the first that has any.
+  if (Array.isArray(spec)) {
+    for (const one of spec) {
+      const found = characterClasses({ classes: one }, data);
+      if (found.length) return found;
+    }
+    return [];
+  }
   if (spec.rows) {
     const where = spec.where ?? {};
     return rowsOf(at(data, spec.rows))

@@ -27,7 +27,8 @@ const SKILL_LIST = SKILLS;
 export default {
   id: "dnd5e",
   // Where a character keeps its classes (FG's classes list), for the roster, Character Selection and spells.
-  classes: { rows: "classes", name: "name", level: "level" },
+  // FG's characters keep a classes list; Maelstrom's builder a class package.
+  classes: [{ rows: "classes", name: "name", level: "level" }, { rows: "packages", where: { packagetype: "Class" }, name: "name", level: "level" }],
   // Spells list the classes that cast them in source ("Wizard, Sorcerer").
   spells: { casters: { field: "source" } },
   names: ["D&D 5E", "Descending Darkness"],

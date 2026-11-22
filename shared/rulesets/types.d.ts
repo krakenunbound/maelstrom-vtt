@@ -410,7 +410,7 @@ export interface RulesetManifest {
   host: { module: string | null; message?: string; tool?: string };
   // Where a character keeps its classes (read by the roster, Character Selection, the party sheet, spells):
   // a list of rows (where: only rows whose fields say so, as C&C's class packages), or one class in a field.
-  classes?: { rows: Path; name?: string; level?: string; where?: Record<string, string> } | { field: Path; level?: Path };
+  classes?: ClassesAt | ClassesAt[];
   // How a spell names the classes that cast it (the Spells list's Class filter, and what a player sees):
   // a list of class names in a field; class names with levels ("Sor/Wiz 2", abbreviations spelled out); or a
   // tradition (Arcane, Divine) whose casters a pattern matches.
@@ -527,3 +527,6 @@ export interface ActionsSpec {
   lights?: string[]; // core light presets it lists
   burn?: Record<string, number | null>; // a light's burn time in minutes
 }
+
+// Where a character keeps its classes: rows (with a filter), or one field.
+export type ClassesAt = { rows: Path; name?: string; level?: string; where?: Record<string, string> } | { field: Path; level?: Path };
