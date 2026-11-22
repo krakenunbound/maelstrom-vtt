@@ -288,7 +288,7 @@ export type SoundItem = { id: string; kind: string; group: string; name: string 
 export type SoundLibrary = { sounds: SoundItem[]; groups: { id: string; count: number }[]; folder: string; triggers?: SoundTrigger[] };
 // Bookkeeping, each part the GM may switch off (electron/bookkeeping.cjs); variant: 5E variant encumbrance.
 export type BookkeepingOptions = { ammo: boolean; consumables: boolean; rations: boolean; light: boolean; encumbrance: boolean; variant: boolean };
-export type TableOptions = { groupNames?: Record<string, string[]>; recordGroups?: Record<string, string>; partyVision?: boolean; decalFit?: "center" | "fill" | "fit"; partyShown?: "all" | "active"; healthGm?: string; effectsGm?: string; effectsNpc?: string; effectsPc?: string; facingIndicator?: boolean; tokenFill?: "80" | "100"; initIndicator?: "glow" | "ring" | "off"; paused?: boolean; towerReveal: boolean; towerExternal?: boolean; towerStyle?: string; deathMarkers?: { on: boolean; default: string; byType: Record<string, string> }; motd?: { text: string; links: QuickSlot[] }; decal: string; wallpaper: string; wallpaperFit?: WallpaperFit; gmIcon: string; soundHidden: "off" | "combat" | "all"; soundRepeat: number; diceHold?: number; tokenEffects?: "full" | "icons" | "off"; playerEffects?: "none" | "lights" | "conditions" | "all"; autoApply?: boolean; languages?: string[]; currencies?: string[]; modifierPresets?: { label: string; value: number }[]; theme?: string; bookkeeping?: BookkeepingOptions; wizard35?: Wizard35Options; wizard2e?: Wizard2eOptions; rules?: Record<string, string | boolean> };
+export type TableOptions = { partyDetails?: boolean; partyCarried?: boolean; groupNames?: Record<string, string[]>; recordGroups?: Record<string, string>; partyVision?: boolean; decalFit?: "center" | "fill" | "fit"; partyShown?: "all" | "active"; healthGm?: string; effectsGm?: string; effectsNpc?: string; effectsPc?: string; facingIndicator?: boolean; tokenFill?: "80" | "100"; initIndicator?: "glow" | "ring" | "off"; paused?: boolean; towerReveal: boolean; towerExternal?: boolean; towerStyle?: string; deathMarkers?: { on: boolean; default: string; byType: Record<string, string> }; motd?: { text: string; links: QuickSlot[] }; decal: string; wallpaper: string; wallpaperFit?: WallpaperFit; gmIcon: string; soundHidden: "off" | "combat" | "all"; soundRepeat: number; diceHold?: number; tokenEffects?: "full" | "icons" | "off"; playerEffects?: "none" | "lights" | "conditions" | "all"; autoApply?: boolean; languages?: string[]; currencies?: string[]; modifierPresets?: { label: string; value: number }[]; theme?: string; bookkeeping?: BookkeepingOptions; wizard35?: Wizard35Options; wizard2e?: Wizard2eOptions; rules?: Record<string, string | boolean> };
 // The D&D 3.5E character wizard's options (the GM's, as FG's KrakenCharWizard35E).
 export type Wizard35Options = { methods: number[]; rollLock: boolean; lowReroll: boolean; vault: boolean };
 // The AD&D 2E character wizard's options (the GM's): ability rolls once only, the PHB methods allowed, gold above 1st level.
@@ -1542,9 +1542,15 @@ export function useSession() {
     [send],
   );
   const setTableOptions = useCallback((patch: Partial<TableOptions>) => send({ type: "table-options", options: patch }), [send]);
-  const partyAwardXP = useCallback((xp: number) => send({ type: "party-award-xp", xp }), [send]);
+  // member: that character alone (FG's XP dropped on a PC); none: the party, split.
+  const partyAwardXP = useCallback((xp: number, member?: string) => send({ type: "party-award-xp", xp, ...(member ? { member } : {}) }), [send]);
+  // FG's Party Attack: a d20 + bonus at each member's AC.
+  const partyAttack = useCallback((bonus: number, secret = false) => send({ type: "party-attack", bonus, ...(secret ? { secret: true } : {}) }), [send]);
   const partyAward = useCallback((kind: "quests" | "encounters", id?: string) => send({ type: "party-award", kind, id }), [send]);
   const partyDistribute = useCallback(() => send({ type: "party-distribute" }), [send]);
+  // FG's Sell (unassigned parcel items at a percent of their cost) and Identified / Identify All (no id).
+  const partySell = useCallback((percent: number) => send({ type: "party-sell", percent }), [send]);
+  const partyIdentify = useCallback((id: string, on = true) => send({ type: "party-identify", id, on }), [send]);
   const partyGroup = useCallback((kind: "check" | "save", attribute: string, cl: number) => send({ type: "party-group", kind, attribute, cl }), [send]);
   // The party sheet's group roll for every game: a check, save or skill; rolled now, or asked of the players.
   const partyRoll = useCallback((spec: { kind: "check" | "save" | "skill"; attribute?: string; skill?: string; dc?: number; mode: "roll" | "ask" }) => send({ type: "party-group", ...spec }), [send]);
@@ -1705,6 +1711,9 @@ export function useSession() {
     partyAwardXP,
     partyAward,
     partyDistribute,
+    partySell,
+    partyAttack,
+    partyIdentify,
     partyGroup,
     partyRoll,
     artUrl,

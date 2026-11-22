@@ -61,6 +61,8 @@ function summary(record) {
     abilities: abilitiesOf(data),
     ...(data.hitdice && Number(data.hitdice.total) > 0 ? { hitdice: { die: String(data.hitdice.die ?? ""), total: Number(data.hitdice.total) || 0, used: Number(data.hitdice.used) || 0 } } : {}),
     ...(Number(data.passive) > 0 ? { passive: Number(data.passive) } : {}),
+    // FG's Defenses column: resistances, immunities and the like (the sheet's special defenses).
+    ...(String(data.specialdefenses ?? data.defenses?.special ?? "").trim() ? { defenses: String(data.specialdefenses ?? data.defenses?.special).trim().slice(0, 200) } : {}),
     ...(data.senses ? { senses: (Array.isArray(data.senses) ? data.senses.map(String) : String(data.senses).split(/,\s*/)).filter(Boolean).slice(0, 4) } : {}),
     level: Number(data.level) || 0,
     hp: Number(data.hp?.total) || 0,
@@ -87,10 +89,18 @@ async function partyView(table, seat = null) {
   const { partyInventory } = await partyRules();
   const party = viewFor(partyRecord(table), seat);
   const members = memberRecords(table).map((record) => summary(viewFor(record, seat)));
+  // FG's PSMN / PSIN for a player: the members' details, and what everyone carries, as the GM lets them see.
+  const options = table.options?.() ?? {};
+  const player = seat && seat.role !== "dm";
+  const brief = player && options.partyDetails === false;
+  const noCarried = player && options.partyCarried === false;
   return {
-    members: members.map(({ items, ...member }) => member),
-    inventory: partyInventory(members),
-    parcel: party.data.parcel ?? { coins: {}, items: {} },
+    members: members.map(({ items, ...member }) => (brief ? { id: member.id, name: member.name, owner: member.owner, portrait: member.portrait } : noCarried ? { ...member, coins: undefined } : member)),
+    ...(brief ? { details: false } : {}),
+    ...(noCarried ? { carried: false } : {}),
+    inventory: noCarried ? [] : partyInventory(members),
+    // The parcel (FG's Loot): a player sees an unidentified item by its unidentified name until the GM identifies it.
+    parcel: seat?.role === "dm" ? party.data.parcel ?? { coins: {}, items: {} } : playersParcel(party.data.parcel),
     // The party's name and its token (art id) for big maps: a city or a region, where the party is.
     name: String(party.name ?? "Party"),
     token: typeof party.data.token === "string" ? party.data.token : "",
@@ -105,7 +115,7 @@ async function partyView(table, seat = null) {
 }
 
 // Awards XP split across the party (PartyXPManager.awardXP), with FG's chat lines.
-async function awardXP(table, xp, from) {
+async function awardXP(table, xp, from, memberId = "") {
   const { xpShares } = await partyRules();
   // Forged in the Dark: every scoundrel marks the xp on their playbook track (it is not split).
   if (table.ruleset?.() === "Forged in the Dark") return require("./forged.cjs").awardForged(table, xp, from);
@@ -115,8 +125,9 @@ async function awardXP(table, xp, from) {
   if (require("./fate.cjs").isFateRuleset(table.ruleset?.())) throw new Error("Fate has no experience points: give the party a milestone (minor, significant or major) instead.");
   const amount = Math.round(Number(xp) || 0);
   if (amount <= 0) throw new Error("How much XP?");
-  const members = memberRecords(table);
-  if (members.length === 0) throw new Error("The party has no members.");
+  // memberId: that one member alone (FG's XP dropped on a character), the whole amount theirs.
+  const members = memberId ? memberRecords(table).filter((member) => member.id === memberId) : memberRecords(table);
+  if (members.length === 0) throw new Error(memberId ? "That character is not in the party." : "The party has no members.");
   // Ironsworn and Starforged: experience is each character's own (not split); Starforged keeps it beside its legacy tracks.
   if (require("./ironsworn.cjs").isIronswornRuleset(table.ruleset?.())) {
     const rules = await require("./ironsworn.cjs").rulesIron();
@@ -568,6 +579,72 @@ function changeOrder(table, seat, change) {
   return next;
 }
 
+// The parcel as players see it: its coins, and its items by name (an unidentified one by its unidentified name).
+function playersParcel(parcel) {
+  const items = Object.fromEntries(
+    rows(parcel?.items).map(([id, item]) => {
+      const hidden = Number(item.identified) === 0 || (item.identified === undefined && item.item && unidentified(item.item));
+      return [id, { name: hidden ? String(item.item?.nonid_name || "Unidentified item") : item.name, count: item.count }];
+    }),
+  );
+  return { coins: parcel?.coins ?? {}, items };
+}
+// FG's Party Attack: one d20 + bonus, with no attacker, at each member's AC (a trap's swing, a volley of arrows).
+function partyAttack(table, bonus = 0, from = "", secret = false) {
+  const members = memberRecords(table);
+  if (members.length === 0) throw new Error("The party has no members.");
+  const plus = Math.round(Number(bonus) || 0);
+  const results = [];
+  for (const member of members) {
+    const ac = Number(member.data?.ac?.total ?? member.data?.ac) || 10;
+    const rolled = table.roll(`1d20${plus ? (plus > 0 ? `+${plus}` : `${plus}`) : ""}`, `[ATTACK] Party attack -> [at ${member.name}]`, from || "GM", secret);
+    const natural = rolled.terms?.[0]?.rolls?.[0];
+    const hit = natural === 20 || (natural !== 1 && rolled.total >= ac);
+    table.say(`[ATTACK] Party attack -> ${member.name}: ${rolled.total} against AC ${ac}: ${natural === 20 ? "CRITICAL HIT" : hit ? "HIT" : "MISS"}`, from || "GM", secret);
+    results.push({ name: member.name, total: rolled.total, ac, hit });
+  }
+  return results;
+}
+// FG's Sell: every item in the parcel no one is assigned, sold at its cost times its count times the percent (50 by
+// default), rounded down, into the parcel's coins (the coin its cost names); an item with no cost stays, with a word.
+function sellParcel(table, percent = 50, from = "") {
+  const pct = Math.max(0, Math.min(200, Math.round(Number(percent) || 0)));
+  const party = partyRecord(table);
+  const parcel = party.data.parcel ?? { coins: {}, items: {} };
+  const coins = { ...(parcel.coins ?? {}) };
+  const items = {};
+  const sold = [];
+  const unpriced = [];
+  for (const [id, item] of rows(parcel.items)) {
+    if (String(item.assign ?? "").trim()) continue;
+    const cost = /([\d,.]+)\s*([a-z]+)/i.exec(String(item.item?.cost ?? item.cost ?? ""));
+    if (!cost) {
+      unpriced.push(item.name);
+      continue;
+    }
+    const value = Math.floor((Number(cost[1].replace(/,/g, "")) * Math.max(1, Number(item.count) || 1) * pct) / 100);
+    const key = Object.keys(coins).find((name) => name.toLowerCase() === cost[2].toLowerCase()) ?? cost[2].toUpperCase();
+    coins[key] = (Number(coins[key]) || 0) + value;
+    items[id] = null;
+    sold.push(`${item.name} (${value} ${key})`);
+  }
+  table.records.update(PARTY_ID, { data: { parcel: { coins, items } } }, table.seat);
+  if (sold.length) table.say(`[SOLD] At ${pct}%: ${sold.join(", ")}.`, from || "GM");
+  if (unpriced.length) table.say(`[WARNING] No price for ${unpriced.join(", ")}: kept.`, from || "GM", true);
+  return { sold: sold.length, unpriced };
+}
+// FG's Identified on a parcel item, and Identify All: what players are shown of it (its unidentified name until then).
+function identifyParcel(table, id = "", on = true) {
+  const party = partyRecord(table);
+  const parcel = party.data.parcel ?? { items: {} };
+  const items = {};
+  // The item's own record data too: the records' view hides an unidentified item from players by it.
+  for (const [key, item] of rows(parcel.items)) if (!id || key === id) items[key] = { identified: on ? 1 : 0, ...(item.item && typeof item.item === "object" ? { item: { isidentified: on ? 1 : 0 } } : {}) };
+  if (id && !items[id]) throw new Error("No such item in the parcel.");
+  table.records.update(PARTY_ID, { data: { parcel: { items } } }, table.seat);
+  return { identified: Object.keys(items).length };
+}
+
 // A treasure parcel into the party's parcel (FG's drag of a parcel onto the
 // party sheet): its coins added up, its items listed to hand out.
 function addToParcel(table, { coins = {}, items = [], from = "" } = {}) {
@@ -586,4 +663,4 @@ function addToParcel(table, { coins = {}, items = [], from = "" } = {}) {
   return { coins: nextCoins, items: items.length };
 }
 
-module.exports = { addToParcel, giveTo, stashPut, stashTake, PARTY_ID, partyRecord, partyView, awardXP, awardEntries, distribute, groupCheck, partyRoll, rollForMember, partyRollLabel, changeOrder, fillFormation, rotate, RANGE };
+module.exports = { partyAttack, sellParcel, identifyParcel, addToParcel, giveTo, stashPut, stashTake, PARTY_ID, partyRecord, partyView, awardXP, awardEntries, distribute, groupCheck, partyRoll, rollForMember, partyRollLabel, changeOrder, fillFormation, rotate, RANGE };

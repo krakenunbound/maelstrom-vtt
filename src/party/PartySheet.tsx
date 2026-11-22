@@ -29,6 +29,8 @@ export type PartyMember = {
   hitdice?: { die: string; total: number; used: number };
   passive?: number;
   senses?: string[];
+  // FG's Defenses column: resistances, immunities and the like.
+  defenses?: string;
   /** Cairn: its attributes, slots, Fatigue, state, Scars and Growth (no experience). */
   cairn?: { str: number; dex: number; wil: number; fatigue: number; slots: number; status: string; scars: string[]; growth: string[] };
   /** Fate: fate points and refresh, the high concept and trouble, consequences, milestones (no experience or coin). */
@@ -75,7 +77,10 @@ function Meter({ label, value, max, kind }: { label: string; value: number; max:
 export type PartyView = {
   members: PartyMember[];
   inventory: { name: string; count: number; carriedBy: Record<string, number> }[];
-  parcel: { coins: Record<string, number>; items: Record<string, { name: string; count: number; assign?: string }> };
+  // Off for a player when the GM hides the members' details (FG's PSMN) or what they carry (PSIN).
+  details?: boolean;
+  carried?: boolean;
+  parcel: { coins: Record<string, number>; items: Record<string, { name: string; count: number; assign?: string; identified?: number; item?: { isidentified?: unknown; cost?: string; nonid_name?: string } | null }> };
   // The party's name and its token for big maps (an art id), the GM's to choose.
   name?: string;
   token?: string;
@@ -103,6 +108,9 @@ function newKey() {
 }
 
 // FG's party sheet. The GM edits it (the party record); players see it.
+// A parcel item's Identified box: ticked by the GM, else its record's own (a magic item unidentified until then).
+const isIdentified = (item: { identified?: number; item?: { isidentified?: unknown } | null }) => (item.identified !== undefined ? Number(item.identified) === 1 : !(item.item && String(item.item.isidentified ?? "1") === "0"));
+
 export function PartySheet({ session, compact = false }: { session: Session; compact?: boolean }) {
   const party = session.party;
   const gm = session.role === "dm";
@@ -114,6 +122,10 @@ export function PartySheet({ session, compact = false }: { session: Session; com
   const [xp, setXp] = useState(0);
   const [itemName, setItemName] = useState("");
   const [itemCount, setItemCount] = useState(1);
+  // FG's Sell %: what unassigned parcel items fetch, of their cost (50 by default).
+  const [sellPercent, setSellPercent] = useState(50);
+  // FG's Party Attack bonus.
+  const [attackBonus, setAttackBonus] = useState(0);
   const [entryName, setEntryName] = useState("");
   const [entryXp, setEntryXp] = useState(0);
   const patch = (data: Record<string, unknown>) => void session.op({ op: "update", id: "party", patch: { data } }).catch(() => undefined);
@@ -225,6 +237,11 @@ export function PartySheet({ session, compact = false }: { session: Session; com
                     {member.passive || member.senses?.length ? (
                       <small className="party-senses">
                         <Icon name="eye" size={12} /> {[member.passive ? `Passive Perception ${member.passive}` : "", ...(member.senses ?? [])].filter(Boolean).join(" · ")}
+                      </small>
+                    ) : null}
+                    {member.defenses ? (
+                      <small className="party-senses" data-defenses>
+                        <Icon name="shield" size={12} /> {member.defenses}
                       </small>
                     ) : null}
                   </span>
@@ -347,6 +364,15 @@ export function PartySheet({ session, compact = false }: { session: Session; com
                       <Icon name="chat" size={14} />
                     </button>
                   </span>
+                  {/* FG's Party Attack: a d20 + bonus at each member's AC (a trap, a volley). */}
+                  <span className="party-attack cc-inline">
+                    <label>
+                      Attack +<input type="number" value={attackBonus} onChange={(event) => setAttackBonus(Number(event.target.value) || 0)} style={{ width: "3.6rem" }} aria-label="Party attack bonus" />
+                    </label>
+                    <button type="button" data-action="party-attack" onClick={() => session.partyAttack(attackBonus)}>
+                      Attack the party
+                    </button>
+                  </span>
                   <button type="button" className="play-button" data-action="party-roll" onClick={() => session.partyRoll({ kind: groupKind, ...(groupKind === "skill" ? { skill: groupChoice } : { attribute: groupChoice }), dc: checkCl, mode: groupMode })} disabled={party.members.length === 0 || !groupChoice}>
                     {groupMode === "ask" ? "Ask" : "Roll"}
                   </button>
@@ -389,6 +415,8 @@ export function PartySheet({ session, compact = false }: { session: Session; com
               <ul className="sheet-list">
                 {Object.entries(party.parcel.items ?? {}).map(([id, item]) => (
                   <li key={id}>
+                    {/* FG's Identified: until ticked, players see it by its unidentified name. */}
+                    <input type="checkbox" title="Identified (players see its real name)" aria-label={`${item.name} identified`} checked={isIdentified(item)} onChange={(event) => session.partyIdentify(id, event.target.checked)} />
                     <span>
                       {item.name} ×{item.count}
                     </span>
@@ -421,12 +449,45 @@ export function PartySheet({ session, compact = false }: { session: Session; com
                 <input type="number" min={1} value={itemCount} onChange={(event) => setItemCount(Number(event.target.value) || 1)} style={{ width: "4rem" }} />
                 <button type="submit">Add</button>
               </form>
-              <button type="button" className="play-button" onClick={() => session.partyDistribute()} disabled={party.members.length === 0}>
-                Distribute
-              </button>
+              <span className="parcel-actions cc-inline">
+                <button type="button" className="play-button" onClick={() => session.partyDistribute()} disabled={party.members.length === 0}>
+                  Distribute
+                </button>
+                {/* FG's Identify All and Sell (unassigned items at a percent of their cost). */}
+                <button type="button" data-action="parcel-identify-all" disabled={!Object.keys(party.parcel.items ?? {}).length} onClick={() => session.partyIdentify("", true)}>
+                  Identify all
+                </button>
+                <button type="button" data-action="parcel-sell" title="Sell every item no one is assigned, at this percent of its cost, into the parcel's coins" disabled={!Object.values(party.parcel.items ?? {}).some((item) => !String(item.assign ?? "").trim())} onClick={() => session.partySell(sellPercent)}>
+                  Sell
+                </button>
+                <label>
+                  at <input type="number" min={0} max={200} value={sellPercent} onChange={(event) => setSellPercent(Number(event.target.value) || 0)} style={{ width: "4rem" }} aria-label="Sell percent" />%
+                </label>
+              </span>
             </div>
-          ) : null}
+          ) : (
+            // FG's Loot for the players: the parcel's coins and items (unidentified ones by their unidentified names).
+            <div className="party-loot-view">
+              <h3>Loot</h3>
+              <p className="cc-inline">
+                {Object.entries(party.parcel.coins ?? {})
+                  .filter(([, amount]) => Number(amount) > 0)
+                  .map(([coin, amount]) => `${amount} ${coin}`)
+                  .join(", ") || "No coins."}
+              </p>
+              <ul className="sheet-list">
+                {Object.entries(party.parcel.items ?? {}).map(([id, item]) => (
+                  <li key={id}>
+                    {item.name} ×{item.count}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <PartyStash session={session} stash={party.stash ?? []} />
+          {/* FG's PSIN: what everyone carries, when the GM lets players see it. */}
+          {party.carried !== false ? (
+          <>
           <h3>Party inventory</h3>
           <ul className="sheet-list">
             {party.inventory.length === 0 ? <li className="hint empty-state">Nothing carried yet. What the party's characters carry is listed here.</li> : null}
@@ -455,6 +516,8 @@ export function PartySheet({ session, compact = false }: { session: Session; com
               </li>
             ))}
           </ul>
+          </>
+          ) : null}
         </div>
       ) : null}
 
@@ -537,6 +600,31 @@ export function PartySheet({ session, compact = false }: { session: Session; com
               Award to the party
             </button>
           </form>
+          {/* FG's XP dropped on one character: theirs alone. */}
+          <ul className="sheet-list party-xp-members">
+            {party.members.map((member) => (
+              <li key={member.id} className="cc-inline">
+                <span>{member.name}</span>
+                <small className="hint">
+                  {member.exp ?? 0}
+                  {member.expnext ? ` / ${member.expnext}` : ""} XP
+                </small>
+                <form
+                  className="cc-inline"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    const input = event.currentTarget.elements.namedItem("xp") as HTMLInputElement;
+                    const amount = Number(input.value) || 0;
+                    if (amount > 0) session.partyAwardXP(amount, member.id);
+                    input.value = "";
+                  }}
+                >
+                  <input name="xp" type="number" min={1} placeholder="XP" aria-label={`XP for ${member.name}`} style={{ width: "5rem" }} />
+                  <button type="submit" data-action="xp-to-member">Give</button>
+                </form>
+              </li>
+            ))}
+          </ul>
           {(["encounters", "quests"] as const).map((kind) => (
             <div key={kind} className="xp-list">
               <h3>

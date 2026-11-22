@@ -1356,8 +1356,16 @@ const TOOLS = [
         const grid = Number(map.scene?.()?.grid?.size) || 100;
         const side = combat.entries().filter((item) => item.faction === faction);
         if (!side.length) throw new Error(`No ${faction} in the fight.`);
-        for (const [index, entry] of side.entries()) {
-          const result = await callTool("kraken_combat", { action: "place-token", id: entry.id, x: Number(args.x) + (index % 3) * grid, y: Number(args.y) + Math.floor(index / 3) * grid }, ctx);
+        // The friends by the party sheet's formation where it holds them; the rest three across behind (as the table's drop).
+        const slots = faction === "friend" ? (agent.records.get("party")?.data?.order?.formation?.slots ?? []).filter((slot) => slot && typeof slot.id === "string") : [];
+        const below = slots.length ? Math.max(...slots.map((slot) => Number(slot.y) || 0)) + 1 : 0;
+        let loose = 0;
+        for (const entry of side) {
+          const slot = slots.find((item) => item.id === entry.recordId);
+          const index = slot ? 0 : loose++;
+          const x = Number(args.x) + (slot ? Number(slot.x) * grid : (index % 3) * grid);
+          const y = Number(args.y) + (slot ? Number(slot.y) * grid : (below + Math.floor(index / 3)) * grid);
+          const result = await callTool("kraken_combat", { action: "place-token", id: entry.id, x, y }, ctx);
           if (result.isError) throw new Error(result.content[0].text);
         }
         return out({ placed: side.map((entry) => entry.name) });
@@ -1514,20 +1522,22 @@ const TOOLS = [
   {
     name: "kraken_party_award",
     description: "Award XP to the party, split as FG does (the last member gets what is left). xp: an amount; or kind quests / encounters with an optional id, to award what is not awarded yet.",
-    inputSchema: object({ xp: number("XP to split"), kind: { type: "string", enum: ["quests", "encounters"] }, id: string("One quest or encounter") }),
+    inputSchema: object({ xp: number("XP to split"), member: string("xp: one member's record id alone (FG's XP dropped on a character)"), kind: { type: "string", enum: ["quests", "encounters"] }, id: string("One quest or encounter") }),
     async run(args, ctx) {
       const agent = needTable(ctx);
-      const xp = args.kind ? await party.awardEntries(agent, args.kind, args.id) : await party.awardXP(agent, args.xp);
+      const xp = args.kind ? await party.awardEntries(agent, args.kind, args.id) : await party.awardXP(agent, args.xp, undefined, String(args.member ?? ""));
       return out({ awarded: xp, party: (await party.partyView(agent)).members.map(({ name, exp }) => ({ name, exp })) });
     },
   },
   {
     name: "kraken_party_distribute",
-    description: "Hand out the parcel: assigned items to the people named, then each coin split evenly across the party with the remainder left in the parcel (FG's Distribute).",
-    inputSchema: object({}),
-    async run(_args, ctx) {
+    description: "Hand out the parcel: assigned items to the people named, then each coin split evenly across the party with the remainder left in the parcel (FG's Distribute). sell: instead, FG's Sell (unassigned items at percent of their cost, default 50, into the parcel's coins). identify: instead, FG's Identified (id: one item; none: Identify All; on false: unidentify).",
+    inputSchema: object({ sell: { type: "boolean" }, percent: number("sell: percent of the cost (50)"), identify: { type: "boolean" }, id: string("identify: the parcel item's id (none: all)"), on: { type: "boolean" } }),
+    async run(args, ctx) {
       const agent = needTable(ctx);
-      await party.distribute(agent);
+      if (args?.sell) party.sellParcel(agent, args.percent ?? 50);
+      else if (args?.identify) party.identifyParcel(agent, String(args.id ?? ""), args.on !== false);
+      else await party.distribute(agent);
       return out(await party.partyView(agent));
     },
   },
@@ -1538,7 +1548,9 @@ const TOOLS = [
     inputSchema: object(
       {
         action: { type: "string", enum: ["roll", "prompt-roll", "prompts"] },
-        kind: { type: "string", enum: ["check", "save", "skill"] },
+        kind: { type: "string", enum: ["check", "save", "skill", "attack"] },
+        bonus: number("kind attack (FG's Party Attack): the d20's bonus, rolled at each member's AC"),
+        secret: { type: "boolean", description: "kind attack: the GM's alone" },
         attribute: string("The ability, save or stat (C&C: strength...; 5E: an ability for a check or save; 3.5E: fortitude/reflex/will for a save)"),
         skill: string("The skill (kind skill)"),
         dc: number("The DC (C&C: the CL; Fate: the opposition)"),
@@ -1551,6 +1563,8 @@ const TOOLS = [
       [],
     ),
     async run(args, ctx) {
+      // FG's Party Attack: d20 + bonus at each member's AC.
+      if (args?.kind === "attack") return out({ attack: party.partyAttack(needTable(ctx), args.bonus ?? 0, "GM", Boolean(args.secret)) });
       const table = needTable(ctx);
       if (args.action === "prompt-roll") return out(await table.promptRoll(args.prompt, args.member));
       if (args.action === "prompts") return out(table.prompts());
@@ -1631,6 +1645,8 @@ const TOOLS = [
       groupNames: { type: "object", description: "FG's record list groups: { list id (npc, item, spell...): [group names] }" },
       recordGroups: { type: "object", description: "Each record's group: { record id: group name } (the whole map; a group not in groupNames is ignored)" },
       partyVision: { type: "boolean", description: "FG's TPTY: players see through every player's token (shared party vision) and may move them all (default off)" },
+      partyDetails: { type: "boolean", description: "FG's PSMN: players see the party members' details on the party sheet (default true; false: names and portraits only)" },
+      partyCarried: { type: "boolean", description: "FG's PSIN: players see what everyone carries on the party sheet (default true)" },
       partyShown: { type: "string", enum: ["all", "active"], description: "FG's CLSH: the characters along the top: all, or only those whose players are at the table" },
       healthGm: { type: "string", enum: ["bar", "barhover", "dot", "dothover", "off"], description: "FG's TGMH: what the GM sees of health on tokens (default dot)" },
       effectsGm: { type: "string", enum: ["on", "hover", "mark", "markhover", "off"], description: "FG's TGME: effects on tokens as the GM sees them: icons, icons on hover, one mark with the count, a mark on hover, off" },

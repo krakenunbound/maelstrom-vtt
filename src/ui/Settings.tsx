@@ -170,6 +170,8 @@ export function SettingsWindow({ session }: { session: Session }) {
               <option value="max">Maximum</option>
             </select>
           </SettingRow>
+          <Toggle label="Players see the party's details" hint="On the party sheet: every member's abilities, health, AC and senses (off: names and portraits only)." checked={session.options.partyDetails !== false} onChange={(on) => session.setTableOptions({ partyDetails: on } as never)} setting="party-details" />
+          <Toggle label="Players see what the party carries" hint="On the party sheet: everyone's items and coins (off: the loot and the stash only)." checked={session.options.partyCarried !== false} onChange={(on) => session.setTableOptions({ partyCarried: on } as never)} setting="party-carried" />
           <Toggle label="Party portraits in initiative order" hint="During a fight the portraits along the top of every screen re-arrange into turn order, the first to act on the left. Off: they keep the party's order." checked={Boolean((session.options as { partyByInitiative?: boolean }).partyByInitiative)} onChange={(on) => session.setTableOptions({ partyByInitiative: on } as never)} setting="party-by-initiative" />
           <SettingRow label="Characters along the top" hint="Every character's portrait, or only those whose players are at the table.">
             <select value={session.options.partyShown ?? "all"} onChange={(event) => session.setTableOptions({ partyShown: event.target.value } as never)} aria-label="Characters along the top" data-setting="party-shown">

@@ -325,6 +325,10 @@ function savedOptions(value) {
     ...(options.recordGroups && typeof options.recordGroups === "object" && !Array.isArray(options.recordGroups)
       ? { recordGroups: Object.fromEntries(Object.entries(options.recordGroups).filter(([id, name]) => id.length <= 120 && typeof name === "string" && name.trim()).slice(0, 5000).map(([id, name]) => [id, name.trim().slice(0, 40)])) }
       : {}),
+    // FG's PSMN and PSIN: players see the party's members in full on the party sheet, and what everyone carries
+    // (on unless the GM turns them off; off, players are sent names and portraits only, and no inventory).
+    ...(options.partyDetails === false ? { partyDetails: false } : {}),
+    ...(options.partyCarried === false ? { partyCarried: false } : {}),
     // FG's TPTY: players see through every player's token and may move them all (off by default).
     ...(options.partyVision ? { partyVision: true } : {}),
     wallpaper: id(options.wallpaper, ""),
@@ -937,6 +941,8 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     onChange("table");
     // What tokens show (names, health) and how distance counts are in each seat's map.
     if (["diagonal", "healthNpc", "healthPc", "healthGm", "names", "effectsGm", "effectsNpc", "effectsPc", "partyVision"].some((key) => key in next)) sendMaps();
+    // What players see on the party sheet (FG's PSMN, PSIN): every seat's view again.
+    if (["partyDetails", "partyCarried"].some((key) => key in next)) sendParty();
     // A bookkeeping switch changed: the load's effects (and the games whose rules count the load) follow.
     if ("bookkeeping" in next && bookkeepingApi) void bookkeepingApi.switched(wasBooks, options.bookkeeping).catch(() => undefined);
     // What the tracker shows players of the creatures' health follows the same option.
@@ -3772,10 +3778,17 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
               const grid = Number(map.scene().grid?.size) || 100;
               const side = combat.entries().filter((item) => item.faction === faction);
               if (!side.length) throw new Error(`No ${faction} in the fight.`);
+              // The friends by the party sheet's formation where it holds them (FG's friendly icon): each its slot from where
+              // it fell; the rest three across behind.
+              const slots = faction === "friend" ? (records.get("party")?.data?.order?.formation?.slots ?? []).filter((slot) => slot && typeof slot.id === "string") : [];
               const placed = [];
-              for (const [index, entry] of side.entries()) {
-                const x = num(msg.x, NaN) + (index % 3) * grid;
-                const y = num(msg.y, NaN) + Math.floor(index / 3) * grid;
+              let loose = 0;
+              const below = slots.length ? Math.max(...slots.map((slot) => Number(slot.y) || 0)) + 1 : 0;
+              for (const entry of side) {
+                const slot = slots.find((item) => item.id === entry.recordId);
+                const index = slot ? 0 : loose++;
+                const x = num(msg.x, NaN) + (slot ? Number(slot.x) * grid : (index % 3) * grid);
+                const y = num(msg.y, NaN) + (slot ? Number(slot.y) * grid : (below + Math.floor(index / 3)) * grid);
                 const own = entry.tokenId ? map.tokens().find((token) => token.id === entry.tokenId) : null;
                 const isCharacter = records.get(entry.recordId)?.type === "character";
                 const old = own ?? (isCharacter ? map.tokens().find((token) => token.recordId === entry.recordId) : null);
@@ -4008,6 +4021,21 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
 
       // The party sheet's actions (the GM's): award XP, hand out the parcel,
       // group checks and saves.
+      // FG's Sell (unassigned items at a percent of their cost) and Identified / Identify All on the parcel.
+      if (msg.type === "party-sell" || msg.type === "party-identify" || msg.type === "party-attack") {
+        if (client.role !== "dm") {
+          send(ws, { type: "error", reason: "Only the GM can do that." });
+          return;
+        }
+        try {
+          if (msg.type === "party-attack") party.partyAttack(agentHandle, msg.bonus ?? 0, client.name, Boolean(msg.secret));
+          else if (msg.type === "party-sell") party.sellParcel(agentHandle, msg.percent ?? 50, client.name);
+          else party.identifyParcel(agentHandle, text(msg.id, ""), msg.on !== false);
+        } catch (error) {
+          send(ws, { type: "error", reason: error instanceof Error ? error.message : "Could not do that." });
+        }
+        return;
+      }
       if (["party-award-xp", "party-award", "party-distribute", "party-group"].includes(msg.type)) {
         if (client.role !== "dm") {
           send(ws, { type: "error", reason: "Only the GM can do that." });
@@ -4015,7 +4043,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         }
         const run =
           msg.type === "party-award-xp"
-            ? party.awardXP(agentHandle, msg.xp, client.name)
+            ? party.awardXP(agentHandle, msg.xp, client.name, text(msg.member, ""))
             : msg.type === "party-award"
               ? party.awardEntries(agentHandle, msg.kind, msg.id, client.name)
               : msg.type === "party-distribute"

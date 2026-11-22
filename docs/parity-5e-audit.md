@@ -319,6 +319,32 @@ FG's chat window, slash commands, dice tray, modifier box, Modifiers window, dic
 | Manual dice: a queue window, OK, Roll, Faux roll (GM), Cancel | A dialog per roll, Roll, Cancel | Partly (tray and chat rolls) |
 | Portraits: whisper, ring the bell (GM), kick; drop a number or text on a portrait | Whisper, Ring bell, View as, Kick, Ban; a record dropped shares it, words or a number dropped are whispered to them | Better |
 
+## 7. Party sheet
+
+FG's 5E party sheet (`ps_*` in CoreRPG and 5E's `manager_ps2.lua`) against Maelstrom's
+(`src/party/PartySheet.tsx`, `electron/party.cjs`).
+
+| FG control | Maelstrom | Verdict |
+|---|---|---|
+| Members: drop a PC to add, delete; portrait opens the sheet | Drop, Add a character, Party from who's here, ×; drag a row onto the map | Better |
+| Row: name, race, class and level, HP and HD bars, scores, modifiers, AC, passive Perception, defenses, senses | The same, special defenses under the senses | Same |
+| Modifiers: the GM double-clicks a member's for a check (Shift: save) | Group roll for everyone | Partly |
+| Group rolls: ability, save, skill with DCs; results per PC | One group roll (check, save, skill, a DC), a tally, or Ask the players (they roll on a chat card) | Better (tally, asking) |
+| Party attack: d20 + bonus at each PC's AC | Attack the party: d20 + bonus at each member's AC, HIT or MISS | Same |
+| Hide roll results (secret group rolls) | Not found | Missing |
+| Loot: coins and items, drop a parcel or items, assignment, Distribute | The parcel: coins, items, Who gets, Distribute | Same |
+| Loot: Identified per item, Identify All | Identified box per item, Identify all; players see the unidentified name until then, and the Loot (read only) | Same |
+| Loot: Sell unassigned items at Sell % (50) | Sell at %: unassigned items at the percent of their cost into the parcel's coins; no price, kept and said | Same |
+| Carried: everyone's coins and items, Rebuild | Party inventory and coins (always up to date) | Same |
+| PSMN (players see Main), PSIN (players see Carried) | Players see the party's details / what the party carries (on by default; off, they are not sent it) | Same |
+| Shared stash (not in FG) | Put and Take, by any member | Better |
+| Order: watch order, formation 7x7, fill 1 to 3, rotate, clear | Watches 1 to 3, formation, fill, turn, clear | Same |
+| Order: the friendly icon dragged onto a map places them in formation | The tracker's Friends chip: by the party's formation, the rest three across behind | Same |
+| XP: party list, XP dropped on a PC | Award to the party; each member's XP and Give for them alone | Same |
+| XP: encounters and quests with CR, XP, Aw? checkbox, Award, Award one | Encounters and quests, Award all, Award one, × | Same |
+| Rests (not on FG's sheet) | Short and long rest for the party | Better |
+| Bastion tab (HRBASTION): facilities, orders, turns, log | Not found | Missing (2024) |
+
 ## How house rules work in Maelstrom
 
 A game declares its house rules in its manifest (`settings` with a `key`: a switch
