@@ -416,8 +416,8 @@ export function PartySheet({ session, compact = false }: { session: Session; com
                 {Object.entries(party.parcel.items ?? {}).map(([id, item]) => (
                   <li key={id}>
                     {/* FG's Identified: until ticked, players see it by its unidentified name. */}
-                    <input type="checkbox" title="Identified (players see its real name)" aria-label={`${item.name} identified`} checked={isIdentified(item)} onChange={(event) => session.partyIdentify(id, event.target.checked)} />
-                    <span>
+                    <span className="cc-inline">
+                      <input type="checkbox" title="Identified (players see its real name)" aria-label={`${item.name} identified`} checked={isIdentified(item)} onChange={(event) => session.partyIdentify(id, event.target.checked)} />
                       {item.name} ×{item.count}
                     </span>
                     <Field value={item.assign ?? ""} editable label={`Who gets ${item.name}`} onSave={(text) => patch({ parcel: { items: { [id]: { assign: text } } } })} />
