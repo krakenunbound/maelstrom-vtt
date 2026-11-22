@@ -2283,6 +2283,12 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     table().postRoll(rolled, label, from, true, extra);
     return table().postRoll(rolled, plain, from, false, { by: extra?.by, playersOnly: true });
   }
+  // A character's FG weapon options (its sheet's weapon block): critrange or critdicebonus, melee or ranged.
+  function weaponOption(plan, option, fallback) {
+    const sheet = plan.entry ? record(plan.entry)?.data : null;
+    const value = Number(sheet?.weapon?.[option]?.[plan.type === "ranged" ? "ranged" : "melee"]);
+    return Number.isFinite(value) && value !== 0 ? value : fallback;
+  }
   async function attack5e(plan, from) {
     await r5Ready;
     const source = plan.entry;
@@ -2307,7 +2313,9 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       const advantage = edge.advantage;
       const rolled = table().act(formulaFor(target, advantage, edge.disadvantage), "attack");
       const die = natural(rolled);
-      let crit = die === 20;
+      // FG's weapon options: a character's critical range (Champion's 19-20), melee and ranged apart.
+      const critOn = weaponOption(plan, "critrange", 20);
+      let crit = die >= Math.max(2, Math.min(20, critOn));
       const hit = crit || (die !== 1 && rolled.total >= ac);
       // FG: a hit on a Paralyzed or Unconscious creature within 5 feet is a critical
       // (Kraken takes a melee attack as within 5 feet).
@@ -2529,7 +2537,10 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     const groups = [];
     for (const target of landed) {
       const crit = hitOn?.[target.id] === "crit";
-      const formula = crit ? (fixedNpc ? baseFor(target, true) : doubled(baseFor(target))) : baseFor(target);
+      // FG's extra crit dice (Brutal Critical, Savage Attacker): that many more of the weapon's first die on a critical.
+      const extra = crit ? Math.max(0, Math.round(weaponOption(plan, "critdicebonus", 0))) : 0;
+      const firstDie = /\d*d(\d+)/i.exec(plan.damage ?? "")?.[1];
+      const formula = (crit ? (fixedNpc ? baseFor(target, true) : doubled(baseFor(target))) : baseFor(target)) + (extra && firstDie ? `+${extra}d${firstDie}` : "");
       const group = groups.find((item) => item.crit === crit && item.formula === formula);
       if (group) group.targets.push(target);
       else groups.push({ crit, formula, targets: [target] });

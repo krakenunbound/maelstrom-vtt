@@ -151,15 +151,15 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 
 | FG control | Maelstrom | Verdict |
 |---|---|---|
-| Proficiency: none, proficient, double, half | None, proficient, expertise | Partly (no half: Jack of All Trades) |
-| Ability per skill (changeable), misc, total, roll | Fixed ability, total, roll | Partly (no misc, no ability change) |
+| Proficiency: none, proficient, double, half | None, proficient, expertise, half (rounded down) | Done |
+| Ability per skill (changeable), misc, total, roll | Misc box, total, roll | Partly (the ability stays the skill's own) |
 | Add or delete skills (custom skills) | The 18 | Missing |
 
 ### Abilities (Maelstrom: Notes)
 
 | FG control | Maelstrom | Verdict |
 |---|---|---|
-| Feats, features, traits, proficiencies, languages: add, delete, open | Read-only lists; feats by dropping | Partly (editable lists, links) |
+| Feats, features, traits, proficiencies, languages: add, delete, open | Each a box, one a line (the wizard fills them); a feat or spell dropped on the sheet | Partly (no link to open each) |
 
 ### Inventory
 
@@ -185,7 +185,7 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | FG control | Maelstrom | Verdict |
 |---|---|---|
 | Weapons from the inventory, attack and damage rolls, drag to roll | Attack and damage rolls at targets, drag onto a creature, versatile hands | Better (targets) |
-| Weapon options: crit range, extra crit dice, two-weapon fighting | Not found | Missing |
+| Weapon options: crit range, extra crit dice, two-weapon fighting | Melee and ranged critical range, extra critical dice (Combat tab) | Partly (no two-weapon fighting) |
 | Weapon editor: attack ability, bonus, proficiency; damage rows | Not found | Missing |
 | Ammunition counter per weapon | Spent from the inventory | Better (real ammunition) |
 | Weapon mastery | Not found | Missing (2024) |

@@ -359,8 +359,11 @@ export function derive(input) {
   );
   data.skills = Object.fromEntries(
     Object.entries(SKILLS).map(([key, [name, stat]]) => {
-      const prof = Math.min(2, Math.max(0, Math.round(num(data.skills?.[key]?.prof, 0))));
-      return [key, { name, stat, prof, total: data.abilities[stat].bonus + data.prof * prof }];
+      // FG's proficiency: none (0), proficient (1), double (2: expertise), half (3: Jack of All Trades, rounded down); misc on top.
+      const prof = Math.min(3, Math.max(0, Math.round(num(data.skills?.[key]?.prof, 0))));
+      const misc = Math.round(num(data.skills?.[key]?.misc, 0));
+      const fromProf = prof === 3 ? Math.floor(data.prof / 2) : data.prof * prof;
+      return [key, { name, stat, prof, ...(misc ? { misc } : {}), total: data.abilities[stat].bonus + fromProf + misc }];
     }),
   );
   data.ac = { ...armorClass(data), misc: num(data.ac?.misc, 0) };

@@ -148,7 +148,8 @@ export default {
             path: "skills",
             hook: "skill",
             rows: Object.entries(SKILL_LIST).map(([key, [label, stat]]) => ({ key, label, note: stat.slice(0, 3).toUpperCase() })),
-            field: { path: "prof", kind: "select", number: true, label: "{label} proficiency", title: "Proficiency: none, proficient, expertise", options: [{ value: "0", label: "–" }, { value: "1", label: "●" }, { value: "2", label: "◆" }] },
+            field: { path: "prof", kind: "select", number: true, label: "{label} proficiency", title: "Proficiency: none, proficient, expertise, half (Jack of All Trades)", options: [{ value: "0", label: "–" }, { value: "1", label: "●" }, { value: "2", label: "◆" }, { value: "3", label: "½" }] },
+            after: [{ path: "misc", kind: "number", label: "{label} misc", title: "Added to {label} (an item, a feat)" }],
             roll: { action: roll("skill", { keyAs: "skill" }), hook: "roll-skill", label: "{total|signed}", aria: "Roll {label}", send: "{label}" },
           },
         ],
@@ -171,6 +172,17 @@ export default {
               { hook: "damage", label: ["{damage}", " ", "{dmgtype}"], title: "Damage roll", action: { ct: "damage-roll", key: "weapon" } },
             ],
             empty: "No weapon in hand: equip one on the Inventory tab.",
+          },
+          // FG's Weapon Options: the critical range and extra critical dice, melee and ranged.
+          {
+            part: "notes",
+            className: "d5e-weapon-options",
+            fields: [
+              { path: "weapon.critrange.melee", kind: "number", label: "Melee critical on", title: "A melee attack is a critical hit on this or higher (20; a Champion 19)" },
+              { path: "weapon.critrange.ranged", kind: "number", label: "Ranged critical on", title: "A ranged attack is a critical hit on this or higher" },
+              { path: "weapon.critdicebonus.melee", kind: "number", label: "Extra melee critical dice", title: "More of the weapon's die on a melee critical (Brutal Critical)" },
+              { path: "weapon.critdicebonus.ranged", kind: "number", label: "Extra ranged critical dice", title: "More of the weapon's die on a ranged critical" },
+            ],
           },
         ],
       },
@@ -224,12 +236,19 @@ export default {
               { path: "notes", kind: "textarea", label: "Notes", fieldClass: "tall" },
             ],
           },
-          // What the character wizard gave: feats, languages, proficiencies, traits and features.
-          { part: "tags", label: "Feats", hook: "feats", from: ["feats"] },
-          { part: "tags", label: "Languages", hook: "languages", from: ["languages"] },
-          { part: "tags", label: "Proficiencies", hook: "proficiencies", from: ["proficiencylist.armor", "proficiencylist.weapons", "proficiencylist.tools"] },
-          { part: "tags", label: "{@species} traits", hook: "{@speciesLower} traits", from: ["traits"] },
-          { part: "tags", label: "Features", hook: "features", from: ["features"] },
+          // FG's Abilities tab: feats, languages, proficiencies, traits and features (the wizard's, then the owner's), one a line.
+          {
+            part: "notes",
+            fields: [
+              { path: "feats", kind: "textarea", lines: true, label: "Feats" },
+              { path: "features", kind: "textarea", lines: true, label: "Features" },
+              { path: "traits", kind: "textarea", lines: true, label: "{@species} traits" },
+              { path: "languages", kind: "textarea", lines: true, label: "Languages" },
+              { path: "proficiencylist.armor", kind: "textarea", lines: true, label: "Armor proficiencies" },
+              { path: "proficiencylist.weapons", kind: "textarea", lines: true, label: "Weapon proficiencies" },
+              { path: "proficiencylist.tools", kind: "textarea", lines: true, label: "Tool proficiencies" },
+            ],
+          },
         ],
       },
     ],
@@ -240,7 +259,7 @@ export default {
     text: ["playername", "alignment", "appearance", "notes", "senses", "speed", "background", "species", "gender", "age", "height", "weight", "concentration", "deity", "size", "specialdefenses", "personalitytraits", "ideals", "bonds", "flaws"],
     number: [
       "abilities.(strength|dexterity|constitution|intelligence|wisdom|charisma).(score|saveprof)",
-      "skills.%.prof",
+      "skills.%.(prof|misc)",
       "hp.(wounds|temp|total)",
       "exp",
       "ac.misc",
@@ -255,10 +274,13 @@ export default {
       "coins.*.amount",
       "inventorylist.*.(count|carried|attune)",
       "attunement.(class|misc)",
+      "weapon.(critrange|critdicebonus).(melee|ranged)",
       "attacks.*.hands",
     ],
     // The container an item is in (FG's location), set by dragging it onto a backpack on the sheet.
     string: ["inventorylist.*.location", "resources.*.(name|period)"],
+    // Lists of words, one a line (FG's Abilities tab lists): feats, features, traits, languages, proficiencies.
+    list: ["feats", "features", "traits", "languages", "proficiencylist.(armor|weapons|tools)"],
     remove: ["inventorylist", "resources"],
   },
   wizard: "dnd5e.wizard",

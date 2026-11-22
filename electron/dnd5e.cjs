@@ -100,6 +100,9 @@ async function edit5e(table, record, changes, seat) {
     else if (TEXT.some((pattern) => pattern.test(key))) data[key] = String(value ?? "").slice(0, 8000);
     // A row's words (an item's location: the container it is in), from the manifest's string list.
     else if (EDIT_PATHS.string.some((pattern) => pattern.test(key))) setPath(data, key, String(value ?? "").slice(0, 120));
+    // A list of words (feats, languages...): an array, or text one a line.
+    else if (EDIT_PATHS.list.some((pattern) => pattern.test(key)))
+      setPath(data, key, (Array.isArray(value) ? value : String(value ?? "").split(/\r?\n/)).map((item) => String(item).trim().slice(0, 200)).filter(Boolean).slice(0, 200));
     else if (NUMBERS.some((pattern) => pattern.test(key))) {
       const n = Math.round(Number(value));
       if (!Number.isFinite(n) || Math.abs(n) > 1e7) throw new Error(`${key} needs a number.`);

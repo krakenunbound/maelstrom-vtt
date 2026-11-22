@@ -379,6 +379,9 @@ function Skills({ spec, custom }: { spec: Extract<Part, { part: "skills" }>; cus
             ) : (
               <span>{String(at(row, spec.name ?? "name") ?? "")}</span>
             )}
+            {(spec.after ?? []).map((field) => (
+              <FieldView key={field.path} spec={field} scope={scope} base={`${spec.path}.${key}`} />
+            ))}
             <RollButton roll={spec.roll} scope={scope} className="cc-bonus" />
             {sheet.editable && spec.remove ? (
               <button type="button" className="ghost" title={spec.remove.title} aria-label={textOf(spec.remove.aria, scope, sheet.modifiers)} onClick={() => sheet.change(`${spec.path}.${key}`, null)}>

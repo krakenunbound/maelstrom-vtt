@@ -5,6 +5,7 @@
 //  - death saves ticked by hand; a hit die rolled (spent) apart from a rest, healing
 //  - attunement: the box on an item that requires it, the attuned count, class slots
 //  - a wizard's slots by hand, prepared spells (known ones only), class resources given back by their rests
+//  - skills' half proficiency and misc; feats, languages, proficiencies by hand; FG's weapon options (crit range, extra dice)
 //  - the character details FG keeps (deity, size, personality traits, ideals, bonds, flaws, appearance...)
 import "./loopback.mjs";
 import path from "node:path";
@@ -131,6 +132,44 @@ try {
   await editMage([{ path: "resources.id-00002", value: null }]);
   assert(!mageData().resources["id-00002"], "a resource removed");
   done.push("spell slots by hand, prepared spells, class resources back on their rests");
+
+  // Skills: half proficiency (Jack of All Trades, rounded down) and a misc bonus.
+  const dexBonus = data().abilities.dexterity.bonus;
+  await edit([{ path: "skills.stealth.prof", value: 3 }, { path: "skills.stealth.misc", value: 2 }]);
+  assert(data().skills.stealth.total === dexBonus + Math.floor(data().prof / 2) + 2, `half and misc: ${JSON.stringify({ stealth: data().skills.stealth, prof: data().prof, dexBonus })}`);
+  done.push("skills: half proficiency, misc");
+
+  // The lists, one a line.
+  await edit([{ path: "languages", value: ["Common", "Dwarvish", ""].join(String.fromCharCode(10)) }, { path: "proficiencylist.tools", value: "Smith's tools" }, { path: "feats", value: ["Alert", "Tough"] }]);
+  assert(data().languages.join() === "Common,Dwarvish" && data().proficiencylist.tools.join() === "Smith's tools" && data().feats.join() === "Alert,Tough", `lists: ${JSON.stringify({ l: data().languages, t: data().proficiencylist.tools, f: data().feats, errors: errors() })}`);
+  done.push("feats, languages and proficiencies by hand");
+
+  // Weapon options: a melee critical on 19, one extra die.
+  await edit([{ path: "weapon.critrange.melee", value: 19 }, { path: "weapon.critdicebonus.melee", value: 1 }]);
+  const view = await tool("kraken_combat", { action: "view" });
+  const me = view.entries.find((item) => item.recordId === id);
+  await tool("kraken_combat", { action: "add", entry: { name: "Dummy", faction: "foe", hp: 200, ac: 30, init: 0 } });
+  const dummy = (await tool("kraken_combat", { action: "view" })).entries.find((item) => item.name === "Dummy");
+  await tool("kraken_combat", { action: "target", id: me.id, targetId: dummy.id, on: true });
+  if (!Object.keys(data().attacks ?? {}).length) {
+    const blade = agent.records.list({ type: "item" }).find((item) => /^(longsword|battleaxe|mace|shortsword)$/i.test(item.name));
+    assert(blade, "a weapon in the book");
+    await tool("kraken_character_drop", { id, record: blade.id, type: "item" });
+    const row = Object.entries(data().inventorylist).find(([, item]) => item.name === blade.name)?.[0];
+    await edit([{ path: `inventorylist.${row}.carried`, value: 2 }]);
+  }
+  const weaponKey = Object.keys(data().attacks ?? {}).find((key) => !/thrown/i.test(key) && !/unarmed/i.test(data().attacks[key].name ?? ""));
+  const weapon = { key: weaponKey };
+  assert(weaponKey, `a weapon to swing: ${JSON.stringify(data().attacks)}`);
+  agent.dice.force([19]);
+  await tool("kraken_combat", { action: "attack", recordId: id, weapon: weapon.key });
+  const swing = agent.chatLog(6).find((line) => /\[ATTACK\]/.test(line.roll?.label ?? ""));
+  assert(/CRITICAL/.test(`${swing?.roll?.label ?? ""} ${swing?.roll?.result ?? ""}`) || swing?.result === "CRITICAL", `a 19 against AC 30 is a critical: ${JSON.stringify(swing?.roll)}`);
+  await tool("kraken_combat", { action: "damage-roll", recordId: id, weapon: weapon.key });
+  const hurt = agent.chatLog(6).find((line) => /\[DAMAGE\].*\[CRITICAL\]/.test(line.roll?.label ?? ""));
+  const dice = (hurt?.roll?.formula ?? "").match(/\d*d\d+/g) ?? [];
+  assert(hurt && dice.length >= 2, `the critical's dice with one more: ${JSON.stringify(hurt?.roll?.formula)}`);
+  done.push("weapon options: critical range, extra critical dice");
 
   // The character details.
   await edit([{ path: "deity", value: "Tempus" }, { path: "size", value: "Medium" }, { path: "ideals", value: "Glory" }, { path: "bonds", value: "My shield-brothers" }, { path: "flaws", value: "Proud" }, { path: "personalitytraits", value: "Loud" }, { path: "specialdefenses", value: "Resist fire" }]);

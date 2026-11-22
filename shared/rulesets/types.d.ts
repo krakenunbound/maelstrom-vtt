@@ -151,7 +151,7 @@ export type Part = (
   // label with its note in a small hint; else name is a path in each row. head: column heads; mark: words before the name.
   // sort: the rows by this field of each (a skill's name); note: a small hint after the name (a text on the row);
   // more: a game's own words after it (a custom part, given the row); remove: the row dropped (×); empty: shown with no rows.
-  | { part: "skills"; path: Path; hook: string; className?: string; rows?: { key: string; label: string; note?: string }[]; head?: { className: string; labels: string[] }; rowClass?: Text; rowTitle?: Text; mark?: { when: Cond; text: string }; field: FieldSpec; name?: Path; roll: RollSpec; sort?: Path; note?: Text; more?: Ref; remove?: { aria: Text; title?: string }; empty?: string }
+  | { part: "skills"; path: Path; hook: string; className?: string; rows?: { key: string; label: string; note?: string }[]; head?: { className: string; labels: string[] }; rowClass?: Text; rowTitle?: Text; mark?: { when: Cond; text: string }; field: FieldSpec; after?: FieldSpec[] /* fields after the name (5E's misc) */; name?: Path; roll: RollSpec; sort?: Path; note?: Text; more?: Ref; remove?: { aria: Text; title?: string }; empty?: string }
   // Boxes to tick off (spells a day): max is a number or a list (a row of boxes for each, as a level's slots);
   // used the count ticked (a list alike); a click ticks up to that box, or back.
   // each: one track per row of a list (2E's casting classes), max and used then in the row; first: the first row's

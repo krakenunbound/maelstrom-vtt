@@ -1723,7 +1723,8 @@ textarea.cc-field.tall { min-height: 220px; }
 .sheet-5e .five-big { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px; border: 1px solid var(--brass-soft, #a8834a); border-radius: 8px; }
 .sheet-5e .five-big > span:first-of-type { font-size: 1.3em; font-weight: 700; }
 .sheet-5e .five-skills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 14px; }
-.sheet-5e .five-skill { display: grid; grid-template-columns: 3em 1fr 3.4em; gap: 6px; align-items: center; }
+.sheet-5e .five-skill { display: grid; grid-template-columns: 3em 1fr 3.2em 3.4em; gap: 6px; align-items: center; }
+.sheet-5e .five-skill input.cc-field { width: 100%; box-sizing: border-box; text-align: center; }
 .sheet-5e .five-attacks li, .sheet-5e .five-items li, .sheet-5e .five-spells li { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px solid rgba(168, 131, 74, 0.25); }
 .sheet-5e .five-attacks, .sheet-5e .five-items, .sheet-5e .five-spells { list-style: none; margin: 0; padding: 0; }
 .sheet-5e .five-spells li p { flex-basis: 100%; margin: 0; }
