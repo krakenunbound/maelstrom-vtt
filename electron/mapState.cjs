@@ -2158,6 +2158,8 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       const grid = state.settings[sceneId]?.grid ?? {};
       return { size: grid.size ?? 100, ...(grid.sizeY ? { sizeY: grid.sizeY } : {}), type: 1, distance: grid.distance ?? 5, units: grid.units ?? "ft", offsetX: grid.offsetX ?? 0, offsetY: grid.offsetY ?? 0, ...(grid.color ? { color: grid.color } : {}), ...(grid.alpha != null ? { alpha: grid.alpha } : {}) };
     },
+    // A map's walls, doors, lights and grid as the table keeps them (a module export carries them).
+    mapOf: (sceneId) => ({ walls: (state.walls[sceneId] ?? []).map((wall) => ({ ...wall })), lights: (state.lights[sceneId] ?? []).map((light) => ({ ...light })), grid: state.settings[sceneId]?.grid ? { ...state.settings[sceneId].grid } : null }),
     // The picture Map Studio painted for a scene (its file name and version), if any.
     studioPicture: (sceneId) => state.studio[sceneId]?.picture ?? null,
     addWalls(input, seat) {
@@ -2273,8 +2275,15 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
     },
     // An FG module's map, before it is first shown: its pins, FX layers and
     // grid offset, kept only when the scene has none of its own yet.
-    seed(sceneId, { pins = [], fx = [], tiles = [], groups = [], gridOffset = null, legacyGridOffset = null, frame = null } = {}) {
+    seed(sceneId, { pins = [], fx = [], tiles = [], groups = [], gridOffset = null, legacyGridOffset = null, frame = null, own = null } = {}) {
       const id = String(sceneId).slice(0, 80);
+      // A map exported from a campaign (its pack's image record keeps them): its walls, lights and grid as they were,
+      // the first time it opens here; after that the table's own.
+      if (own && typeof own === "object") {
+        if (!state.walls[id] && Array.isArray(own.walls)) state.walls[id] = own.walls.map(cleanWall).filter(Boolean).slice(0, MAX_WALLS);
+        if (!state.lights[id] && Array.isArray(own.lights)) state.lights[id] = own.lights.map(cleanLight).filter(Boolean).slice(0, 500);
+        if (!state.settings[id] && own.grid && typeof own.grid === "object") state.settings[id] = cleanSettings({ grid: own.grid });
+      }
       // Which FG image the scene came from, and its size: to place an encounter's tokens where FG had them.
       // base: the picture layer's place in FG (a newer module's origin is the picture's top left): encounters' spots are read from it.
       if (frame) state.frames[id] = { image: String(frame.image).slice(0, 160), module: String(frame.module).slice(0, 160), width: num(frame.width, 0), height: num(frame.height, 0), base: { x: num(frame.base?.x, 0), y: num(frame.base?.y, 0) } };

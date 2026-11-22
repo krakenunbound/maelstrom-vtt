@@ -5,7 +5,9 @@
 //    its encounters, parcels and tables the book's, characters pregenerated characters
 //  - links between exported records (an encounter's creatures, a table's results, links in text) point into the
 //    pack; links to anything else are kept as they are
-//  - pictures stay where they are (a book's "images/x.webp@Book", the art library's): the pack names them
+//  - a campaign image (a map) goes in with its picture (the one Map Studio painted, if any), its walls, doors, lights
+//    and grid as the table keeps them: the other campaign opens it as the same map
+//  - other pictures stay where they are (an NPC's "images/x.webp@Book", the art library's): the pack names them
 //  - the name, title, category, author; for this game or any game; whether the players may read it
 // A pack this did not make (a converted book) is never written over.
 const fs = require("fs");
@@ -34,9 +36,10 @@ function storyText(data) {
 }
 
 /**
- * @param {{ records: any[]; name: string; title?: string; category?: string; author?: string; ruleset: string; anyGame?: boolean; forPlayers?: boolean; folder?: string }} input
+ * maps: a campaign image's record id -> { bytes, ext, width, height, walls, lights, grid } (the host's mapForExport).
+ * @param {{ records: any[]; maps?: Map<string, any>; name: string; title?: string; category?: string; author?: string; ruleset: string; anyGame?: boolean; forPlayers?: boolean; folder?: string }} input
  */
-function exportPack({ records, name, title, category, author, ruleset, anyGame = false, forPlayers = false, folder = packs.packFolder() }) {
+function exportPack({ records, maps = new Map(), name, title, category, author, ruleset, anyGame = false, forPlayers = false, folder = packs.packFolder() }) {
   const packName = String(name ?? "").replace(/[\u0000-\u001f]/g, "").trim().slice(0, 100);
   if (!packName) throw new Error("Give the module a name.");
   const chosen = records.filter((record) => EXPORTABLE.has(record.type) && !record.source);
@@ -73,9 +76,30 @@ function exportPack({ records, name, title, category, author, ruleset, anyGame =
     }
     return out;
   };
+  // The pictures of the maps, by their file in the pack.
+  /** @type {Record<string, Uint8Array>} */
+  const pictures = {};
+  const used = new Set();
   const out = placed.map(({ record, type, fgPath }) => {
-    const { fgPath: _old, ...data } = record.data ?? {};
+    let { fgPath: _old, ...data } = record.data ?? {};
     if (record.type === "story") data.text = storyText(data);
+    const map = record.type === "image" ? maps.get(record.id) : null;
+    if (record.type === "image") {
+      if (!map) throw new Error(`The picture of ${record.name} was not found.`);
+      // Its picture in the pack as a book's map is kept (FG's image record: one picture layer and the grid), and
+      // the walls, lights and grid as the table keeps them (data.kraken: they come in the first time it opens).
+      const stem = String(record.name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60) || "map";
+      let file = `images/${stem}${map.ext}`;
+      for (let n = 2; used.has(file); n += 1) file = `images/${stem}-${n}${map.ext}`;
+      used.add(file);
+      pictures[file] = map.bytes;
+      const size = Math.max(1, Math.round(Number(map.grid?.size) || 100));
+      data = {
+        name: record.name,
+        image: { grid: "on", gridsize: `${size},${size}`, gridoffset: "0,0", layers: { layer: [{ name: record.name, id: "0", parentid: "-1", type: "image", bitmap: file }] } },
+        kraken: { walls: map.walls ?? [], lights: map.lights ?? [], ...(map.grid ? { grid: map.grid } : {}) },
+      };
+    }
     return {
       id: `${prefix}:${fgPath.split("@")[0]}`,
       type,
@@ -103,15 +127,18 @@ function exportPack({ records, name, title, category, author, ruleset, anyGame =
     hasBook: false,
     hasStory,
     records: out.length,
-    pictures: [],
+    pictures: Object.keys(pictures),
     made: new Date().toISOString(),
     from: { kind: FROM, ruleset: "" },
   };
   fs.mkdirSync(home, { recursive: true });
   const temporary = `${target}.part`;
-  fs.writeFileSync(temporary, zipSync({ "kraken-pack.json": strToU8(JSON.stringify(manifest, null, 1)), "records.json": strToU8(JSON.stringify(out)) }, { level: 6 }));
+  // Pictures stored as they are (already compressed); the description and records deflated.
+  const entries = { "kraken-pack.json": strToU8(JSON.stringify(manifest, null, 1)), "records.json": strToU8(JSON.stringify(out)) };
+  for (const [file, bytes] of Object.entries(pictures)) entries[file] = [bytes, { level: 0 }];
+  fs.writeFileSync(temporary, zipSync(entries, { level: 6 }));
   fs.renameSync(temporary, target);
-  return { file: target, book: bookId, name: packName, ruleset: game, records: out.length, contents: manifest.contents };
+  return { file: target, book: bookId, name: packName, ruleset: game, records: out.length, maps: Object.keys(pictures).length, contents: manifest.contents };
 }
 
 module.exports = { exportPack, EXPORTABLE, BOOK_TYPE };

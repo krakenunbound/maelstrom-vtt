@@ -9,6 +9,7 @@ import { DropZone } from "./RecordEditor";
 // single ones (dropped or picked), into a pack in the packs folder that any campaign of this game (or any game)
 // makes active. Its name, title, category and author; whether the players may read it.
 const KIND_LABELS: Record<string, string> = {
+  image: "Images and maps (with their pictures, walls and lights)",
   npc: "NPCs",
   item: "Items",
   itemtemplate: "Item Templates",
@@ -57,8 +58,8 @@ export function ModuleExport({ session }: { session: Session }) {
         event.preventDefault();
         setStatus("Writing the module…");
         void session
-          .content<{ file: string; records: number; ruleset: string }>("module-export", { name, title, category, author, types: kinds, ids: chosen, anyGame, forPlayers })
-          .then((made) => setStatus(`Exported ${made.records} record${made.records === 1 ? "" : "s"} to ${made.file}. It is in Modules (${made.ruleset}) for any campaign to make active.`))
+          .content<{ file: string; records: number; maps?: number; ruleset: string }>("module-export", { name, title, category, author, types: kinds, ids: chosen, anyGame, forPlayers })
+          .then((made) => setStatus(`Exported ${made.records} record${made.records === 1 ? "" : "s"}${made.maps ? ` (${made.maps} map${made.maps === 1 ? "" : "s"} with ${made.maps === 1 ? "its picture" : "their pictures"})` : ""} to ${made.file}. It is in Modules (${made.ruleset}) for any campaign to make active.`))
           .catch((error: unknown) => setStatus(error instanceof Error ? error.message : "Could not export."));
       }}
     >

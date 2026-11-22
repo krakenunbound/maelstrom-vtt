@@ -515,7 +515,9 @@ function moduleExport(table, args) {
   const kinds = new Set([].concat(args.types ?? []).map(String));
   const ids = new Set([].concat(args.ids ?? []).map(String));
   const records = table.records.list({}).filter((record) => !record.source && EXPORTABLE.has(record.type) && (kinds.has(record.type) || ids.has(record.id)));
-  const made = exportPack({ records, name: args.name, title: args.title, category: args.category, author: args.author, ruleset: table.ruleset?.() ?? "", anyGame: Boolean(args.anyGame), forPlayers: Boolean(args.forPlayers) });
+  // A campaign image: its picture, walls, lights and grid (the table's), so it opens as the map it is here.
+  const maps = new Map(records.filter((record) => record.type === "image").map((record) => [record.id, table.mapForExport(record)]));
+  const made = exportPack({ records, maps, name: args.name, title: args.title, category: args.category, author: args.author, ruleset: table.ruleset?.() ?? "", anyGame: Boolean(args.anyGame), forPlayers: Boolean(args.forPlayers) });
   table.booksChanged?.();
   return made;
 }

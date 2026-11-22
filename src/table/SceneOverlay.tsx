@@ -181,7 +181,8 @@ export function SceneLegend({
   regions,
 }: {
   walls: SceneWall[];
-  lights: SceneLight[];
+  // The lights on the map as the table keeps them (only counted).
+  lights: readonly unknown[];
   tokens: OverlayToken[];
   markers: SceneMarker[];
   regions: SceneRegion[];

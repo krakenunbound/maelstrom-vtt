@@ -3202,7 +3202,7 @@ function MapViewInner({
           selectedLabel={selectedLabel}
           actions={{ tile: actions.tile ?? (() => undefined), fx: actions.fx ?? (() => undefined), clearDrawings: actions.clearDrawings, label: actions.label ?? (() => undefined), mapGroup: actions.mapGroup ?? (() => undefined), mask: actions.mask ?? (() => undefined), wall: actions.wall, mapUndo: actions.mapUndo, updateSettings: actions.updateSettings, updateLight: actions.updateLight, removeLight: actions.removeLight }}
           onClose={() => setEditorOpen(false)}
-          summary={<SceneLegend walls={wallsShown} lights={scene.lights} tokens={scene.tokens} markers={scene.markers} regions={scene.regions} />}
+          summary={<SceneLegend walls={wallsShown} lights={map.lights} tokens={scene.tokens} markers={scene.markers} regions={scene.regions} />}
         />
       ) : null}
       {gm ? <MoveApprovals requests={map.moveRequests} approve={actions.approveMoves} /> : null}

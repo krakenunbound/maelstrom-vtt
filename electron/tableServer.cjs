@@ -4277,6 +4277,44 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     },
     // A book written to the shelf (a module exported from the campaign): every seat's shelf again.
     booksChanged: () => shelfChanged(),
+    // A campaign image (Campaign > Images: the GM's own picture, or a book's made a map) as a module export takes it:
+    // its picture (the one Map Studio painted, if any), size, and the walls, doors, lights and grid kept for it.
+    mapForExport(record) {
+      const data = record?.data ?? {};
+      const { fgModuleBundle, pictureSize } = require("./importers/fgMaps.cjs");
+      let sceneId = "";
+      let bytes = null;
+      let file = String(data.file ?? "");
+      if (data.own) {
+        sceneId = ownMapId(file);
+        const full = ownMapFile(file);
+        bytes = studioPicture?.(sceneId) ?? (full ? fs.readFileSync(full) : null);
+      } else if (data.book && file) {
+        const wanted = require("./library.cjs").resolved(String(data.book));
+        try {
+          const bundle = fgModuleBundle(wanted, { file, all: true, picture: (id) => studioPicture?.(id) ?? null });
+          sceneId = bundle.scenes[0]?.id ?? "";
+        } catch {
+          /* a picture no image record draws: its scene id follows its bytes, below */
+        }
+        const found = books?.picture?.(String(data.book), file);
+        bytes = (sceneId ? studioPicture?.(sceneId) : null) ?? found?.bytes ?? null;
+        if (!sceneId && bytes) {
+          // As a bare picture opened as a map (src/foundry/importBundle.ts pictureBundle): FNV over the bytes.
+          let hash = 2166136261;
+          const step = Math.max(1, Math.floor(bytes.length / 4096));
+          for (let index = 0; index < bytes.length; index += step) hash = Math.imul(hash ^ bytes[index], 16777619) >>> 0;
+          hash = Math.imul(hash ^ bytes.length, 16777619) >>> 0;
+          sceneId = `pic-${hash.toString(36)}`;
+        }
+      }
+      if (!bytes) throw new Error(`The picture of ${record?.name ?? "that image"} was not found.`);
+      const size = pictureSize(bytes);
+      if (!size) throw new Error(`${record?.name ?? "That image"} is not a picture Maelstrom can read.`);
+      const painted = Boolean(studioPicture?.(sceneId));
+      const ext = painted ? ".webp" : (/\.(png|jpe?g|webp|gif)$/i.exec(file)?.[0] ?? ".png").toLowerCase();
+      return { sceneId, bytes: new Uint8Array(bytes), ext, width: size.width, height: size.height, ...map.mapOf(sceneId) };
+    },
     // A record an active book's page links to (Copy to campaign), read from the book.
     async readBookRecord(book, bookPath) {
       requireActiveBook(String(book));

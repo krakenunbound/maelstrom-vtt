@@ -114,6 +114,75 @@ try {
   assert(/GM's/.test(refused), "a player may not export");
   void [blade, hero, story, battle, tableRecord, parcel];
   done.push("for the players and any game; a converted book never written over; the GM's alone");
+
+  // 4. A map: the GM's own picture with its walls (a window, a door), a torch and the grid, exported, opened in
+  //    another campaign as the same map.
+  const zlib = await import("node:zlib");
+  const png = (width, height) => {
+    const chunk = (type, body) => {
+      const length = Buffer.alloc(4);
+      length.writeUInt32BE(body.length);
+      const crc = Buffer.alloc(4);
+      crc.writeUInt32BE(zlib.crc32(Buffer.concat([Buffer.from(type), body])) >>> 0);
+      return Buffer.concat([length, Buffer.from(type), body, crc]);
+    };
+    const head = Buffer.alloc(13);
+    head.writeUInt32BE(width, 0);
+    head.writeUInt32BE(height, 4);
+    head.set([8, 2, 0, 0, 0], 8);
+    const rows = Buffer.alloc((width * 3 + 1) * height);
+    return Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", head), chunk("IDAT", zlib.deflateSync(rows)), chunk("IEND", Buffer.alloc(0))]);
+  };
+  const mapsDir = path.join(dir, "Maps");
+  fs.mkdirSync(mapsDir, { recursive: true });
+  fs.writeFileSync(path.join(mapsDir, "Den Cave.png"), png(400, 300));
+  const third = createTableServer({ books: shelf(), ruleset: "D&D 5E", ownMaps: { folder: () => mapsDir } });
+  await third.listen({ port: 0, password: "" });
+  try {
+    const t = third.agent;
+    const cave = t.records.create({ type: "image", name: "Den Cave", visibility: "gm", data: { own: true, file: "Den Cave.png" } }, t.seat);
+    t.map.seed("own-den-cave", { own: { walls: [{ x1: 10, y1: 10, x2: 200, y2: 10, kind: "window" }, { x1: 200, y1: 10, x2: 200, y2: 120, kind: "door" }], lights: [{ x: 100, y: 80, bright: 20, dim: 40, color: "#ff8a3d", animation: "torch" }], grid: { size: 70 } } });
+    const exported = await tool(third, "kraken_module_export", { name: "Den Maps", types: ["image"] });
+    assert(exported.maps === 1, `a map exported: ${JSON.stringify(exported)}`);
+    const mapPack = packs.readPack(exported.file);
+    const record = mapPack.records[0];
+    assert(record.type === "image" && record.data.image.layers.layer[0].bitmap === "images/den-cave.png" && mapPack.images.includes("images/den-cave.png") && record.data.kraken.walls.length === 2, `its image record and picture: ${JSON.stringify(record.data).slice(0, 300)}`);
+    // Another campaign opens it from the module.
+    const fourth = createTableServer({ books: shelf(), ruleset: "D&D 5E" });
+    const opened = await fourth.listen({ port: 0, password: "" });
+    try {
+      await tool(fourth, "kraken_books", { action: "activate", book: "Den Maps" });
+      const { WebSocket } = await import("ws");
+      const gm = await new Promise((resolve, reject) => {
+        const ws = new WebSocket(`ws://127.0.0.1:${opened.port}`);
+        ws.on("message", (data) => {
+          const msg = JSON.parse(data.toString());
+          if (msg.type === "ok") resolve({ ws, you: msg.you });
+        });
+        ws.on("error", reject);
+        ws.on("open", () => ws.send(JSON.stringify({ type: "join", name: "GM", hostToken: opened.hostToken })));
+      });
+      const reply = await fetch(`http://127.0.0.1:${opened.port}/table/fg-maps?module=${encodeURIComponent("Den Maps")}&token=${gm.you.assetToken}`);
+      assert(reply.status === 200, `the map opens from the module: ${reply.status} ${await reply.clone().text()}`);
+      const { unzipSync, strFromU8: text } = await import("fflate");
+      const bundle = unzipSync(new Uint8Array(await reply.arrayBuffer()));
+      const scene = JSON.parse(text(bundle["bundle.json"])).adventureData.scenes[0];
+      assert(scene.name === "Den Cave" && scene.width === 400 && scene.height === 300, `the scene: ${JSON.stringify({ name: scene.name, width: scene.width })}`);
+      const state = fourth.persisted().map;
+      const walls = state.walls[scene._id] ?? [];
+      const lights = state.lights[scene._id] ?? [];
+      assert(walls.map((wall) => wall.kind).join() === "window,door" && walls[0].x2 === 200, `its walls as they were: ${JSON.stringify(walls)}`);
+      assert(lights.length === 1 && lights[0].animation === "torch" && lights[0].bright === 20 && lights[0].color === "#ff8a3d", `its light as it was: ${JSON.stringify(lights)}`);
+      assert(state.settings[scene._id]?.grid?.size === 70, `its grid: ${JSON.stringify(state.settings[scene._id])}`);
+      gm.ws.close();
+    } finally {
+      await fourth.stop?.();
+    }
+    void cave;
+  } finally {
+    await third.stop?.();
+  }
+  done.push("a map with its picture, walls (a window, a door), light and grid opens in another campaign as it was");
 } finally {
   await first.stop?.();
   await second?.stop?.();

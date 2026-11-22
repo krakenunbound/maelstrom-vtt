@@ -409,7 +409,7 @@ function fgModuleBundle(moduleName, { only, all = false, file = "", picture = ()
       files[made.file] = new Uint8Array(painted);
     } else files[made.file] = new Uint8Array(made.bytes);
     scenes.push(made.scene);
-    extras[id] = { pins: [...made.pins, ...made.texts], fx: made.fx, tiles: made.tiles, groups: made.groups, gridOffset: made.gridOffset, legacyGridOffset: made.legacyGridOffset, walls: made.scene.walls.length, lights: made.scene.lights.length, frame: { image: String(record.data.fgPath ?? "").replace(/@.*$/, ""), module: label, width: made.scene.width, height: made.scene.height, base: made.baseAt } };
+    extras[id] = { pins: [...made.pins, ...made.texts], fx: made.fx, tiles: made.tiles, groups: made.groups, gridOffset: made.gridOffset, legacyGridOffset: made.legacyGridOffset, walls: made.scene.walls.length, lights: made.scene.lights.length, frame: { image: String(record.data.fgPath ?? "").replace(/@.*$/, ""), module: label, width: made.scene.width, height: made.scene.height, base: made.baseAt }, ...(record.data.kraken && typeof record.data.kraken === "object" ? { own: record.data.kraken } : {}) };
   }
   if (scenes.length === 0) throw new Error(`No maps in ${label}.`);
   files["bundle.json"] = strToU8(JSON.stringify({ adventureData: { name: label, scenes } }));
