@@ -2967,3 +2967,5 @@ label.set-row { cursor: pointer; }
 .five-resources ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
 .five-resources li { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .five-resources li input[type="text"] { width: 12em; }
+/* A typed value in a 5E box (Speed, Inspiration): centred and inside the box. */
+.five-big > span > input.cc-field { box-sizing: border-box; width: 100%; max-width: 8em; text-align: center; font-weight: 700; }
