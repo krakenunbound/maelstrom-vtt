@@ -2826,10 +2826,12 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
           else if (msg.action === "note-add") calendar.addNote({ year: msg.year, day: msg.day, text: msg.text, shown: msg.shown }, seat, client.role === "dm" ? null : tokenColorOf(client.name));
           else if (msg.action === "note-update") calendar.updateNote(String(msg.id ?? ""), msg.patch ?? {}, seat);
           else if (msg.action === "note-remove") calendar.removeNote(String(msg.id ?? ""), seat);
+          else if (msg.action === "holiday-add") calendar.addHoliday({ name: msg.name, month: msg.month, day: msg.day, days: msg.days }, seat);
+          else if (msg.action === "holiday-remove") calendar.removeHoliday(String(msg.id ?? ""), seat);
           else if (msg.action === "say") {
             // Today's date and time, said in chat (FG's calendar chat buttons).
             addChat({ id: client.id, from: client.role === "dm" ? "Calendar" : client.name, text: `[DATE] ${calendar.view(seat).today}`, at: Date.now() });
-          } else throw new Error("set, advance, note-add, note-update, note-remove or say?");
+          } else throw new Error("set, advance, note-add, note-update, note-remove, holiday-add, holiday-remove or say?");
         } catch (error) {
           send(ws, { type: "error", reason: error instanceof Error ? error.message : "The calendar could not change." });
         }

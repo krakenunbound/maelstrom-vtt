@@ -170,7 +170,9 @@ export type CalendarNote = { id: string; year: number; day: number; by: string; 
 export type TableClock = { id: string; name: string; segments: number; filled: number; kind: string; shown: boolean; rival: string; after: string; note: string; locked: boolean };
 export type ScoreState = { phase: "free" | "score" | "downtime"; position: string; effect: string; target: string; targetTier: number; plan: string; detail: string; engagement: { result: string; highest: number; dice: number; position: string } | null };
 export type ClocksView = { clocks: TableClock[]; score: ScoreState };
-export type CalendarView = { id: string; year: number; day: number; hour: number; minute: number; today: string; calendars: { id: string; name: string }[]; notes: CalendarNote[] };
+// A holiday on its days (FG's): month 0-based, day 1-based, days long; builtin: the calendar's own, else the GM's.
+export type CalendarHoliday = { id?: string; name: string; month: number; day: number; days: number; builtin?: boolean };
+export type CalendarView = { id: string; year: number; day: number; hour: number; minute: number; today: string; calendars: { id: string; name: string }[]; notes: CalendarNote[]; holidays?: CalendarHoliday[] };
 export type DeathMarker = { id: string; x: number; y: number; set: string; variant: number; rotation: number; size: number; name: string };
 export type MapDrawing = { id: string; by: string; color: string; width: number; points: number[]; shape?: "line" | "arrow" | "rect" | "ellipse" | "circle" | "cone" | "poly"; fill?: string; fillAlpha?: number; alpha?: number; group?: string };
 // An FX layer (FG's FX tab).

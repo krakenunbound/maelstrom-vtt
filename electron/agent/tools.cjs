@@ -1817,16 +1817,17 @@ const TOOLS = [
   {
     name: "kraken_calendar",
     description:
-      "The campaign's calendar (FG's Calendar, with Kraken Calendar Notes): which calendar (each game's own by default: gregorian, greyhawk (2E, 3.5E, C&C), harptos (5E), golarion (Pathfinder), imperial (Traveller: 045-1105), waning (Descending Darkness), astra (Apeira Astra)), today's date and the time, and notes on days. action view (default): the date (year; day: the day of the year, 0 the first), the time, today in words, the notes (each: year, day, by: \"\" the GM's or a player's name, colour, text, shown: a GM note the players see / a player's note the whole table sees); set (calendar, year, month (1-based, a festival counts as a month as FG lists it), day (1-based in the month), hour, minute); advance (days, hours, minutes; negative goes back; midnight turns the day); note-add (text, and year, month, day: today if left out; shown false: the GM's alone); note-update (id, text, shown); note-remove (id); say (today's date and time in chat).",
+      "The campaign's calendar (FG's Calendar, with Kraken Calendar Notes): which calendar (each game's own by default: gregorian, greyhawk (2E, 3.5E, C&C), harptos (5E), golarion (Pathfinder), imperial (Traveller: 045-1105), waning (Descending Darkness), astra (Apeira Astra)), today's date and the time, and notes on days. action view (default): the date (year; day: the day of the year, 0 the first), the time, today in words, the notes (each: year, day, by: \"\" the GM's or a player's name, colour, text, shown: a GM note the players see / a player's note the whole table sees); set (calendar, year, month (1-based, a festival counts as a month as FG lists it), day (1-based in the month), hour, minute); advance (days, hours, minutes; negative goes back; midnight turns the day); note-add (text, and year, month, day: today if left out; shown false: the GM's alone); note-update (id, text, shown); note-remove (id); holiday-add (FG's holidays: name, month (1-based, as set counts them), day (1-based), days (how long; 1 default): the GM's own, shown on its days, in today's words and said with the date; the calendar's own holidays come with it); holiday-remove (id); say (today's date and time in chat, with today's holidays). view gives holidays (each: name, month 0-based, day, days, builtin: the calendar's own).",
     inputSchema: object({
-      action: { type: "string", enum: ["view", "set", "advance", "note-add", "note-update", "note-remove", "say"] },
+      action: { type: "string", enum: ["view", "set", "advance", "note-add", "note-update", "note-remove", "holiday-add", "holiday-remove", "say"] },
+      name: string("holiday-add: its name"),
       calendar: string("A calendar id"),
       year: number("Year"),
       month: number("Month, 1-based"),
       day: number("Day of the month, 1-based"),
       hour: number("0-23"),
       minute: number("0-59"),
-      days: number("advance: days"),
+      days: number("advance: days; holiday-add: how many days it lasts"),
       hours: number("advance: hours"),
       minutes: number("advance: minutes"),
       text: string("A note's words"),
@@ -1857,6 +1858,11 @@ const TOOLS = [
       if (action === "note-add") {
         const year = args.year ?? now.year;
         return out(cal.addNote({ year, day: dayOf(now.id, year) ?? now.day, text: args.text, shown: args.shown }, seat));
+      }
+      if (action === "holiday-add") return out(cal.addHoliday({ name: args.name, month: (Number(args.month) || 1) - 1, day: args.day, days: args.days }, seat));
+      if (action === "holiday-remove") {
+        cal.removeHoliday(String(args.id ?? ""), seat);
+        return out({ removed: args.id });
       }
       if (action === "note-update") return out(cal.updateNote(String(args.id ?? ""), { ...(args.text !== undefined ? { text: args.text } : {}), ...(args.shown !== undefined ? { shown: args.shown } : {}) }, seat));
       if (action === "note-remove") {

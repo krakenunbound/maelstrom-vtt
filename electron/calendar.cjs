@@ -1,5 +1,5 @@
 const crypto = require("crypto");
-const { CALENDARS, addDays, calendarFor, calendarOf, dateWords, daysIn, timeWords } = require("../shared/calendars.mjs");
+const { CALENDARS, addDays, calendarFor, calendarOf, dateWords, daysIn, holidaysOn, monthsOf, timeWords } = require("../shared/calendars.mjs");
 
 // The campaign's calendar (FG's Calendar, with the GM's Kraken Calendar Notes
 // extension): which calendar, today's date and the time, and notes on days.
@@ -29,6 +29,23 @@ function cleanNote(raw) {
   };
 }
 
+// The GM's own holiday (FG's calendar period holiday): a name, its month (0-based in the calendar's months) and day,
+// how many days it lasts; for this calendar (another calendar's are kept, not shown).
+const MAX_HOLIDAYS = 300;
+function cleanHoliday(raw, calendarId) {
+  if (!raw || typeof raw !== "object") return null;
+  const name = text(raw.name).replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 60);
+  if (!name) return null;
+  return {
+    id: text(raw.id) || crypto.randomBytes(5).toString("hex"),
+    calendar: text(raw.calendar) || calendarId,
+    name,
+    month: Math.max(0, int(raw.month, 0)),
+    day: Math.max(1, int(raw.day, 1)),
+    days: Math.min(60, Math.max(1, int(raw.days, 1))),
+  };
+}
+
 function createCalendar({ saved, ruleset = "", onChange = () => undefined, onTime = () => undefined }) {
   const raw = saved && typeof saved === "object" ? saved : {};
   const first = calendarOf(raw.id ?? calendarFor(ruleset));
@@ -39,6 +56,7 @@ function createCalendar({ saved, ruleset = "", onChange = () => undefined, onTim
     hour: Math.min(23, Math.max(0, int(raw.hour, 8))),
     minute: Math.min(59, Math.max(0, int(raw.minute, 0))),
     notes: (Array.isArray(raw.notes) ? raw.notes : []).map(cleanNote).filter(Boolean).slice(-MAX_NOTES),
+    holidays: (Array.isArray(raw.holidays) ? raw.holidays : []).map((item) => cleanHoliday(item, first.id)).filter(Boolean).slice(0, MAX_HOLIDAYS),
   };
   const calendar = () => calendarOf(state.id);
   const fit = () => {
@@ -49,13 +67,18 @@ function createCalendar({ saved, ruleset = "", onChange = () => undefined, onTim
     if (seat.role !== "dm") throw new Error("Only the GM sets the date.");
   };
   const mayRead = (note, seat) => seat.role === "dm" || note.shown || note.by === seat.name;
+  // The holidays of the calendar in use: its own (builtin), then the GM's for it.
+  const holidays = () => [...(calendar().holidays ?? []).map((item) => ({ ...item, days: item.days ?? 1, builtin: true })), ...state.holidays.filter((item) => item.calendar === state.id)];
+  const todayHolidays = () => holidaysOn(calendar(), state.year, state.day, holidays());
   const view = (seat) => ({
     id: state.id,
     year: state.year,
     day: state.day,
     hour: state.hour,
     minute: state.minute,
-    today: `${dateWords(calendar(), state.year, state.day)}, ${timeWords(state.hour, state.minute)}`,
+    // Today in words, its holidays after it (FG's holiday names, " / " between two).
+    today: `${dateWords(calendar(), state.year, state.day)}${todayHolidays().length ? ` (${todayHolidays().join(" / ")})` : ""}, ${timeWords(state.hour, state.minute)}`,
+    holidays: holidays(),
     calendars: CALENDARS.map(({ id, name }) => ({ id, name })),
     notes: state.notes.filter((note) => mayRead(note, seat)),
   });
@@ -127,6 +150,26 @@ function createCalendar({ saved, ruleset = "", onChange = () => undefined, onTim
       Object.assign(note, next);
       changed();
       return note;
+    },
+    // The GM's own holidays for the calendar in use: a name on a month's day, a day or more long.
+    addHoliday(input, seat) {
+      mustGM(seat);
+      const holiday = cleanHoliday({ ...input, id: undefined, calendar: state.id }, state.id);
+      if (!holiday) throw new Error("A holiday needs a name.");
+      const month = monthsOf(calendar(), state.year)[holiday.month];
+      if (!month) throw new Error(`The calendar has ${monthsOf(calendar(), state.year).length} months.`);
+      if (holiday.day > Math.max(month.days, 1)) throw new Error(`${month.name} has ${month.days} days.`);
+      if (state.holidays.length >= MAX_HOLIDAYS) throw new Error("That is too many holidays.");
+      state.holidays.push(holiday);
+      changed();
+      return holiday;
+    },
+    removeHoliday(id, seat) {
+      mustGM(seat);
+      const at = state.holidays.findIndex((item) => item.id === id);
+      if (at < 0) throw new Error("That holiday is gone (a calendar's own cannot be taken out).");
+      state.holidays.splice(at, 1);
+      changed();
     },
     removeNote(id, seat) {
       const at = state.notes.findIndex((item) => item.id === id);

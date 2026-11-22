@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { CalendarNote, Session } from "../session/useSession";
 import { Icon } from "../ui/icons";
-import { calendarOf, dateWords, monthsOf, weekday } from "../../shared/calendars.mjs";
+import { calendarOf, dateWords, monthsOf, weekday, holidaysOn, monthDay } from "../../shared/calendars.mjs";
 import { GM } from "../ui/gmTitle";
 
 // FG's Calendar (with the GM's Kraken Calendar Notes): the year's months laid
@@ -18,6 +18,9 @@ export function CalendarWindow({ session }: { session: Session }) {
   const [picked, setPicked] = useState<{ year: number; day: number } | null>(null);
   const [draft, setDraft] = useState("");
   const [keep, setKeep] = useState(false);
+  // A new holiday on the chosen day (the GM's): its name and how many days it lasts.
+  const [holidayName, setHolidayName] = useState("");
+  const [holidayDays, setHolidayDays] = useState(1);
   const calendar = calendarOf(view?.id ?? "gregorian");
   const year = shownYear ?? view?.year ?? calendar.year;
   const months = useMemo(() => monthsOf(calendar, year), [calendar, year]);
@@ -33,6 +36,11 @@ export function CalendarWindow({ session }: { session: Session }) {
   const dayNotes = (view.notes ?? []).filter((note) => note.year === day.year && note.day === day.day);
   const playerNotes = dayNotes.filter((note) => note.by !== "");
   const gmNotes = dayNotes.filter((note) => note.by === "");
+  const holidays = view.holidays ?? [];
+  const holidaysAt = (atYear: number, at: number) => holidaysOn(calendar, atYear, at, holidays);
+  const pickedAt = monthDay(calendar, day.year, day.day);
+  // The holidays covering the chosen day (FG's), the GM's own with a remove.
+  const dayHolidays = holidays.filter((item) => item.month === pickedAt.month && pickedAt.day >= item.day && pickedAt.day <= item.day + Math.max(1, item.days) - 1);
   const short = (name: string) => (name.length > 3 && /-day$/.test(name) ? name.replace(/-day$/, "").slice(0, 3) : name.startsWith("Span") ? name.replace("Span ", "") : name.slice(0, 2));
   let start = 0;
 
@@ -149,13 +157,15 @@ export function CalendarWindow({ session }: { session: Session }) {
                       const notes = byDay.get(at) ?? [];
                       const today = year === view.year && at === view.day;
                       const chosen = day.year === year && day.day === at;
+                      const named = holidaysAt(year, at);
                       return (
                         <button
                           key={at}
                           type="button"
-                          className={["cal-day", today ? "today" : "", chosen ? "chosen" : "", notes.length ? "noted" : ""].filter(Boolean).join(" ")}
+                          className={["cal-day", today ? "today" : "", chosen ? "chosen" : "", notes.length ? "noted" : "", named.length ? "holiday" : ""].filter(Boolean).join(" ")}
                           data-cal-day={at}
-                          title={`${dateWords(calendar, year, at)}${notes.length ? `: ${notes.length} note${notes.length === 1 ? "" : "s"}` : ""}`}
+                          data-cal-holiday={named.join(" / ") || undefined}
+                          title={`${dateWords(calendar, year, at)}${named.length ? ` (${named.join(" / ")})` : ""}${notes.length ? `: ${notes.length} note${notes.length === 1 ? "" : "s"}` : ""}`}
                           style={notes.length ? { textDecorationColor: notes.find((note) => note.color)?.color ?? "var(--brass)" } : undefined}
                           onClick={() => setPicked({ year, day: at })}
                         >
@@ -171,6 +181,44 @@ export function CalendarWindow({ session }: { session: Session }) {
         </div>
         <aside className="cal-page" data-cal-page={`${day.year}:${day.day}`}>
           <h3>{dateWords(calendar, day.year, day.day)}</h3>
+          {dayHolidays.length ? (
+            <ul className="cal-holidays" data-cal-holidays="">
+              {dayHolidays.map((item) => (
+                <li key={item.id ?? `${item.name}-${item.month}-${item.day}`}>
+                  <Icon name="sparkle" size={13} /> {item.name}
+                  {item.days > 1 ? <small className="hint"> ({item.days} days)</small> : null}
+                  {gm && !item.builtin && item.id ? (
+                    <button type="button" className="ghost icon-button" data-action="cal-holiday-remove" title={`Take out ${item.name}`} aria-label={`Take out ${item.name}`} onClick={() => op({ action: "holiday-remove", id: item.id })}>
+                      <Icon name="trash" size={13} />
+                    </button>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {gm ? (
+            <form
+              className="cal-holiday-add cc-inline"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!holidayName.trim()) return;
+                op({ action: "holiday-add", name: holidayName.trim(), month: pickedAt.month, day: pickedAt.day, days: holidayDays });
+                setHolidayName("");
+                setHolidayDays(1);
+              }}
+            >
+              <label className="sr-only" htmlFor="cal-holiday-name">
+                A holiday on this day
+              </label>
+              <input id="cal-holiday-name" value={holidayName} onChange={(event) => setHolidayName(event.target.value)} placeholder="A holiday on this day" maxLength={60} data-field="cal-holiday" />
+              <label className="cal-holiday-days" title="How many days it lasts">
+                <input type="number" min={1} max={60} value={holidayDays} onChange={(event) => setHolidayDays(Math.max(1, Math.min(60, Number(event.target.value) || 1)))} aria-label="How many days it lasts" /> d
+              </label>
+              <button type="submit" disabled={!holidayName.trim()} data-action="cal-holiday-add" title="Add the holiday (every year, on this day of the month)" aria-label="Add the holiday">
+                <Icon name="plus" size={14} />
+              </button>
+            </form>
+          ) : null}
           {gm && !(day.year === view.year && day.day === view.day) ? (
             <button type="button" className="ghost" data-action="cal-make-today" title="Make this day today" onClick={() => op({ action: "set", patch: { year: day.year, day: day.day } })}>
               <Icon name="flag" size={14} /> Make it today

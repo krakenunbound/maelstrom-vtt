@@ -353,7 +353,7 @@ and utility windows, and player management against Maelstrom's.
 | FG control | Maelstrom | Verdict |
 |---|---|---|
 | Calendar: modules' calendars, date, era, time by Ctrl+wheel, to chat, set today, journal per day (player and GM notes), all journals | Eight calendars, date and time, +1h / +8h, rests move it, say date, set today, notes per day (players' and GM's) | Better (time moves with rests) |
-| Calendar: holidays by name on their days | Festival months | Partly (no named holidays on days) |
+| Calendar: holidays by name on their days | Festival months, and holidays on days: the calendar's own (the Gregorian's), the GM's added on a day, a day or more long; marked on the calendar, named on the day's page, in today's words and said with the date | Same |
 | Tables: add by size, import from text, columns, ranges, links, nested rolls, `[1d6]`, `[2x]`, hide results, /rollon | The same; import from pasted text | Same |
 | Tables: output to chat, story, parcel or encounter | Output on the roll bar: chat, a new story, parcel or encounter (the NPCs it names, counted) | Same |
 | Encounters: NPCs, counts, faction, ID name, tokens placed, CR, XP, add to tracker, Quick Map | NPCs, counts (dice), faction, players' name, placed spots, XP, add to tracker, end | Partly (no CR) |
@@ -382,6 +382,5 @@ Any game can add its own the same way; nothing in the core names a game.
 All eight areas are compared, read from FG's ruleset files (CoreRPG and 5E) and
 Maelstrom's code, and what was missing is built (each area's commits name its
 check script). Still missing, by size: the
-named holidays on calendar days,
 module sets, and the rows marked Partly. The **Check live** rows want FG open on
 the 5E campaign through the bridge, side by side with Maelstrom.

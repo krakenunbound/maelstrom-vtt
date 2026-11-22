@@ -20,6 +20,14 @@ export const CALENDARS = [
     leap: (year) => (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0,
     // The real week: 1 January of year 0 (proleptic) was a Saturday, so 1 January 2026 is a Thursday.
     weekOffset: 6,
+    // Holidays on days (FG's: month 0-based, day 1-based, days long).
+    holidays: [
+      { name: "New Year's Day", month: 0, day: 1 },
+      { name: "Midsummer's Eve", month: 5, day: 23 },
+      { name: "All Hallows' Eve", month: 9, day: 31 },
+      { name: "Christmas Day", month: 11, day: 25 },
+      { name: "New Year's Eve", month: 11, day: 31 },
+    ],
   },
   {
     id: "greyhawk",
@@ -221,3 +229,13 @@ export function dateWords(calendar, year, day, { weekdayName = true } = {}) {
   return `${weekdayName && week >= 0 ? `${calendar.week[week]}, ` : ""}${named}, ${year}${calendar.era ? ` ${calendar.era}` : ""}`;
 }
 export const timeWords = (hour, minute) => `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+
+// FG's holidays (a calendar's period holidays): a name on a day of a month, for one day or more (FG's duration),
+// the calendar's own and the GM's (kept with the campaign). The names on a day of the year, in order.
+/** @param {{ name: string; month: number; day: number; days?: number }[]} list */
+export function holidaysOn(calendar, year, dayOfYearIndex, list = calendar.holidays ?? []) {
+  const at = monthDay(calendar, year, dayOfYearIndex);
+  return list
+    .filter((holiday) => Number(holiday.month) === at.month && at.day >= Number(holiday.day) && at.day <= Number(holiday.day) + Math.max(1, Number(holiday.days) || 1) - 1)
+    .map((holiday) => String(holiday.name));
+}
