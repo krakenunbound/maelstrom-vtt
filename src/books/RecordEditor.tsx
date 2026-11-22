@@ -858,12 +858,17 @@ export function EncounterView({ session, record, editable }: { session: Session;
   const windows = useWindows();
   const [status, setStatus] = useState("");
   const [xp, setXp] = useState<number | null>(null);
+  // Each creature's challenge rating (the host reads it from the creature, a book's too).
+  const [crs, setCrs] = useState<Record<string, string>>({});
   const rows = Object.entries((record.data.npclist ?? {}) as Record<string, NpcRow>).sort(([a], [b]) => a.localeCompare(b));
   const act = (action: string, more: Record<string, unknown> = {}) =>
     session
       .content<Record<string, unknown>>("encounter", { action, id: record.id, ...more })
       .then((result) => {
-        if (action === "xp") setXp(Number(result.xp) || 0);
+        if (action === "xp") {
+          setXp(Number(result.xp) || 0);
+          setCrs((result.crs as Record<string, string>) ?? {});
+        }
         if (action === "run") setStatus(`On the tracker: ${(result.added as string[]).join(", ")}.`);
         if (action === "place") setStatus(`${result.placed} spots kept for ${result.scene}.`);
         if (action === "end") setStatus(`${result.xp} XP to award on the party sheet.`);
@@ -882,6 +887,7 @@ export function EncounterView({ session, record, editable }: { session: Session;
           <tr>
             <th>Count</th>
             <th>Creature</th>
+            {Object.values(crs).some(Boolean) ? <th title="Challenge rating">CR</th> : null}
             <th>Faction</th>
             <th title="Blank, the players know what it is; else what they call it until they find out">Players see</th>
             {editable ? <th /> : null}
@@ -894,6 +900,7 @@ export function EncounterView({ session, record, editable }: { session: Session;
               <td>
                 <span {...slotDrag({ kind: "record", record: String(row.link?.recordname ?? ""), label: String(row.name ?? "") })}>{row.name}</span>
               </td>
+              {Object.values(crs).some(Boolean) ? <td data-encounter-cr={crs[key] ?? ""}>{crs[key] ?? ""}</td> : null}
               <td>
                 {editable ? (
                   <select aria-label={`${row.name} faction`} value={row.faction ?? "foe"} onChange={(event) => void act("set-npc", { row: key, faction: event.target.value })}>

@@ -1,6 +1,7 @@
 import type { Session } from "../session/useSession";
 import { Icon } from "../ui/icons";
 import { useWindows } from "../ui/Windows";
+import { clausesOf, type Clause } from "./clauses";
 
 // FG's combat tracker sections for a creature (the GM's): space and reach,
 // offense, defense, and each trait and action as a name that opens its text
@@ -23,18 +24,37 @@ const rowsOf = (value: unknown): { name: string; desc: string }[] =>
         .map((row) => ({ name: text(row.name), desc: text(row.desc) }))
     : [];
 
-export function CreatureDetails({ session, recordId, name, spent = [], onSpend }: { session: Session; recordId: string; name: string; spent?: string[]; onSpend?: (action: string, on: boolean) => void }) {
+type Attack = { key: string; name: string };
+export function CreatureDetails({ session, recordId, name, spent = [], onSpend, entryId, attacks = [], targets = [] }: { session: Session; recordId: string; name: string; spent?: string[]; onSpend?: (action: string, on: boolean) => void; entryId?: string; attacks?: Attack[]; targets?: string[] }) {
   const windows = useWindows();
   const record = session.records[recordId];
   if (!record || record.type !== "npc") return null;
   const data = record.data ?? {};
+  // FG's clause rolls: a piece of an action's words rolled in place. An attack or its damage goes through the
+  // tracker (the creature's own attack of that name: its targets, their AC, the damage landing); healing is rolled;
+  // a save is asked of each of its targets against the DC.
+  const signed = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
+  const play = (rowName: string, clause: Clause) => {
+    const own = attacks.find((attack) => attack.name.toLowerCase().startsWith(rowName.toLowerCase().replace(/\s*\(.*$/, "")));
+    if (clause.kind === "attack") return own && entryId ? session.ct("attack", { id: entryId, weapon: own.key }) : session.roll(`1d20${signed(clause.bonus)}`, `[ATTACK] ${rowName}`, "", false, "public", name);
+    if (clause.kind === "damage") return own && entryId ? session.ct("damage-roll", { id: entryId, weapon: own.key }) : session.roll(clause.formula, `[DAMAGE${clause.damageType ? ` (${clause.damageType})` : ""}] ${rowName}`, "", false, "public", name);
+    if (clause.kind === "heal") return session.roll(clause.formula, `[HEAL] ${rowName}`, "", false, "public", name);
+    for (const target of targets) session.ct("save", { id: target, attribute: clause.stat, cl: clause.dc });
+  };
+  const describe = (clause: Clause) =>
+    clause.kind === "attack" ? `Roll the attack (d20 ${signed(clause.bonus)})` : clause.kind === "damage" ? `Roll the damage (${clause.formula}${clause.damageType ? ` ${clause.damageType}` : ""})` : clause.kind === "heal" ? `Roll the healing (${clause.formula})` : targets.length ? `Ask its ${targets.length} target${targets.length === 1 ? "" : "s"} for a DC ${clause.dc} ${clause.stat} save` : "Target someone to ask for this save";
   const actions = rowsOf(data.actions);
   // Reach: the record's own, else the longest "reach N ft." among its actions, else 5 ft.
   const reaches = actions.map((row) => Number(/reach (\d+)\s*ft/i.exec(row.desc)?.[1])).filter(Number.isFinite);
   const space = Number(data.space) || SPACE[text(data.size).toLowerCase()] || 0;
   const reach = Number(data.reach) || (reaches.length ? Math.max(...reaches) : space ? 5 : 0);
+  // FG's space and reach, set on the tracker (the record's own, read by the map's reach ring).
+  const setNumber = (field: "space" | "reach", value: string) => void session.op({ op: "update", id: record.id, patch: { data: { [field]: Math.max(0, Math.min(200, Number(value) || 0)) } } }).catch(() => undefined);
+  const dex = Number((data.abilities as Record<string, { bonus?: number }> | undefined)?.dexterity?.bonus ?? 0);
+  const init = dex + Number((data.initiative as { misc?: number } | undefined)?.misc ?? 0);
   const fields = (pairs: [string, string][]) => pairs.filter(([, value]) => value && value !== "-");
   const offense = fields([
+    ["Init", signed(init)],
     ["Speed", text(data.speed)],
     ["Senses", text(data.senses)],
     ["Skills", text(data.skills)],
@@ -55,8 +75,10 @@ export function CreatureDetails({ session, recordId, name, spent = [], onSpend }
     <div className="ct-creature" data-creature-details={recordId}>
       <div className="ct-creature-head">
         {space ? (
-          <span className="ct-creature-chip" title="Space and reach">
-            <Icon name="fit" size={13} /> {text(data.size) || "Space"} {space} ft · reach {reach} ft
+          <span className="ct-creature-chip" title="Space and reach (feet)">
+            <Icon name="fit" size={13} /> {text(data.size) || "Space"}{" "}
+            <input type="number" className="tiny" min={0} step={2.5} defaultValue={space} key={`s${space}`} aria-label={`${name}'s space in feet`} data-field="ct-space" onBlur={(event) => Number(event.target.value) !== space && setNumber("space", event.target.value)} /> ft · reach{" "}
+            <input type="number" className="tiny" min={0} step={5} defaultValue={reach} key={`r${reach}`} aria-label={`${name}'s reach in feet`} data-field="ct-reach" onBlur={(event) => Number(event.target.value) !== reach && setNumber("reach", event.target.value)} /> ft
           </span>
         ) : null}
         <button type="button" className="ghost" data-action="open-creature" title={`Open ${name}'s record (its whole stat block)`} onClick={() => windows.open("record", record.name, record.id)}>
@@ -104,7 +126,19 @@ export function CreatureDetails({ session, recordId, name, spent = [], onSpend }
                   </button>
                 ) : null}
               </summary>
-              <p>{row.desc || "No text."}</p>
+              <p>
+                {row.desc
+                  ? clausesOf(row.desc).map((piece, index) =>
+                      piece.clause ? (
+                        <button key={index} type="button" className="ct-clause" data-clause={piece.clause.kind} title={describe(piece.clause)} onClick={() => void play(row.name, piece.clause as Clause)}>
+                          {piece.text}
+                        </button>
+                      ) : (
+                        <span key={index}>{piece.text}</span>
+                      ),
+                    )
+                  : "No text."}
+              </p>
             </details>
           ))}
         </div>

@@ -99,7 +99,7 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 | Effect: Short summary display (EFFSHORT) | on | Effects on the tracker | Check live |
 | Input: Use Alt key for game actions (KALT) | on | Not found | Check live |
 | Dice: Manual entry (MANUALROLL) | off | `manualDice`, each person's own: a dialog for the faces, the host rolls with them, [MANUAL] in chat | Partly (tray and chat rolls; sheet and tracker rolls to follow) |
-| Combat: Remove on miss (RMMT) | multi | `clearTargets` (never, action, turn) | Partly (on a miss) |
+| Combat: Remove on miss (RMMT) | multi | `clearTargets` (never, action, turn); Remove on miss: with several targets (FG's default), always, never | Same |
 | Desktop: Restore windows on start (WSAV) | on | Windows remembered | Check live |
 
 ### Token
@@ -218,10 +218,10 @@ Maelstrom's (`src/combat/CombatTracker.tsx`, `electron/combat.cjs`).
 | Row: HP, temp, wounds as numbers (dropped numbers apply) | Wounds and a character's temp typed, damage and heal, a chat roll dropped applies | Done |
 | Row: initiative typed (re-sorts), dragged to swap | Initiative box; its ⇅ dragged onto another row swaps them | Done |
 | Offense: "React?" box (reaction used) | React box on the row (the GM's and its owner's), back at the start of its turn | Done |
-| Offense: init bonus (rolls), AC, DT, speed | Bonus, AC in the detail | Partly |
-| Offense: NPC actions, bonus actions, reactions, legendary, lair, innate spells, slots; a clause rolled by double-click, [USED], recharge | Attack and damage buttons, power buttons with uses, the stat block's lists; [USED] on a recharge or a day's-uses action, a recharge's d6 at its turn | Partly (no clause rolls) |
-| Defense: ability scores (check, Shift save), resistances, immunities, vulnerabilities, condition immunities typed | Read in the detail; a save picker with a DC | Partly (not typed) |
-| Space and reach | Read-only, NPCs | Partly |
+| Offense: init bonus (rolls), AC, DT, speed | The creature panel's Offense: initiative bonus, speed, senses, skills, CR; AC in Defense | Same |
+| Offense: NPC actions, bonus actions, reactions, legendary, lair, innate spells, slots; a clause rolled by double-click, [USED], recharge | Attack and damage buttons, power buttons with uses, the stat block's lists; [USED] on a recharge or a day's-uses action, a recharge's d6 at its turn; clause rolls: an action's attack, damage, healing and save words clicked (an attack or damage through its tracker attack; a save asked of its targets at the DC) | Same |
+| Defense: ability scores (check, Shift save), resistances, immunities, vulnerabilities, condition immunities typed | Read in the detail; a save picker with a DC; damage by type against them; a condition it is immune to left out of an effect ([IMMUNE]) | Same |
+| Space and reach | The creature panel: space and reach set by the GM (the map's reach ring reads them) | Same |
 | Effects: add, active / inactive / skip once, GM-only, apply (once a turn, a round, an action, a roll), uses, label, duration, initiative it ticks on, whose turn, expiry (turn start or end, short or long rest), its targets, applied by | Add: text, rounds, ends (rounds, when hurt, a short or long rest, a long rest), GM only, on its targets; the buff bar (remove, rounds, put out) | Partly (no apply limits, no skip once) |
 | Targets: the target icons, add by drag, all allies / non-allies, clear | Target chips, the target button, Ctrl+click, faction and box targeting | Same |
 | Death saves, concentration (no control in FG) | Death save button with the count; concentration checked on damage | Better |
@@ -284,7 +284,7 @@ FG's Library, Modules window, record lists (`masterindex`), record windows and r
 | 5E Spell filters: level, school, source, ritual | Level, ritual, school, class, book | Same |
 | Record: link drag, module icon, revert, duplicate, export, lock, share (public, a player by portrait drop), identified, unidentified name and notes | Anchor and name drag, lock, eye (everyone, chosen players, GM only), copy to campaign, duplicate, delete, identified (items), portrait drop for one player | Better (chosen players) |
 | Record: Send to chat | A chat button on every record: its link, and (the GM's) its text as the players know it | Same |
-| Record: Speak as (an NPC) | The GM's voice picker, the creature whose turn it is | Partly |
+| Record: Speak as (an NPC) | The GM's voice picker, the creature whose turn it is, Speak as on an NPC's record | Same |
 | Story: simple and advanced pages, blocks, frames, image sizes, copy and paste a page | Block story pages, frames and colours, read-aloud | Same (no copy and paste of a page) |
 | Story templates | Not found | Missing |
 | Book: contents, search by name and keywords, add and arrange chapters, sections, pages, page lock | The same, page editor, sounds bound to links | Better (sounds) |
@@ -356,7 +356,7 @@ and utility windows, and player management against Maelstrom's.
 | Calendar: holidays by name on their days | Festival months, and holidays on days: the calendar's own (the Gregorian's), the GM's added on a day, a day or more long; marked on the calendar, named on the day's page, in today's words and said with the date | Same |
 | Tables: add by size, import from text, columns, ranges, links, nested rolls, `[1d6]`, `[2x]`, hide results, /rollon | The same; import from pasted text | Same |
 | Tables: output to chat, story, parcel or encounter | Output on the roll bar: chat, a new story, parcel or encounter (the NPCs it names, counted) | Same |
-| Encounters: NPCs, counts, faction, ID name, tokens placed, CR, XP, add to tracker, Quick Map | NPCs, counts (dice), faction, players' name, placed spots, XP, add to tracker, end | Partly (no CR) |
+| Encounters: NPCs, counts, faction, ID name, tokens placed, CR, XP, add to tracker, Quick Map | NPCs, counts (dice), faction, players' name, placed spots, CR, XP, add to tracker, end | Same |
 | Random encounters: dice counts, Generate a new encounter | Dice counts ($PC the party's size) rolled when added; Generate on any encounter and on a book's random encounters (listed with the encounters): a new encounter of the rolled counts, a 0 left out | Same |
 | Effects window: lights, conditions, custom effects, click or drag to apply, GM-only, expiry, units, apply mode | Conditions, buffs, debuffs, lights, your own; click or drag; who may add | Partly (no units or apply mode on custom effects) |
 | Sound sets: triggers by chat pattern, content sounds on a record, Syrinscape | Sound window: library, triggers on hidden rolls, scene sounds, map sounds, playlists, Syrinscape | Better |

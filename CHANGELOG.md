@@ -8,6 +8,8 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **NPCs on the tracker:** an action's words can be rolled in place (FG's clause rolls): "+4 to hit" or "Attack Roll: +14", "5 (1d6 + 2) slashing damage", "regains 10 (3d6) hit points", "DC 13 Constitution saving throw" (asked of the creature's targets). A condition a creature is immune to is left out of an effect put on it ([IMMUNE]). Remove on miss (Settings > Combat): the targets an attack missed come off the attacker's (with several targets, as FG, always, or never). The creature panel shows the initiative bonus and lets the GM set space and reach; the encounter window shows each creature's CR; an NPC's record has Speak as. `scripts/check-npc-tracker-fg.mjs`
+
 - **5E sheet details:** AC's Dex by hand (as the armor says, none, all, max 2 or 3) and a second ability added; speed as base, heavy armor's -10 when Strength is under its requirement, misc and special movement; each skill's ability changeable; a weapon in the off hand (two-weapon fighting: no ability modifier to its damage, unless the Two-Weapon Fighting style); Hit Dice details (the ability added, a second, misc) and a multiclass character rolling the class's die chosen; push, drag or lift beside the load; coins of one's own (+ Coin). The agent's kraken_bookkeeping hitdie rolls one. `scripts/check-5e-sheet-details.mjs`
 
 - **Module sets:** Modules > Activation has Sets: save what is active (and which books the players may read) under a name, and apply a set in any campaign of the same game: its books made active and shared as they were, the rest made inactive; a book of the set not on this computer is named. The agent's kraken_module_set does the same. `scripts/check-module-sets.mjs`

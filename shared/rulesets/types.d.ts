@@ -425,7 +425,7 @@ export interface RulesetManifest {
   // fields: what the record window's editor offers for that kind (unlocked), in order; none, the fields its records carry.
   records?: Record<string, { label?: string; sheet?: Ref | "core"; statblock?: Ref; filters?: string[]; fields?: FieldSpec[] }>;
   // An encounter's experience (kraken_encounter xp, End encounter): the NPC field its creatures' XP is read from (default "xp").
-  encounter?: { xp?: Path };
+  encounter?: { xp?: Path; cr?: Path }; // the field an encounter reads its creatures' XP and challenge rating from (default xp, cr)
   sheet: SheetSpec | Ref;
   wizard?: WizardSpec | Ref;
   blank?: boolean; // a blank character can be made (FG's Create)

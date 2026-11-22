@@ -443,7 +443,13 @@ async function encounterAction(table, args, from = "GM") {
     table.say(`[ENCOUNTER] ${battle.name} is over: ${xp} XP to award on the party sheet.`, "Combat", true);
     return { encounter: battle.name, xp };
   }
-  if (action === "xp") return { encounter: battle.name, xp: encounterXp(table, battle) };
+  // Its XP, and each creature's challenge rating (FG's encounter CR column), the game's own field.
+  if (action === "xp") {
+    const { rulesetFor } = require("../shared/rulesets/registry.mjs");
+    const field = rulesetFor(table.ruleset?.() ?? "").encounter?.cr ?? "cr";
+    const crs = Object.fromEntries(rows(battle.data.npclist).map(([key, row]) => [key, String(npcOf(table, row)?.data?.[field] ?? "")]));
+    return { encounter: battle.name, xp: encounterXp(table, battle), crs };
+  }
   throw new Error("kraken_encounter does create, generate, add-npc, set-npc, remove-npc, place, run, end or xp.");
 }
 

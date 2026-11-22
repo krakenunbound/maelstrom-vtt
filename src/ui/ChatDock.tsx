@@ -42,6 +42,20 @@ import { GM } from "./gmTitle";
 // header acts for that character when the player has several.
 let speaking = "";
 const speakingListeners = new Set<() => void>();
+// FG's Speak as (an NPC's record): another window asks the chat to speak as a creature; it joins the voices.
+let asked = { name: "", at: 0 };
+const askedListeners = new Set<() => void>();
+export const askVoice = {
+  get: () => asked,
+  set(name: string) {
+    asked = { name, at: Date.now() };
+    for (const listener of askedListeners) listener();
+  },
+  subscribe(listener: () => void) {
+    askedListeners.add(listener);
+    return () => void askedListeners.delete(listener);
+  },
+};
 export const speakingAs = {
   get: () => speaking,
   set(name: string) {
@@ -630,7 +644,15 @@ export function ChatDock({ session }: { session: Session }) {
   useEffect(() => {
     if (voiceFollows) setSpeakAs(activeVoice);
   }, [activeVoice, voiceFollows]);
-  const voices = activeVoice && !myCharacters.includes(activeVoice) ? [activeVoice, ...myCharacters] : myCharacters;
+  // A creature asked for (Speak as on its record): it joins the voices and is spoken as.
+  const askedVoice = useSyncExternalStore(askVoice.subscribe, askVoice.get);
+  const [extraVoices, setExtraVoices] = useState<string[]>([]);
+  useEffect(() => {
+    if (!askedVoice.name || session.role !== "dm") return;
+    setExtraVoices((list) => (list.includes(askedVoice.name) ? list : [askedVoice.name, ...list].slice(0, 12)));
+    setSpeakAs(askedVoice.name);
+  }, [askedVoice.at]);
+  const voices = [...new Set([...(activeVoice ? [activeVoice] : []), ...extraVoices, ...myCharacters])];
   const mineKey = myCharacters.join("|");
   const known = useRef<string[]>([]);
   useEffect(() => {

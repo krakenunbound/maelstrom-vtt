@@ -340,6 +340,8 @@ function savedOptions(value) {
     soundHidden: ["off", "combat", "all"].includes(options.soundHidden) ? options.soundHidden : "combat",
     // When a creature's targets clear: never (FG), after its spell or attack, or at the end of its turn.
     clearTargets: ["never", "action", "turn"].includes(options.clearTargets) ? options.clearTargets : "never",
+    // FG's Remove on miss (RMMT): off, on, or multi (FG's default: only when an attack had several targets).
+    removeOnMiss: ["off", "on", "multi"].includes(options.removeOnMiss) ? options.removeOnMiss : "multi",
     // Conditions and effects on tokens: animated, icons only, or not drawn (every seat).
     tokenEffects: ["full", "icons", "off"].includes(options.tokenEffects) ? options.tokenEffects : "full",
     // What players may put on their own characters from the Effects list: nothing, lights, lights and conditions, or everything.

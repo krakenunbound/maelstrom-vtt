@@ -476,7 +476,7 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
       ) : null}
       {gm && open ? (
         <div className="ct-more">
-          {record?.type === "npc" ? <CreatureDetails session={session} recordId={record.id} name={entry.name} spent={entry.spent ?? []} onSpend={(action, on) => session.ct("spend", { id: entry.id, action, on })} /> : null}
+          {record?.type === "npc" ? <CreatureDetails session={session} recordId={record.id} name={entry.name} spent={entry.spent ?? []} onSpend={(action, on) => session.ct("spend", { id: entry.id, action, on })} entryId={entry.id} attacks={(entry.attacks ?? []) as { key: string; name: string }[]} targets={entry.targets ?? []} /> : null}
           {record?.type === "character" ? (
             // FG's row link: the character's sheet.
             <button type="button" data-action="open-sheet" onClick={() => windows.open("sheet", record.name, record.id)}>

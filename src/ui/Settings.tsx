@@ -197,6 +197,13 @@ export function SettingsWindow({ session }: { session: Session }) {
               <option value="turn">At the end of the creature's turn</option>
             </select>
           </SettingRow>
+          <SettingRow label="Remove on miss" hint="After an attack, the targets it missed come off the attacker's targets: never, always, or only when it had several targets.">
+            <select value={(session.options as { removeOnMiss?: string }).removeOnMiss ?? "multi"} onChange={(event) => session.setTableOptions({ removeOnMiss: event.target.value } as never)} aria-label="Remove on miss" data-setting="remove-on-miss">
+              <option value="multi">With several targets</option>
+              <option value="on">Always</option>
+              <option value="off">Never</option>
+            </select>
+          </SettingRow>
           <SettingRow label="Initiative" hint="Each creature rolls its own, one roll for each kind of creature (all the goblins together), or one plain roll a side (the party and their friends, then their foes; a tie goes to the party).">
             <select value={(session.options as { initGroup?: string }).initGroup ?? "each"} onChange={(event) => session.setTableOptions({ initGroup: event.target.value } as never)} aria-label="Initiative" data-setting="init-group">
               <option value="each">Each creature</option>

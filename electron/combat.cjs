@@ -448,10 +448,26 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     return entry.recordId ? table().records.get(entry.recordId) : null;
   }
 
+  // FG's condition immunities: a condition the creature is immune to (its record's condition immunities, "poisoned,
+  // frightened", or an effect's IMMUNE: frightened) is left out of an effect put on it; an effect of nothing else
+  // is not put on, and the chat says [IMMUNE].
+  function withoutImmune(entry, effect) {
+    if (!effect) return effect;
+    const conditions = spellParse?.CONDITIONS ?? [];
+    const immune = new Set([...typeList(record(entry)?.data?.conditionimmunities), ...(entry.effects ?? []).flatMap((item) => livePartsOf(item).map((part) => /^\s*IMMUNE\s*:\s*(.+)$/i.exec(part)?.[1] ?? "").flatMap(typeList))]);
+    if (!immune.size) return effect;
+    const parts = String(effect.label).split(";").map((part) => part.trim()).filter(Boolean);
+    const blocked = parts.filter((part) => conditions.includes(part.toLowerCase()) && immune.has(part.toLowerCase()));
+    if (!blocked.length) return effect;
+    table().say(`Effect ['${blocked.join("; ")}'] -> [to ${entry.name}] [IMMUNE]`, "Combat", Boolean(effect.gmOnly || entry.hidden));
+    const kept = parts.filter((part) => !blocked.includes(part));
+    return kept.length ? { ...effect, label: kept.join("; ") } : null;
+  }
+
   // An effect the tracker puts on by itself (no GM seat needed).
   function putEffect(entry, label, duration = 0, gmOnly = false, targets = [], held = null, extra = {}) {
     const active = state.entries.find((item) => item.id === state.active);
-    const effect = cleanEffect({ label, duration, gmOnly, init: active ? active.initresult : entry.initresult, targets, ...(held ?? {}), ...extra, total: duration });
+    const effect = withoutImmune(entry, cleanEffect({ label, duration, gmOnly, init: active ? active.initresult : entry.initresult, targets, ...(held ?? {}), ...extra, total: duration }));
     if (effect) entry.effects.push(effect);
     return effect;
   }
@@ -1728,6 +1744,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       }
       results.push({ target: target.name, total: rolled.total, ac, hit, crit, natural: die, ...(confirm ? { confirm: confirm.total } : {}) });
     }
+    dropMissed(source, new Set(swings.map((swing) => swing.target.id)).size);
     changed();
     return results;
   }
@@ -2165,6 +2182,15 @@ function createCombat({ saved, table, onChange = () => undefined }) {
   function targetsOf(entry) {
     return (entry?.targets ?? []).map((id) => state.entries.find((item) => item.id === id)).filter(Boolean);
   }
+  // FG's Remove on miss (RMMT): after an attack, the targets it missed come off the attacker's targets; "multi"
+  // (FG's default) only when the attack had more than one, "on" always, "off" never.
+  function dropMissed(source, count) {
+    const mode = String(table().options?.().removeOnMiss ?? "multi");
+    if (!source?.hitOn || mode === "off" || (mode === "multi" && count < 2)) return [];
+    const missed = Object.entries(source.hitOn).filter(([, result]) => [].concat(result).every((one) => one === "miss")).map(([id]) => id);
+    if (missed.length) source.targets = (source.targets ?? []).filter((id) => !missed.includes(id));
+    return missed;
+  }
   // Allies stand on the caster's side; everyone else is not (a neutral is no ally).
   const allied = (caster, target) => Boolean(caster && target && (caster === target || caster.faction === target.faction));
   // Foes face each other: friends and foes (a neutral is neither, so a buff may still go to it).
@@ -2359,6 +2385,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       if (source) source.hitOn[target.id] = crit ? "crit" : hit ? "hit" : "miss";
       results.push({ target: target.name, total: rolled.total, ac, hit, crit, natural: die, advantage, disadvantage: edge.disadvantage });
     }
+    dropMissed(source, results.length);
     changed();
     return results;
   }
@@ -3757,8 +3784,13 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       mustGM(seat);
       const entry = find(id);
       const active = state.entries.find((item) => item.id === state.active);
-      const effect = cleanEffect({ ...input, init: active ? active.initresult : entry.initresult });
-      if (!effect) throw new Error("What effect?");
+      const asked = cleanEffect({ ...input, init: active ? active.initresult : entry.initresult });
+      if (!asked) throw new Error("What effect?");
+      const effect = withoutImmune(entry, asked);
+      if (!effect) {
+        changed();
+        return { immune: true, label: asked.label };
+      }
       entry.effects.push(effect);
       table().say(`Effect ['${effect.label}'] -> [to ${entry.name}]`, "Combat", effect.gmOnly || entry.hidden);
       changed();
@@ -3814,8 +3846,10 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     putOn(id, input) {
       const entry = find(id);
       const active = state.entries.find((item) => item.id === state.active);
-      const effect = cleanEffect({ ...input, id: undefined, init: active ? active.initresult : entry.initresult });
-      if (!effect) throw new Error("What effect?");
+      const asked = cleanEffect({ ...input, id: undefined, init: active ? active.initresult : entry.initresult });
+      if (!asked) throw new Error("What effect?");
+      const effect = withoutImmune(entry, asked);
+      if (!effect) return { immune: true, label: asked.label };
       entry.effects.push(effect);
       changed();
       return effect;
@@ -4302,7 +4336,12 @@ function createCombat({ saved, table, onChange = () => undefined }) {
             resisted.push(target.name);
             continue;
           }
-          target.effects.push(cleanEffect({ label, duration: rounds, init: active ? active.initresult : entry?.initresult ?? 0 }));
+          const effect = withoutImmune(target, cleanEffect({ label, duration: rounds, init: active ? active.initresult : entry?.initresult ?? 0 }));
+          if (!effect) {
+            resisted.push(`${target.name} (immune)`);
+            continue;
+          }
+          target.effects.push(effect);
           landed.push(target.name);
         }
         if (landed.length) table().say(`Effect ['${label}'] -> [to ${landed.join(", ")}]${rounds ? ` for ${rounds} round${rounds === 1 ? "" : "s"}` : ""}`, "Combat");

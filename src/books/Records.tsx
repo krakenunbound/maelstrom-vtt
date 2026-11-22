@@ -13,6 +13,7 @@ import { decodeEntities, isFormatted, linkOfRecordname } from "../../shared/text
 import { LinkChip } from "../core/fields/RichText";
 import { CORE_VIEWS, DropZone, IdentifyBar, openUnlocked, RecordFields, ShareMenu, TableEditor, TableRollBar, useRecordActions, useRecordMenu } from "./RecordEditor";
 import { GM } from "../ui/gmTitle";
+import { askVoice } from "../ui/ChatDock";
 
 // FG's campaign lists (the sidebar's Campaign and Character groups, each a
 // master index): the records of this campaign and its active books, a list per
@@ -640,6 +641,12 @@ export function RecordWindow({ session, id, record: given, book }: { session: Se
           <button type="button" className="ghost" data-action="record-to-chat" title={gm ? "Send to chat: its link and its text, as the players know it" : "Send to chat: its link"} aria-label="Send to chat" onClick={() => session.sendChat("", { link: { kind: "record", record: record.id, label: record.name }, ...(gm ? { share: true } : {}) })}>
             <Icon name="chat" size={15} />
           </button>
+          {gm && npc ? (
+            // FG's Speak as: the GM's chat speaks (and rolls) as this creature.
+            <button type="button" className="ghost" data-action="record-speak-as" title={`Speak as ${record.name} in chat`} aria-label={`Speak as ${record.name}`} onClick={() => askVoice.set(record.name)}>
+              <Icon name="emote" size={15} />
+            </button>
+          ) : null}
           {session.role === "dm" && (given || record.source) ? (
             <button
               type="button"
