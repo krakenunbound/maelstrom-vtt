@@ -1,3 +1,4 @@
+import { askConfirm } from "../ui/Ask";
 import { useState } from "react";
 import { ACTION_DRAG } from "../effects/drops";
 import { ClassLevel } from "../characters/ClassLevel";
@@ -192,7 +193,7 @@ export function CncInventory() {
               {carried === 2 ? "E" : carried === 1 ? "C" : "–"}
             </button>
             {editable ? (
-              <button type="button" className="cc-drop" aria-label={`Drop ${String(item.name)}`} title="Drop it (it leaves the sheet)" onClick={() => window.confirm(`Drop ${String(item.name)}?`) && change(`inventorylist.${key}`, null)}>
+              <button type="button" className="cc-drop" aria-label={`Drop ${String(item.name)}`} title="Drop it (it leaves the sheet)" onClick={() => void askConfirm(`Drop ${String(item.name)}?`, { ok: "Drop it", danger: true }).then((ok) => { if (ok) void change(`inventorylist.${key}`, null); })}>
                 ×
               </button>
             ) : (

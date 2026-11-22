@@ -1,3 +1,4 @@
+import { askConfirm } from "../ui/Ask";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { adoptAccountUi, accountUiChanged } from "./accountUi";
 import { dicePacks } from "../dice/dicePacks";
@@ -974,8 +975,10 @@ export function useSession() {
 
   const leave = useCallback((force = false) => {
     if (!force && roleRef.current === "dm" && playersRef.current.some((seat) => seat.role === "player")) {
-      const confirmed = window.confirm("Close the table? Players will be disconnected.");
-      if (!confirmed) return;
+      void askConfirm("Close the table? Players will be disconnected.", { ok: "Close the table", danger: true }).then((ok) => {
+ if (ok) void leave(true);
+});
+      return;
     }
     intentional.current = true;
     generation.current += 1;

@@ -1,3 +1,4 @@
+import { tellUser } from "./Ask";
 import type { StudioSettings } from "../kraken";
 import { pickerPreview, usePreviewed, type PreviewKey } from "./pickerPreview";
 import { diceStore } from "../dice/diceStore";
@@ -154,7 +155,7 @@ export function SettingsWindow({ session }: { session: Session }) {
                       const { paused: _paused, ...options } = loaded.options;
                       session.setTableOptions(options as never);
                     } catch {
-                      window.alert("That is not a Maelstrom settings file.");
+                      void tellUser("That is not a Maelstrom settings file.");
                     }
                   });
                 }}

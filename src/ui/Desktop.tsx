@@ -1,3 +1,4 @@
+import { askConfirm, AskHost } from "./Ask";
 import { ShipsWindow } from "../ships/ShipsWindow";
 import { FoldersWindow } from "./FoldersWindow";
 import { usePreviewed } from "./pickerPreview";
@@ -208,7 +209,9 @@ function AccountsPanel({ session }: { session: Session }) {
                   data-action="account-remove"
                   title="Remove the account (their characters keep their name; anyone could sit under it again)"
                   onClick={() => {
-                    if (window.confirm(`Remove ${account.name}'s account? Anyone could then sit down under that name.`)) session.accountAction({ action: "remove", name: account.name });
+                    void askConfirm(`Remove ${account.name}'s account? Anyone could then sit down under that name.`, { ok: "Remove", danger: true }).then((ok) => {
+ if (ok) void session.accountAction({ action: "remove", name: account.name });
+});
                   }}
                 >
                   Remove
@@ -869,6 +872,7 @@ export function Desktop({
       <PlayerMenu session={session} menu={playerMenu.state} onClose={playerMenu.close} />
       <ReconnectBanner session={session} />
       <LevelUpDialog />
+      <AskHost />
       {dice.show ? (
         <Suspense fallback={null}>
           {/* FG's Limit rolls to chat window (DRMO): no dice across the table, the results in the chat alone. */}

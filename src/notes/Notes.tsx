@@ -1,3 +1,4 @@
+import { askConfirm } from "../ui/Ask";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { QuickSlot, Session, TableRecord } from "../session/useSession";
 import { Icon } from "../ui/icons";
@@ -179,8 +180,8 @@ export function NoteWindow({ session, id }: { session: Session; id: string }) {
             className="ghost"
             aria-label="Delete the note"
             title="Delete the note"
-            onClick={() => {
-              if (!window.confirm(`Delete "${record.name}"?`)) return;
+            onClick={async () => {
+              if (!(await askConfirm(`Delete "${record.name}"?`, { ok: "Delete", danger: true }))) return;
               void session.op({ op: "delete", id }).then(() => windows.close(`note:${id}`));
             }}
           >

@@ -1,3 +1,4 @@
+import { askConfirm, tellUser } from "../ui/Ask";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { BookBlock, BookPage, BookPageRef, BookSoundRef, QuickSlot, Session } from "../session/useSession";
 import { Icon } from "../ui/icons";
@@ -185,7 +186,7 @@ function BookPageView({ shared, pageRef, onLoaded }: { shared: Shared; pageRef: 
                 data-action="page-revert"
                 title="Back to the book's own page (your changes to it go)"
                 aria-label="Back to the book's own page"
-                onClick={() => window.confirm(`Put "${page.name}" back as the book has it? Your changes to this page go.`) && void session.editBookPage({ book, page: page.id, action: "revert" })}
+                onClick={() => void askConfirm(`Put "${page.name}" back as the book has it? Your changes to this page go.`, { ok: "Put it back", danger: true }).then((ok) => { if (ok) void session.editBookPage({ book, page: page.id, action: "revert" }); })}
               >
                 <Icon name="undo" size={14} />
               </button>
@@ -202,7 +203,7 @@ function BookPageView({ shared, pageRef, onLoaded }: { shared: Shared; pageRef: 
         <div key={block.id ?? index} className={`book-block kind-${block.kind}`} data-block={index}>
           {editing ? (
             <div className="book-block-tools" role="toolbar" aria-label="This block">
-              <button type="button" className="book-tool danger" data-action="block-delete" title="Delete this block" aria-label="Delete this block" onClick={() => window.confirm("Delete this block?") && remove(index)}>
+              <button type="button" className="book-tool danger" data-action="block-delete" title="Delete this block" aria-label="Delete this block" onClick={() => void askConfirm("Delete this block?", { ok: "Delete", danger: true }).then((ok) => { if (ok) void remove(index); })}>
                 <Icon name="trash" size={13} />
               </button>
               <button type="button" className="book-tool" data-action="block-up" title="Move it up" aria-label="Move it up" disabled={index === 0} onClick={() => move(index, -1)}>
@@ -315,7 +316,7 @@ function Picture({ shared, page, block, editing, onChange }: { shared: Shared; p
           event.preventDefault();
           event.stopPropagation();
           if (link.kind !== "picture" || link.book !== book) {
-            window.alert("Drop a picture of this book (its Images & Maps).");
+            void tellUser("Drop a picture of this book (its Images & Maps).");
             return;
           }
           onChange({ file: link.file, name: link.label, caption: block.caption || link.label });

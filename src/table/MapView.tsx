@@ -1,3 +1,4 @@
+import { askConfirm, askText } from "../ui/Ask";
 import { Icon } from "../ui/icons";
 import { cssRect, cssX, cssY } from "../ui/pageZoom";
 import { tilesInView, watchTiles, type MapTile as PictureTile, type TileSet } from "./mapTiles";
@@ -430,7 +431,10 @@ function MapViewInner({
     const page = /^reference\.refmanualdata\.([^.]+)$/.exec(record)?.[1];
     if (page) bookWindows.openBook(module, module, page);
     else if (/^battle\./.test(record)) {
-      if (gm && actions.libraryAction && window.confirm("Put this encounter on the combat tracker (its tokens on this map, hidden)?")) actions.libraryAction("battle", { path: `${record}@${module}` });
+      const library = actions.libraryAction;
+      if (gm && library) void askConfirm("Put this encounter on the combat tracker (its tokens on this map, hidden)?", { ok: "Put it on" }).then((ok) => {
+ if (ok) void library("battle", { path: `${record}@${module}` });
+});
     } else if (/^image\./.test(record)) {
       void actions.bookFetch?.<{ name: string; data: { image?: { bitmap?: string; layers?: { layer?: unknown } } } }>("record", { book: module, path: `${record}@${module}` })
         .then((found) => {
@@ -2973,8 +2977,8 @@ function MapViewInner({
                 <button
                   type="button"
                   className="tray-add"
-                  onClick={() => {
-                    const name = window.prompt("Token name", "Monster");
+                  onClick={async () => {
+                    const name = await askText("Token name", "Monster");
                     const center = viewCenter();
                     if (name) actions.placeToken(null, center?.x, center?.y, name);
                   }}

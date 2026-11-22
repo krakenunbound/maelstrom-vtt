@@ -1,3 +1,4 @@
+import { askConfirm } from "./Ask";
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { qrModules, qrSvgPath } from "./qr";
 import type { Seat, Session } from "../session/useSession";
@@ -436,7 +437,8 @@ export function PlayerMenu({ session, menu, onClose }: { session: Session; menu:
           className="danger"
           data-menu="ban"
           onClick={done(() => {
-            if (window.confirm(`Ban ${menu.name}? They are sent away and cannot sit at this table again (by name, and from the address they came from) until you unban them in Players.`)) session.kickPlayer(menu.name, true);
+            const name = menu.name;
+            void askConfirm(`Ban ${name}? They are sent away and cannot sit at this table again (by name, and from the address they came from) until you unban them in Players.`, { ok: "Ban", danger: true }).then((ok) => { if (ok) void session.kickPlayer(name, true); });
           })}
         >
           <Icon name="ban" size={15} /> Ban…

@@ -1,3 +1,4 @@
+import { askConfirm } from "../ui/Ask";
 import { useEffect, useState, type ReactNode } from "react";
 import type { DecalItem, EditWall, MapLabel, MapTile, SceneLightRecord, TableMap, WallKind } from "../session/useSession";
 import type { SceneSettingsPatch } from "./SceneSettings";
@@ -248,7 +249,7 @@ export function MapEditor(props: Props) {
               type="button"
               data-action="clear-walls"
               onClick={() => {
-                if (window.confirm("Clear every wall on this scene? (Undo brings them back.)")) actions.wall("clear");
+                void askConfirm("Clear every wall on this scene? (Undo brings them back.)", { ok: "Clear walls", danger: true }).then((ok) => { if (ok) void actions.wall("clear"); });
               }}
             >
               Clear walls

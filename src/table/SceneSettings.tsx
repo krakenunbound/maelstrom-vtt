@@ -1,3 +1,4 @@
+import { askConfirm } from "../ui/Ask";
 import type { TableMap } from "../session/useSession";
 import { WEATHER_TYPES, type WeatherType } from "./weatherTypes";
 
@@ -95,7 +96,7 @@ export function SceneSettings({
               title="Forget what a player has explored of this map (the dim areas they have seen), or everyone"
               onChange={(event) => {
                 const who = event.target.value;
-                if (who !== "-" && window.confirm(who ? `Forget what ${who} has explored of this map?` : "Forget what every player has explored of this map?")) onResetExplored(who);
+                if (who !== "-") void askConfirm(who ? `Forget what ${who} has explored of this map?` : "Forget what every player has explored of this map?", { ok: "Forget it", danger: true }).then((ok) => { if (ok) void onResetExplored(who); });
               }}
             >
               <option value="-">Choose…</option>

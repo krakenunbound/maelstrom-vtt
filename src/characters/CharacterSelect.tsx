@@ -1,3 +1,4 @@
+import { askConfirm } from "../ui/Ask";
 import { useState } from "react";
 import type { Session, TableRecord } from "../session/useSession";
 import { slotDrag } from "../ui/QuickSlots";
@@ -64,8 +65,8 @@ export function CharacterSelect({ session, onSheet, onWizard, onClose }: { sessi
       setStatus(error instanceof Error ? error.message : `Could not take ${entry.name}.`);
     }
   };
-  const remove = (entry: Card) => {
-    if (!window.confirm(`Delete ${entry.name}? This cannot be undone.`)) return;
+  const remove = async (entry: Card) => {
+    if (!(await askConfirm(`Delete ${entry.name}? This cannot be undone.`, { ok: "Delete", danger: true }))) return;
     void session.op({ op: "delete", id: entry.id }).catch((error) => setStatus(error instanceof Error ? error.message : `Could not delete ${entry.name}.`));
   };
 

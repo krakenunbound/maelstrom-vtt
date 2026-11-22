@@ -1,6 +1,7 @@
 // A book's contents with their lock open (the GM's): chapters, sections and pages renamed, added, moved
 // (the arrows, or a page dragged onto another page or onto a section) and taken out. Every change is
 // kept with the campaign at once; the book's own file is never touched.
+import { askConfirm } from "../ui/Ask";
 import { useState } from "react";
 import type { BookContents } from "../session/useSession";
 import { Icon } from "../ui/icons";
@@ -137,7 +138,7 @@ export function BookContentsEditor({ chapters, here, edited, onChange, onRevert,
               down={c < chapters.length - 1}
               onUp={() => void moveChapter(c, -1)}
               onDown={() => void moveChapter(c, 1)}
-              onRemove={() => window.confirm(`Take the chapter "${chapter.name}" and all its pages out of the contents?`) && void change((next) => void next.splice(c, 1))}
+              onRemove={() => void askConfirm(`Take the chapter "${chapter.name}" and all its pages out of the contents?`, { ok: "Take it out", danger: true }).then((ok) => { if (ok) void change((next) => void next.splice(c, 1)); })}
             />
           </h3>
           {chapter.sections.map((section, s) => {
@@ -153,7 +154,7 @@ export function BookContentsEditor({ chapters, here, edited, onChange, onRevert,
                     down={!last}
                     onUp={() => void moveSection(c, s, -1)}
                     onDown={() => void moveSection(c, s, 1)}
-                    onRemove={() => window.confirm(`Take the section "${section.name || chapter.name}" and its pages out of the contents?`) && void change((next) => void next[c].sections.splice(s, 1))}
+                    onRemove={() => void askConfirm(`Take the section "${section.name || chapter.name}" and its pages out of the contents?`, { ok: "Take it out", danger: true }).then((ok) => { if (ok) void change((next) => void next[c].sections.splice(s, 1)); })}
                   />
                 </h4>
                 {section.pages.map((page, p) => {
@@ -183,8 +184,11 @@ export function BookContentsEditor({ chapters, here, edited, onChange, onRevert,
                         onUp={() => void movePage({ c, s, p }, -1)}
                         onDown={() => void movePage({ c, s, p }, 1)}
                         onRemove={() =>
-                          window.confirm(page.id.startsWith("new-") ? `Delete the page "${page.name}"? What you wrote on it goes.` : `Take "${page.name}" out of the contents? (Back to the book's own contents brings it back.)`) &&
-                          void change((next) => void next[c].sections[s].pages.splice(p, 1))
+                          void askConfirm(page.id.startsWith("new-") ? `Delete the page "${page.name}"? What you wrote on it goes.` : `Take "${page.name}" out of the contents? (Back to the book's own contents brings it back.)`, { ok: page.id.startsWith("new-") ? "Delete" : "Take it out", danger: true }).then(
+                            (ok) => {
+                              if (ok) void change((next) => void next[c].sections[s].pages.splice(p, 1));
+                            },
+                          )
                         }
                       />
                     </div>
@@ -209,7 +213,7 @@ export function BookContentsEditor({ chapters, here, edited, onChange, onRevert,
           type="button"
           className="book-toc-add"
           data-action="toc-revert"
-          onClick={() => window.confirm("Put the contents back as the book has them? Pages you added go, with what you wrote on them.") && onRevert()}
+          onClick={() => void askConfirm("Put the contents back as the book has them? Pages you added go, with what you wrote on them.", { ok: "Put them back", danger: true }).then((ok) => { if (ok) void onRevert(); })}
         >
           <Icon name="undo" size={12} /> Back to the book's own contents
         </button>
