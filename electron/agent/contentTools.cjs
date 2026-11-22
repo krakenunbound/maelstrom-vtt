@@ -145,7 +145,7 @@ const TOOLS = [
   {
     name: "kraken_item_forge",
     description:
-      "FG's Item Forge (5E): base items and templates merged into new campaign items (GM only). Each entry is a campaign record id, or { book, path } for a book's record. Templates are item templates, or items and spells used as them: 'Weapon, +1, +2, or +3' on a Longsword makes 'Longsword, +1' (bonus picks +1 to +3 and the rarity it names); 'Weapon of Warning' makes 'Longsword of Warning'; a spell on a Spell Scroll makes 'Spell Scroll of <spell>' at the spell level's rarity. Names, rarity, bonus, properties, damage, AC, cost and description combine; every base gets every template. With no base, the first template is the base and the result is an item template. Returns the new records (made) and any warning (problems).",
+      "FG's Item Forge (5E): base items and templates merged into new campaign items (GM only). Each entry is a campaign record id, or { book, path } for a book's record (path: its FG path, as data.fgPath gives it: item.longsword@<module>). Templates are item templates, or items and spells used as them: 'Weapon, +1, +2, or +3' on a Longsword makes 'Longsword, +1' (bonus picks +1 to +3 and the rarity it names); 'Weapon of Warning' makes 'Longsword of Warning'; a spell on a Spell Scroll makes 'Spell Scroll of <spell>' at the spell level's rarity. Names, rarity, bonus, properties, damage, AC, cost and description combine; every base gets every template. With no base, the first template is the base and the result is an item template. Returns the new records (made) and any warning (problems).",
     inputSchema: object(
       {
         base: { type: "array", description: "Base items: record ids, or { book, path }", items: {} },

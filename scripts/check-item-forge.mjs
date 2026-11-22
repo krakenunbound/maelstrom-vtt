@@ -104,5 +104,41 @@ try {
 } finally {
   await server.stop?.();
 }
+
+// 5. A book's item templates load with its records, and a campaign whose active book was loaded before (no
+//    templates yet) gets them once, its items kept.
+{
+  const { mkdtempSync, writeFileSync } = await import("node:fs");
+  const os = await import("node:os");
+  const { zipSync, strToU8 } = await import("fflate");
+  const { createBookShelf } = require("../electron/books.cjs");
+  const dir = mkdtempSync(path.join(os.tmpdir(), "kraken-forge-"));
+  const db = '<root><item><id-00001><name type="string">Longsword</name><type type="string">Weapon</type><damage type="string">1d8 slashing</damage><cost type="string">15 gp</cost></id-00001></item><itemtemplate><id-00001><name type="string">Weapon, +1</name><type type="string">Weapon</type><bonus type="number">1</bonus><rarity type="string">Uncommon</rarity></id-00001></itemtemplate></root>';
+  writeFileSync(path.join(dir, "Forge Book.mod"), zipSync({ "definition.xml": strToU8("<root><name>Forge Book</name><ruleset>5E</ruleset></root>"), "db.xml": strToU8(db) }));
+  const books = createBookShelf({ folder: dir });
+  const tool2 = async (table, args) => {
+    const result = await callTool("kraken_item_forge", args, { table: () => table });
+    if (result.isError) throw new Error(result.content[0].text);
+    return JSON.parse(result.content[0].text);
+  };
+  const first = createTableServer({ books, ruleset: "D&D 5E" });
+  await first.agent.activateBook("Forge Book");
+  const kinds = (table) => table.agent.records.list({ source: "Forge Book" }).map((record) => record.type).sort().join();
+  assert(kinds(first) === "item,itemtemplate", `made active, its item and its template: ${kinds(first)}`);
+  // As saved before item templates loaded: the item only.
+  const saved = first.persisted();
+  saved.records = saved.records.filter((record) => record.type !== "itemtemplate");
+  const again = createTableServer({ books, ruleset: "D&D 5E", saved });
+  const item = again.agent.records.list({ source: "Forge Book" }).find((record) => record.type === "item");
+  assert(kinds(again) === "item", `reopened as it was saved: ${kinds(again)}`);
+  await new Promise((resolve) => setTimeout(resolve, 900));
+  assert(kinds(again) === "item,itemtemplate" && again.agent.records.get(item.id)?.name === "Longsword", `the template added once, the item kept: ${kinds(again)}`);
+  const made = await content.itemForge(again.agent, { base: [item.id], templates: [again.agent.records.list({ type: "itemtemplate" })[0].id] });
+  assert(made.made[0].name === "Longsword, +1", `forged from the book: ${made.made[0].name}`);
+  // The book's own records by their paths (the tool's { book, path }), read from the book.
+  const byPath = await tool2(again, { base: [{ book: "Forge Book", path: "item.id-00001@Forge Book" }], templates: [{ book: "Forge Book", path: "itemtemplate.id-00001@Forge Book" }] });
+  assert(byPath.made[0].name === "Longsword, +1" && byPath.made[0].data.bonus === 1, `by book and path: ${JSON.stringify(byPath.made[0]?.name)}`);
+  done.push("a book's templates load, and once for a campaign saved before");
+}
 console.log(`ok item forge: ${done.join("; ")}`);
 process.exit(0);

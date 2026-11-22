@@ -1,7 +1,7 @@
 import { categoryOf, categoryOrder } from "../../shared/records/categorize.mjs";
 import { rulesetFor } from "../../shared/rulesets/registry.mjs";
 import { castsSpell as castsBy, spellCasters } from "../../shared/rulesets/summary.mjs";
-import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import { inlineRollNodes } from "../ui/InlineRolls";
 import type { QuickSlot, Session, TableRecord } from "../session/useSession";
 import { Icon } from "../ui/icons";
@@ -820,8 +820,13 @@ function ItemForge({ session, onMade }: { session: Session; onMade: (record: Tab
   const [templates, setTemplates] = useState<string[]>([]);
   const [bonus, setBonus] = useState(1);
   const [status, setStatus] = useState("");
-  const forgeable = useMemo(() => Object.values(session.records).filter((record) => FORGE_TYPES.includes(record.type)), [session.records]);
-  const byName = useMemo(() => new Map(forgeable.map((record) => [`${record.name}${record.source ? ` (${record.source})` : ""}`, record])), [forgeable]);
+  // The names to pick from (an active book's thousand and more), made only while the forge is open.
+  const [open, setOpen] = useState(false);
+  const own = useId();
+  const byName = useMemo(
+    () => new Map(open ? Object.values(session.records).filter((record) => FORGE_TYPES.includes(record.type)).map((record) => [`${record.name}${record.source ? ` (${record.source})` : ""}`, record]) : []),
+    [open, session.records],
+  );
   const accepts = (link: QuickSlot) => link.kind === "record" && FORGE_TYPES.includes(session.records[link.record]?.type ?? "");
   const add = (set: (fn: (list: string[]) => string[]) => void, id: string) => set((list) => (list.includes(id) ? list : [...list, id].slice(0, 20)));
   const choice = templates.some((id) => BONUS_CHOICE.test(session.records[id]?.name ?? ""));
@@ -854,10 +859,10 @@ function ItemForge({ session, onMade }: { session: Session; onMade: (record: Tab
             input.value = "";
           }}
         >
-          <label htmlFor={`forge-${which}`} className="sr-only">
+          <label htmlFor={`${own}-${which}`} className="sr-only">
             Add to {label} by name
           </label>
-          <input id={`forge-${which}`} name="pick" list="forge-names" placeholder="Name…" autoComplete="off" />
+          <input id={`${own}-${which}`} name="pick" list={`${own}-names`} placeholder="Name…" autoComplete="off" data-forge-pick={which} />
           <button type="submit" title={`Add to ${label}`} aria-label={`Add to ${label}`}>
             <Icon name="plus" />
           </button>
@@ -866,9 +871,9 @@ function ItemForge({ session, onMade }: { session: Session; onMade: (record: Tab
     </DropZone>
   );
   return (
-    <details className="table-import item-forge">
+    <details className="table-import item-forge" onToggle={(event) => setOpen(event.currentTarget.open)}>
       <summary>Item Forge</summary>
-      <datalist id="forge-names">
+      <datalist id={`${own}-names`} data-forge-names="">
         {[...byName.keys()].map((name) => (
           <option key={name} value={name} />
         ))}
