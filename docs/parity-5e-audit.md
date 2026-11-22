@@ -189,9 +189,9 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | Weapon editor: attack ability, bonus, proficiency; damage rows | Not found | Missing |
 | Ammunition counter per weapon | Spent from the inventory | Better (real ammunition) |
 | Weapon mastery | Not found | Missing (2024) |
-| Spell slots: maximums by hand, used boxes; Pact Magic apart | Used boxes; pact slots as a level row | Partly |
-| Powers by group and level, Preparation mode, prepared ticks and count | A flat list, Cast | Missing (prepared, by level) |
-| Class resources: uses and period (daily, encounter, once) | Not found | Missing (Rage, Ki, Channel Divinity) |
+| Spell slots: maximums by hand, used boxes; Pact Magic apart | Used boxes, the maximum by hand (kept beyond the class's), Pact Magic named | Done |
+| Powers by group and level, Preparation mode, prepared ticks and count | Spells by level (cantrips first), a prepared box each, the prepared count, Cast | Done (no separate mode: always shown) |
+| Class resources: uses and period (daily, encounter, once) | Class resources: name, uses ticked off, most, back on a short or a long rest (rests give them back) | Done (short or long; no once) |
 | A power's cast, attack, save, damage, heal and effect rows, upcast | Cast at targets (templates, saves, damage) | Partly (no rows to see, no upcast choice) |
 
 ## How house rules work in Maelstrom

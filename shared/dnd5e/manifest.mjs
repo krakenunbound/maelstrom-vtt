@@ -245,7 +245,9 @@ export default {
       "exp",
       "ac.misc",
       "initiative.misc",
-      "slots.l#.used",
+      "slots.l#.(used|extra)",
+      "prepared.&",
+      "resources.*.(max|used)",
       "deathsaves.(success|failure)",
       "inspiration",
       "hitdice.used",
@@ -256,8 +258,8 @@ export default {
       "attacks.*.hands",
     ],
     // The container an item is in (FG's location), set by dragging it onto a backpack on the sheet.
-    string: ["inventorylist.*.location"],
-    remove: ["inventorylist"],
+    string: ["inventorylist.*.location", "resources.*.(name|period)"],
+    remove: ["inventorylist", "resources"],
   },
   wizard: "dnd5e.wizard",
   // Rolls the sheet may ask for beyond check, save and skill: initiative.

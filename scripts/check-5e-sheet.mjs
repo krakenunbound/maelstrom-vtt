@@ -4,6 +4,7 @@
 //  - Inspiration as a count, held to the house rule HRIS (1 by default; 3 when chosen), a chat line on change
 //  - death saves ticked by hand; a hit die rolled (spent) apart from a rest, healing
 //  - attunement: the box on an item that requires it, the attuned count, class slots
+//  - a wizard's slots by hand, prepared spells (known ones only), class resources given back by their rests
 //  - the character details FG keeps (deity, size, personality traits, ideals, bonds, flaws, appearance...)
 import "./loopback.mjs";
 import path from "node:path";
@@ -102,6 +103,34 @@ try {
   await edit([{ path: "attunement.class", value: 1 }]);
   assert(data().attunement.class === 1, "the class's slots");
   done.push("attunement: the box on items that require it, the count, class slots");
+
+  // A wizard: slots by hand (an extra), prepared spells by name (only known ones), the class resources and rests.
+  const mage = await tool("kraken_build_character", { owner: "Ann", spec: { name: "Mage", species: "Human", class: "Wizard", level: 3, scores: { strength: 8, dexterity: 14, constitution: 14, intelligence: 16, wisdom: 12, charisma: 10 } } });
+  const mageData = () => agent.records.get(mage.id).data;
+  const editMage = async (changes) => {
+    ann.send({ type: "character-edit", id: mage.id, changes });
+    await settle();
+  };
+  const l1 = mageData().slots.l1.max;
+  await editMage([{ path: "slots.l1.extra", value: 1 }]);
+  assert(mageData().slots.l1.max === l1 + 1, `a slot by hand: ${JSON.stringify(mageData().slots.l1)}`);
+  agent.records.update(mage.id, { data: { ...mageData(), spells: ["Magic Missile", "Fire Bolt"] } }, agent.seat, { replace: true });
+  const spellName = "Magic Missile";
+  const slug = spellName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  await editMage([{ path: `prepared.${slug}`, value: 1 }, { path: "prepared.wish", value: 1 }]);
+  assert(mageData().prepared[slug] === 1 && !mageData().prepared.wish, `prepared: ${JSON.stringify({ spells: mageData().spells, prepared: mageData().prepared, errors: errors() })}`);
+  // Resources: Arcane Recovery (long), a Ki-like one (short); both used; a short rest gives back the short one.
+  await editMage([{ path: "resources.id-00001.name", value: "Arcane Recovery" }, { path: "resources.id-00001.max", value: 1 }, { path: "resources.id-00001.used", value: 1 }, { path: "resources.id-00002.name", value: "Focus" }, { path: "resources.id-00002.max", value: 3 }, { path: "resources.id-00002.used", value: 2 }, { path: "resources.id-00002.period", value: "short" }]);
+  assert(mageData().resources["id-00002"].used === 2 && mageData().resources["id-00002"].period === "short" && mageData().resources["id-00001"].period === "long", `resources: ${JSON.stringify({ r: mageData().resources, errors: errors() })}`);
+  ann.send({ type: "rest", id: mage.id, args: { kind: "short", hitDice: 0 }, req: "sr" });
+  await settle(400);
+  assert(mageData().resources["id-00002"].used === 0 && mageData().resources["id-00001"].used === 1, `a short rest: ${JSON.stringify(mageData().resources)}`);
+  ann.send({ type: "rest", id: mage.id, args: { kind: "long" }, req: "lr" });
+  await settle(400);
+  assert(mageData().resources["id-00001"].used === 0, `a long rest: ${JSON.stringify(mageData().resources)}`);
+  await editMage([{ path: "resources.id-00002", value: null }]);
+  assert(!mageData().resources["id-00002"], "a resource removed");
+  done.push("spell slots by hand, prepared spells, class resources back on their rests");
 
   // The character details.
   await edit([{ path: "deity", value: "Tempus" }, { path: "size", value: "Medium" }, { path: "ideals", value: "Glory" }, { path: "bonds", value: "My shield-brothers" }, { path: "flaws", value: "Proud" }, { path: "personalitytraits", value: "Loud" }, { path: "specialdefenses", value: "Resist fire" }]);

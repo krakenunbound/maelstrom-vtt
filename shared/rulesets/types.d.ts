@@ -510,7 +510,8 @@ export interface BookkeepingSpec {
         note?: string;
       };
   // byRule: changes a house rule makes (5E's 2024 rules, FG's healing variants), in order.
-  rest: false | { short?: RestSpec; long?: RestSpec; byRule?: { rule: string; value: string; short?: RestChange; long?: RestChange }[] };
+  // resources: a list of uses (5E's class resources) given back by a rest: those whose period is short on any rest, all on a long one.
+  rest: false | { short?: RestSpec; long?: RestSpec; byRule?: { rule: string; value: string; short?: RestChange; long?: RestChange }[]; resources?: { path: Path; period: string; used: string } };
 }
 
 // What a game declares for targeting, actions and effects (shared/<id>/actions.mjs,

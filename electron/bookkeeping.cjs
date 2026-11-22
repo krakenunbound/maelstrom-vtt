@@ -561,6 +561,19 @@ function createBookkeeping(table) {
       }
     }
     if (spec.concentration && data.concentration) data.concentration = "";
+    // Class resources back (Rage, Ki): a short rest those of the short rest, a long rest all.
+    const resources = decl.rest.resources;
+    if (resources && at(data, resources.path) && typeof at(data, resources.path) === "object") {
+      const back = [];
+      for (const row of Object.values(at(data, resources.path))) {
+        if (!row || num(row[resources.used], 0) <= 0) continue;
+        if (kind === "long" || row[resources.period] === "short") {
+          row[resources.used] = 0;
+          back.push(String(row.name ?? ""));
+        }
+      }
+      if (back.length) words.push(`${back.join(", ")} back`);
+    }
     await save(record, data);
     if (spec.rations && switches().rations) lines.push(...(await feed(table.records.get(record.id), today(), { quiet: true })));
     endEffects(record, kind);

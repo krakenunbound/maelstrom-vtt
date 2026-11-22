@@ -24,11 +24,11 @@ function assert(condition, message) {
   const { EDIT_PATHS } = require("../electron/dnd5e.cjs");
   const before = {
     text: ["playername", "alignment", "appearance", "notes", "senses", "speed", "background", "species", "gender", "age", "height", "weight", "concentration", "deity", "size", "specialdefenses", "personalitytraits", "ideals", "bonds", "flaws"].map((key) => `^${key}$`),
-    number: [/^abilities\.(strength|dexterity|constitution|intelligence|wisdom|charisma)\.(score|saveprof)$/, /^skills\.[a-z]+\.prof$/, /^hp\.(wounds|temp|total)$/, /^exp$/, /^ac\.misc$/, /^initiative\.misc$/, /^slots\.l\d\.used$/, /^deathsaves\.(success|failure)$/, /^inspiration$/, /^hitdice\.used$/, /^dread$/, /^coins\.id-\d+\.amount$/, /^inventorylist\.id-\d+\.(count|carried|attune)$/, /^attunement\.(class|misc)$/, /^attacks\.id-\d+\.hands$/].map((regex) => regex.source),
+    number: [/^abilities\.(strength|dexterity|constitution|intelligence|wisdom|charisma)\.(score|saveprof)$/, /^skills\.[a-z]+\.prof$/, /^hp\.(wounds|temp|total)$/, /^exp$/, /^ac\.misc$/, /^initiative\.misc$/, /^slots\.l\d\.(used|extra)$/, /^prepared\.[a-z0-9-]+$/, /^resources\.id-\d+\.(max|used)$/, /^deathsaves\.(success|failure)$/, /^inspiration$/, /^hitdice\.used$/, /^dread$/, /^coins\.id-\d+\.amount$/, /^inventorylist\.id-\d+\.(count|carried|attune)$/, /^attunement\.(class|misc)$/, /^attacks\.id-\d+\.hands$/].map((regex) => regex.source),
   };
-  assert(EDIT_PATHS.remove.map((regex) => regex.source).join() === /^(inventorylist)\.id-\d+$/.source, `the rows the sheet may drop: ${EDIT_PATHS.remove.map((regex) => regex.source).join()}`);
+  assert(EDIT_PATHS.remove.map((regex) => regex.source).join() === /^(inventorylist|resources)\.id-\d+$/.source, `the rows the sheet may drop: ${EDIT_PATHS.remove.map((regex) => regex.source).join()}`);
   for (const kind of ["text", "number"]) assert(EDIT_PATHS[kind].map((regex) => regex.source).join(" ") === before[kind].join(" "), `the ${kind} whitelist from the manifest is the old one: ${EDIT_PATHS[kind].map((regex) => regex.source).join(" ")}`);
-  assert(EDIT_PATHS.string.length === 1 && EDIT_PATHS.string[0].test("inventorylist.id-00001.location") && EDIT_PATHS.list.length === 0, "one string path (an item's container), no list paths");
+  assert(EDIT_PATHS.string.length === 2 && EDIT_PATHS.string[0].test("inventorylist.id-00001.location") && EDIT_PATHS.string[1].test("resources.id-00001.name") && EDIT_PATHS.list.length === 0, "string paths: an item's container, a resource's name and period; no list paths");
   console.log("whitelist ok");
 }
 const have = (name) => listModules().some((item) => (item.name ?? item) === name);

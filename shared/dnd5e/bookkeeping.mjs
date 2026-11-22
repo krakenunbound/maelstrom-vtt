@@ -46,6 +46,8 @@ export default {
     variantLabel: "Variant encumbrance (Strength x 5 and x 10)",
   },
   rest: {
+    // FG's class resources: a short rest gives back those of the short rest, a long rest all of them.
+    resources: { path: "resources", period: "period", used: "used" },
     short: { hours: 1, hitDice: { die: "hitdice.die", total: "hitdice.total", used: "hitdice.used", mod: "abilities.constitution.bonus" } },
     // The house rules' changes (FG 5E's): the 2024 rules give back every Hit Point Die on a long rest; fast healing
     // also a quarter on a short rest; slow healing half on a long rest and no hit points.

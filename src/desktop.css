@@ -2960,3 +2960,10 @@ label.set-row { cursor: pointer; }
 .five-attunement { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-block: 6px; }
 .five-attunement b.danger { color: #ff6f5e; }
 .five-attunement input.tiny { width: 3.5em; }
+/* FG's spells by level, prepared boxes, and class resources on the 5E sheet. */
+.five-spell-level h4, .five-resources h4 { margin: 10px 0 4px; }
+.five-slot input.tiny, .five-resources input.tiny { width: 3.2em; margin-inline-start: 6px; }
+.five-pact { margin-inline-end: 8px; }
+.five-resources ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 4px; }
+.five-resources li { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.five-resources li input[type="text"] { width: 12em; }

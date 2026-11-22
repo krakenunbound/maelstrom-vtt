@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { signed } from "../../shared/dnd5e/rules.mjs";
+import { signed, spellSlug } from "../../shared/dnd5e/rules.mjs";
 import { num, rows, useSheet, type Row } from "../core/sheet/context";
 import { GM } from "../ui/gmTitle";
 
@@ -23,51 +23,113 @@ export const dnd5eClassName = (data: Row) => {
   return pkg ? `${String(pkg.name)} ${num(data.level)}` : "";
 };
 
-// Spells: the save DC and attack, slots left (click to use or get one back), each spell with Cast.
+// Spells, as FG's Actions tab: the save DC and attack, the slots (used boxes; the maximum by hand, Pact Magic
+// named), the spells by level with a prepared box and Cast, and the class resources (Rage, Ki) with their uses.
 export function Dnd5eSpells() {
   const { record, session, editable, data, change } = useSheet();
   const casting = (data.spellcasting ?? null) as Row | null;
   const slots = rows(data.slots).sort((a, b) => a[0].localeCompare(b[0]));
   const known = (Array.isArray(data.spells) ? data.spells : []).map(String);
   const book = Object.values(session.records).filter((item) => item.type === "spell");
-  if (!casting)
-    return (
-      <section className="cc-panel cc-page" data-tab-page="spells">
-        <p className="hint empty-state">No spellcasting in this class.</p>
-      </section>
-    );
+  const prepared = (data.prepared ?? {}) as Row;
+  const levelOf = (name: string) => num(book.find((item) => item.name.toLowerCase() === name.toLowerCase())?.data.level);
+  const levels = [...new Set(known.map(levelOf))].sort((a, b) => a - b);
+  const preparedCount = known.filter((name) => levelOf(name) > 0 && num(prepared[spellSlug(name)]) > 0).length;
   return (
     <section className="cc-panel cc-page" data-tab-page="spells">
-      <p className="cc-inline">
-        <b>Spell save DC</b> <span className="cc-num" data-stat="spell-dc">{num(casting.dc)}</span> <b>Spell attack</b> <span className="cc-num">{signed(num(casting.attack))}</span> <small className="hint">{titled(String(casting.stat))}</small>
-      </p>
-      <div className="five-slots">
-        {slots.map(([key, slot]) => (
-          <span key={key} className="five-slot" data-slot={key}>
-            <b>Level {key.slice(1)}</b>{" "}
-            {Array.from({ length: num(slot.max) }, (_, index) => (
-              <input key={index} type="checkbox" checked={index < num(slot.used)} disabled={!editable} aria-label={`Level ${key.slice(1)} slot ${index + 1} used`} onChange={(event) => change(`slots.${key}.used`, event.target.checked ? index + 1 : index)} />
+      {casting ? (
+        <>
+          <p className="cc-inline">
+            <b>Spell save DC</b> <span className="cc-num" data-stat="spell-dc">{num(casting.dc)}</span> <b>Spell attack</b> <span className="cc-num">{signed(num(casting.attack))}</span> <small className="hint">{titled(String(casting.stat ?? ""))}</small> <small className="hint" data-stat="prepared">Prepared {preparedCount}</small>
+          </p>
+          <div className="five-slots">
+            {casting.pact ? <b className="five-pact">Pact Magic</b> : null}
+            {slots.map(([key, slot]) => (
+              <span key={key} className="five-slot" data-slot={key}>
+                <b>Level {key.slice(1)}</b>{" "}
+                {Array.from({ length: num(slot.max) }, (_, index) => (
+                  <input key={index} type="checkbox" checked={index < num(slot.used)} disabled={!editable} aria-label={`Level ${key.slice(1)} slot ${index + 1} used`} onChange={(event) => change(`slots.${key}.used`, event.target.checked ? index + 1 : index)} />
+                ))}
+                {editable ? (
+                  <input type="number" className="tiny" min={0} value={num(slot.max)} title="Most slots of this level (beyond the class's: a feat, a magic item)" aria-label={`Level ${key.slice(1)} slots`} onChange={(event) => change(`slots.${key}.extra`, num(slot.extra) + (Number(event.target.value) || 0) - num(slot.max))} />
+                ) : null}
+              </span>
             ))}
-          </span>
-        ))}
-      </div>
-      <ul className="five-spells">
-        {known.map((name) => {
-          const spell = book.find((item) => item.name.toLowerCase() === name.toLowerCase());
-          return (
-            <li key={name} data-spell={name}>
-              <b>{name}</b> <small className="hint">{spell ? (num(spell.data.level) ? `level ${num(spell.data.level)}` : "cantrip") : ""}</small>
-              {editable ? (
-                <button type="button" data-action="cast" onClick={() => session.ct("cast", { recordId: record.id, power: name })}>
-                  Cast
-                </button>
-              ) : null}
-              <p className="hint">{plain(spell?.data.description).slice(0, 220)}</p>
-            </li>
-          );
-        })}
-      </ul>
+          </div>
+        </>
+      ) : (
+        <p className="hint empty-state">No spellcasting in this class.</p>
+      )}
+      {levels.map((level) => (
+        <div key={level} className="five-spell-level" data-spell-level={level}>
+          <h4>{level ? `Level ${level}` : "Cantrips"}</h4>
+          <ul className="five-spells">
+            {known
+              .filter((name) => levelOf(name) === level)
+              .map((name) => {
+                const spell = book.find((item) => item.name.toLowerCase() === name.toLowerCase());
+                const slug = spellSlug(name);
+                return (
+                  <li key={name} data-spell={name}>
+                    {level ? <input type="checkbox" checked={num(prepared[slug]) > 0} disabled={!editable} title="Prepared" aria-label={`${name} prepared`} onChange={(event) => change(`prepared.${slug}`, event.target.checked ? 1 : 0)} /> : null}
+                    <b>{name}</b>
+                    {editable ? (
+                      <button type="button" data-action="cast" onClick={() => session.ct("cast", { recordId: record.id, power: name })}>
+                        Cast
+                      </button>
+                    ) : null}
+                    <p className="hint">{plain(spell?.data.description).slice(0, 220)}</p>
+                  </li>
+                );
+              })}
+          </ul>
+        </div>
+      ))}
+      <Dnd5eResources />
     </section>
+  );
+}
+
+// FG's class resources (a power group's uses and period): Rage, Ki, Channel Divinity. Each with its uses ticked off,
+// its most, and when it comes back (a short rest, or a long one); rests give them back.
+function Dnd5eResources() {
+  const { data, editable, change } = useSheet();
+  const list = rows(data.resources);
+  const add = () => {
+    const next = list.reduce((most, [key]) => Math.max(most, Number(key.replace(/\D/g, "")) || 0), 0) + 1;
+    const key = `id-${String(next).padStart(5, "0")}`;
+    change(`resources.${key}.name`, "New resource");
+  };
+  if (!list.length && !editable) return null;
+  return (
+    <div className="five-resources" data-part="resources">
+      <h4>Class resources</h4>
+      <ul>
+        {list.map(([key, row]) => (
+          <li key={key} data-resource={String(row.name)}>
+            <input type="text" defaultValue={String(row.name ?? "")} disabled={!editable} aria-label="Resource name" onBlur={(event) => event.target.value !== row.name && change(`resources.${key}.name`, event.target.value)} />
+            {Array.from({ length: num(row.max) }, (_, index) => (
+              <input key={index} type="checkbox" checked={index < num(row.used)} disabled={!editable} aria-label={`${String(row.name)} use ${index + 1}`} onChange={(event) => change(`resources.${key}.used`, event.target.checked ? index + 1 : index)} />
+            ))}
+            <input type="number" className="tiny" min={0} value={num(row.max)} disabled={!editable} aria-label={`${String(row.name)} uses`} title="How many uses" onChange={(event) => change(`resources.${key}.max`, Number(event.target.value) || 0)} />
+            <select value={String(row.period ?? "long")} disabled={!editable} aria-label={`${String(row.name)} comes back`} onChange={(event) => change(`resources.${key}.period`, event.target.value)}>
+              <option value="short">Short rest</option>
+              <option value="long">Long rest</option>
+            </select>
+            {editable ? (
+              <button type="button" className="icon-button" aria-label={`Remove ${String(row.name)}`} title="Remove" onClick={() => change(`resources.${key}`, null)}>
+                ×
+              </button>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      {editable ? (
+        <button type="button" data-action="add-resource" onClick={add}>
+          + Resource
+        </button>
+      ) : null}
+    </div>
   );
 }
 

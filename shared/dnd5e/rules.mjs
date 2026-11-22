@@ -339,6 +339,9 @@ const martialClass = (classRecord) => {
 // Everything worked out from the base fields: modifiers, proficiency, saves,
 // skills, AC, initiative, attacks, passive Perception, spellcasting, the next
 // level's XP. Base fields are kept as they are.
+// A spell's key for its prepared box: "Cure Wounds" -> "cure-wounds".
+export const spellSlug = (/** @type {string} */ name) => name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
 export function derive(input) {
   const profile = profileFor(input?.ruleset in PROFILES ? input.ruleset : RULESET);
   const data = { ...input, ruleset: profile.id };
@@ -377,9 +380,16 @@ export function derive(input) {
   const caster = CASTERS[skillKey(className)];
   if (caster) {
     const bonus = data.abilities[caster.stat].bonus;
-    data.spellcasting = { stat: caster.stat, dc: 8 + data.prof + bonus, attack: data.prof + bonus };
+    data.spellcasting = { stat: caster.stat, dc: 8 + data.prof + bonus, attack: data.prof + bonus, ...(caster.kind === "pact" ? { pact: true } : {}) };
     const fresh = slotsFor(className, level);
-    data.slots = Object.fromEntries(Object.entries(fresh).map(([key, slot]) => [key, { max: slot.max, used: Math.max(0, Math.min(slot.max, Math.round(num(data.slots?.[key]?.used, 0)))) }]));
+    // FG's slot maximums set by hand: the class's, and an extra (a magic item, a feat) kept on top.
+    data.slots = Object.fromEntries(
+      Object.entries(fresh).map(([key, slot]) => {
+        const extra = Math.round(num(data.slots?.[key]?.extra, 0));
+        const max = Math.max(0, slot.max + extra);
+        return [key, { max, ...(extra ? { extra } : {}), used: Math.max(0, Math.min(max, Math.round(num(data.slots?.[key]?.used, 0)))) }];
+      }),
+    );
   } else {
     delete data.spellcasting;
     data.slots = {};
@@ -399,6 +409,20 @@ export function derive(input) {
         const attunable = /requires attunement/i.test(words) ? 1 : 0;
         return [key, { ...item, attunable, attune: attunable && num(item.attune, 0) ? 1 : 0 }];
       }),
+    );
+  }
+  // FG's prepared spells: ticked by their name (a slug), only those the character knows.
+  const knownSlugs = new Set((Array.isArray(data.spells) ? data.spells : []).map((name) => spellSlug(String(name))));
+  data.prepared = Object.fromEntries(Object.entries(data.prepared && typeof data.prepared === "object" ? data.prepared : {}).filter(([slug, on]) => knownSlugs.has(slug) && num(on, 0) > 0).map(([slug]) => [slug, 1]));
+  // FG's class resources (Rage, Ki, Channel Divinity): a name, uses, how many used, back on a short or long rest.
+  if (data.resources && typeof data.resources === "object") {
+    data.resources = Object.fromEntries(
+      rows(data.resources)
+        .filter(([, row]) => String(row?.name ?? "").trim())
+        .map(([key, row]) => {
+          const max = Math.max(0, Math.round(num(row.max, 1)));
+          return [key, { name: String(row.name).trim().slice(0, 60), max, used: Math.max(0, Math.min(max, Math.round(num(row.used, 0)))), period: row.period === "short" ? "short" : "long" }];
+        }),
     );
   }
   data.attunement = {
