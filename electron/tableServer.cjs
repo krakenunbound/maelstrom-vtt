@@ -1612,14 +1612,29 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   // read from the module itself (the Books window), as FG reads them, never
   // copied into the campaign (they made it tens of MB, sent to every player).
   const GM_SEAT = { role: "dm", name: "GM" };
-  const RULES_TYPES = new Set(["siegepackage", "siegepower", "siegegame", "item", "npc", "vehicle", "spell", "pregencharsheet", "cairntable", "fateskill", "fatestunt", "ironmove", "ironasset", "ironoracle", "irondelve", "playbook", "crewtype", "forgedtable", ...require("./dnd5e.cjs").TYPES_5E]);
+  const RULES_TYPES = new Set(["siegepackage", "siegepower", "siegegame", "item", "itemtemplate", "npc", "vehicle", "spell", "pregencharsheet", "cairntable", "fateskill", "fatestunt", "ironmove", "ironasset", "ironoracle", "irondelve", "playbook", "crewtype", "forgedtable", ...require("./dnd5e.cjs").TYPES_5E]);
+  // Kinds the rules came to use after a book's records were first loaded (the Item Forge's templates): read once
+  // more for a book loaded before, if it has none of them yet (once a run; added to its records, the rest kept).
+  const LATER_TYPES = new Set(["itemtemplate"]);
+  const laterRead = new Set();
   function loadRecords(info) {
     const file = books?.file?.(info.id);
     if (!file) return;
     const had = records.list({ source: info.name });
     // An earlier, fuller load: take out what the rules do not use.
     for (const record of had) if (!RULES_TYPES.has(record.type)) records.remove(record.id, GM_SEAT);
-    if (had.some((record) => RULES_TYPES.has(record.type))) return;
+    if (had.some((record) => RULES_TYPES.has(record.type))) {
+      const missing = new Set([...LATER_TYPES].filter((type) => !had.some((record) => record.type === type)));
+      if (missing.size && !laterRead.has(info.id)) {
+        laterRead.add(info.id);
+        try {
+          importModule(records, GM_SEAT, file, { only: missing, keep: true });
+        } catch {
+          /* as below */
+        }
+      }
+      return;
+    }
     try {
       importModule(records, GM_SEAT, file, { only: RULES_TYPES });
     } catch {
@@ -3393,7 +3408,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
 
       // The campaign's content (electron/content.cjs): copies, story, random tables, identifying
       // items, encounters, parcels, quests. The GM's, but for a table roll; answered as an op.
-      if (["record-copy", "story", "table-roll", "identify", "encounter", "parcel", "quest", "npc-import"].includes(msg.type)) {
+      if (["record-copy", "story", "table-roll", "identify", "encounter", "parcel", "quest", "npc-import", "item-forge"].includes(msg.type)) {
         const seat = seatOf(client);
         const reply = (ok, result, error) => send(ws, { type: "op-result", req: msg.req ?? null, ok, id: result?.id ?? "", ...(ok ? { result } : { error }) });
         require("./content.cjs")

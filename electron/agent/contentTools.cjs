@@ -142,6 +142,20 @@ const TOOLS = [
     inputSchema: object({ text: string("The whole stat block, its name on the first line") }, ["text"]),
     run: async (args, ctx) => out(await content.npcImport(needTable(ctx), args)),
   },
+  {
+    name: "kraken_item_forge",
+    description:
+      "FG's Item Forge (5E): base items and templates merged into new campaign items (GM only). Each entry is a campaign record id, or { book, path } for a book's record. Templates are item templates, or items and spells used as them: 'Weapon, +1, +2, or +3' on a Longsword makes 'Longsword, +1' (bonus picks +1 to +3 and the rarity it names); 'Weapon of Warning' makes 'Longsword of Warning'; a spell on a Spell Scroll makes 'Spell Scroll of <spell>' at the spell level's rarity. Names, rarity, bonus, properties, damage, AC, cost and description combine; every base gets every template. With no base, the first template is the base and the result is an item template. Returns the new records (made) and any warning (problems).",
+    inputSchema: object(
+      {
+        base: { type: "array", description: "Base items: record ids, or { book, path }", items: {} },
+        templates: { type: "array", description: "Templates: item templates, items or spells (record ids, or { book, path })", items: {} },
+        bonus: number("For a '+1, +2, or +3' template: which bonus (1 to 3; default 1)"),
+      },
+      ["templates"],
+    ),
+    run: async (args, ctx) => out(await content.itemForge(needTable(ctx), args)),
+  },
 ];
 
 module.exports = { TOOLS };

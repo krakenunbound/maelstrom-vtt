@@ -19,7 +19,7 @@ import { agentCommands } from "./agentCommands";
 import { ChatDock } from "./ChatDock";
 import { manifestOf, PANELS } from "../rulesets";
 import { setActionRolls } from "./InlineRolls";
-import { has } from "../../shared/rulesets/registry.mjs";
+import { has, rulesetFor } from "../../shared/rulesets/registry.mjs";
 import { Mark } from "./Emblem";
 import { DecalPicker, SettingsWindow, TableDecal } from "./Settings";
 import { DiceWindow } from "../dice/DiceWindow";
@@ -428,6 +428,8 @@ export function Desktop({
             { kind: "imagelist", label: "Images", icon: "image", title: "Images" },
             { kind: "library", label: "Adventures", icon: "map", title: "Library" },
             listEntry("item", "Items", "bag"),
+            // The Item Forge's templates: where the game has a forge, or its books bring templates.
+            ...(rulesetFor(session.ruleset ?? "").forge || Object.values(session.records).some((record) => record.type === "itemtemplate") ? [listEntry("itemtemplate", "Item Templates", "template")] : []),
             listEntry("npc", "NPCs", "skull"),
             { kind: "adventure", payload: "parcel", label: "Parcels", icon: "coins", title: "Parcels", hint: "Every active adventure's treasure parcels" },
             { kind: "adventure", payload: "table", label: "Tables", icon: "table", title: "Tables", hint: "The campaign's random tables and every active adventure's" },

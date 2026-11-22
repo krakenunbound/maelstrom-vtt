@@ -2710,6 +2710,13 @@ label.set-row { cursor: pointer; }
 .table-editor > .cc-inline { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 6px; }
 .table-editor .cc-inline .cc-field { width: 5rem; }
 .table-import { margin: 6px 0; }
+.forge-slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); gap: 6px; margin: 4px 0; }
+.forge-slots > .record-drop { min-width: 0; margin: 0; display: block; }
+.forge-slot { min-height: 48px; }
+.forge-slot form { display: flex; gap: 4px; }
+.forge-slot ul { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 2px; }
+.forge-slot li { display: flex; align-items: center; gap: 4px; justify-content: space-between; }
+.forge-slot form input { flex: 1 1 0; width: auto; min-width: 0; }
 .table-import textarea, .table-import > input { width: 100%; margin: 4px 0; font: inherit; }
 .record-drop { margin: 8px 0; padding: 8px 10px; border: 1px dashed var(--panel-edge); border-radius: 8px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .record-drop.dropping { border-color: var(--brass); background: var(--brass-soft); }

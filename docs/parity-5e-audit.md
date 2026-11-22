@@ -360,7 +360,7 @@ and utility windows, and player management against Maelstrom's.
 | Random encounters: dice counts, Generate a new encounter | Dice counts rolled when added | Partly (no Generate) |
 | Effects window: lights, conditions, custom effects, click or drag to apply, GM-only, expiry, units, apply mode | Conditions, buffs, debuffs, lights, your own; click or drag; who may add | Partly (no units or apply mode on custom effects) |
 | Sound sets: triggers by chat pattern, content sounds on a record, Syrinscape | Sound window: library, triggers on hidden rolls, scene sounds, map sounds, playlists, Syrinscape | Better |
-| Item templates, Item Forge (base items and magic templates make new items) | Not found | Missing |
+| Item templates, Item Forge (base items and magic templates make new items) | Items and Item Templates lists: Item Forge (drop or pick base items and templates, items and spells as templates; the SRD's +1, +2, or +3 with a chosen bonus); the names, rarity, bonus, properties, damage, AC, cost and text combine, a spell makes a Spell Scroll of it, templates alone make a template; the forged item works on the sheet | Better (chosen bonus, costs kept, templates from any item) |
 | NPC import from stat block text; species import from text | NPCs list: Import from a stat block (2014 and 2024 layouts; every SRD creature reads back the same) | Partly (no species import) |
 | Story templates: text with `[Table]` rolls generates a story | Story list: From a template: `[Table]`, `[Table\|column]`, `[1d6]`, `[2x]` rolled into a new story | Same |
 | Options: groups, per user and GM, export and import a set | Settings: you, the table, combat, tokens, house rules; Export settings and Import settings | Same |
@@ -380,8 +380,7 @@ Any game can add its own the same way; nothing in the core names a game.
 
 All eight areas are compared, read from FG's ruleset files (CoreRPG and 5E) and
 Maelstrom's code, and what was missing is built (each area's commits name its
-check script). Still missing, by size: FG's module export from a campaign, the
-Item Forge and item templates, species import from text, the
+check script). Still missing, by size: FG's module export from a campaign, species import from text, the
 2024 Bastion tab, named holidays on calendar days, a random-encounter Generate,
 module sets, and the rows marked Partly. The **Check live** rows want FG open on
 the 5E campaign through the bridge, side by side with Maelstrom.

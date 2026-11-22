@@ -450,7 +450,38 @@ async function npcImport(table, args) {
   return { ...record, problems: parsed.problems };
 }
 
+// FG's Item Forge: base items and templates (item templates, or items and spells used as them), each a campaign
+// record ({ id }) or a book's ({ book, path }), merged by the ruleset's forge rules (its manifest's forge) into new
+// campaign items; with no base item, the first template is the base and the result a template.
+async function forgeRefs(table, refs, readBook) {
+  const out = [];
+  for (const ref of [].concat(refs ?? []).slice(0, 20)) {
+    const found = ref?.book && ref?.path ? await readBook?.(String(ref.book), String(ref.path)) : table.records.get(String(ref?.id ?? ref ?? ""));
+    if (!found || !["item", "itemtemplate", "spell"].includes(found.type)) throw new Error(`No item, template or spell ${ref?.path ?? ref?.id ?? ref ?? ""}.`);
+    out.push(found);
+  }
+  return out;
+}
+async function itemForge(table, args, readBook = table.readBookRecord) {
+  const { rulesetFor } = require("../shared/rulesets/registry.mjs");
+  const rules = rulesetFor(table.ruleset?.() ?? "").forge;
+  if (!rules) throw new Error("This game has no Item Forge.");
+  const { forgeItems } = await import(require("node:url").pathToFileURL(require("node:path").join(__dirname, "..", rules)).href);
+  const data = (record) => ({ ...record.data, name: record.data?.name ?? record.name });
+  const bases = await forgeRefs(table, args.base ?? args.bases, readBook);
+  const templates = await forgeRefs(table, args.templates, readBook);
+  const spells = [...bases, ...templates].filter((record) => record.type === "spell");
+  if (bases.some((record) => record.type === "spell")) throw new Error("A spell is a template, not a base item.");
+  const { made, problems } = forgeItems({ bases: bases.map(data), templates: templates.filter((record) => record.type !== "spell").map(data), spells: spells.map(data), bonus: Number(args.bonus) || 1 });
+  const records = made.map(({ type, name, data: fields }) => {
+    const { fgPath: _fgPath, ...kept } = fields;
+    return table.records.create({ type, name: text(name), visibility: "gm", data: { ...kept, name: text(name) } }, table.seat);
+  });
+  return { made: records, problems };
+}
+
 const MESSAGES = {
+  "item-forge": (table, msg, ctx) => itemForge(table, msg, ctx.readBook),
   "npc-import": (table, msg) => npcImport(table, msg),
   "record-copy": (table, msg, ctx) => copyRecord(table, msg, ctx.readBook),
   story: (table, msg) => storyAction(table, msg),
@@ -468,4 +499,4 @@ async function message(table, msg, ctx) {
   return handler(table, args, ctx);
 }
 
-module.exports = { npcImport, message, copyRecord, storyAction, tableAction, rollOn, findTable, identify, parcelAction, parcelContents, encounterAction, encounterXp, questAction, unidentified, itemName };
+module.exports = { itemForge, npcImport, message, copyRecord, storyAction, tableAction, rollOn, findTable, identify, parcelAction, parcelContents, encounterAction, encounterXp, questAction, unidentified, itemName };

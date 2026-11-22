@@ -584,7 +584,7 @@ export function TableImport({ session, onMade }: { session: Session; onMade: (re
 
 // --- Drop places -----------------------------------------------------------------
 
-function DropZone({ accepts, onLink, children, label }: { accepts: (link: QuickSlot) => boolean; onLink: (link: QuickSlot) => void; children: ReactNode; label: string }) {
+export function DropZone({ accepts, onLink, children, label }: { accepts: (link: QuickSlot) => boolean; onLink: (link: QuickSlot) => void; children: ReactNode; label: string }) {
   const [over, setOver] = useState(false);
   return (
     <div

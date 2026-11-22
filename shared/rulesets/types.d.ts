@@ -409,6 +409,7 @@ export interface RulesetManifest {
   variants?: Record<string, Partial<Omit<RulesetManifest, "variants" | "names">>>; // per name: Fate Accelerated, Descending Darkness, Starforged
   blurb: string; // the campaign screen's text
   engine: string | null; // "shared/cairn/rules.mjs"; null for no rules (Worldbuilding)
+  forge?: string; // the Item Forge's rules, a module exporting forgeItems (shared/dnd5e/forge.mjs); none, no forge
   host: { module: string | null; message?: string; tool?: string };
   // Where a character keeps its classes (read by the roster, Character Selection, the party sheet, spells):
   // a list of rows (where: only rows whose fields say so, as C&C's class packages), or one class in a field.

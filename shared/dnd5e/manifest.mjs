@@ -34,6 +34,8 @@ export default {
   names: ["D&D 5E", "Descending Darkness"],
   blurb: "Played from your 5E books (the rulebooks you own, or the free SRD): 5E sheets and character building, d20 combat with criticals, saves, spells and death saves.",
   engine: "shared/dnd5e/rules.mjs",
+  // The Item Forge's rules (base items and templates into new magic items): content.cjs's item-forge.
+  forge: "shared/dnd5e/forge.mjs",
   host: { module: "electron/dnd5e.cjs" },
   // The modifier box's keys beside the chat (shared/rulesets/modifiers.mjs).
   dice: { modifiers: { presets: ["adv", "dis", "plus2", "minus2", "plus5", "minus5", "opp", "cover", "scover", "crit", "max", "half"] } },

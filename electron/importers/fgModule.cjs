@@ -486,11 +486,13 @@ function parseModule(file, only) {
 
 // Put a module's records into a campaign's record store, replacing any
 // earlier import of the same module. only: just these record types.
-function importModule(store, seat, nameOrPath, { only = null } = {}) {
+// keep: add to what the store has of this module (records of the kinds read take their place by id), not
+// replace it all.
+function importModule(store, seat, nameOrPath, { only = null, keep = false } = {}) {
   const read = readModule(nameOrPath, { only });
   const { info, images } = read;
   const records = only ? read.records.filter((record) => only.has(record.type)) : read.records;
-  for (const old of store.list({ source: info.name })) store.remove(old.id, seat);
+  if (!keep) for (const old of store.list({ source: info.name })) store.remove(old.id, seat);
   const counts = {};
   for (const record of records) {
     // One already there under this id (a creature the Library added from this

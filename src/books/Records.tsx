@@ -11,7 +11,7 @@ import { useBookWindows, useContextMenu, usePictureActions } from "./Books";
 import { ReadAloudButton } from "./readAloud";
 import { decodeEntities, isFormatted, linkOfRecordname } from "../../shared/text/formatted.mjs";
 import { LinkChip } from "../core/fields/RichText";
-import { CORE_VIEWS, IdentifyBar, openUnlocked, RecordFields, ShareMenu, TableEditor, TableRollBar, useRecordActions, useRecordMenu } from "./RecordEditor";
+import { CORE_VIEWS, DropZone, IdentifyBar, openUnlocked, RecordFields, ShareMenu, TableEditor, TableRollBar, useRecordActions, useRecordMenu } from "./RecordEditor";
 import { GM } from "../ui/gmTitle";
 
 // FG's campaign lists (the sidebar's Campaign and Character groups, each a
@@ -27,6 +27,7 @@ import { GM } from "../ui/gmTitle";
 const LISTS: { id: string; label: string; group: string }[] = [
   { id: "npc", label: "NPCs", group: "Campaign" },
   { id: "item", label: "Items", group: "Campaign" },
+  { id: "itemtemplate", label: "Item Templates", group: "Campaign" },
   { id: "background", label: "Backgrounds", group: "Character" },
   { id: "class", label: "Classes", group: "Character" },
   { id: "class_specialization", label: "Subclasses", group: "Character" },
@@ -410,6 +411,7 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
           </div>
         ) : null}
         {gm && list === "npc" ? <NpcImport session={session} onMade={(record) => onOpen(record)} /> : null}
+        {gm && (list === "item" || list === "itemtemplate") && rulesetFor(session.ruleset ?? "").forge ? <ItemForge session={session} onMade={(record) => onOpen(record)} /> : null}
         {gm && only ? (
           // FG's + on a campaign list: a new record of the list's kind, opened to fill in.
           <form
@@ -592,7 +594,7 @@ export function RecordWindow({ session, id, record: given, book }: { session: Se
   // room: FG keeps its whole text there).
   if (typeof data.text === "string" && data.text.trim()) texts.unshift(["description", data.text]);
   // A creature's portrait, an item's or a vehicle's picture (each from its own book).
-  const pictured = npc || record.type === "item" || record.type === "vehicle";
+  const pictured = npc || record.type === "item" || record.type === "itemtemplate" || record.type === "vehicle";
   const portrait = pictured && (data.picture || data.token) ? session.recordArtUrl(record.id, "portrait") : "";
   // The picture's file in its book ("mm/images/Goblin.webp@B2 ..."), to open full size and share.
   const pictureRef = String(data.picture || data.token || "");
@@ -805,6 +807,110 @@ function NpcImport({ session, onMade }: { session: Session; onMade: (record: Tab
         Import
       </button>
       {status ? <p className="hint" role="status">{status}</p> : null}
+    </details>
+  );
+}
+
+// FG's Item Forge: base items and templates (item templates, or items and spells used as them) merged by the
+// game's forge rules into new campaign items. Drag records onto Base items or Templates, or pick them by name.
+const FORGE_TYPES = ["item", "itemtemplate", "spell"];
+const BONUS_CHOICE = /,?\s*\+1,\s*\+2,?\s*or\s*\+3$/i;
+function ItemForge({ session, onMade }: { session: Session; onMade: (record: TableRecord) => void }) {
+  const [bases, setBases] = useState<string[]>([]);
+  const [templates, setTemplates] = useState<string[]>([]);
+  const [bonus, setBonus] = useState(1);
+  const [status, setStatus] = useState("");
+  const forgeable = useMemo(() => Object.values(session.records).filter((record) => FORGE_TYPES.includes(record.type)), [session.records]);
+  const byName = useMemo(() => new Map(forgeable.map((record) => [`${record.name}${record.source ? ` (${record.source})` : ""}`, record])), [forgeable]);
+  const accepts = (link: QuickSlot) => link.kind === "record" && FORGE_TYPES.includes(session.records[link.record]?.type ?? "");
+  const add = (set: (fn: (list: string[]) => string[]) => void, id: string) => set((list) => (list.includes(id) ? list : [...list, id].slice(0, 20)));
+  const choice = templates.some((id) => BONUS_CHOICE.test(session.records[id]?.name ?? ""));
+  const slot = (label: string, ids: string[], set: typeof setBases, which: string, spellsToo: boolean) => (
+    <DropZone label={which} accepts={(link) => accepts(link) && link.kind === "record" && (spellsToo || session.records[link.record]?.type !== "spell")} onLink={(link) => link.kind === "record" && add(set, link.record)}>
+      <div className="forge-slot" data-forge={which}>
+        <strong>{label}</strong>
+        {ids.length ? (
+          <ul>
+            {ids.map((id) => (
+              <li key={id}>
+                <span className="records-name" {...slotDrag({ kind: "record", record: id, label: session.records[id]?.name ?? id })}>{session.records[id]?.name ?? id}</span>
+                <button type="button" className="ghost" title="Take out" aria-label={`Take ${session.records[id]?.name ?? "it"} out`} onClick={() => set((list) => list.filter((other) => other !== id))}>
+                  <Icon name="close" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="hint">{spellsToo ? "Drop templates, magic items or spells here" : "Drop items here"}</p>
+        )}
+        <form
+          className="cc-inline"
+          onSubmit={(event) => {
+            event.preventDefault();
+            const input = event.currentTarget.elements.namedItem("pick") as HTMLInputElement;
+            const record = byName.get(input.value);
+            if (!record || (!spellsToo && record.type === "spell")) return setStatus(`No ${spellsToo ? "item, template or spell" : "item"} named ${input.value}.`);
+            add(set, record.id);
+            input.value = "";
+          }}
+        >
+          <label htmlFor={`forge-${which}`} className="sr-only">
+            Add to {label} by name
+          </label>
+          <input id={`forge-${which}`} name="pick" list="forge-names" placeholder="Name…" autoComplete="off" />
+          <button type="submit" title={`Add to ${label}`} aria-label={`Add to ${label}`}>
+            <Icon name="plus" />
+          </button>
+        </form>
+      </div>
+    </DropZone>
+  );
+  return (
+    <details className="table-import item-forge">
+      <summary>Item Forge</summary>
+      <datalist id="forge-names">
+        {[...byName.keys()].map((name) => (
+          <option key={name} value={name} />
+        ))}
+      </datalist>
+      <div className="forge-slots">
+        {slot("Base items", bases, setBases, "bases", false)}
+        {slot("Templates", templates, setTemplates, "templates", true)}
+      </div>
+      <div className="cc-inline">
+        {choice ? (
+          <label>
+            Bonus{" "}
+            <select value={bonus} onChange={(event) => setBonus(Number(event.target.value))} data-forge="bonus">
+              <option value={1}>+1</option>
+              <option value={2}>+2</option>
+              <option value={3}>+3</option>
+            </select>
+          </label>
+        ) : null}
+        <button
+          type="button"
+          data-action="item-forge"
+          disabled={!templates.length || (!bases.length && templates.length < 2)}
+          onClick={() =>
+            void session
+              .content<{ made: TableRecord[]; problems: string[] }>("item-forge", { base: bases, templates, bonus })
+              .then(({ made, problems }) => {
+                setStatus(`Forged ${made.map((record) => record.name).join(", ")}.${problems.length ? ` ${problems.join(" ")}` : ""}`);
+                if (made[0]) onMade(made[0]);
+              })
+              .catch((error: unknown) => setStatus(error instanceof Error ? error.message : "Could not forge that."))
+          }
+        >
+          Forge
+        </button>
+        <button type="button" className="ghost" data-action="item-forge-reset" disabled={!bases.length && !templates.length} onClick={() => (setBases([]), setTemplates([]), setStatus(""))}>
+          Reset
+        </button>
+      </div>
+      <p className="hint" role="status">
+        {status}
+      </p>
     </details>
   );
 }
