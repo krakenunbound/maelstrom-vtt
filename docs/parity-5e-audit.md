@@ -139,12 +139,12 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | Abilities: score, modifier, check, save, save proficiency | The same, a DC box for every roll | Better |
 | Senses (text) | Senses on the Notes tab, the line under the boxes | Done |
 | Passive Perception | Passive Perception | Same |
-| AC with Combat Details (armor, shield, DEX cap, 2nd ability, misc, proficient, stealth disadvantage) | AC from armor and shield, a Misc box | Partly (no DEX cap or 2nd ability by hand) |
+| AC with Combat Details (armor, shield, DEX cap, 2nd ability, misc, proficient, stealth disadvantage) | AC from armor and shield, a Misc box; Dex as the armor says, none, all, max 2 or 3, by hand; a second ability added | Same |
 | Initiative: misc, proficiency, roll button | Misc box; Roll, which on the tracker sets the character's place | Done (no proficiency toggle) |
-| Speed: base, armor, misc, special move | Speed typed in the box | Partly (one text) |
+| Speed: base, armor, misc, special move | Base, heavy armor's -10 (Strength under its requirement), misc, special movement; the total | Same |
 | Special defenses (text) | Special defenses on the Notes tab | Done |
 | HP: wounds, max, temp; numbers dropped on them | Current / max with a bar, Damage and Heal, wounds, temp and max boxes | Better (Damage and Heal) |
-| Hit dice per class: die, dice left, roll (spend) one; Hit Dice details (stat, 2nd stat, misc) | Hit dice box, Roll one; each class's dice left (the largest die spent first) | Partly (no stat choice; a short rest rolls the largest die) |
+| Hit dice per class: die, dice left, roll (spend) one; Hit Dice details (stat, 2nd stat, misc) | Hit dice box, Roll one; Details: the ability added, a second, misc; a multiclass character rolls the class's die chosen | Same |
 | Death saves: roll button, 3 success and 3 failure boxes | Three boxes each, ticked by hand; Roll in a fight (and HRST rolls it itself) | Done |
 
 ### Skills
@@ -152,7 +152,7 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | FG control | Maelstrom | Verdict |
 |---|---|---|
 | Proficiency: none, proficient, double, half | None, proficient, expertise, half (rounded down) | Done |
-| Ability per skill (changeable), misc, total, roll | Misc box, total, roll | Partly (the ability stays the skill's own) |
+| Ability per skill (changeable), misc, total, roll | The ability per skill (changeable), misc box, total, roll | Same |
 | Add or delete skills (custom skills) | The 18 | Missing |
 
 ### Abilities (Maelstrom: Notes)
@@ -168,8 +168,8 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | Items: count, name, unidentified name, location (container), carried, link | Count, carried, containers (drag, Put in), thumbnails, party stash | Better (containers, stash) |
 | Weight per item | An item's weight beside its type, the load meter | Done |
 | Attuned per item, attunement count (HRAS base, class, misc), red over the limit | The Attuned box on items that require attunement; Attuned used / allowed (HRAS, class, misc), red over | Done |
-| Treasure: coins, add your own currency rows | The game's coins | Partly (no custom rows) |
-| Encumbrance: load, encumbered, heavy, maximum, lift/push/drag | Load meter, the variant | Partly (no lift/push/drag figure) |
+| Treasure: coins, add your own currency rows | The game's coins, and rows of one's own (+ Coin: named, counted, taken out) | Same |
+| Encumbrance: load, encumbered, heavy, maximum, lift/push/drag | Load meter, the variant, push, drag or lift (Strength x 30 lb., by size) | Same |
 
 ### Notes
 
@@ -185,7 +185,7 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | FG control | Maelstrom | Verdict |
 |---|---|---|
 | Weapons from the inventory, attack and damage rolls, drag to roll | Attack and damage rolls at targets, drag onto a creature, versatile hands | Better (targets) |
-| Weapon options: crit range, extra crit dice, two-weapon fighting | Melee and ranged critical range, extra critical dice (Combat tab) | Partly (no two-weapon fighting) |
+| Weapon options: crit range, extra crit dice, two-weapon fighting | Melee and ranged critical range, extra critical dice; a weapon in the off hand (two-weapon fighting: no ability modifier to its damage unless the style) | Same |
 | Weapon editor: attack ability, bonus, proficiency; damage rows | Not found | Missing |
 | Ammunition counter per weapon | Spent from the inventory | Better (real ammunition) |
 | Weapon mastery | Not found | Missing (2024) |

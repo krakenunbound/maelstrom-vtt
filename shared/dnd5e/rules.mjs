@@ -167,7 +167,13 @@ const equipped = (item) => num(item?.carried, 1) === 2;
 // medium + DEX (at most 2); heavy, no DEX; a shield adds its bonus. Only what is worn (carried 2) counts.
 export function armorClass(data) {
   const dex = mod(data.abilities?.dexterity?.score ?? 10);
-  let base = 10 + dex;
+  // FG's AC details set by hand: the Dex cap ("" the armor's own, "none", "full", or 2, 3...) and a second ability
+  // (a Monk's Wisdom, a Barbarian's Constitution, set by hand).
+  const cap = String(data.ac?.dexcap ?? "");
+  const capDex = (from) => (cap === "none" ? 0 : cap === "full" ? dex : /^\d$/.test(cap) ? Math.min(dex, Number(cap)) : from);
+  const stat2 = STATS.includes(String(data.ac?.stat2 ?? "")) ? String(data.ac.stat2) : "";
+  const second = stat2 ? mod(data.abilities?.[stat2]?.score ?? 10) : 0;
+  let base = 10 + capDex(dex);
   let shield = 0;
   let wearing = "";
   for (const [, item] of rows(data.inventorylist)) {
@@ -179,7 +185,7 @@ export function armorClass(data) {
       const dexbonus = String(item.dexbonus ?? "Yes");
       const capped = /max\s*(\d+)/i.exec(dexbonus);
       const fromDex = /^no/i.test(dexbonus) || /heavy/i.test(subtype) ? 0 : capped ? Math.min(dex, Number(capped[1])) : dex;
-      const value = ac + fromDex;
+      const value = ac + capDex(fromDex);
       if (!wearing || value > base) {
         base = value;
         wearing = String(item.name ?? "");
@@ -199,7 +205,7 @@ export function armorClass(data) {
       wearing = "Unarmored Defense";
     }
   }
-  return { total: base + shield + num(data.ac?.misc, 0), armor: wearing, shield };
+  return { total: base + shield + second + num(data.ac?.misc, 0), armor: wearing, shield, ...(cap ? { dexcap: cap } : {}), ...(stat2 ? { stat2, stat2bonus: second } : {}) };
 }
 
 // An equipment pack opened into what it holds (FG adds a pack's included items): FG's subitems list,
@@ -248,15 +254,19 @@ export function weaponAttack(data, item, { hands = 1, thrown = false } = {}) {
   if (!info.damage) return null;
   // FG's hands: a versatile weapon in two hands rolls its larger die.
   const twoHanded = Boolean(info.versatile) && !thrown && num(hands, 1) === 2;
+  // FG's off-hand attack (two-weapon fighting): its damage adds no positive ability modifier, unless the character
+  // has the Two-Weapon Fighting style.
+  const offHand = !thrown && num(hands, 1) === 3;
   const dice = twoHanded ? info.versatile : info.damage.dice;
   const str = mod(data.abilities?.strength?.score ?? 10);
   const dex = mod(data.abilities?.dexterity?.score ?? 10);
   const ability = info.ranged ? dex : info.finesse ? Math.max(str, dex) : str;
   const proficient = proficientWith(data, info);
   const bonus = ability + (proficient ? num(data.prof, 2) : 0) + num(item.bonus, 0);
-  const dmg = ability + num(item.bonus, 0);
+  const style = /two[- ]weapon fighting/i.test([...(Array.isArray(data.features) ? data.features : []), ...Object.values(data.features && typeof data.features === "object" ? data.features : {}).map((row) => row?.name ?? row), ...(Array.isArray(data.feats) ? data.feats : [])].map(String).join(" | "));
+  const dmg = (offHand && ability > 0 && !style ? 0 : ability) + num(item.bonus, 0);
   return {
-    name: `${String(item.name ?? "Weapon")}${thrown ? " (thrown)" : ""}`,
+    name: `${String(item.name ?? "Weapon")}${thrown ? " (thrown)" : offHand ? " (off hand)" : ""}`,
     bonus,
     damage: `${dice}${dmg ? signed(dmg) : ""}`,
     dice,
@@ -366,11 +376,31 @@ export function derive(input) {
       const prof = Math.min(3, Math.max(0, Math.round(num(data.skills?.[key]?.prof, 0))));
       const misc = Math.round(num(data.skills?.[key]?.misc, 0));
       const fromProf = prof === 3 ? Math.floor(data.prof / 2) : data.prof * prof;
-      return [key, { name, stat, prof, ...(misc ? { misc } : {}), total: data.abilities[stat].bonus + fromProf + misc }];
+      // FG's ability per skill, changeable (Strength for an Intimidation by force); the skill's own by default.
+      const chosen = STATS.includes(String(data.skills?.[key]?.stat ?? "")) ? String(data.skills[key].stat) : stat;
+      return [key, { name, stat: chosen, ...(chosen !== stat ? { ownstat: stat } : {}), prof, ...(misc ? { misc } : {}), total: data.abilities[chosen].bonus + fromProf + misc }];
     }),
   );
   data.ac = { ...armorClass(data), misc: num(data.ac?.misc, 0) };
+  // FG's Hit Dice details: the ability (Constitution) added to a hit die rolled, a second one, and misc.
+  {
+    const hd = data.hitdice && typeof data.hitdice === "object" ? data.hitdice : {};
+    const stat = STATS.includes(String(hd.stat ?? "")) ? String(hd.stat) : "constitution";
+    const stat2 = STATS.includes(String(hd.stat2 ?? "")) ? String(hd.stat2) : "";
+    const misc = Math.round(num(hd.misc, 0));
+    data.hitdice = { ...hd, ...(hd.stat ? { stat } : {}), mod: data.abilities[stat].bonus + (stat2 ? data.abilities[stat2].bonus : 0) + misc };
+  }
   data.initiative = { misc: num(data.initiative?.misc, 0), total: data.abilities.dexterity.bonus + num(data.initiative?.misc, 0) };
+  // FG's speed: the base (the Speed box), heavy armor's -10 feet when Strength is under its requirement (SRD 5.2.1),
+  // a misc adjustment, and special movement (fly, swim, climb) in words.
+  {
+    const baseSpeed = num(/\d+/.exec(String(data.speed ?? ""))?.[0], 30);
+    const heavy = rows(data.inventorylist).find(([, item]) => isArmor(item) && equipped(item) && /heavy/i.test(String(item.subtype ?? "")) && num(/\d+/.exec(String(item.strength ?? ""))?.[0], 0) > num(data.abilities.strength.score, 10));
+    const armorSpeed = heavy ? -10 : 0;
+    const speedMisc = Math.round(num(data.speedmisc, 0));
+    data.speedtotal = Math.max(0, baseSpeed + armorSpeed + speedMisc);
+    data.speedarmor = armorSpeed;
+  }
   data.passive = 10 + data.skills.perception.total;
   // The hands chosen on the sheet are kept (FG's hands button); a melee weapon with Thrown gets its own thrown line.
   const handsWas = Object.fromEntries(rows(data.attacks).map(([key, attack]) => [key, num(attack?.hands, 1)]));
@@ -450,7 +480,7 @@ export function derive(input) {
     }
     data.packages = { ...data.packages, ...Object.fromEntries(pools.map((pool) => [pool.key, { ...data.packages[pool.key], hdused: pool.used }])) };
     const open = byDie.find((pool) => pool.used < pool.level) ?? byDie[0];
-    data.hitdice = { die: open.die, total: level, used: want, pools: pools.map((pool) => ({ name: pool.name, die: pool.die, left: pool.level - pool.used, total: pool.level })) };
+    data.hitdice = { ...data.hitdice, die: open.die, total: level, used: want, pools: pools.map((pool) => ({ name: pool.name, die: pool.die, left: pool.level - pool.used, total: pool.level })) };
   }
   if (profile.dread) data.dread = Math.min(6, Math.max(0, Math.round(num(data.dread, 0))));
   // FG's attunement: an item whose rarity or text says it requires attunement may be attuned (its box); the count

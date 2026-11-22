@@ -970,12 +970,36 @@ function Coins({ spec }: { spec: Extract<Part, { part: "coins" }> }) {
   const sheet = useSheet();
   const coins = rows(at(sheet.data, spec.path));
   const none = spec.none && !coins.some(([, coin]) => new RegExp(spec.none?.unless ?? "", "i").test(String(coin.name ?? spec.none?.unless)));
+  // FG's own currency rows (gems, trade bars, a country's coin): named, counted, taken out again.
+  const add = () => {
+    const next = coins.reduce((most, [key]) => Math.max(most, Number(key.replace(/\D/g, "")) || 0), 0) + 1;
+    const key = `id-${String(next).padStart(5, "0")}`;
+    sheet.change(`${spec.path}.${key}.name`, "New coin");
+    sheet.change(`${spec.path}.${key}.custom`, 1);
+  };
   return (
     <div className={spec.className ?? "five-coins"}>
-      {coins.map(([key, coin]) => (
-        <CoinLine key={key} spec={spec} coin={coin} at={`${spec.path}.${key}.amount`} />
-      ))}
+      {coins.map(([key, coin]) =>
+        spec.add && num(coin.custom) ? (
+          <span key={key} className="cc-inline coin-own" data-coin-own={String(coin.name ?? "")}>
+            <Field value={num(coin.amount)} number editable={sheet.editable} label={`${String(coin.name ?? "Coin")} amount`} onSave={(value) => sheet.change(`${spec.path}.${key}.amount`, Number(value) || 0)} />
+            <Field value={String(coin.name ?? "")} editable={sheet.editable} label="Its name" onSave={(value) => sheet.change(`${spec.path}.${key}.name`, String(value).slice(0, 30))} />
+            {sheet.editable ? (
+              <button type="button" className="ghost icon-button" title={`Take ${String(coin.name ?? "it")} out`} aria-label={`Take ${String(coin.name ?? "it")} out`} onClick={() => sheet.change(`${spec.path}.${key}`, null)}>
+                ×
+              </button>
+            ) : null}
+          </span>
+        ) : (
+          <CoinLine key={key} spec={spec} coin={coin} at={`${spec.path}.${key}.amount`} />
+        ),
+      )}
       {none ? <span className="hint">{spec.none?.text}</span> : null}
+      {spec.add && sheet.editable ? (
+        <button type="button" className="ghost" data-action="coin-add" title="Another currency (gems, trade bars, a country's coin)" onClick={add}>
+          + Coin
+        </button>
+      ) : null}
     </div>
   );
 }

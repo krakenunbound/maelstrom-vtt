@@ -214,22 +214,64 @@ export function Dnd5eDeathSaves() {
 
 // FG's hit dice on the sheet: the die, how many are left, and one rolled (spent) apart from a rest.
 export function Dnd5eHitDice() {
-  const { data, session, record, editable } = useSheet();
+  const { data, session, record, editable, change } = useSheet();
   const dice = (data.hitdice ?? {}) as Row;
   const total = num(dice.total) || num(data.level) || 1;
   const left = Math.max(0, total - num(dice.used));
   const [status, setStatus] = useState("");
+  const spend = (die?: number) => void session.bookkeeping(record.id, "hitdie", die ? { die } : {}).then(() => setStatus("")).catch((error: unknown) => setStatus(error instanceof Error ? error.message : String(error)));
+  // FG's per class (multiclass): each class's die, how many left, one of them rolled.
+  const pools = Array.isArray(dice.pools) ? (dice.pools as Row[]) : [];
+  const SIX = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"];
   return (
     <div className="five-big five-hitdice" data-stat="hitdice" title="Hit Point Dice: a short rest spends them, or roll one here">
       <small>Hit dice</small>
       <b>
         {left}/{total}
       </b>
-      <span className="hint">d{num(dice.die) || 8}</span>
-      {editable ? (
-        <button type="button" data-action="hit-die" disabled={!left} onClick={() => void session.bookkeeping(record.id, "hitdie", {}).then(() => setStatus("")).catch((error: unknown) => setStatus(error instanceof Error ? error.message : String(error)))}>
+      <span className="hint">d{num(dice.die) || 8}{num(dice.mod) ? ` ${num(dice.mod) > 0 ? "+" : ""}${num(dice.mod)}` : ""}</span>
+      {editable && pools.length > 1 ? (
+        <span className="five-hitdice-pools">
+          {pools.map((pool) => (
+            <button key={String(pool.name)} type="button" data-action="hit-die-class" data-die={num(pool.die)} disabled={!num(pool.left)} title={`Roll a ${String(pool.name)} die (d${num(pool.die)}): ${num(pool.left)} of ${num(pool.total)} left`} onClick={() => spend(num(pool.die))}>
+              d{num(pool.die)} ({num(pool.left)})
+            </button>
+          ))}
+        </span>
+      ) : editable ? (
+        <button type="button" data-action="hit-die" disabled={!left} onClick={() => spend()}>
           Roll one
         </button>
+      ) : null}
+      {/* FG's Hit Dice details: the ability added (Constitution), a second one, and misc. */}
+      {editable ? (
+        <details className="five-hitdice-details">
+          <summary>Details</summary>
+          <label>
+            Ability{" "}
+            <select value={String(dice.stat ?? "constitution")} aria-label="Hit die ability" onChange={(event) => change("hitdice.stat", event.target.value)}>
+              {SIX.map((stat) => (
+                <option key={stat} value={stat}>
+                  {stat.slice(0, 3).toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            2nd{" "}
+            <select value={String(dice.stat2 ?? "")} aria-label="Hit die second ability" onChange={(event) => change("hitdice.stat2", event.target.value)}>
+              <option value="">–</option>
+              {SIX.map((stat) => (
+                <option key={stat} value={stat}>
+                  {stat.slice(0, 3).toUpperCase()}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Misc <input type="number" className="tiny" value={num(dice.misc)} aria-label="Hit die misc" onChange={(event) => change("hitdice.misc", Number(event.target.value) || 0)} />
+          </label>
+        </details>
       ) : null}
       {status ? <span className="hint" role="status">{status}</span> : null}
     </div>

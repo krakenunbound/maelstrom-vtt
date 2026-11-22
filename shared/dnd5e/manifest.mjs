@@ -108,7 +108,23 @@ export default {
                 part: "derived",
                 className: "d5e-combat",
                 boxes: [
-                  { label: "{@ac}", show: "shield", path: "ac.total", hook: "ac", title: "{@acLong}[: {ac.armor}][ and a shield{?ac.shield}]", lines: [{ items: [{ before: "Misc", field: { path: "ac.misc", kind: "number", label: "{@ac} adjustment", title: "Added to the {@acLong} (a ring, a spell, cover)" } }] }] },
+                  {
+                    label: "{@ac}",
+                    show: "shield",
+                    path: "ac.total",
+                    hook: "ac",
+                    title: "{@acLong}[: {ac.armor}][ and a shield{?ac.shield}]",
+                    lines: [
+                      { items: [{ before: "Misc", field: { path: "ac.misc", kind: "number", label: "{@ac} adjustment", title: "Added to the {@acLong} (a ring, a spell, cover)" } }] },
+                      // FG's AC details: the Dexterity cap by hand, and a second ability added (Unarmored Defense by hand).
+                      {
+                        items: [
+                          { before: "Dex", field: { path: "ac.dexcap", kind: "select", label: "Dexterity to {@ac}", title: "How much Dexterity counts: as the armor says, none, all, or at most 2 or 3", options: [{ value: "", label: "Armor's" }, { value: "none", label: "None" }, { value: "full", label: "All" }, { value: "2", label: "Max 2" }, { value: "3", label: "Max 3" }] } },
+                          { before: "2nd", field: { path: "ac.stat2", kind: "select", label: "Second ability to {@ac}", title: "Another ability's modifier added (Wisdom for a Monk, Constitution for a Barbarian)", options: [{ value: "", label: "–" }, ...SIX.map((value) => ({ value, label: titled(value).slice(0, 3) }))] } },
+                        ],
+                      },
+                    ],
+                  },
                   {
                     label: "{@hp}",
                     show: "remaining",
@@ -129,7 +145,19 @@ export default {
                     // FG's Roll Initiative: a Dexterity check with the initiative; on the tracker, its place.
                     actions: [{ hook: "roll-init", label: "Roll", title: "Roll initiative (on the combat tracker, it sets your place)", action: roll("init") }],
                   },
-                  { label: "Speed", show: "field", path: "speed", field: { path: "speed", kind: "text", label: "Speed", title: "Speed (30 ft., fly 60 ft.)" } },
+                  // FG's speed: the base, heavy armor's -10 (Strength under its requirement), misc, special movement.
+                  {
+                    label: "Speed",
+                    show: "value",
+                    path: "speedtotal",
+                    hook: "speed",
+                    title: "Speed in feet[: heavy armor {speedarmor}][, {speedspecial}]",
+                    lines: [
+                      { items: [{ before: "Base", field: { path: "speed", kind: "text", label: "Base speed", title: "The base speed (30 ft.)" } }] },
+                      { items: [{ before: "Misc", field: { path: "speedmisc", kind: "number", label: "Speed adjustment", title: "Added to the speed (Mobile, Longstrider, a magic item)" } }] },
+                      { items: [{ before: "Special", field: { path: "speedspecial", kind: "text", label: "Special movement", title: "Fly, swim, climb, burrow (fly 60 ft.)" } }] },
+                    ],
+                  },
                   { label: "Passive Perception", show: "value", path: "passive", hook: "passive" },
                   // Inspiration (2014) or Heroic Inspiration (2024): the GM gives it, the player spends it for advantage.
                   // FG's Inspiration counter: as many as the house rule HRIS allows (1, 2, 3 or 5); a change goes to the chat.
@@ -160,7 +188,11 @@ export default {
             hook: "skill",
             rows: Object.entries(SKILL_LIST).map(([key, [label, stat]]) => ({ key, label, note: stat.slice(0, 3).toUpperCase() })),
             field: { path: "prof", kind: "select", number: true, label: "{label} proficiency", title: "Proficiency: none, proficient, expertise, half (Jack of All Trades)", options: [{ value: "0", label: "–" }, { value: "1", label: "●" }, { value: "2", label: "◆" }, { value: "3", label: "½" }] },
-            after: [{ path: "misc", kind: "number", label: "{label} misc", title: "Added to {label} (an item, a feat)" }],
+            after: [
+              // FG's ability per skill, changeable.
+              { path: "stat", kind: "select", label: "{label} ability", title: "The ability {label} uses (its own by default)", options: SIX.map((value) => ({ value, label: titled(value).slice(0, 3) })) },
+              { path: "misc", kind: "number", label: "{label} misc", title: "Added to {label} (an item, a feat)" },
+            ],
             roll: { action: roll("skill", { keyAs: "skill" }), hook: "roll-skill", label: "{total|signed}", aria: "Roll {label}", send: "{label}" },
           },
         ],
@@ -177,7 +209,9 @@ export default {
             className: "five-attacks",
             name: { path: "name", bold: true, flat: true },
             // FG's hands button: a versatile weapon in one hand or two (its larger die).
-            fields: [{ path: "hands", kind: "select", number: true, label: "{name} hands", title: "One hand or two: two rolls the versatile die", options: [{ value: "1", label: "1 hand" }, { value: "2", label: "2 hands" }], when: { not: { isNull: "versatile" } } }],
+            // FG's two-weapon fighting: the off hand's attack adds no positive ability modifier to its damage (unless the
+            // Two-Weapon Fighting style).
+            fields: [{ path: "hands", kind: "select", number: true, label: "{name} hands", title: "One hand, two (a versatile weapon's larger die), or the off hand (two-weapon fighting)", options: [{ value: "1", label: "1 hand" }, { value: "2", label: "2 hands" }, { value: "3", label: "Off hand" }] }],
             rowActions: [
               { hook: "attack", label: "{bonus|signed}", title: "Attack roll", action: { ct: "attack", key: "weapon" } },
               { hook: "damage", label: ["{damage}", " ", "{dmgtype}"], title: "Damage roll", action: { ct: "damage-roll", key: "weapon" } },
@@ -220,7 +254,7 @@ export default {
           },
           // FG's attunement: the attuned items of how many slots (the house rule HRAS, the class's, misc).
           { part: "custom", component: "dnd5e.attunement" },
-          { part: "coins", path: "coins", aria: "{name}", upper: true },
+          { part: "coins", path: "coins", aria: "{name}", upper: true, add: true },
         ],
       },
       {
@@ -267,7 +301,7 @@ export default {
   // What the sheet may change (the host's whitelist, electron/dnd5e.cjs): "*" one id-n key, "#" a digit, "%" a word,
   // "(a|b)" either; remove: the lists whose rows the sheet may drop. Death saves, hit dice and concentration are the agent's.
   edit: {
-    text: ["playername", "alignment", "appearance", "notes", "senses", "speed", "background", "species", "gender", "age", "height", "weight", "concentration", "deity", "size", "specialdefenses", "personalitytraits", "ideals", "bonds", "flaws"],
+    text: ["speedspecial", "playername", "alignment", "appearance", "notes", "senses", "speed", "background", "species", "gender", "age", "height", "weight", "concentration", "deity", "size", "specialdefenses", "personalitytraits", "ideals", "bonds", "flaws"],
     number: [
       "abilities.(strength|dexterity|constitution|intelligence|wisdom|charisma).(score|saveprof)",
       "skills.%.(prof|misc)",
@@ -288,12 +322,15 @@ export default {
       "attunement.(class|misc)",
       "weapon.(critrange|critdicebonus).(melee|ranged)",
       "attacks.*.hands",
+      "speedmisc",
+      "hitdice.misc",
+      "coins.*.custom",
     ],
     // The container an item is in (FG's location), set by dragging it onto a backpack on the sheet.
-    string: ["inventorylist.*.location", "resources.*.(name|period)"],
+    string: ["inventorylist.*.location", "resources.*.(name|period)", "ac.(dexcap|stat2)", "skills.%.stat", "hitdice.(stat|stat2)", "coins.*.name"],
     // Lists of words, one a line (FG's Abilities tab lists): feats, features, traits, languages, proficiencies.
     list: ["feats", "features", "traits", "languages", "proficiencylist.(armor|weapons|tools)"],
-    remove: ["inventorylist", "resources"],
+    remove: ["inventorylist", "resources", "coins"],
   },
   wizard: "dnd5e.wizard",
   // Rolls the sheet may ask for beyond check, save and skill: initiative.

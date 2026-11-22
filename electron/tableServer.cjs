@@ -1689,6 +1689,24 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     shelfChanged();
     return shelfView();
   }
+  // A 5E character's numbers are worked out by its rules (derive) and kept; when the campaign opens they are worked
+  // out once more, so a sheet saved before the rules gained a figure (speed's total) shows it without an edit.
+  setImmediate(() => {
+    const dnd5e = require("./dnd5e.cjs");
+    const characters = records.list({ type: "character" }).filter((record) => dnd5e.is5e(record));
+    if (!characters.length) return;
+    dnd5e
+      .rules5e()
+      .then((rules) => {
+        for (const record of characters) {
+          const now = records.get(record.id);
+          if (!now) continue;
+          const fresh = rules.derive(structuredClone(now.data));
+          if (JSON.stringify(fresh) !== JSON.stringify(now.data)) records.update(record.id, { data: fresh }, GM_SEAT, { replace: true });
+        }
+      })
+      .catch(() => undefined);
+  });
   // The books already active when the campaign opens have their records too:
   // after the table is open, a book at a time, so Play never waits for them.
   const pendingBooks = [...shelf.active];

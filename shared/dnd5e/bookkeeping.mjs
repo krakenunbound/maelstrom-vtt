@@ -32,6 +32,8 @@ export default {
     speed: "speed",
     sizes: { tiny: 0.5, small: 1, medium: 1, large: 2, huge: 4, gargantuan: 8 },
     max: { stat: STR, times: 15 },
+    // Push, drag or lift (SRD 5.2.1): Strength x 30 lb., by size.
+    lift: { stat: STR, times: 30, label: "Push, drag or lift" },
     levels: [
       { id: "fine", label: "Unencumbered", upTo: { stat: STR, times: 15 } },
       { id: "over", label: "Over capacity", speed: 5, tone: "bad", text: "Carrying more than Strength x 15 lb.: Speed no more than 5 feet." },
@@ -48,7 +50,9 @@ export default {
   rest: {
     // FG's class resources: a short rest gives back those of the short rest, a long rest all of them.
     resources: { path: "resources", period: "period", used: "used" },
-    short: { hours: 1, hitDice: { die: "hitdice.die", total: "hitdice.total", used: "hitdice.used", mod: "abilities.constitution.bonus" }, reset: ["pactslots.*.used"] },
+    // A hit die's modifier: the sheet's Hit Dice details (Constitution by default); a multiclass character picks the
+    // class's die (its packages, each with its die, level and dice spent).
+    short: { hours: 1, hitDice: { die: "hitdice.die", total: "hitdice.total", used: "hitdice.used", mod: "hitdice.mod", pools: { path: "packages", die: "hitdie", used: "hdused", level: "level" } }, reset: ["pactslots.*.used"] },
     // The house rules' changes (FG 5E's): the 2024 rules give back every Hit Point Die on a long rest; fast healing
     // also a quarter on a short rest; slow healing half on a long rest and no hit points.
     byRule: [

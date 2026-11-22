@@ -138,7 +138,7 @@ export type Part = (
   | { part: "derived"; className?: string; boxes: (BoxSpec | { custom: Ref; when?: Cond })[]; hint?: Text }
   | { part: "list"; label?: string; path: Path; hook?: string /* no data-* on a row without */; count?: string; className?: string; select?: FieldSpec; check?: FieldSpec; name: { path: Path; else?: string; bold?: boolean; title?: Path[]; flat?: boolean /* the name and details straight in the row, not in a span */; after?: Text /* words right after the name (" ×3") */ }; details?: { text?: string; format?: Ref; when?: Cond }[]; sep?: string; hideEmpty?: boolean /* no details line when none */; fields?: FieldSpec[] /* typed into, after the select */; rows?: "index" /* rows keyed 0, 1, 2 (a list the rules work out), not id-n */; small?: Text[] /* the details as text nodes, in place of details */; smalls?: ListSmall[]; rowActions?: ListAction[]; remove?: { aria: Text; title?: string; action?: ActionCall }; add?: { label: string; note: string; action: ActionCall }; modifier?: Modifier; empty?: string; head?: ListHead }
   // word: a fixed word in place of the coin's name ("credits"); before: the word goes before the field ("Cr 2500").
-  | { part: "coins"; path: Path; className?: string; none?: { text: string; unless: string }; aria?: Text /* default "{name} coins" */; upper?: boolean /* the coin's name in capitals */; word?: string; before?: boolean }
+  | { part: "coins"; path: Path; className?: string; none?: { text: string; unless: string }; aria?: Text /* default "{name} coins" */; upper?: boolean /* the coin's name in capitals */; word?: string; before?: boolean; add?: boolean /* rows of one's own currencies (gems, trade bars) */ }
   | { part: "load"; mode: "slots"; hook: string; used: Path; total: number; text: string }
   // section: the fields in a panel of their own (a <section> with its classes and aria-label), in place of className's div.
   | { part: "notes"; fields: FieldSpec[]; className?: string; section?: { className: string; aria: string } }
@@ -477,7 +477,7 @@ export interface RestSpec {
   hp?: "full" | number | { perLevel: number; level: Path } | { dice: string; mod?: Path } | null;
   hitDiceBack?: "quarter"; // a short rest gives back a quarter of the Hit Point Dice (FG's fast healing)
   temp?: boolean;
-  hitDice?: { die?: Path; total?: Path; used: Path; mod?: Path; back?: "half" | "all" };
+  hitDice?: { die?: Path; total?: Path; used: Path; mod?: Path; back?: "half" | "all"; pools?: { path: Path; die: string; used: string; level: string } /* a class's die chosen: its rows, each with its die, dice spent and level */ };
   reset?: string[]; // paths zeroed (globs: "slots.*.used")
   exhaustion?: number;
   rations?: boolean;
@@ -504,6 +504,7 @@ export interface BookkeepingSpec {
         speed?: Path;
         used?: Path;
         max?: LimitSpec;
+        lift?: LimitSpec & { label?: string }; // a figure beside the load (5E's push, drag or lift)
         levelPath?: Path;
         offFlag?: boolean; // the rules' derive reads data.encumbranceoff (the GM's switch)
         sizes?: Record<string, number>;

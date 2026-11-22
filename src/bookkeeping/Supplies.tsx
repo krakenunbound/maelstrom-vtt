@@ -220,6 +220,7 @@ function LoadMeter({ load }: { load: NonNullable<ReturnType<typeof bk.encumbranc
         {!load.off && load.level?.speed !== null && load.level?.speed !== undefined && load.level.base ? ` · speed ${load.level.base} to ${load.level.speed}` : ""}
         {!load.off && load.level?.text ? ` · ${load.level.text}` : ""}
         {load.note ? ` ${load.note}` : ""}
+        {load.lift ? ` · ${load.lift.label} ${load.lift.at} ${load.unit}` : ""}
       </small>
     </div>
   );

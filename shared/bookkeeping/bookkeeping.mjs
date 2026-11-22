@@ -518,6 +518,8 @@ export function encumbranceOf(decl, data, switches = { encumbrance: true, varian
     containers,
     off,
     note: spec.note ?? "",
+    // A figure beside the load (5E's push, drag or lift).
+    ...(spec.lift ? { lift: { label: spec.lift.label ?? "Lift", at: Math.round(limitOf(spec.lift, data, size) * 100) / 100 } } : {}),
   };
 }
 

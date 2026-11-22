@@ -669,13 +669,21 @@ function createBookkeeping(table) {
   // One character's bookkeeping action (the sheet's buttons, the message, the tool).
   // FG's hit die roll from the sheet: one Hit Point Die spent apart from a rest (its die + the game's modifier,
   // at least 1), healing that much.
-  async function spendHitDie(record, seat) {
+  async function spendHitDie(record, seat, args = {}) {
     await ready;
     mine(record, seat);
     const dice = declOf(record)?.rest?.short?.hitDice;
     if (!dice) throw new Error(`${manifestOf(record).names?.[0] ?? "This game"} has no Hit Point Dice.`);
     const data = structuredClone(record.data);
-    const die = num(at(data, dice.die), 8);
+    let die = num(at(data, dice.die), 8);
+    // A die of the class chosen (FG's per class): that class's pool spends one (the game's pools, its packages).
+    if (args.die !== undefined && dice.pools) {
+      const pools = Object.entries(at(data, dice.pools.path) ?? {}).filter(([, row]) => row && typeof row === "object" && num(row[dice.pools.die], 0) > 0);
+      const pick = pools.find(([, row]) => num(row[dice.pools.die], 0) === num(args.die, 0) && num(row[dice.pools.used], 0) < Math.max(1, num(row[dice.pools.level], 1)));
+      if (!pick) throw new Error(`${record.name} has no d${num(args.die, 0)} left.`);
+      die = num(pick[1][dice.pools.die], 8);
+      pick[1][dice.pools.used] = num(pick[1][dice.pools.used], 0) + 1;
+    }
     const left = Math.max(0, num(at(data, dice.total), num(data.level, 1)) - num(at(data, dice.used), 0));
     if (!left) throw new Error(`${record.name} has no Hit Point Dice left.`);
     const mod = num(at(data, dice.mod ?? ""), 0);
@@ -691,7 +699,7 @@ function createBookkeeping(table) {
     await ready;
     switch (action) {
       case "hitdie":
-        return spendHitDie(record, seat);
+        return spendHitDie(record, seat, args);
       case "view":
         mine(record, seat);
         return view(record);

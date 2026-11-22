@@ -8,6 +8,8 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **5E sheet details:** AC's Dex by hand (as the armor says, none, all, max 2 or 3) and a second ability added; speed as base, heavy armor's -10 when Strength is under its requirement, misc and special movement; each skill's ability changeable; a weapon in the off hand (two-weapon fighting: no ability modifier to its damage, unless the Two-Weapon Fighting style); Hit Dice details (the ability added, a second, misc) and a multiclass character rolling the class's die chosen; push, drag or lift beside the load; coins of one's own (+ Coin). The agent's kraken_bookkeeping hitdie rolls one. `scripts/check-5e-sheet-details.mjs`
+
 - **Module sets:** Modules > Activation has Sets: save what is active (and which books the players may read) under a name, and apply a set in any campaign of the same game: its books made active and shared as they were, the rest made inactive; a book of the set not on this computer is named. The agent's kraken_module_set does the same. `scripts/check-module-sets.mjs`
 
 - **Holidays on calendar days:** the calendar marks holidays on their days and names them on the day's page; today's date says them ("Thursday, 25th December 2026 AD (Christmas Day), 08:00") and so does the date said in chat. The Gregorian calendar has its own (New Year's Day, Midsummer's Eve, All Hallows' Eve, Christmas Day, New Year's Eve); the GM adds their own on any day, a day or more long, kept with the campaign for that calendar. The agent's kraken_calendar holiday-add and holiday-remove do the same. `scripts/check-calendar-holidays.mjs`
