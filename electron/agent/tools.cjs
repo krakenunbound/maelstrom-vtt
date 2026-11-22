@@ -1184,7 +1184,7 @@ const TOOLS = [
     name: "kraken_token_move",
     description:
       "Move a token to a square (col/row, its top-left square), or several together (a group dragged as one, as Foundry's multi-select): ids and dcol/drow, the squares across and down each moves. asPlayer: move them the way their owner would, stopped by walls and closed doors when line of sight is on, and springing traps (a player's token stops on a trap's first square and the trap holds it until the GM lets it go: kraken_region held, apply, release) and teleports; the answer says whether a wall stopped one. undo: true takes the token's (id) last move back, as Ctrl+Z or the token menu's Undo move (the GM any token's; a player only their own last move); path: true reads its moves (this turn's path on the combat tracker: it starts again when its turn begins). While movement is locked, players' moves wait as requests (FG's TokenMoveManager, the GM's approval strip on the map): requests: true lists them; approve: a token id, or all, with accept true (move it as its player would) or false (cancel).",
-    inputSchema: object({ id: string("Token id"), col: number("Square across"), row: number("Square down"), ids: { type: "array", items: { type: "string" }, description: "Several tokens moved together" }, dcol: number("Squares across each moves (with ids)"), drow: number("Squares down each moves (with ids)"), asPlayer: { type: "boolean" }, undo: { type: "boolean", description: "Undo the token's last move" }, path: { type: "boolean", description: "Read the token's moves" }, requests: { type: "boolean", description: "List the moves waiting for the GM" }, approve: string("A token id, or all: its waiting move"), accept: { type: "boolean", description: "With approve: true moves it, false cancels" } }),
+    inputSchema: object({ id: string("Token id"), col: number("Square across"), row: number("Square down"), via: { type: "array", items: { type: "object", properties: { col: { type: "number" }, row: { type: "number" } } }, description: "Waypoints: squares (col, row) the token goes through, in turn, before its last square (each leg stopped by walls and traps)" }, ids: { type: "array", items: { type: "string" }, description: "Several tokens moved together" }, dcol: number("Squares across each moves (with ids)"), drow: number("Squares down each moves (with ids)"), asPlayer: { type: "boolean" }, undo: { type: "boolean", description: "Undo the token's last move" }, path: { type: "boolean", description: "Read the token's moves" }, requests: { type: "boolean", description: "List the moves waiting for the GM" }, approve: string("A token id, or all: its waiting move"), accept: { type: "boolean", description: "With approve: true moves it, false cancels" } }),
     run(args, ctx) {
       const { map, seat } = needTable(ctx);
       if (args.requests) return out(map.moveRequests());
@@ -1219,7 +1219,10 @@ const TOOLS = [
       if (!token) throw new Error(`No token ${args.id}.`);
       const to = map.squareCenter(args.col, args.row, token.squares);
       const token2 = map.tokens().find((item) => item.id === args.id);
-      const moved = map.move(args.id, to, args.asPlayer && token2?.owner ? { role: "player", name: token2.owner } : seat, { collide: args.asPlayer ? map.sightOn() : false });
+      const mover = args.asPlayer && token2?.owner ? { role: "player", name: token2.owner } : seat;
+      // Waypoints (a drag's, Space): through each square in turn, leg by leg.
+      const via = Array.isArray(args.via) ? args.via.slice(0, 30).map((square) => map.squareCenter(Number(square?.col), Number(square?.row), token.squares)) : [];
+      const moved = via.length ? map.moveVia(args.id, [...via, to], mover, { collide: args.asPlayer ? map.sightOn() : false }) : map.move(args.id, to, mover, { collide: args.asPlayer ? map.sightOn() : false });
       return out({ id: moved.token.id, ...map.squareOf(moved.token), blocked: moved.blocked, ...(moved.requested ? { requested: true } : {}), ...(moved.sprang ? { sprang: moved.sprang.name } : {}) });
     },
   },
@@ -2007,6 +2010,7 @@ const TOOLS = [
       points: { type: "array", items: { type: "number" } },
       rect: { type: "object", properties: { x: { type: "number" }, y: { type: "number" }, width: { type: "number" }, height: { type: "number" } } },
       cells: { type: "array", items: { type: "array", items: { type: "number" } } },
+      width: number("A brush stroke's width in scene pixels: points are then the stroke's line (FG's freehand mask)"),
       id: string("A shape's id (remove)"),
     }, ["action"]),
     run(args, ctx) {
@@ -2025,7 +2029,7 @@ const TOOLS = [
       }
       if ((args.action === "reveal" || args.action === "hide") && shapes.length === 0) throw new Error("Give points, rect or cells.");
       let mask = null;
-      if (shapes.length) for (const points of shapes) mask = map.setMask({ action: args.action, points }, seat);
+      if (shapes.length) for (const [index, points] of shapes.entries()) mask = map.setMask({ action: args.action, points, ...(index === 0 && args.points && args.width ? { width: args.width } : {}) }, seat);
       else mask = map.setMask({ action: args.action, id: args.id }, seat);
       return out({ on: mask.on, shapes: mask.shapes.length });
     },

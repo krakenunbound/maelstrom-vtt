@@ -244,12 +244,12 @@ token lock, drawing, preview: `check-fg-classic-maps`).
 | Shortcut view (map pins), clear death markers | Pins, Clear death markers | Same |
 | Target mode, target friends / enemies, clear targets, selection mode | The same, box targeting | Same |
 | Drawing and eraser (players when unlocked) | Draw (shapes, colours), Erase, players' drawing switch | Better |
-| Mask mode (fog painting) | Mask: rectangle, polygon, square; reveal or hide | Partly (no freehand brush) |
+| Mask mode (fog painting) | Mask: rectangle, polygon, square, a freehand brush (its width set); reveal or hide | Yes |
 | Ping | Ping, pull the players' view | Better |
 | Token view (first person), 3D camera | Not found | n/a (FG's 3D engine) |
 | Right-drag pointers: arrow, circle, square, cone, line, seen by all | Draw's pointer switch: an arrow, line, square, circle or cone everyone sees, gone after 6 s; right-drag stays the ruler | Done |
 | Distance readout, diagonal rule | Ruler, per-scene rule, height, difficult terrain | Better |
-| Drag a token, snap; waypoints while dragging | Drag, snap (Alt: no snap), walk / dash colouring, group moves, keys | Partly (no waypoints in a drag) |
+| Drag a token, snap; waypoints while dragging | Drag, snap (Alt: no snap), walk / dash colouring, group moves, keys; Space while dragging drops a waypoint (Backspace takes it off), the token goes through each, each leg stopped by walls | Yes |
 | Ctrl+click target, targeting arrows | The same, with range colouring | Better |
 | Double-click a token: its sheet | A character's sheet (the GM's and its player's), an NPC's record (the GM's) | Done |
 | Alt+wheel height, Ctrl+wheel scale, facing | The same; Shift+wheel facing | Same |
@@ -259,7 +259,7 @@ token lock, drawing, preview: `check-fg-classic-maps`).
 | Tracker faction chip dropped on the map: the faction in formation | Friends, Neutral, Foes chips on the tracker: the side placed three across, each tied to its row | Done |
 | Record or tracker token dropped on the map | Token tray, tracker rows, records | Same |
 | Quick Map from an encounter | Map Studio's generator | Better |
-| Token right-click (engine): delete, visibility, facing, lock, scale | Token menu: name, light, vision, players' name, senses, sight, undo, elevation, combat, target, effects, hide, size 1 to 4, faction, remove | Partly (sizes past 4 by the wheel only) |
+| Token right-click (engine): delete, visibility, facing, lock, scale | Token menu: name, light, vision, players' name, senses, sight, undo, elevation, combat, target, effects, hide, size 1 to 4 or any (0.25 to 50 squares), faction, remove | Yes |
 | Fog of war by PC tokens; party vision; vision and light from effects | Explored fog, party vision, senses and lights | Same |
 
 ## 5. Library and books

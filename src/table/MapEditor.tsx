@@ -75,6 +75,8 @@ type Props = {
   selectedLabel: string | null;
   maskMode: "reveal" | "hide";
   setMaskMode: (mode: "reveal" | "hide") => void;
+  maskBrush: number;
+  setMaskBrush: (width: number) => void;
   selectedTile: string | null;
   setSelectedTile: (id: string | null) => void;
   viewCenter: () => { x: number; y: number } | null;
@@ -335,6 +337,7 @@ export function MapEditor(props: Props) {
             {toolButton("rect", "▭", "Mask a rectangle: click two corners")}
             {toolButton("poly", "⬠", "Mask a shape: click its corners, double-click to close")}
             {toolButton("cell", "▦", "Mask whole squares: click a square")}
+            {toolButton("free", "✎", "Mask with a brush: drag to paint")}
             <span className="me-spacer" />
             <button type="button" className="me-tool" title="Undo" aria-label="Undo" onClick={actions.mapUndo}>
               ↶
@@ -349,6 +352,11 @@ export function MapEditor(props: Props) {
                 <input type="radio" checked={props.maskMode === "hide"} onChange={() => props.setMaskMode("hide")} data-mask-mode="hide" /> Hide again
               </label>
             </div>
+            <label className="me-slider">
+              Brush
+              <input type="range" min={10} max={600} step={10} value={props.maskBrush} onChange={(event) => props.setMaskBrush(Number(event.target.value))} aria-label="Mask brush width" />
+              <span>{props.maskBrush}px</span>
+            </label>
             <p className="me-caption">With the global mask on, players see black but where you reveal; what lies under the mask (tokens, doors) is not sent to them. Later shapes win over earlier ones.</p>
             <div className="me-row">
               <button type="button" data-action="mask-on" onClick={() => actions.mask("on")} disabled={Boolean(map.mask?.on)}>

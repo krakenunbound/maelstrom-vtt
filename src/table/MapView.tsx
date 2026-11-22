@@ -138,7 +138,7 @@ export type MapActions = {
   placeToken: (recordId: string | null, x?: number, y?: number, name?: string) => void;
   // The combat tracker's entries (a damage roll dropped on a token finds its creature).
   combat?: { entries: { id: string; tokenId?: string | null; recordId?: string | null }[] };
-  moveToken: (id: string, x: number, y: number, snap?: boolean) => void;
+  moveToken: (id: string, x: number, y: number, snap?: boolean, via?: Point[]) => void;
   moveTokens?: (moves: { id: string; x: number; y: number }[], snap?: boolean) => void;
   removeToken: (id: string) => void;
   setDoor: (id: string, state?: number) => void;
@@ -256,7 +256,8 @@ const DRAW_COLORS = ["#ffcc33", "#ff5a5a", "#5ad1ff", "#7dff7a", "#d38cff", "#ff
 // group: the other picked tokens dragged with it (their places when the drag began).
 // start: the token's centre; grab: where the pointer pressed; at: the pointer now.
 // The token goes where its centre would be moved by the pointer's own travel.
-type Drag = { pointerId: number; id: string; start: Point; grab: Point; at: Point; moved: boolean; snap: boolean; squares: number; group?: { id: string; x: number; y: number; squares: number }[] };
+// waypoints: where the token goes through on its way (Space while dragging; Backspace takes the last off).
+type Drag = { pointerId: number; id: string; start: Point; grab: Point; at: Point; moved: boolean; snap: boolean; squares: number; group?: { id: string; x: number; y: number; squares: number }[]; waypoints?: Point[] };
 // A ruler: where it starts, its waypoints (a left click or Space while measuring), the pointer.
 type Measure = { pointerId: number; start: Point; at: Point; waypoints: Point[]; left?: boolean };
 type Menu = { id: string; left: number; top: number };
@@ -475,6 +476,8 @@ function MapViewInner({
   const [lightPreset, setLightPreset] = useState("torch");
   const [pending, setPending] = useState<number[]>([]);
   const [maskMode, setMaskMode] = useState<"reveal" | "hide">("reveal");
+  // The mask's brush (FG's freehand mask): its width in map pixels.
+  const [maskBrush, setMaskBrush] = useState(100);
   const [labelStyle, setLabelStyle] = useState<LabelStyle>({ text: "", font: "Bebas Neue", size: 1, color: "#ffffff", outline: { width: 2, color: "#000000" }, shadow: { offset: 0, blur: 0, color: "#000000" }, group: "", icon: "" });
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
   // A pin or label the GM is dragging (FG): where it is now, until let go.
@@ -488,7 +491,7 @@ function MapViewInner({
   const [selectedTile, setSelectedTile] = useState<string | null>(null);
   const tileDrag = useRef<{ pointerId: number; id: string; mode: "move" | "resize"; start: Point; tile: MapTile } | null>(null);
   const [tileDraft, setTileDraft] = useState<MapTile | null>(null);
-  const paintStroke = useRef<{ pointerId: number; points: number[]; fx?: string } | null>(null);
+  const paintStroke = useRef<{ pointerId: number; points: number[]; fx?: string; mask?: boolean } | null>(null);
   const [hover, setHover] = useState<{ x: number; y: number } | null>(null);
   const [drawColor, setDrawColor] = useState<string | null>(null);
   const [stroke, setStroke] = useState<{ pointerId: number; points: number[]; shape?: DrawShape } | null>(null);
@@ -1424,6 +1427,24 @@ function MapViewInner({
     return entries.find((item) => item.tokenId === hit.id) ?? (hit.recordId ? entries.find((item) => item.recordId === hit.recordId) : undefined) ?? null;
   };
   const ghost = drag && dragTo && drag.moved ? (drag.snap ? snapCenter(scene, dragTo.x, dragTo.y, drag.squares) : dragTo) : null;
+  // A token's drag: Space drops a waypoint where the token would land, Backspace takes the last one off.
+  useRulerKeys(
+    viewport,
+    drag?.moved && !drag.group?.length
+      ? {
+          add: () =>
+            setDrag((current) => {
+              if (!current) return current;
+              const to = { x: current.start.x + current.at.x - current.grab.x, y: current.start.y + current.at.y - current.grab.y };
+              const point = current.snap ? snapCenter(scene, to.x, to.y, current.squares) : to;
+              return { ...current, waypoints: [...(current.waypoints ?? []), point].slice(0, 30) };
+            }),
+          undo: () => setDrag((current) => (current ? { ...current, waypoints: (current.waypoints ?? []).slice(0, -1) } : current)),
+        }
+      : null,
+  );
+  // The dragged token's path: where it starts, its waypoints, where it lands.
+  const dragPath = drag && ghost ? [drag.start, ...(drag.waypoints ?? []), ghost].flatMap((point) => [point.x, point.y]) : [];
   // Who targets with the toolbar (FG's selection): the selected token's creature, when
   // this seat may act for it (the GM: any; a player: their own); else the host picks
   // (a player's own creature, the GM's whose turn it is).
@@ -1666,6 +1687,13 @@ function MapViewInner({
           const raw = worldAt(cssX(event.clientX), cssY(event.clientY));
           if (!raw) return;
           const point = snapPoint(raw, !event.shiftKey);
+          if (editTool === "free") {
+            // The brush: drag to reveal (or hide) along the stroke.
+            capture(event.currentTarget, event.pointerId);
+            paintStroke.current = { pointerId: event.pointerId, points: [Math.round(raw.x), Math.round(raw.y)], mask: true };
+            setStroke({ pointerId: -1, points: [Math.round(raw.x), Math.round(raw.y)] });
+            return;
+          }
           if (editTool === "cell") {
             const corner = gridOrigin(scene);
             const col = Math.floor((raw.x - corner.x) / size);
@@ -1932,6 +1960,12 @@ function MapViewInner({
           setTileDraft(null);
           return;
         }
+        if (paintStroke.current && paintStroke.current.pointerId === event.pointerId && paintStroke.current.mask) {
+          actions.mask?.(maskMode, { points: paintStroke.current.points, width: maskBrush });
+          paintStroke.current = null;
+          setStroke(null);
+          return;
+        }
         if (paintStroke.current && paintStroke.current.pointerId === event.pointerId && paintStroke.current.fx) {
           paintFxArea({ stroke: { width: fxBrush, points: paintStroke.current.points } });
           paintStroke.current = null;
@@ -1959,7 +1993,7 @@ function MapViewInner({
             const dx = lead.x - drag.start.x;
             const dy = lead.y - drag.start.y;
             actions.moveTokens([{ id: drag.id, x: target.x, y: target.y }, ...drag.group.map((item) => ({ id: item.id, x: item.x + dx, y: item.y + dy }))], !event.altKey);
-          } else if (drag.moved && dragTo) actions.moveToken(drag.id, dragTo.x, dragTo.y, !event.altKey);
+          } else if (drag.moved && dragTo) actions.moveToken(drag.id, dragTo.x, dragTo.y, !event.altKey, drag.waypoints);
           setDrag(null);
           return;
         }
@@ -2240,9 +2274,13 @@ function MapViewInner({
             <defs>
               <mask id="kraken-map-mask">
                 <rect x={0} y={0} width={frame.worldWidth} height={frame.worldHeight} fill="white" />
-                {map.mask.shapes.map((shape) => (
-                  <polygon key={shape.id} points={shape.points.join(" ")} fill={shape.mode === "reveal" ? "black" : "white"} />
-                ))}
+                {map.mask.shapes.map((shape) =>
+                  shape.width ? (
+                    <polyline key={shape.id} points={(shape.points.length === 2 ? [...shape.points, ...shape.points] : shape.points).join(" ")} fill="none" stroke={shape.mode === "reveal" ? "black" : "white"} strokeWidth={shape.width} strokeLinecap="round" strokeLinejoin="round" />
+                  ) : (
+                    <polygon key={shape.id} points={shape.points.join(" ")} fill={shape.mode === "reveal" ? "black" : "white"} />
+                  ),
+                )}
               </mask>
             </defs>
             <rect x={0} y={0} width={frame.worldWidth} height={frame.worldHeight} fill={gm ? "rgba(120, 20, 160, 0.35)" : "#000"} mask="url(#kraken-map-mask)" />
@@ -2262,6 +2300,7 @@ function MapViewInner({
                 {wall.hidden ? <line x1={wall.x1} y1={wall.y1} x2={wall.x2} y2={wall.y2} stroke="#ff4444" strokeWidth={2 / camera.scale} strokeDasharray={`${4 / camera.scale} ${4 / camera.scale}`} /> : null}
               </g>
             ))}
+            {editTab === "mask" && stroke ? <polyline points={(stroke.points.length === 2 ? [...stroke.points, ...stroke.points] : stroke.points).join(" ")} fill="none" stroke={maskMode === "reveal" ? "rgba(255, 255, 255, 0.35)" : "rgba(120, 20, 160, 0.45)"} strokeWidth={maskBrush} strokeLinecap="round" strokeLinejoin="round" data-mask-brush /> : null}
             {editTab === "fx"
               ? (() => {
                   // The chosen effect's painted areas, outlined while the FX tab is open; the brush as it paints.
@@ -2560,10 +2599,13 @@ function MapViewInner({
               style={{ left: ghost.x - (drag.squares * tokenUnit) / 2, top: ghost.y - (drag.squares * tokenUnit) / 2, width: drag.squares * tokenUnit, height: drag.squares * tokenUnit }}
             />
             <svg className="overlay measure" width={frame.worldWidth} height={frame.worldHeight} viewBox={`0 0 ${frame.worldWidth} ${frame.worldHeight}`}>
-              <line x1={drag.start.x} y1={drag.start.y} x2={ghost.x} y2={ghost.y} stroke="#ffd36b" strokeWidth={Math.max(3 / camera.scale, size * 0.05)} strokeLinecap="round" />
+              <polyline points={dragPath.join(" ")} fill="none" stroke="#ffd36b" strokeWidth={Math.max(3 / camera.scale, size * 0.05)} strokeLinecap="round" strokeLinejoin="round" />
+              {(drag.waypoints ?? []).map((point, index) => (
+                <circle key={index} cx={point.x} cy={point.y} r={Math.max(4 / camera.scale, size * 0.08)} fill="#ffd36b" data-drag-waypoint={index} />
+              ))}
             </svg>
-            <span className="measure-label" data-speed={speedBand(pathDistance(scene, [drag.start.x, drag.start.y, ghost.x, ghost.y], diagonalRule(diagonal), terrainCostAt(map.terrain)).total, (records.find((record) => record.id === dragging.recordId)?.data as { speed?: unknown } | undefined)?.speed)} style={{ left: ghost.x, top: ghost.y - (drag.squares * tokenUnit) / 2, fontSize: 15 / camera.scale }}>
-              {pathDistance(scene, [drag.start.x, drag.start.y, ghost.x, ghost.y], diagonalRule(diagonal), terrainCostAt(map.terrain)).total} {units}
+            <span className="measure-label" data-speed={speedBand(pathDistance(scene, dragPath, diagonalRule(diagonal), terrainCostAt(map.terrain)).total, (records.find((record) => record.id === dragging.recordId)?.data as { speed?: unknown } | undefined)?.speed)} style={{ left: ghost.x, top: ghost.y - (drag.squares * tokenUnit) / 2, fontSize: 15 / camera.scale }}>
+              {pathDistance(scene, dragPath, diagonalRule(diagonal), terrainCostAt(map.terrain)).total} {units}
             </span>
           </>
         ) : null}
@@ -2784,6 +2826,25 @@ function MapViewInner({
                         {squares}
                       </button>
                     ))}
+                    {/* Any size in squares (a tiny creature's half, a gargantuan's 6 or more). */}
+                    <input
+                      key={`size-${token.id}-${token.squares}`}
+                      type="number"
+                      min={0.25}
+                      max={50}
+                      step={0.25}
+                      defaultValue={token.squares}
+                      aria-label="Size in squares"
+                      title="Any size in squares (0.25 to 50)"
+                      data-token-size
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" && !event.nativeEvent.isComposing) event.currentTarget.blur();
+                      }}
+                      onBlur={(event) => {
+                        const squares = Number(event.currentTarget.value);
+                        if (Number.isFinite(squares) && squares >= 0.25 && squares <= 50 && squares !== token.squares) actions.updateToken(token.id, { squares });
+                      }}
+                    />
                   </div>
                 ) : null}
                 {gm ? (
@@ -3186,6 +3247,8 @@ function MapViewInner({
           gridScene={scene.baseGrid ?? sceneIn.grid}
           maskMode={maskMode}
           setMaskMode={setMaskMode}
+          maskBrush={maskBrush}
+          setMaskBrush={setMaskBrush}
           labelStyle={labelStyle}
           setLabelStyle={setLabelStyle}
           paintStyle={paintStyle}
@@ -3223,7 +3286,7 @@ function MapViewInner({
           </button>
         </p>
       ) : null}
-      <p className="map-hint">Drag to pan · wheel to zoom · right-drag to measure (left click or Space: a waypoint) · double-click (or the ping tool) to ping · Ctrl+click a token to target it{gm || mine.length > 0 ? " · arrows move the selected token" : ""}</p>
+      <p className="map-hint">Drag to pan · wheel to zoom · right-drag to measure (left click or Space: a waypoint) · double-click (or the ping tool) to ping · Ctrl+click a token to target it{gm || mine.length > 0 ? " · arrows move the selected token · Space while dragging a token: a waypoint" : ""}</p>
       {imageFailed || !scene.imageUrl ? <p className="map-note">This scene has no background image.</p> : null}
     </div>
   );

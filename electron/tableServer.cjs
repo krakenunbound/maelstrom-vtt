@@ -3734,7 +3734,10 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
           } else if (msg.type === "token-move") {
             const to = { x: num(msg.x, NaN), y: num(msg.y, NaN) };
             if (!Number.isFinite(to.x) || !Number.isFinite(to.y) || Math.abs(to.x) > 1e7 || Math.abs(to.y) > 1e7) throw new Error("Where to?");
-            const { blocked, requested } = working.move(String(msg.id ?? ""), to, testToken(String(msg.id ?? "")) ? TEST_SEAT : seat, { snap: msg.snap !== false });
+            // Waypoints set while dragging (Space): the token goes through each in turn.
+            const via = Array.isArray(msg.via) ? msg.via.slice(0, 30) : [];
+            const mover = testToken(String(msg.id ?? "")) ? TEST_SEAT : seat;
+            const { blocked, requested } = via.length ? working.moveVia(String(msg.id ?? ""), [...via, to], mover, { snap: msg.snap !== false }) : working.move(String(msg.id ?? ""), to, mover, { snap: msg.snap !== false });
             // Locked: FG's TokenMoveManager, the move waits for the GM's yes.
             if (requested) send(ws, { type: "notice", text: "The GM has locked token movement: your move waits for the GM." });
             else if (blocked) send(ws, { type: "notice", text: "A wall is in the way." });
@@ -3823,7 +3826,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
             if (msg.action === "remove") working.removeGroup(String(msg.name ?? ""), seat);
             else working.updateGroup(String(msg.name ?? ""), msg.patch ?? {}, seat);
           } else if (msg.type === "mask") {
-            working.setMask({ action: String(msg.action ?? ""), points: msg.points, id: msg.id }, seat);
+            working.setMask({ action: String(msg.action ?? ""), points: msg.points, id: msg.id, width: msg.width }, seat);
           } else if (msg.type === "lock") {
             if (client.role !== "dm") throw new Error("Only the GM can lock token movement.");
             working.setLocked(Boolean(msg.on));

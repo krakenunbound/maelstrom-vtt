@@ -265,6 +265,18 @@ function cleanGroup(raw) {
   return { name, shown: raw.shown !== false, players: raw.players !== false, locked: Boolean(raw.locked), nextNumber: Math.max(1, Math.round(num(raw.nextNumber, 1))), prefix: text(raw.prefix, "").slice(0, 6) };
 }
 
+// A point within half a brush's width of its stroke (a line through points).
+function nearStroke(x, y, points, half) {
+  if (points.length === 2) return Math.hypot(x - points[0], y - points[1]) <= half;
+  for (let index = 0; index + 3 < points.length; index += 2) {
+    const [ax, ay, bx, by] = points.slice(index, index + 4);
+    const length = (bx - ax) ** 2 + (by - ay) ** 2;
+    const t = length ? Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / length)) : 0;
+    if (Math.hypot(x - (ax + t * (bx - ax)), y - (ay + t * (by - ay))) <= half) return true;
+  }
+  return false;
+}
+
 // FG's mask: a global mask over the picture and shapes, in order, that
 // reveal it or hide it again. Points are scene pixels.
 function cleanMask(raw) {
@@ -273,8 +285,10 @@ function cleanMask(raw) {
     .map((shape) => {
       if (!shape || !Array.isArray(shape.points)) return null;
       const points = shape.points.slice(0, 2000).map(Number);
-      if (points.length < 6 || points.length % 2 || !points.every((n) => Number.isFinite(n) && Math.abs(n) < 1e7)) return null;
-      return { id: text(shape.id, "").slice(0, 40) || crypto.randomBytes(5).toString("hex"), mode: shape.mode === "hide" ? "hide" : "reveal", points: points.map((n) => Math.round(n * 10) / 10) };
+      // FG's freehand mask: a brush stroke (its line and width in pixels), else a shape (its corners).
+      const width = Math.round(Math.min(2000, Math.max(0, num(shape.width, 0))));
+      if (points.length < (width ? 2 : 6) || points.length % 2 || !points.every((n) => Number.isFinite(n) && Math.abs(n) < 1e7)) return null;
+      return { id: text(shape.id, "").slice(0, 40) || crypto.randomBytes(5).toString("hex"), mode: shape.mode === "hide" ? "hide" : "reveal", points: points.map((n) => Math.round(n * 10) / 10), ...(width ? { width } : {}) };
     })
     .filter(Boolean)
     .slice(-1000);
@@ -735,7 +749,7 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
     const mask = maskHere();
     if (!mask.on) return false;
     let hidden = true;
-    for (const shape of mask.shapes) if (geometry.pointInPolygon(x, y, shape.points)) hidden = shape.mode === "hide";
+    for (const shape of mask.shapes) if (shape.width ? nearStroke(x, y, shape.points, shape.width / 2) : geometry.pointInPolygon(x, y, shape.points)) hidden = shape.mode === "hide";
     return hidden;
   }
   // Every undoable edit snapshots the same things (walls with their door
@@ -1646,6 +1660,19 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       changed({ keepVision: true });
       return { token, ...result };
     },
+    // FG's waypoints: a drag through points in order, leg by leg, each leg stopped by walls, a trap, a teleport; the
+    // move ends where a leg stops. Locked for a player: one request, to where it ends.
+    moveVia(id, points, seat, options = {}) {
+      const legs = (Array.isArray(points) ? points : []).slice(0, 31).map((point) => ({ x: num(point?.x, NaN), y: num(point?.y, NaN) }));
+      if (!legs.length || legs.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y))) throw new Error("Where to?");
+      if (seat.role !== "dm" && scene && state.locked[scene.id] && !String(seat.name ?? "").startsWith("@")) return this.move(id, legs.at(-1), seat, options);
+      let done = null;
+      for (const to of legs) {
+        done = this.move(id, to, seat, options);
+        if (done.requested || done.blocked || done.sprang || done.gone) break;
+      }
+      return done;
+    },
     // Several tokens at once (a group dragged together, a marching order):
     // every one must be the seat's to move; each is stopped by walls on its own.
     moveMany(moves, seat, { snap = true, collide } = {}) {
@@ -2520,8 +2547,8 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       else if (input.action === "clear") mask.shapes = [];
       else if (input.action === "remove") mask.shapes = mask.shapes.filter((shape) => shape.id !== input.id);
       else if (input.action === "reveal" || input.action === "hide") {
-        const shape = cleanMask({ shapes: [{ mode: input.action, points: input.points }] }).shapes[0];
-        if (!shape) throw new Error("A mask shape needs three points or more.");
+        const shape = cleanMask({ shapes: [{ mode: input.action, points: input.points, width: input.width }] }).shapes[0];
+        if (!shape) throw new Error(input.width ? "A brush stroke needs a point or more." : "A mask shape needs three points or more.");
         mask.shapes.push(shape);
         if (mask.shapes.length > 1000) mask.shapes.shift();
         mask.on = true;

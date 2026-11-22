@@ -159,7 +159,7 @@ export type MapTile = { id: string; name: string; src: string; url: string; x: n
 export type MapLabel = { id: string; x: number; y: number; text: string; font: string; size: number; color: string; rotation: number; anchor: string; outline: { width: number; color: string }; shadow: { offset: number; blur: number; color: string }; hidden: boolean; group: string; number: number | null; icon: string; link: { kind: string; id: string } | null; lit?: boolean };
 export type MapGroup = { name: string; shown?: boolean; players?: boolean; locked?: boolean; nextNumber?: number; prefix?: string };
 export type LibraryItem = { path: string; name: string; category: string; npcs?: string; random?: boolean; summary?: string; html?: string; file?: string; map?: boolean; prev?: { path: string; name: string } | null; next?: { path: string; name: string } | null };
-export type MapMask = { on: boolean; shapes: { id: string; mode: "reveal" | "hide"; points: number[] }[] };
+export type MapMask = { on: boolean; shapes: { id: string; mode: "reveal" | "hide"; points: number[]; width?: number }[] };
 export type Ping = { id: number; x: number; y: number; from: string; color: string };
 // Damage (negative) or healing floating off a token for a moment (the host's scrolling combat text).
 export type Float = { id: number; tokenId: string; amount: number };
@@ -1473,10 +1473,10 @@ export function useSession() {
   const placeToken = useCallback((recordId: string | null, x?: number, y?: number, name?: string) => {
     send({ type: "token-place", recordId, x, y, name });
   }, [send]);
-  const moveToken = useCallback((id: string, x: number, y: number, snap = true) => {
+  const moveToken = useCallback((id: string, x: number, y: number, snap = true, via?: { x: number; y: number }[]) => {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
     setMap((current) => ({ ...current, tokens: current.tokens.map((token) => (token.id === id ? { ...token, x, y } : token)) }));
-    send({ type: "token-move", id, x, y, snap });
+    send({ type: "token-move", id, x, y, snap, ...(via?.length ? { via } : {}) });
   }, [send]);
   // A group dragged together: each token to its own place, in one message.
   const moveTokens = useCallback((moves: { id: string; x: number; y: number }[], snap = true) => {

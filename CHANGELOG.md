@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **The map beside FG's:** the mask's freehand brush (Mask tab: drag to reveal or hide along a stroke, its width set; kraken_mask width); waypoints while dragging a token (Space drops one, Backspace takes it off; the token goes through each, each leg stopped by walls; kraken_token_move via); a token's size past 4 from its menu (0.25 to 50 squares). check-map-fg-extras
 - **Dice and chat beside FG's:** manual dice for the sheet's and the tracker's rolls too (checks, saves, initiative, attacks, death saves; the ruleset's own die, two with advantage; marked [MANUAL]); dice by type (Settings: damage dice in their damage type's colours, a creature's in its type's); speech bubble time (as long as it takes to read, or 3 to 20 seconds); a player's text dropped on the dice tower whispers the GM; the GM double-clicks a member's ability on the party sheet for their check (Shift: save); a picture link in chat shows the picture. check-dice-chat-fg
 - **Effects, the rest of FG's:** an effect lasts rounds, minutes, hours or days (counted in rounds, a minute 10); Apply makes it go after the one roll it counts on, the action (an attack and its damage), or a single use (the chat says it was used); on the tracker each effect is active, inactive (kept, counting for nothing) or skipped once (counting from the next turn), switched by its dot. The Effects window's own effects keep their units and Apply. `scripts/check-effects-fg.mjs`
 
