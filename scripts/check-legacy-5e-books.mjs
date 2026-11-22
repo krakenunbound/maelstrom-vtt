@@ -129,7 +129,9 @@ assert(hero.hp.total === 8 + 3 + 1, `Hill Dwarf cleric's hit points (8 + Con 3 +
 assert(hero.hpperlevel === 1 && hero.deity === "A god of the forge" && hero.ideals === "Tradition.", "a hit point a level kept; the wizard's details on the sheet");
 assert(hero.speed === "25 ft." && hero.senses === "Darkvision 60 ft", `a 2014 Dwarf's speed and darkvision from its traits: ${hero.speed}, ${hero.senses}`);
 assert(/heavy armor/.test(hero.proficiencylist.armor), "heavy armor on the sheet");
-done.push("a Hill Dwarf cleric built: its toughness, speed 25, darkvision 60, heavy armor and details");
+const caster = buildFromSpec({ name: "Prayers", species: "Dwarf", ancestry: "Hill Dwarf", class: "Cleric", subclass: "Life Domain", level: 1, scores: { wisdom: 15 }, spells: ["Guidance", "Bless", "Healing Word"] }, lib).data;
+assert(JSON.stringify(caster.prepared) === JSON.stringify({ bless: 1, "healing-word": 1 }), `the spells chosen in the wizard start prepared (not the cantrip): ${JSON.stringify(caster.prepared)}`);
+done.push("a Hill Dwarf cleric built: its toughness, speed 25, darkvision 60, heavy armor and details; its chosen spells prepared");
 // The builder holds a spec to the class's own skill list as the wizard reads it ("Choose four from Acrobatics, ..."):
 // the first skill named counts, and so does a count in words.
 {

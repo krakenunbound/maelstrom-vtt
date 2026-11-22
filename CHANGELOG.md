@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **A new spellcaster starts with the spells chosen in the wizard prepared:** a Wizard's or Cleric's sheet said "Prepared 0" after the wizard; the spells of a level picked there (the class's prepared count) are ticked. check-legacy-5e-books
 - **A changed pack reaches the campaigns that already use it:** a book's records were read into a campaign once (again only for a newer reader), so a pack updated since (a creature given real token art in place of its letter) kept showing the old copy; now a pack changed on disk is read again when the campaign opens. check-legacy-5e-books
 - **A character just made opens in its own sheet window:** the wizard's window gave way to the sheet only in name, so after a reload (Reopen my windows) the new character's window came back as an empty Character Wizard; now the sheet opens, as from Character Selection.
 - **Windows keep the place you gave them when the app window is resized:** opened while the app was still small (before it was maximized), the map squeezed to the left edge over the tracker and stayed there; now a smaller screen only squeezes them for the moment, and they go back to their place when there is room.

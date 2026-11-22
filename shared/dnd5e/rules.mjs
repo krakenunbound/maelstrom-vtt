@@ -739,6 +739,8 @@ export function buildFromSpec(spec, lib, rulesetId = RULESET) {
     inventorylist,
     coins,
     spells: (spec.spells ?? []).map((name) => find(lib.spells, name)?.name ?? (problems.push(`No spell ${name}.`), null)).filter(Boolean),
+    // The spells of a level chosen in the wizard are the ones it prepares (its "Prepared Spells" count): ticked.
+    prepared: spec.prepared ?? Object.fromEntries((spec.spells ?? []).map((name) => find(lib.spells, name)).filter((spell) => spell && num(spell.data?.level, 0) > 0).map((spell) => [spellSlug(spell.name), 1])),
     exp: profile.xp[level - 1] ?? 0,
   });
   return { name: String(spec.name ?? "").trim() || "Adventurer", data, problems };

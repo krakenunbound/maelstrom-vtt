@@ -77,10 +77,10 @@ try {
 
   // Primes: strength from the class, constitution from the dwarf's extra prime.
   await page.click('[data-wizard-tab="primes"]');
-  await page.getByLabel("constitution prime").check();
+  await page.locator(".ccw").last().getByLabel("constitution prime").check();
   // A third prime is refused with a message, as FG's wizard does.
-  await page.getByLabel("wisdom prime").click();
-  assert(!(await page.getByLabel("wisdom prime").isChecked()), "no third prime");
+  await page.locator(".ccw").last().getByLabel("wisdom prime").click();
+  assert(!(await page.locator(".ccw").last().getByLabel("wisdom prime").isChecked()), "no third prime");
   await page.waitForSelector(".ccw-note:has-text('2 primes in total')");
 
   // Hit points: d10 fixed 8, + Constitution 16 (+2) = 10.
@@ -96,20 +96,20 @@ try {
   await page.waitForFunction(() => Number(document.querySelector("[data-coin-left]")?.getAttribute("data-coin-left")) > 0);
   const purse = Number(await page.locator("[data-coin-left]").getAttribute("data-coin-left"));
   for (const item of ["Sword, Long", "Scale Mail", "Shield, Medium Steel", "Backpack", "Torch", "Torch"]) {
-    await page.getByLabel("Shop search").fill(item);
+    await page.locator(".ccw").last().getByLabel("Shop search").fill(item);
     await page.getByRole("button", { name: `Buy ${item}`, exact: true }).click();
   }
-  await page.getByLabel("Shop search").fill("");
+  await page.locator(".ccw").last().getByLabel("Shop search").fill("");
   assert((await page.locator('[data-wizard-tab="spells"]').count()) === 0, "no Spells page for a fighter");
 
   // Finish.
   await page.click('[data-wizard-tab="finish"]');
-  await page.getByLabel("Character name").fill("Borin Stonefist");
-  await page.getByLabel("alignment").selectOption("Lawful Neutral");
-  await page.getByLabel("deity").fill("Moradin");
+  await page.locator(".ccw").last().getByLabel("Character name").fill("Borin Stonefist");
+  await page.locator(".ccw").last().getByLabel("alignment").selectOption("Lawful Neutral");
+  await page.locator(".ccw").last().getByLabel("deity").fill("Moradin");
   assert((await page.locator(".ccw-warning").count()) === 0, "nothing left to choose");
   await page.click('[data-action="create-character"]');
-  await page.waitForFunction(() => document.querySelector('[data-character] .cc-name')?.value === "Borin Stonefist", null, { timeout: 30000 });
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-character] .cc-name')].some((field) => field.value === "Borin Stonefist"), null, { timeout: 30000 });
 
   const listed = await tool("kraken_records_list", { type: "character" });
   assert(listed.total === 1, `characters ${listed.total}`);
@@ -172,10 +172,10 @@ try {
   await page.waitForSelector('[data-action="change-race"]');
   await page.click('[data-wizard-tab="class"]');
   await page.click('[data-class="Wizard"]');
-  for (let i = 0; i < 2; i++) await page.getByLabel("Higher starting level").click();
+  for (let i = 0; i < 2; i++) await page.locator(".ccw").last().getByLabel("Higher starting level").click();
   assert((await page.locator("[data-start-level]").textContent()) === "3", "starting level 3");
   await page.click('[data-wizard-tab="primes"]');
-  await page.getByLabel("dexterity prime").check();
+  await page.locator(".ccw").last().getByLabel("dexterity prime").check();
   await page.click('[data-wizard-tab="hp"]');
   await tool("kraken_dice_force", { values: [3, 4, 2] });
   await page.click('[data-action="roll-hp"]');
@@ -185,7 +185,7 @@ try {
   await page.click('[data-action="roll-gold"]');
   await page.waitForSelector('[data-coin-left="5000"]');
   for (const item of ["Dagger", "Backpack"]) {
-    await page.getByLabel("Shop search").fill(item);
+    await page.locator(".ccw").last().getByLabel("Shop search").fill(item);
     await page.getByRole("button", { name: `Buy ${item}`, exact: true }).click();
   }
   assert((await page.getByRole("button", { name: "Buy Sword, Long", exact: true }).count()) === 0, "no long sword for a wizard");
@@ -194,7 +194,7 @@ try {
   const levels = await page.$$eval('[aria-label="Spell level"] option', (options) => options.map((option) => option.value).filter((value) => value !== "all"));
   const picked = [];
   for (const level of levels) {
-    await page.getByLabel("Spell level").selectOption(level);
+    await page.locator(".ccw").last().getByLabel("Spell level").selectOption(level);
     const plan = await page.locator(`.ccw-plan`).allTextContents();
     const allowed = Number(/of (\d+)/.exec(plan.find((line) => line.startsWith(level === "0" ? "0-level" : `Level ${level}`)) ?? "")?.[1]);
     const boxes = page.locator('.ccw-spell input[type="checkbox"]');
@@ -204,11 +204,11 @@ try {
     }
   }
   assert(picked.length > 0, "the wizard offers spells");
-  await page.getByLabel("Spell level").selectOption("all");
+  await page.locator(".ccw").last().getByLabel("Spell level").selectOption("all");
   await page.waitForSelector('[data-wizard-tab="spells"] .ccw-tab-badge.done');
   // Down to level 2: the hit points go and the level-2 spell is trimmed.
   await page.click('[data-wizard-tab="class"]');
-  await page.getByLabel("Lower starting level").click();
+  await page.locator(".ccw").last().getByLabel("Lower starting level").click();
   await page.waitForSelector(".ccw-note:has-text('Spell choices exceeding')");
   await page.click('[data-wizard-tab="hp"]');
   await page.waitForSelector("text=Your previous HP roll was cleared");
@@ -221,10 +221,10 @@ try {
   await page.click('[data-wizard-tab="finish"]');
   // A wizard may take any alignment; a paladin only one (checked below).
   assert((await page.locator('[aria-label="alignment"] option').count()) === 10, "a wizard's alignments");
-  await page.getByLabel("Character name").fill("Ilyana Starweave");
-  await page.getByLabel("alignment").selectOption("Chaotic Good");
+  await page.locator(".ccw").last().getByLabel("Character name").fill("Ilyana Starweave");
+  await page.locator(".ccw").last().getByLabel("alignment").selectOption("Chaotic Good");
   await page.click('[data-action="create-character"]');
-  await page.waitForFunction(() => document.querySelector('[data-character] .cc-name')?.value === "Ilyana Starweave", null, { timeout: 30000 });
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-character] .cc-name')].some((field) => field.value === "Ilyana Starweave"), null, { timeout: 30000 });
   const all = await tool("kraken_records_list", { type: "character" });
   const elfId = all.records.find((record) => record.name === "Ilyana Starweave")?.id;
   const elf = (await tool("kraken_record_get", { id: elfId })).data;
@@ -267,9 +267,9 @@ try {
   const paladin = await page.$$eval('[aria-label="alignment"] option', (options) => options.map((option) => option.textContent));
   assert(paladin.join("|") === "—|Lawful Good", `paladin alignments ${paladin.join("|")}`);
   // Created unfinished: what is left goes in the notes.
-  await page.getByLabel("Character name").fill("Unfinished Paladin");
+  await page.locator(".ccw").last().getByLabel("Character name").fill("Unfinished Paladin");
   await page.click('[data-action="create-character"]');
-  await page.waitForFunction(() => document.querySelector('[data-character] .cc-name')?.value === "Unfinished Paladin", null, { timeout: 30000 });
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-character] .cc-name')].some((field) => field.value === "Unfinished Paladin"), null, { timeout: 30000 });
   const rest = await tool("kraken_records_list", { type: "character" });
   const unfinished = (await tool("kraken_record_get", { id: rest.records.find((record) => record.name === "Unfinished Paladin").id })).data;
   assert(String(unfinished.notes).includes("Unfinished in the character wizard (finish with your Castle Keeper): Abilities, Primes, Hit Points, Equipment, Alignment."), `notes: ${unfinished.notes}`);
@@ -286,7 +286,7 @@ try {
   await page.waitForSelector('[data-action="change-race"]');
   await page.click('[data-wizard-tab="class"]');
   await page.click('[data-class="Fighter"]');
-  await page.getByLabel("Higher starting level").click();
+  await page.locator(".ccw").last().getByLabel("Higher starting level").click();
   await page.click('[data-action="combo-multi"]');
   // Fighter/Knight is a race-limited pair for a human? Whatever the code, a refused row has no +.
   for (const row of await page.locator(".ccw-combo-list .ccw-pick.blocked").all()) assert((await row.locator("[data-combo-add]").count()) === 0, "a refused combination has no +");
@@ -297,9 +297,9 @@ try {
   await page.click('[data-combo-add="Rogue"]');
   await page.waitForSelector('[data-combo="plus"]');
   await page.click('[data-wizard-tab="primes"]');
-  assert(await page.getByLabel("intelligence prime").isChecked(), "the wizard's prime is forced");
-  await page.getByLabel("dexterity prime").check();
-  await page.getByLabel("wisdom prime").check();
+  assert(await page.locator(".ccw").last().getByLabel("intelligence prime").isChecked(), "the wizard's prime is forced");
+  await page.locator(".ccw").last().getByLabel("dexterity prime").check();
+  await page.locator(".ccw").last().getByLabel("wisdom prime").check();
   await page.click('[data-wizard-tab="hp"]');
   await tool("kraken_dice_force", { values: [6] });
   await page.click('[data-action="roll-hp"]');
@@ -313,10 +313,10 @@ try {
   await secondBoxes.nth(0).check();
   const wizardSpell = (await page.locator(".ccw-spell .ccw-pick-name").nth(0).textContent()).trim();
   await page.click('[data-wizard-tab="finish"]');
-  await page.getByLabel("Character name").fill("Varis Twohands");
-  await page.getByLabel("alignment").selectOption("Neutral Good");
+  await page.locator(".ccw").last().getByLabel("Character name").fill("Varis Twohands");
+  await page.locator(".ccw").last().getByLabel("alignment").selectOption("Neutral Good");
   await page.click('[data-action="create-character"]');
-  await page.waitForFunction(() => document.querySelector('[data-character] .cc-name')?.value === "Varis Twohands", null, { timeout: 30000 });
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-character] .cc-name')].some((field) => field.value === "Varis Twohands"), null, { timeout: 30000 });
   {
     const all = await tool("kraken_records_list", { type: "character" });
     const varis = (await tool("kraken_record_get", { id: all.records.find((record) => record.name === "Varis Twohands").id })).data;
@@ -329,7 +329,8 @@ try {
   }
 
   // Class & Level on the sheet: Level Up on the Wizard raises both classes of the multi-class.
-  await page.click('[data-action="class-level"]');
+  // The sheets made before stay open (a finished wizard gives way to the character's own sheet): only Varis's now.
+  await page.locator('[data-action="class-level"]').last().click();
   await page.click('[data-class-row="Wizard"] [data-action="level-up-class"]');
   await page.waitForFunction(() => document.querySelector('[data-class-row="Wizard"] .cc-num')?.textContent === "3", null, { timeout: 20000 });
   assert((await page.locator('[data-class-row="Fighter"] .cc-num').textContent()) === "3", "the fighter rose with it");
@@ -340,7 +341,7 @@ try {
   for (const close of await page.$$('.window:has([data-character]) button[aria-label^="Close"]')) await close.click().catch(() => undefined);
   await page.dispatchEvent('[data-launch="characters"]', "click");
   await page.locator(".charselect-card", { hasText: "Borin Stonefist" }).first().click();
-  await page.waitForFunction(() => document.querySelector('[data-character] .cc-name')?.value === "Borin Stonefist");
+  await page.waitForFunction(() => [...document.querySelectorAll('[data-character] .cc-name')].some((field) => field.value === "Borin Stonefist"));
   if (!(await page.locator(".cc-classlevel").count())) await page.click('[data-action="class-level"]');
   await page.click('[data-action="change-class-open"]');
   assert((await page.locator('[data-change-row="Rogue"] [data-action="dual-class"]').count()) === 0, "no dual class into Rogue without Dexterity prime");
