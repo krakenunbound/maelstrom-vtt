@@ -31,9 +31,10 @@ Status of the work (2026-11-20, 0.1.0-beta.1):
 | Lighting switch, ambient light and colour, ambient mask | Scene darkness, ambient tint, lit areas | Done |
 | Default grid (on, no size) | 50 px | Done |
 | Distance per square (`distancebaseunit`) | Uses the image's distance when the record has no explicit scale | Implemented locally; FG map and grid regression checks pass |
-| Token lock, player drawing switch | Movement lock, a player-drawing setting | To do (handoff) |
-| Text and picture layers' own lighting switches | Lit labels, unlit tiles | To do (handoff) |
-| Link scale, vision preview | Opening zoom, GM preview | To do (handoff) |
+| Token lock, player drawing switch | Movement lock on first open; Players may draw on the map (Scene settings, `kraken_scene_settings playerDrawing`) | Done |
+| Text and picture layers' own lighting switches | Lit labels under the darkness, unlit tiles above it | Done |
+| Vision preview | The GM's player preview on first open | Done |
+| Link scale (`linkscale`, 2 maps) | Unknown: FG keeps it in its engine, not its ruleset code | Open: meaning to confirm in FG |
 
 ## Live comparison baseline (2026-11-21, Pacific)
 

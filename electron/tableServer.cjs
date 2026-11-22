@@ -222,6 +222,10 @@ function sanitizeScene(input) {
     tokens,
     walls,
     darkness: Math.min(1, Math.max(0, num(input.darkness, 0))),
+    // A map's own switches (FG's): movement locked when it opens, players may not draw, the GM's vision preview.
+    tokenLock: input.tokenLock === true,
+    playerDrawing: input.playerDrawing !== false,
+    previewVision: input.previewVision === true,
     // FG's ambient light: its colour (a tint), how dark it leaves the map, the areas it falls in (none: everywhere).
     ambient:
       input.ambient && typeof input.ambient === "object"
@@ -973,6 +977,8 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   const PREVIEW_SEAT = { role: "player", name: "@preview", everyone: true };
   let testing = false;
   let previewing = false;
+  // Maps whose own vision preview has been put on once this sitting (the GM may turn it off after).
+  const previewedMaps = new Set();
   // View as: the preview through one player's eyes (their tokens alone), else every player's.
   let previewAs = "";
   const previewSeat = () => (previewAs ? { role: "player", name: previewAs } : PREVIEW_SEAT);
@@ -3914,6 +3920,12 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
           prep.clearScene();
         }
         const opened = scene?.id !== next.id;
+        // A map saved with its vision preview on (FG's): the GM sees it as the players do, the first time it opens.
+        if (opened && next.previewVision && !previewedMaps.has(next.id)) {
+          previewedMaps.add(next.id);
+          previewing = true;
+          previewAs = "";
+        }
         scene = next;
         // A scene with its own sound starts it (the soundscape goes on otherwise).
         if (opened && sceneSounds.has(next.id)) setSoundscape(freshScape(sceneSounds.get(next.id)));

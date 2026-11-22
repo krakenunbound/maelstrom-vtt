@@ -89,6 +89,8 @@ export type MapSettings = {
   // This scene's diagonal rule (null: the campaign's), and the rule in force ("1", "1.5", "raw").
   diagonal?: string | null;
   diagonalRule?: string;
+  // Players may draw on this map (null: the map's own); in a view, what holds now.
+  playerDrawing?: boolean | null;
 };
 export type MapDoor = { id: string; group?: string; x1: number; y1: number; x2: number; y2: number; state: number; secret?: boolean; found?: boolean; kind?: string };
 // A wall in the GM's map editor (FG's kinds with Foundry's senses).
@@ -147,9 +149,9 @@ export type TableMap = {
   mapSounds?: MapSound[];
 };
 // An image layer (FG's image layers, Foundry's tiles): url is where this seat loads it.
-export type MapTile = { id: string; name: string; src: string; url: string; x: number; y: number; width: number; height: number; rotation: number; alpha: number; flipX: boolean; flipY: boolean; level: "below" | "above"; hidden: boolean; locked?: boolean; group: string };
+export type MapTile = { id: string; name: string; src: string; url: string; x: number; y: number; width: number; height: number; rotation: number; alpha: number; flipX: boolean; flipY: boolean; level: "below" | "above"; hidden: boolean; locked?: boolean; group: string; unlit?: boolean };
 // Text on the map (FG's text layers): labels, numbers, pins.
-export type MapLabel = { id: string; x: number; y: number; text: string; font: string; size: number; color: string; rotation: number; anchor: string; outline: { width: number; color: string }; shadow: { offset: number; blur: number; color: string }; hidden: boolean; group: string; number: number | null; icon: string; link: { kind: string; id: string } | null };
+export type MapLabel = { id: string; x: number; y: number; text: string; font: string; size: number; color: string; rotation: number; anchor: string; outline: { width: number; color: string }; shadow: { offset: number; blur: number; color: string }; hidden: boolean; group: string; number: number | null; icon: string; link: { kind: string; id: string } | null; lit?: boolean };
 export type MapGroup = { name: string; shown?: boolean; players?: boolean; locked?: boolean; nextNumber?: number; prefix?: string };
 export type LibraryItem = { path: string; name: string; category: string; npcs?: string; summary?: string; html?: string; file?: string; map?: boolean; prev?: { path: string; name: string } | null; next?: { path: string; name: string } | null };
 export type MapMask = { on: boolean; shapes: { id: string; mode: "reveal" | "hide"; points: number[] }[] };

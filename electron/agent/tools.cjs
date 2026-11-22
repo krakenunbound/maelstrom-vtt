@@ -1541,6 +1541,7 @@ const TOOLS = [
       "The scene's map settings: darkness (0 day .. 1 pitch black; from 0.5 players see only lit places and their darkvision; null returns to the adventure's own), the grid (the map editor's Grid tab: show, alpha, color, type square/hexrow/hexcol/none, size in pixels, sizeY a cell's height when width and height are unlinked (null links them: square cells), offsetX and offsetY in pixels, square: {x1, y1, x2, y2} a box from one corner of a square drawn in the picture to the opposite corner, in the picture's pixels from its top-left (the Grid tab's draw tool: it sets size, offsetX and offsetY; with linked false the box is the cell, its height sizeY), distance per square and units, style solid/dashed/dotted, thickness; null for a field goes back to the scene's own), and weather (type: none, rain, storm, snow, blizzard, fog, clouds, sandstorm, embers, ash, leaves, water; intensity 0..1; direction in degrees the wind blows toward), and diagonal: how a diagonal square counts when measuring on this scene (1, 1.5 the 5-10-5 count, raw a straight line; null: the campaign's, kraken_table_options diagonal). Call with nothing to read them.",
     inputSchema: object({
       darkness: { type: ["number", "null"] },
+      playerDrawing: { type: ["boolean", "null"], description: "Players may draw on this map (false: their drawing tools refuse; null: the map's own, as its module set it)" },
       grid: {
         type: "object",
         properties: {

@@ -9,7 +9,7 @@ import { backgroundRect, colorWithAlpha, gridStops, sceneFrame, type BackgroundF
 import { type SceneLight, type SceneMarker, type SceneRegion, type SceneWall } from "../foundry/sceneObjects";
 import { rangeBand } from "../../shared/map/ranges.mjs";
 import { diagonalRule, gridDistance, gridDistance3, gridFromSquare, gridKind, gridSizeY, pathDistance, gridOrigin, hexCorners, hexOf, LIGHT_PRESETS, snapCenter, withGrid } from "../../shared/map/geometry.mjs";
-import type { DecalItem, EditWall, MapDoor, MapTemplate, MapTile, MapToken, Ping, Float, Bubble, PictureKind, SceneLightRecord, TableMap, TableRecord, TemplateAsk, WallKind } from "../session/useSession";
+import type { DecalItem, EditWall, MapDoor, MapLabel, MapTemplate, MapTile, MapToken, Ping, Float, Bubble, PictureKind, SceneLightRecord, TableMap, TableRecord, TemplateAsk, WallKind } from "../session/useSession";
 import { useBookWindows } from "../books/Books";
 import { createPortal } from "react-dom";
 import { useWindowSlot } from "../ui/Windows";
@@ -1014,8 +1014,46 @@ function MapViewInner({
   // "above" layer is faded on this screen while one of this seat's tokens (the
   // GM's: the selected one) is under it, as Foundry's roofs. In the Images tab
   // the GM picks, drags (Shift: no snapping) and resizes them from a corner.
-  function tileLayer(level: "below" | "above") {
-    const list = (map.sceneId === scene.id ? map.tiles ?? [] : []).filter((tile) => tile.level === level && (!tile.group || (map.groups ?? []).find((group) => group.name === tile.group)?.shown !== false));
+  // Text on the map: the lit (FG's text with lighting on) under the darkness, the rest above it.
+  const labelLayer = (list: MapLabel[], which: string) =>
+    list.length ? (
+          // Text on the map (FG's text layers): outlined, with a shadow; size in squares.
+          <svg className="overlay labels" data-labels={which} width={frame.worldWidth} height={frame.worldHeight} viewBox={`0 0 ${frame.worldWidth} ${frame.worldHeight}`}>
+            <defs>
+              {list
+                .filter((label) => label.shadow.blur > 0 || label.shadow.offset > 0)
+                .map((label) => (
+                  <filter key={`f-${label.id}`} id={`shadow-${label.id}`} x="-50%" y="-50%" width="200%" height="200%">
+                    <feDropShadow dx={label.shadow.offset * size * 0.05} dy={label.shadow.offset * size * 0.05} stdDeviation={label.shadow.blur * size * 0.03} floodColor={label.shadow.color} />
+                  </filter>
+                ))}
+            </defs>
+            {list
+              .filter((label) => (map.groups ?? []).find((group) => group.name === label.group)?.shown !== false)
+              .filter((label) => pinsShown || !label.link)
+              .map((shownLabel) => {
+                const label = labelDrag && labelDrag.id === shownLabel.id ? { ...shownLabel, x: labelDrag.x, y: labelDrag.y } : shownLabel;
+                // The GM drags pins always, and plain text while the editor's Text tab is open.
+                const grabbable = gm && Boolean(actions.label) && (Boolean(label.link) || (editorOpen && editTab === "text"));
+                const fontSize = label.size * size * 0.8;
+                const anchor = label.anchor === "left" ? "start" : label.anchor === "right" ? "end" : "middle";
+                const baseline = label.anchor === "top" ? "hanging" : label.anchor === "bottom" ? "auto" : "central";
+                const icon = { pin: "📍", trap: "⚠", door: "🚪", chest: "🧰" }[label.icon as "pin"] ?? "";
+                return (
+                  <g key={label.id} transform={`rotate(${label.rotation} ${label.x} ${label.y})`} opacity={label.hidden ? 0.45 : 1} data-label={label.id} data-label-text={label.text} style={label.link || grabbable ? { pointerEvents: "auto", cursor: grabbable ? (labelDrag?.id === label.id ? "grabbing" : "grab") : "pointer" } : undefined} onPointerDown={label.link || grabbable ? (event) => (grabbable ? grabLabel(event, shownLabel) : event.stopPropagation()) : undefined} onClick={label.link ? () => !labelDragged.current && openPin(label.link as { kind: string; id: string }, label.text) : undefined} filter={label.shadow.blur > 0 || label.shadow.offset > 0 ? `url(#shadow-${label.id})` : undefined}>
+                    <text x={label.x} y={label.y} textAnchor={anchor} dominantBaseline={baseline} fontFamily={`"${label.font}", Cinzel, sans-serif`} fontSize={fontSize} fill={label.color} stroke={label.outline.width > 0 ? label.outline.color : "none"} strokeWidth={label.outline.width * fontSize * 0.04} paintOrder="stroke" strokeLinejoin="round">
+                      {icon ? `${icon} ` : ""}
+                      {label.text}
+                    </text>
+                    {gm && editorOpen && selectedLabel === label.id ? <circle cx={label.x} cy={label.y} r={fontSize * 0.7} fill="none" stroke="#ff9f1a" strokeWidth={3 / camera.scale} /> : null}
+                  </g>
+                );
+              })}
+          </svg>
+    ) : null;
+  function tileLayer(level: "below" | "above" | "unlit") {
+    // "unlit": the tiles no darkness dims (FG's layers that ignore lights), drawn above the lighting.
+    const list = (map.sceneId === scene.id ? map.tiles ?? [] : []).filter((tile) => (level === "unlit" ? Boolean(tile.unlit) && tile.level !== "above" : tile.level === level && !(level === "below" && tile.unlit)) && (!tile.group || (map.groups ?? []).find((group) => group.name === tile.group)?.shown !== false));
     if (!list.length) return null;
     const editing = gm && editorOpen && editTab === "images";
     const watchers = tokens.filter((token) => (gm ? token.id === selected : token.mine));
@@ -2129,6 +2167,7 @@ function MapViewInner({
           onToggleDoor={(wallId) => actions.setDoor(wallId)}
           doorsInert={Boolean(gm && editorOpen && editTab === "walls" && editTool)}
         />
+        {labelLayer((map.labels ?? []).filter((label) => label.lit), "lit")}
         {map.sceneId === scene.id ? (
           <Lighting
             width={frame.worldWidth}
@@ -2142,42 +2181,9 @@ function MapViewInner({
             image={scene.imageUrl && !imageFailed && (!videoMap || videoStill) ? { url: videoMap ? (videoStill as string) : scene.imageUrl, ...backdrop } : null}
           />
         ) : null}
+        {tileLayer("unlit")}
         {map.sceneId === scene.id ? <DarknessAreas areas={map.darkAreas} through={map.trueSeeing} gm={gm} width={frame.worldWidth} height={frame.worldHeight} /> : null}
-        {(map.labels ?? []).length ? (
-          // Text on the map (FG's text layers): outlined, with a shadow; size in squares.
-          <svg className="overlay labels" width={frame.worldWidth} height={frame.worldHeight} viewBox={`0 0 ${frame.worldWidth} ${frame.worldHeight}`}>
-            <defs>
-              {(map.labels ?? [])
-                .filter((label) => label.shadow.blur > 0 || label.shadow.offset > 0)
-                .map((label) => (
-                  <filter key={`f-${label.id}`} id={`shadow-${label.id}`} x="-50%" y="-50%" width="200%" height="200%">
-                    <feDropShadow dx={label.shadow.offset * size * 0.05} dy={label.shadow.offset * size * 0.05} stdDeviation={label.shadow.blur * size * 0.03} floodColor={label.shadow.color} />
-                  </filter>
-                ))}
-            </defs>
-            {(map.labels ?? [])
-              .filter((label) => (map.groups ?? []).find((group) => group.name === label.group)?.shown !== false)
-              .filter((label) => pinsShown || !label.link)
-              .map((shownLabel) => {
-                const label = labelDrag?.id === shownLabel.id ? { ...shownLabel, x: labelDrag.x, y: labelDrag.y } : shownLabel;
-                // The GM drags pins always, and plain text while the editor's Text tab is open.
-                const grabbable = gm && Boolean(actions.label) && (Boolean(label.link) || (editorOpen && editTab === "text"));
-                const fontSize = label.size * size * 0.8;
-                const anchor = label.anchor === "left" ? "start" : label.anchor === "right" ? "end" : "middle";
-                const baseline = label.anchor === "top" ? "hanging" : label.anchor === "bottom" ? "auto" : "central";
-                const icon = { pin: "📍", trap: "⚠", door: "🚪", chest: "🧰" }[label.icon as "pin"] ?? "";
-                return (
-                  <g key={label.id} transform={`rotate(${label.rotation} ${label.x} ${label.y})`} opacity={label.hidden ? 0.45 : 1} data-label={label.id} data-label-text={label.text} style={label.link || grabbable ? { pointerEvents: "auto", cursor: grabbable ? (labelDrag?.id === label.id ? "grabbing" : "grab") : "pointer" } : undefined} onPointerDown={label.link || grabbable ? (event) => (grabbable ? grabLabel(event, shownLabel) : event.stopPropagation()) : undefined} onClick={label.link ? () => !labelDragged.current && openPin(label.link as { kind: string; id: string }, label.text) : undefined} filter={label.shadow.blur > 0 || label.shadow.offset > 0 ? `url(#shadow-${label.id})` : undefined}>
-                    <text x={label.x} y={label.y} textAnchor={anchor} dominantBaseline={baseline} fontFamily={`"${label.font}", Cinzel, sans-serif`} fontSize={fontSize} fill={label.color} stroke={label.outline.width > 0 ? label.outline.color : "none"} strokeWidth={label.outline.width * fontSize * 0.04} paintOrder="stroke" strokeLinejoin="round">
-                      {icon ? `${icon} ` : ""}
-                      {label.text}
-                    </text>
-                    {gm && editorOpen && selectedLabel === label.id ? <circle cx={label.x} cy={label.y} r={fontSize * 0.7} fill="none" stroke="#ff9f1a" strokeWidth={3 / camera.scale} /> : null}
-                  </g>
-                );
-              })}
-          </svg>
-        ) : null}
+        {labelLayer((map.labels ?? []).filter((label) => !label.lit), "above")}
         {map.mask?.on ? (
           // FG's mask: black for players but where revealed; a tint for the GM.
           <svg className={gm ? "overlay mask-overlay gm" : "overlay mask-overlay"} width={frame.worldWidth} height={frame.worldHeight} viewBox={`0 0 ${frame.worldWidth} ${frame.worldHeight}`} data-mask={map.mask.shapes.length}>
@@ -2946,7 +2952,7 @@ function MapViewInner({
               ["template", "template", "Area template: pick a shape and drag it out on the map; creatures inside become your targets"],
             ] as const
           ).map(([id, icon, title]) => (
-            <button key={id} type="button" className={tool === id ? "tool on" : "tool"} role="radio" aria-checked={tool === id} aria-label={title} title={title} data-tool={id} onClick={() => {
+            <button key={id} type="button" className={tool === id ? "tool on" : "tool"} role="radio" aria-checked={tool === id} aria-label={title} title={id === "draw" && !gm && map.settings?.playerDrawing === false ? "Drawing is off on this map (the GM's)" : title} data-tool={id} disabled={id === "draw" && !gm && map.settings?.playerDrawing === false} onClick={() => {
               setTool(id);
               if (id !== "pan") {
                 setEditTool(null);

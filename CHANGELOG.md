@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **FG maps' own switches:** a map saved with Token Movement Lock opens with players' moves waiting for the GM; one with player drawing off refuses players' drawings (their pen greys out); a new Scene settings switch, **Players may draw on the map** (the agent's `kraken_scene_settings playerDrawing`), turns it on or off for any map; a map saved with its vision preview opens in the GM's player preview. FG's text with lighting on goes dark with the map; a picture layer that ignores lights (a roof, a sign) is never dimmed.
 - **Fog of war on the GPU:** the players' fog (in sight clear, explored dimmed, unseen black, soft edges) is drawn by one shader on WebGPU or WebGL2 (a LAN address uses WebGL2), the old drawing when neither is there or the GPU is lost; the GM's player preview and a popped-out map window too.
 - **FG maps' distance per square:** a map's own distance (10 ft for most older modules' dungeons, 50 or 500 ft on region maps) sets the grid's distance when the record gives no scale.
 - **FG's map lighting comes in:** a map with FG's lighting on opens dark (its lights and the characters' darkvision show it); FG's ambient light sets how dark the map is from its colour (sunlight near day, dusk, moonlight about half, black none) and tints it; an ambient mask lights only its area (a cave mouth in sunlight, the cave dark), and players see by it there. The GM's darkness setting still overrides it. Saltmarsh's 33 lit maps play dark as in FG.

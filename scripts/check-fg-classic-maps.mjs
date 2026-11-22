@@ -103,6 +103,23 @@ assert(rain?.mask.polygons.length === 2, `every shape of a weather mask: ${JSON.
   const moon = scenes.L00012;
   assert(moon.darkness > 0.4 && moon.darkness < 0.6 && moon.ambient?.color === "#C9E7FF" && moon.ambient.areas.length === 0, `moonlight: half dark, tinted blue: ${JSON.stringify([moon.darkness, moon.ambient])}`);
   const masked = scenes.L00013;
+  // FG's map switches and layers' own lighting.
+  {
+    const db2 = `<root><image><id-00020><name type="string">Inn</name><image type="image"><grid>on</grid><tokenlock>on</tokenlock><allowplayerdrawing>off</allowplayerdrawing><previewvision>on</previewvision><layers>
+      <layer><id>0</id><type>image</type><bitmap>l.png</bitmap></layer>
+      <layer><id>1</id><name>Roof</name><type>image</type><bitmap>roof.png</bitmap><uselights>false</uselights></layer>
+      <layer><id>2</id><name>Sign</name><type>text</type><displayText>The Golden Grain</displayText><uselighting type="number">1</uselighting></layer>
+      <layer><id>3</id><name>Note</name><type>text</type><displayText>Read me</displayText></layer>
+    </layers></image></id-00020></image></root>`.replace('<uselighting type="number">1</uselighting>', "<uselighting>true</uselighting>");
+    fs.writeFileSync(path.join(dir, "Inn.mod"), zipSync({ "definition.xml": strToU8("<root><name>Inn</name></root>"), "db.xml": strToU8(db2), "l.png": WIDE, "roof.png": WIDE }));
+    const inn = fgModuleBundle(path.join(dir, "Inn.mod"), { all: true });
+    const scene = JSON.parse(new TextDecoder().decode(unzipSync(inn.bytes)["bundle.json"])).adventureData.scenes[0];
+    const extra = Object.values(inn.extras)[0];
+    assert(scene.tokenLock === true && scene.playerDrawing === false && scene.previewVision === true, `the map's switches: ${JSON.stringify([scene.tokenLock, scene.playerDrawing, scene.previewVision])}`);
+    assert(extra.tiles.find((tile) => tile.name === "Roof")?.unlit === true, "a layer that ignores lights is unlit");
+    const texts = extra.pins.filter((pin) => !pin.link);
+    assert(texts.find((text) => text.text === "The Golden Grain")?.lit === true && !texts.find((text) => text.text === "Read me")?.lit, `text with lighting on is lit, the rest not: ${JSON.stringify(texts.map((text) => [text.text, text.lit]))}`);
+  }
   assert(masked.darkness === 1 && masked.ambient?.darkness < 0.1 && JSON.stringify(masked.ambient.areas) === JSON.stringify([[50, 50, 150, 50, 150, 150, 50, 150]]), `sunlight inside its mask, dark outside: ${JSON.stringify([masked.darkness, masked.ambient])}`);
 }
 fs.rmSync(dir, { recursive: true, force: true });

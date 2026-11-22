@@ -251,6 +251,8 @@ function cleanLabel(raw) {
     group: text(raw.group, "").slice(0, 40),
     number: Number.isFinite(Number(raw.number)) && raw.number !== null && raw.number !== "" ? Math.round(Number(raw.number)) : null,
     icon: ["pin", "trap", "door", "chest", ""].includes(raw.icon) ? raw.icon : "",
+    // Dark where the map is dark (FG's text with lighting on), else always readable.
+    lit: Boolean(raw.lit),
     link: raw.link && typeof raw.link === "object" && raw.link.id ? { kind: text(raw.link.kind, "record").slice(0, 20), id: text(raw.link.id, "").slice(0, 160) } : null,
   };
 }
@@ -288,6 +290,8 @@ function cleanSettings(raw) {
   const nullable = (value, clean) => (value == null || value === "" ? null : clean(value));
   return {
     darkness: value.darkness == null ? null : Math.min(1, Math.max(0, num(value.darkness, 0))),
+    // Players may draw on this map (null: the map's own, FG's switch; else yes).
+    playerDrawing: typeof value.playerDrawing === "boolean" ? value.playerDrawing : null,
     // FG's Grid tab (null: the scene's own).
     grid: {
       show: grid.show !== false,
@@ -416,6 +420,8 @@ function cleanTile(raw) {
     level: raw.level === "above" ? "above" : "below",
     hidden: Boolean(raw.hidden),
     locked: Boolean(raw.locked),
+    // Never dimmed by the darkness (FG's layer that ignores lights).
+    unlit: Boolean(raw.unlit),
     group: text(raw.group, "").slice(0, 40),
   };
 }
@@ -791,7 +797,12 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
   function darkness() {
     const set = settingsHere().darkness;
     return set == null ? (scene?.darkness ?? 0) : set;
+  }  // Players may draw on this map: the GM's setting, else the map's own (FG's switch), else yes.
+  function playerDrawingNow() {
+    const set = settingsHere().playerDrawing;
+    return set == null ? scene?.playerDrawing !== false : set;
   }
+
 
   function deathMarkersHere() {
     if (!scene) return [];
@@ -1200,7 +1211,7 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
     // FG's ambient light: its tint always; its areas (where it falls, the rest at the scene's darkness) unless the GM
     // set the darkness by hand, which then holds everywhere.
     const ambientNow = scene.ambient ? { color: scene.ambient.color, darkness: scene.ambient.darkness, areas: settingsHere().darkness == null ? scene.ambient.areas ?? [] : [] } : null;
-    const shared = { sceneId: scene.id, sight: sightOn(), locked, darkness: dark, ambient: ambientNow, settings: { grid: settings.grid, weather: settings.weather, darkness: settings.darkness, diagonal: settings.diagonal, diagonalRule: diagonalNow() }, drawings: drawingsHere(), deathMarkers: deathMarkersHere(), mask: mask.on || mask.shapes.length ? mask : null, groups, fx: fxHere(), templates: templatesFor(seat) };
+    const shared = { sceneId: scene.id, sight: sightOn(), locked, darkness: dark, ambient: ambientNow, settings: { grid: settings.grid, weather: settings.weather, darkness: settings.darkness, diagonal: settings.diagonal, diagonalRule: diagonalNow(), playerDrawing: playerDrawingNow() }, drawings: drawingsHere(), deathMarkers: deathMarkersHere(), mask: mask.on || mask.shapes.length ? mask : null, groups, fx: fxHere(), templates: templatesFor(seat) };
     const lightOut = (list) => list.map(({ id, x, y, brightPx, dimPx, color, polygon, animation, speed }) => ({ id, x, y, brightPx, dimPx, color, polygon, ...(animation ? { animation, speed } : {}) }));
     if (seat.role === "dm") {
       return {
@@ -1445,6 +1456,8 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       // The imported walls become the table's the first time; after that the table's own are kept.
       // A wall of the scene as the table keeps it: its kind from its senses (Foundry's walls, FG's read as them).
       const importWall = (wall) => cleanWall({ ...wall, kind: wall.door === 2 ? "secret" : wall.door === 1 ? "door" : Number(wall.sight) === 10 ? "terrain" : Number(wall.sight) === 0 && Number(wall.move) !== 0 ? "invisible" : Number(wall.move) === 0 && Number(wall.sight) !== 0 ? "ethereal" : Number(wall.sight) === 30 ? "window" : "wall", ...(Number(wall.sight) === 30 ? { sight: 30, light: Number(wall.light ?? 30), toggle: "none" } : {}) });
+      // The map's movement lock the first time it opens (FG's Token Movement Lock); the GM's choice after.
+      if (state.locked[next.id] === undefined && next.tokenLock) state.locked[next.id] = true;
       // The imported walls become the table's the first time; after that the table's own are kept.
       if (!state.walls[next.id]) {
         state.walls[next.id] = (next.walls ?? []).map(importWall).filter(Boolean);
@@ -1907,6 +1920,7 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       const current = settingsHere();
       state.settings[scene.id] = cleanSettings({
         darkness: patch.darkness !== undefined ? patch.darkness : current.darkness,
+        playerDrawing: patch.playerDrawing !== undefined ? patch.playerDrawing : current.playerDrawing,
         grid: { ...current.grid, ...(patch.grid ?? {}) },
         weather: { ...current.weather, ...(patch.weather ?? {}) },
         diagonal: patch.diagonal !== undefined ? patch.diagonal : current.diagonal,
@@ -1923,6 +1937,7 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       if (!scene) throw new Error("No scene is open.");
       // Players draw free lines and shapes (line, arrow, square, circle, cone; a
       // faint fill in their colour); the GM's paint also has polygons, fills and groups.
+      if (seat.role !== "dm" && !playerDrawingNow()) throw new Error("The GM has turned drawing off on this map.");
       const playerShape = ["line", "arrow", "rect", "circle", "cone"].includes(input?.shape) ? input.shape : undefined;
       const playerColor_ = input?.color ?? seat.color ?? colorOf(seat.name);
       const own = seat.role === "dm" ? input : { points: input?.points, color: input?.color, width: input?.width, shape: playerShape, ...(playerShape && playerShape !== "line" && playerShape !== "arrow" ? { fill: playerColor_, fillAlpha: 0.15 } : {}) };

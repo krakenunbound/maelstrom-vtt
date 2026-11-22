@@ -120,6 +120,22 @@ await pinTable.stop();
   assert(after.find((wall) => wall.id === "fg-8-0").kind === "terrain", `terrain read as terrain now: ${after.find((wall) => wall.id === "fg-8-0").kind}`);
   assert(after.find((wall) => wall.id === "fg-9-0").ds === 2, "a locked door stays locked");
   assert(after.find((wall) => wall.id === "fg-4-0").x1 === 10 + 80 + 1850 + 5, "a wall the GM moved stays where it is");
+  // A map's own switches: movement locked the first time it opens; players' drawing refused, until the GM allows it.
+  const gm = { role: "dm", name: "GM" };
+  const ann = { role: "player", name: "Ann" };
+  wallTable.agent.map.setScene({ ...scene(0, false), id: "fg-x-inn", tokenLock: true, playerDrawing: false });
+  assert(wallTable.agent.map.lockedNow() === true, "the map's movement lock is on when it first opens");
+  let refused = "";
+  try {
+    wallTable.agent.map.draw({ points: [10, 10, 40, 40], color: "#ff0000", width: 3 }, ann);
+  } catch (error) {
+    refused = error.message;
+  }
+  assert(/drawing off/.test(refused), `a player's drawing refused: ${refused}`);
+  wallTable.agent.map.draw({ points: [10, 10, 40, 40], color: "#ff0000", width: 3 }, gm);
+  wallTable.agent.map.updateSettings({ playerDrawing: true }, gm);
+  wallTable.agent.map.draw({ points: [20, 20, 50, 50], color: "#00ff00", width: 3 }, ann);
+  wallTable.agent.map.setLocked?.(false, gm);
 }
 fs.rmSync(dir, { recursive: true, force: true });
 console.log("ok fg map grid: FG's offset from the picture's top left and its square's scale; the GM's grid settings saved with the map and kept when it is opened again");

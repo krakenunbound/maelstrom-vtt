@@ -3,6 +3,7 @@ import { WEATHER_TYPES, type WeatherType } from "./weatherTypes";
 
 export type SceneSettingsPatch = {
   darkness?: number | null;
+  playerDrawing?: boolean | null;
   grid?: { show?: boolean; alpha?: number | null; color?: string | null; type?: "square" | "hexrow" | "hexcol" | "none" | null; size?: number | null; sizeY?: number | null; offsetX?: number | null; offsetY?: number | null; distance?: number | null; units?: string | null; style?: string; thickness?: number };
   weather?: { type?: WeatherType; intensity?: number; direction?: number };
   diagonal?: string | null;
@@ -79,6 +80,10 @@ export function SceneSettings({
         <label className="check">
           <input type="checkbox" checked={!map.locked} onChange={(event) => onLocked(!event.target.checked)} />
           Players move their tokens at will
+        </label>
+        <label className="check">
+          <input type="checkbox" data-setting="player-drawing" checked={map.settings.playerDrawing !== false} onChange={(event) => onSettings({ playerDrawing: event.target.checked })} />
+          Players may draw on the map
         </label>
         {onResetExplored ? (
           <label>

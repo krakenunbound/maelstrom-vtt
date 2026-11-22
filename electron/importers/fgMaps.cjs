@@ -272,6 +272,8 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
       // FG's hidden layer: the GM sees it faintly and can show it (a season, a revealed secret).
       hidden: Boolean(layer.invisible),
       group: groupOf(layer),
+      // FG's layer that ignores lights (uselights false): drawn above the darkness, never dimmed.
+      ...(String(layer.uselights) === "false" ? { unlit: true } : {}),
       file: layer.bitmap.slice(layer.bitmap.lastIndexOf("/") + 1),
       bytes: art.bytes,
     });
@@ -294,6 +296,8 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
       rotation: layerShape(layer).rotation,
       hidden: Boolean(layer.invisible),
       group: groupOf(layer) || "Text",
+      // FG's text with lighting on: dark where the map is dark (drawn under the darkness).
+      ...(layer.uselighting === true || layer.uselighting === "true" || layer.uselighting === "on" ? { lit: true } : {}),
       ...(/^\d+$/.test(words.trim()) ? { number: Number(words.trim()) } : {}),
     });
   }
@@ -317,6 +321,10 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
       notes: [],
       darkness: sceneDarkness,
       ...(ambient ? { ambient } : {}),
+      // FG's Token Movement Lock (players' moves wait for the GM), its player drawing switch, its vision preview.
+      ...(image.tokenlock === "on" || image.tokenlock === true ? { tokenLock: true } : {}),
+      ...(image.allowplayerdrawing === "off" || image.allowplayerdrawing === false ? { playerDrawing: false } : {}),
+      ...(image.previewvision === "on" || image.previewvision === true ? { previewVision: true } : {}),
     },
     // FG's grid offset, in scene pixels from the picture's corner.
     // FG's grid offset is from the picture's top left, y down (measured on N1's and B3's maps: it lands on the artist's lines).
