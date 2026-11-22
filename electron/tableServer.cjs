@@ -1711,6 +1711,53 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   if (pendingBooks.length > 0 && books) setTimeout(loadNextBook, 300);
   // The players may read it, or not (it is made active too). Never an
   // adventure: the players see its pictures and maps, as the GM shows them.
+  // FG's module sets (its Modules window's export and import): the books active in this campaign and those shared with
+  // the players, kept by name with the GM (any campaign of the game may apply a set); applying one makes active and
+  // shares what it names and makes inactive the rest, as FG's import loads and unloads; a book not on this computer is
+  // said. list; save (name); apply (name); remove (name).
+  async function moduleSet(args = {}) {
+    const action = String(args.action ?? "list");
+    const sets = prefs.get("@gm").moduleSets ?? {};
+    const name = String(args.name ?? "").replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 60);
+    const mine = Object.entries(sets).filter(([, set]) => !set.ruleset || set.ruleset === ruleset).map(([setName, set]) => ({ name: setName, active: set.active, shared: set.shared }));
+    if (action === "list") return { sets: mine };
+    if (!name) throw new Error("Name the set.");
+    // A book still on this computer (a campaign may list one active whose file is gone).
+    const onShelf = (id) => Boolean(books?.info?.(id));
+    if (action === "save") {
+      prefs.set("@gm", { moduleSets: { [name]: { ruleset, active: [...shelf.active].filter(onShelf), shared: [...shelf.shared].filter((id) => shelf.active.has(id) && onShelf(id)) } } });
+      return { saved: name, active: [...shelf.active].filter(onShelf).length, sets: (await moduleSet({ action: "list" })).sets };
+    }
+    if (action === "remove") {
+      if (!sets[name]) throw new Error(`No set "${name}".`);
+      prefs.set("@gm", { moduleSets: { [name]: null } });
+      return { removed: name };
+    }
+    if (action === "apply") {
+      const set = sets[name];
+      if (!set) throw new Error(`No set "${name}".`);
+      const known = (id) => books?.info?.(id) && fits(books.info(id));
+      const missing = set.active.filter((id) => !known(id));
+      const wanted = set.active.filter(known).map((id) => books.info(id).id);
+      for (const id of [...shelf.active]) {
+        if (wanted.includes(id)) continue;
+        if (onShelf(id)) await activateBook(id, false);
+        else {
+          // Gone from this computer: it is no longer active.
+          shelf.active.delete(id);
+          shelf.shared.delete(id);
+          shelfChanged();
+        }
+      }
+      for (const id of wanted) if (!shelf.active.has(id)) await activateBook(id, true);
+      for (const id of wanted) {
+        const share = set.shared.includes(id);
+        if (share !== shelf.shared.has(id)) await shareBook(id, share).catch(() => undefined);
+      }
+      return { applied: name, active: [...shelf.active], shared: [...shelf.shared], missing };
+    }
+    throw new Error("A module set: list, save, apply or remove.");
+  }
   async function shareBook(book, on = true) {
     const info = bookFor(book);
     if (on && info.adventure) throw new Error(`${info.title} is an adventure, the GM's alone. Show the players its pictures and maps instead.`);
@@ -2751,6 +2798,14 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         return;
       }
 
+      // The GM's module sets (the Modules window's Sets).
+      if (msg.type === "module-set") {
+        if (client.role !== "dm") return send(ws, { type: "op-result", req: msg.req ?? null, ok: false, id: "", error: "That is the GM's." });
+        moduleSet(msg)
+          .then((result) => send(ws, { type: "op-result", req: msg.req ?? null, ok: true, id: "", result }))
+          .catch((error) => send(ws, { type: "op-result", req: msg.req ?? null, ok: false, id: "", error: error instanceof Error ? error.message : "Could not do that." }));
+        return;
+      }
       if (msg.type === "book-activate" || msg.type === "book-share" || msg.type === "image-share" || msg.type === "image-unshare") {
         if (client.role !== "dm") {
           send(ws, { type: "error", reason: "Only the GM shares books and pictures." });
@@ -4288,6 +4343,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       }
       return bookTablesCache.tables;
     },
+    moduleSet,
     // A book written to the shelf (a module exported from the campaign): every seat's shelf again.
     booksChanged: () => shelfChanged(),
     // A campaign image (Campaign > Images: the GM's own picture, or a book's made a map) as a module export takes it:

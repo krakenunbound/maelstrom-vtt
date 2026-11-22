@@ -65,6 +65,7 @@ const MESSAGES = {
   "party-prompt-roll": "kraken_party_group_check",
   "party-order": "kraken_party_order",
   "party-bastion": "kraken_bastion",
+  "module-set": "kraken_module_set",
   "character-edit": "kraken_character_edit",
   starship: "kraken_starship",
   "mgt2-life": "kraken_traveller_lifepath",

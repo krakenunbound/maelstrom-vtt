@@ -8,6 +8,8 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Module sets:** Modules > Activation has Sets: save what is active (and which books the players may read) under a name, and apply a set in any campaign of the same game: its books made active and shared as they were, the rest made inactive; a book of the set not on this computer is named. The agent's kraken_module_set does the same. `scripts/check-module-sets.mjs`
+
 - **Holidays on calendar days:** the calendar marks holidays on their days and names them on the day's page; today's date says them ("Thursday, 25th December 2026 AD (Christmas Day), 08:00") and so does the date said in chat. The Gregorian calendar has its own (New Year's Day, Midsummer's Eve, All Hallows' Eve, Christmas Day, New Year's Eve); the GM adds their own on any day, a day or more long, kept with the campaign for that calendar. The agent's kraken_calendar holiday-add and holiday-remove do the same. `scripts/check-calendar-holidays.mjs`
 
 - **Random encounters, Generate:** an encounter's window has Generate: a new encounter with every count rolled now (1d4+1, and $PC for the number of party members), a creature that comes to 0 left out, opened to run; the one it came from stays as it was. A book's random encounters are listed with its encounters, each with Generate (its creatures linked to the book's). $PC also works as a count added by hand and when an encounter is added to the tracker. The agent's kraken_encounter generate does the same. `scripts/check-encounter-generate.mjs`

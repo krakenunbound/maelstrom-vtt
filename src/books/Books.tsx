@@ -1,4 +1,5 @@
 import { ModuleExport } from "./ModuleExport";
+import { ModuleSets } from "./ModuleSets";
 import { Fragment, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { shelfTree } from "../../shared/packs/organize.mjs";
 import { createPortal } from "react-dom";
@@ -333,6 +334,7 @@ export function BooksWindow({ session, onOpenAdventure, start = "books" }: { ses
       ) : null}
       {gm && tab === "packs" && canPack ? <PacksPanel ruleset={ruleset} /> : null}
       {gm && tab === "export" ? <ModuleExport session={session} /> : null}
+      {activation ? <ModuleSets session={session} /> : null}
       {gm && (tab === "packs" || tab === "export") ? null : activation ? (
         <p className="hint books-intro" title={GM("A Player's Handbook starts open to the players. Adventures are the GM's alone: show the players their pictures and maps from the book instead.")}>
           The modules for {ruleset || "this campaign's game"}. <b>Active</b> puts a book in this campaign; <b>Players</b> lets the players read it too. {GM("Adventures stay the GM's.")}

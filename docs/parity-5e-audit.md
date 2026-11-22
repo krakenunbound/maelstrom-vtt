@@ -271,7 +271,7 @@ FG's Library, Modules window, record lists (`masterindex`), record windows and r
 | FG control | Maelstrom | Verdict |
 |---|---|---|
 | Modules: load, unload, filters (name, author, loaded, shared, ruleset), paging | Activation: Active, Players, search, shelves by kind and series | Same |
-| Module sets (save and load a set of modules) | Not found | Missing |
+| Module sets (save and load a set of modules) | Modules > Activation: Sets: what is active (and shared with the players) saved by name, kept with the GM for any campaign of the game; Apply makes the set active and the rest inactive, says a book not on this computer | Better (named sets in the window, not a file) |
 | Module permissions: block, allow, autoload for players | Players box per book (shared or not) | Same (FG's autoload is a share) |
 | Library Export: build a module from the campaign | Modules > Export: the campaign's own records (whole kinds ticked, or single records dropped) into a pack in the packs folder (name, title, category, author; this game or any; the players may read it or not); its story, encounters, parcels and tables kept as a book's, characters as pregenerated ones, links between them into the pack; another campaign makes it active; a converted book is never written over; the campaign's images and maps go in with their pictures (Map Studio's painted ones), walls, doors, lights and grid, and open in the other campaign as the same maps | Same (an NPC's or item's own picture still names the book or art it comes from) |
 | Sidebar categories, folding, icon modes, drag a list link | The same | Same |
@@ -381,6 +381,5 @@ Any game can add its own the same way; nothing in the core names a game.
 
 All eight areas are compared, read from FG's ruleset files (CoreRPG and 5E) and
 Maelstrom's code, and what was missing is built (each area's commits name its
-check script). Still missing, by size: the
-module sets, and the rows marked Partly. The **Check live** rows want FG open on
+check script). Still missing: the rows marked Partly. The **Check live** rows want FG open on
 the 5E campaign through the bridge, side by side with Maelstrom.

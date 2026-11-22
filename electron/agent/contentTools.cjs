@@ -205,6 +205,13 @@ const TOOLS = [
     }, ["action"]),
     run: (args, ctx) => out(require("../bastion.cjs").bastionAction(needTable(ctx), { role: "dm", name: "GM" }, args)),
   },
+  {
+    name: "kraken_module_set",
+    description:
+      "FG's module sets (its Modules window's export and import): the books active in this campaign, and those shared with the players, kept by name with the GM for any campaign of the game. action list; save (name: what is active and shared now); apply (name: makes active and shares what the set names, makes inactive the rest; missing: books of the set not on this computer); remove (name).",
+    inputSchema: object({ action: { type: "string", enum: ["list", "save", "apply", "remove"] }, name: string("The set's name") }, ["action"]),
+    run: async (args, ctx) => out(await needTable(ctx).moduleSet(args)),
+  },
 ];
 
 module.exports = { TOOLS };

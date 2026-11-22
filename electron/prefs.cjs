@@ -53,6 +53,19 @@ function cleanPrefs(input, before, lookOf) {
   if (input.roll !== undefined) out.roll = clamp(input.roll, 0.5, 2.5, 1);
   // Their layout and interface settings (each screen's "kraken-" settings: windows, sidebar, chat size, UI scale,
   // map toolbar...), so they follow the person to the app or any browser. null takes one away.
+  // The GM's module sets (FG's module export and import): a name -> the game it is for, the books active in it and
+  // those shared with the players. null takes a set away.
+  if (input.moduleSets && typeof input.moduleSets === "object") {
+    const sets = { ...(out.moduleSets ?? {}) };
+    const ids = (list) => (Array.isArray(list) ? list : []).map((item) => String(item).slice(0, 200)).filter(Boolean).slice(0, 500);
+    for (const [rawName, value] of Object.entries(input.moduleSets)) {
+      const name = String(rawName).replace(/[\u0000-\u001f]/g, " ").trim().slice(0, 60);
+      if (!name) continue;
+      if (value === null) delete sets[name];
+      else if (value && typeof value === "object") sets[name] = { ruleset: String(value.ruleset ?? "").slice(0, 60), active: ids(value.active), shared: ids(value.shared) };
+    }
+    if (Object.keys(sets).length <= 100) out.moduleSets = sets;
+  }
   if (input.ui && typeof input.ui === "object") {
     const ui = { ...(out.ui ?? {}) };
     for (const [name, value] of Object.entries(input.ui)) {
