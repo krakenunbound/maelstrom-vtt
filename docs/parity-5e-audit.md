@@ -45,8 +45,8 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 | Desktop: Background decal position (DECALPOS) | center | `decalFit`: in the middle, covering the table, as large as fits | Done |
 | Dice: Limit rolls to chat window (DRMO) | off | `diceInChat`: no 3D dice, rolls straight to chat | Done |
 | Game: Rules Version (GAVE) | 2024 | House rule: exhaustion and a long rest's hit dice follow it (the tracker mixed 2024 exhaustion with 2014 rests before) | Done |
-| Party Sheet (Player): Show inventory details (PSIN) | off | Party sheet | Check live |
-| Party Sheet (Player): Show character details (PSMN) | off | Party sheet | Check live |
+| Party Sheet (Player): Show inventory details (PSIN) | off | Settings > Players see what the party carries (off: the loot and the stash only), as FG's (its sub_party hidden); on by default | Same (default differs) |
+| Party Sheet (Player): Show character details (PSMN) | off | Settings > Players see the party's details (off: names and portraits only), as FG's main tab; on by default | Same (default differs) |
 | Chat: Show GM rolls (REVL) | on | `revealGmRolls`: off, the GM's own rolls go to the GM alone (the roll mode and tower stay as they were) | Done |
 | Chat: Show all whispers to GM (SHPW) | off | `gmSeesWhispers`; before, the GM always saw every whisper | Done |
 | Chat: Show results to players (SHRR) | on | `resultsToPlayers`: on, with an ally, between allies, off. Hidden, the GM gets the full line and players the roll without HIT/MISS; a hidden creature's results never shown | Done |
@@ -82,8 +82,8 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 |---|---|---|---|
 | Speech: Display location (CHATMAP) | image | `speechBubbles`, each person's own: bubbles over the token, or the chat only | Done |
 | Speech: Play sound on whisper (CWHR) | on | `whisperSound`, each person's own | Done |
-| Desktop: Combat actions (TOAST_COMBAT) | off | Table toasts | Check live |
-| Desktop: Interface actions (TOAST_INTERFACE) | off | Table toasts | Check live |
+| Desktop: Combat actions (TOAST_COMBAT) | 5 s | Settings > Combat toasts: a note in the corner for each attack, damage, healing, save and effect (none, 3, 5, 10 s; each person's) | Same |
+| Desktop: Interface actions (TOAST_INTERFACE) | 3 s | Settings > Record toasts: a note when a record is added or deleted (a book's copied in are not news; a burst is one note) | Same |
 | Desktop: Display location (TOAST_LOCATION) | | Not found | Missing |
 | Desktop: Turn change (TOAST_TURN) | off | Turn card | Same |
 | Token: Combat actions (TOKEN_COMBAT) | off | `tokenFloats`, each person's own (on by default) | Done |
@@ -95,12 +95,12 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 |---|---|---|---|
 | Turn: Token center and/or select (CMAT) | on | `turnFocus`, each person's own: centre, centre and select, nothing | Done |
 | Color: Active character (COLOR) | | Player colour | Same |
-| Desktop: Combat list size (DESKTOPCTSIZE) | 6 | Not found | Check live |
-| Effect: Short summary display (EFFSHORT) | on | Effects on the tracker | Check live |
-| Input: Use Alt key for game actions (KALT) | on | Not found | Check live |
+| Desktop: Combat list size (DESKTOPCTSIZE) | 6 | Settings > Combat list: during a fight, the creatures to come in turn order along the top (6, 8, 10, 12 or none; the round's end marked; a click finds the token) | Same |
+| Effect: Short summary display (EFFSHORT) | on | Settings > Short effect summary: an effect's first part, * when there is more, [T] when targeted (the whole on hover) | Same |
+| Input: Use Alt key for game actions (KALT) | on | Settings > Use the Alt key: off, Alt does nothing at the table (drag without snap, Alt+Enter) | Same |
 | Dice: Manual entry (MANUALROLL) | off | `manualDice`, each person's own: a dialog for the faces, the host rolls with them, [MANUAL] in chat; the tray's, chat's, sheet's (checks, saves, skills, initiative) and tracker's (attacks, saves, death saves) rolls, the ruleset's die (`manualDie`, for its `manualKinds`; two with ADV or DIS); a line with some of the host's dice (an effect's advantage, a crit confirmation) says so | Yes (5E proved; the other d20 games declare theirs) |
 | Combat: Remove on miss (RMMT) | multi | `clearTargets` (never, action, turn); Remove on miss: with several targets (FG's default), always, never | Same |
-| Desktop: Restore windows on start (WSAV) | on | Windows remembered | Check live |
+| Desktop: Restore windows on start (WSAV) | on | Windows remembered where they were; Settings > Reopen my windows: the windows open when you left open again (each person's, each table's) | Same |
 
 ### Token
 
@@ -109,7 +109,7 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 | Token: Initiative indicator (INITIND) | off | `initIndicator`: a glow (default), a turning ring, nothing | Done |
 | Token: Auto-scale to grid (TASG) | 80 | `tokenFill`: 80% (default) or whole squares | Done |
 | Token: Facing indicator (TFAC) | off | `facingIndicator` (on by default: Maelstrom's tokens face a way) | Done |
-| Token: Fog of war (TFOW) | pc | Line of sight per scene | Check live |
+| Token: Fog of war (TFOW) | pc | Settings > Fog of war: what the players' tokens saw stays dim (pc), or only what is in sight (off); FG's "on" (every token) is pc here, a player seeing through any token they own | Same |
 | Token (GM): Show effects (TGME) | on | `effectsGm`: icons, on hover, one mark, a mark on hover, off | Done |
 | Token (GM): Show health (TGMH) | dot | `healthGm`; before, the GM saw the players' choice | Done |
 | Token: Name display (TNAM) | tooltip | `names` (off, hover, always) | Same |

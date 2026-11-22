@@ -159,9 +159,11 @@ export const PRESETS: ({ name: string } & DiceLook)[] = [
 // they follow them to any browser, past a reload, a restart and signing in again.
 // readAloud: the GM's read-aloud also shown on this screen as a bubble (off: only in chat).
 // turnCard: whose turn it is (a portrait card) for every turn. turnSound, turnBanner: when this person's turn comes round on the combat tracker, a chime, and a banner across the screen.
+// FG's KALT: Alt held, unless this person has Alt off (another program's key).
+export const altHeld = (event: { altKey: boolean }) => event.altKey && settings.useAlt !== false;
 // A dice set's drag (FG's dice skin): its whole look.
 export const DICE_LOOK_DRAG = "text/kraken-dice-look";
-export type DiceSettings = { show: boolean; sound: boolean; volume: number; tray: number; roll: number; look: DiceLook; npc: DiceLook | null; damage: DiceLook | null; color: string | null; turnSound: boolean; turnBanner: boolean; turnCard?: boolean; readAloud?: boolean; whisperSound?: boolean; manualDice?: boolean; turnFocus?: "on" | "select" | "off"; tokenFloats?: boolean; speechBubbles?: boolean; speechSeconds?: number };
+export type DiceSettings = { show: boolean; sound: boolean; volume: number; tray: number; roll: number; look: DiceLook; npc: DiceLook | null; damage: DiceLook | null; color: string | null; turnSound: boolean; turnBanner: boolean; turnCard?: boolean; readAloud?: boolean; whisperSound?: boolean; manualDice?: boolean; turnFocus?: "on" | "select" | "off"; tokenFloats?: boolean; speechBubbles?: boolean; speechSeconds?: number; useAlt?: boolean; effectsShort?: boolean; reopenWindows?: boolean; toastCombat?: number; toastInterface?: number; combatList?: number };
 export type DiceSet = "look" | "npc" | "damage";
 type SettingsPatch = Partial<Omit<DiceSettings, "look" | "npc" | "damage">> & { look?: Partial<DiceLook>; npc?: Partial<DiceLook> | null; damage?: Partial<DiceLook> | null };
 const { name: _first, ...firstLook } = PRESETS.find((preset) => preset.name === "Classic Ruby") ?? PRESETS[0];
@@ -207,7 +209,7 @@ const keep = () => {
 };
 // The GM's app, which keeps these for this person (set when the seat is taken).
 let sink: ((patch: Record<string, unknown>) => void) | null = null;
-const SERVER_KEYS = ["show", "sound", "volume", "tray", "roll", "look", "npc", "damage", "color", "turnSound", "turnBanner", "turnCard", "readAloud", "whisperSound", "manualDice", "turnFocus", "tokenFloats", "speechBubbles", "speechSeconds"] as const;
+const SERVER_KEYS = ["show", "sound", "volume", "tray", "roll", "look", "npc", "damage", "color", "turnSound", "turnBanner", "turnCard", "readAloud", "whisperSound", "manualDice", "turnFocus", "tokenFloats", "speechBubbles", "speechSeconds", "useAlt", "effectsShort", "reopenWindows", "toastCombat", "toastInterface", "combatList"] as const;
 const forServer = (from: Partial<DiceSettings>) => Object.fromEntries(SERVER_KEYS.filter((key) => from[key] !== undefined).map((key) => [key, from[key]]));
 function adopt(saved: Record<string, unknown>) {
   const look = saved.look && typeof saved.look === "object" ? fullLook(saved.look as Partial<DiceLook>) : DEFAULTS.look;
@@ -236,6 +238,18 @@ function adopt(saved: Record<string, unknown>) {
     speechBubbles: saved.speechBubbles !== false,
     // FG's Speech: Map display duration: as long as it takes to read (0), or a set number of seconds.
     speechSeconds: [0, 3, 5, 10, 20].includes(Number(saved.speechSeconds)) ? Number(saved.speechSeconds) : 0,
+    // FG's Input: Use Alt key for game actions (KALT, on): off, Alt does nothing at the table (another program's).
+    useAlt: saved.useAlt !== false,
+    // FG's Effect: Short summary display (EFFSHORT, on): a tracker row's effects as their first part (* when there is
+    // more), their time and [T] when targeted.
+    effectsShort: saved.effectsShort !== false,
+    // FG's Desktop: Restore windows on start (WSAV, on): the windows open when this person left open again.
+    reopenWindows: saved.reopenWindows !== false,
+    // FG's Desktop: Combat actions and Interface actions (TOAST_COMBAT 5, TOAST_INTERFACE 3): seconds a toast shows (0: none).
+    toastCombat: [0, 3, 5, 10].includes(Number(saved.toastCombat)) ? Number(saved.toastCombat) : 5,
+    toastInterface: [0, 3, 5, 10].includes(Number(saved.toastInterface)) ? Number(saved.toastInterface) : 3,
+    // FG's Desktop: Combat list size (DESKTOPCTSIZE, 6): the creatures shown in turn order during a fight (0: none).
+    combatList: [0, 6, 8, 10, 12].includes(Number(saved.combatList)) ? Number(saved.combatList) : 6,
     turnBanner: typeof saved.turnBanner === "boolean" ? saved.turnBanner : DEFAULTS.turnBanner,
     ...(typeof saved.turnCard === "boolean" ? { turnCard: saved.turnCard } : {}),
     ...(typeof saved.readAloud === "boolean" ? { readAloud: saved.readAloud } : {}),

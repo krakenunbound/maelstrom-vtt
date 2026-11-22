@@ -14,7 +14,7 @@ import { BookRecordWindow, listOf, RecordsWindow, RecordWindow, sidebarLists } f
 import { shareDrop, UndoToast } from "../books/RecordEditor";
 import { CombatTracker } from "../combat/CombatTracker";
 import { PartySheet } from "../party/PartySheet";
-import { savedSignIn, type QuickSlot, type Session } from "../session/useSession";
+import { savedSignIn, type QuickSlot, type Session, type CombatEntry } from "../session/useSession";
 import { diceStore } from "../dice/diceStore";
 import { agentCommands } from "./agentCommands";
 import { ChatDock } from "./ChatDock";
@@ -304,6 +304,7 @@ export function Desktop({
 }) {
   const gm = session.role === "dm";
   const windows = useWindows();
+  useReopenWindows(session, windows);
   // A player gone quiet dims (idle); the GM's menu for a player (Players' rows, the portraits).
   useIdle(session);
   const playerMenu = usePlayerMenu();
@@ -797,6 +798,8 @@ export function Desktop({
         <ClocksStrip session={session} />
         {gm ? <UndoToast session={session} /> : null}
         <TableToast session={session} mapOpen={Boolean(scene)} />
+        <ActionToasts session={session} />
+        <CombatList session={session} />
 
         <div className="window-layer">
           {windows.windows.map((item) =>
@@ -887,6 +890,139 @@ export function Desktop({
 
 // What the host said to this seat: a refusal or failure (it is in the chat log too), or, with no map
 // open to show it, a notice such as "Campaign saved.". Gone after a few seconds, or on a click.
+// FG's desktop combat list (Desktop: Combat list size, DESKTOPCTSIZE, this person's 6, 8, 10 or 12): during a fight,
+// the creatures to come in turn order from the one acting, the round's end marked, then those who have acted; a click
+// finds its token on the map. Hidden creatures stay hidden (the tracker's view for this seat).
+function CombatList({ session }: { session: Session }) {
+  const size = useSyncExternalStore(diceStore.subscribe, diceStore.settings).combatList ?? 6;
+  const view = session.combat;
+  if (!size || !view || !view.active || view.round < 1) return null;
+  const order = view.entries.filter((entry) => !entry.delayed);
+  const at = Math.max(0, order.findIndex((entry) => entry.id === view.active));
+  const coming = order.slice(at);
+  const acted = order.slice(0, at);
+  const shown: (CombatEntry | "end")[] = [...coming, "end" as const, ...acted].slice(0, size + 1);
+  if (shown[shown.length - 1] === "end") shown.pop();
+  const art = (entry: CombatEntry) => {
+    const record = entry.recordId ? session.records[entry.recordId] : null;
+    return record && (record.data?.portrait || record.data?.token || record.data?.picture) ? session.recordArtUrl(record.id) : "";
+  };
+  return (
+    <ol className="combat-list" aria-label="Turn order" data-combat-list={size}>
+      {shown.map((entry, index) =>
+        entry === "end" ? (
+          <li key="end" className="combat-list-end" title={`Round ${view.round + 1} begins`} data-combat-list-end>
+            {view.round + 1}
+          </li>
+        ) : (
+          <li key={entry.id} className={["combat-list-entry", entry.faction, entry.id === view.active ? "on" : ""].filter(Boolean).join(" ")} data-combat-list-entry={entry.name}>
+            <button type="button" title={`${entry.name}${index === 0 ? " (acting)" : ""}`} onClick={() => entry.tokenId && window.dispatchEvent(new CustomEvent("kraken:focus-token", { detail: entry.tokenId }))}>
+              <span className="combat-list-initials" aria-hidden="true">{entry.name.split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase()}</span>
+              {art(entry) ? <img src={art(entry)} alt="" onError={(event) => (event.currentTarget.style.display = "none")} /> : null}
+            </button>
+          </li>
+        ),
+      )}
+    </ol>
+  );
+}
+
+// FG's Desktop: Combat actions and Interface actions (TOAST_COMBAT, TOAST_INTERFACE, this person's seconds): a note
+// in the corner for each attack, damage, healing, save and effect this person sees in the chat, and for a record added
+// or deleted (not a book's, copied in when it is made active; a burst is one note).
+type ActionToast = { id: number; kind: "combat" | "record"; title: string; text: string };
+let toastCount = 0;
+function ActionToasts({ session }: { session: Session }) {
+  const settings = useSyncExternalStore(diceStore.subscribe, diceStore.settings);
+  const [toasts, setToasts] = useState<ActionToast[]>([]);
+  // The chat lines already seen, by when, who and what (not the time alone: a player's clock may differ from the
+  // GM's; not the line object: a damage card's update replaces it).
+  const seen = useRef<Set<string> | null>(null);
+  const keyOf = (line: { at: number; from: string; text?: string; roll?: { label?: string } }) => `${line.at}|${line.from}|${line.roll?.label ?? line.text ?? ""}`;
+  const known = useRef<Map<string, { name: string; type: string }> | null>(null);
+  const show = (kind: ActionToast["kind"], title: string, text: string, seconds: number) => {
+    if (!seconds) return;
+    const id = ++toastCount;
+    setToasts((now) => [...now, { id, kind, title, text }].slice(-4));
+    window.setTimeout(() => setToasts((now) => now.filter((item) => item.id !== id)), seconds * 1000);
+  };
+  // Combat: the chat's new lines.
+  useEffect(() => {
+    if (!seen.current) {
+      seen.current = new Set(session.chat.map(keyOf));
+      return;
+    }
+    const fresh = session.chat.filter((line) => !seen.current?.has(keyOf(line)));
+    for (const line of fresh) seen.current.add(keyOf(line));
+    if (seen.current.size > 2000) seen.current = new Set(session.chat.map(keyOf));
+    if (!fresh.length) return;
+    for (const line of fresh.slice(-4)) {
+      const label = String(line.roll?.label ?? "");
+      const tag = /^\[(ATTACK|DAMAGE|HEAL|SAVE|EFFECT|CONCENTRATION)\]/i.exec(label)?.[1] ?? /^\[(EFFECT)\]|^Effect \[/.exec(line.text ?? "")?.[0];
+      if (!tag) continue;
+      const words = label ? `${label.replace(/\[(?:TYPE|MANUAL)[^\]]*\]/g, "").replace(/\s+/g, " ").trim()}${line.roll ? ` = ${line.roll.total}` : ""}` : String(line.text ?? "");
+      show("combat", line.from, words.slice(0, 160), settings.toastCombat ?? 5);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.chat]);
+  // Records: added or deleted (the campaign's own; a book's copied in on activation are not news).
+  useEffect(() => {
+    const now = new Map(Object.values(session.records).filter((record) => !record.source).map((record) => [record.id, { name: record.name, type: record.type }]));
+    const before = known.current;
+    known.current = now;
+    if (!before) return;
+    const added = [...now.entries()].filter(([id]) => !before.has(id)).map(([, record]) => record);
+    const gone = [...before.entries()].filter(([id]) => !now.has(id)).map(([, record]) => record);
+    const say = (list: { name: string; type: string }[], verb: string) => {
+      if (!list.length) return;
+      show("record", verb, list.length > 3 ? `${list.length} records` : list.map((record) => `${record.type}: ${record.name}`).join(", "), settings.toastInterface ?? 3);
+    };
+    say(added, "Added");
+    say(gone, "Deleted");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session.records]);
+  if (!toasts.length) return null;
+  return (
+    <div className="action-toasts" role="status" aria-live="polite">
+      {toasts.map((toast) => (
+        <p key={toast.id} className={`action-toast ${toast.kind}`} data-action-toast={toast.kind}>
+          <b>{toast.title}</b> {toast.text}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+// FG's Desktop: Restore windows on start (WSAV, this person's, on): the windows open at this table, kept in this
+// browser for this person; opened again when they come back (the map is the table's own, opened by itself).
+function useReopenWindows(session: Session, manager: ReturnType<typeof useWindows>) {
+  const reopen = useSyncExternalStore(diceStore.subscribe, diceStore.settings).reopenWindows !== false;
+  const me = session.players.find((seat) => seat.id === session.selfId)?.name ?? "";
+  const table = session.hostInfo?.campaignId ?? session.remoteLabel ?? "";
+  const key = me && table ? `kraken-open-windows:${table}:${me}` : "";
+  const restored = useRef("");
+  useEffect(() => {
+    if (!key || restored.current === key) return;
+    restored.current = key;
+    if (!reopen) return;
+    try {
+      const list = JSON.parse(window.localStorage.getItem(key) ?? "[]") as { kind: string; title: string; payload?: string }[];
+      for (const item of Array.isArray(list) ? list.slice(0, 40) : []) if (item && typeof item.kind === "string" && item.kind !== "map") manager.open(item.kind as never, String(item.title ?? ""), item.payload);
+    } catch {
+      /* nothing kept */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  useEffect(() => {
+    if (!key || restored.current !== key) return;
+    try {
+      window.localStorage.setItem(key, JSON.stringify(manager.windows.filter((item) => item.kind !== "map").map((item) => ({ kind: item.kind, title: item.title, ...(item.payload ? { payload: item.payload } : {}) }))));
+    } catch {
+      /* not kept */
+    }
+  }, [manager.windows, key]);
+}
+
 function TableToast({ session, mapOpen }: { session: Session; mapOpen: boolean }) {
   const { error, clearError } = session;
   const notice = mapOpen ? null : session.notice;

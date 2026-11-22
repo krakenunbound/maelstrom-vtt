@@ -46,6 +46,9 @@ function cleanPrefs(input, before, lookOf) {
   if (typeof input.tokenFloats === "boolean") out.tokenFloats = input.tokenFloats;
   if (typeof input.speechBubbles === "boolean") out.speechBubbles = input.speechBubbles;
   if ([0, 3, 5, 10, 20].includes(Number(input.speechSeconds))) out.speechSeconds = Number(input.speechSeconds);
+  for (const key of ["useAlt", "effectsShort", "reopenWindows"]) if (typeof input[key] === "boolean") out[key] = input[key];
+  for (const key of ["toastCombat", "toastInterface"]) if ([0, 3, 5, 10].includes(Number(input[key]))) out[key] = Number(input[key]);
+  if ([0, 6, 8, 10, 12].includes(Number(input.combatList))) out.combatList = Number(input.combatList);
   if (typeof input.turnBanner === "boolean") out.turnBanner = input.turnBanner;
   if (typeof input.turnCard === "boolean") out.turnCard = input.turnCard;
   if (typeof input.readAloud === "boolean") out.readAloud = input.readAloud;

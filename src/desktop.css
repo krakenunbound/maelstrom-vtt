@@ -3093,3 +3093,18 @@ label.set-row { cursor: pointer; }
 .ask-dialog .ask-buttons { display: flex; justify-content: flex-end; gap: 8px; }
 .level-up-dialog .level-up-spells { flex-direction: column; flex-wrap: nowrap; }
 .level-up-dialog .level-up-spell-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); gap: 2px 12px; max-height: 14rem; overflow: auto; }
+
+/* FG's toasts (Desktop: Combat actions, Interface actions): notes in the corner, each person's seconds. */
+.action-toasts { position: fixed; right: 16px; top: 64px; z-index: 8900; display: flex; flex-direction: column; gap: 6px; max-width: min(90vw, 24rem); pointer-events: none; }
+.action-toast { margin: 0; padding: 6px 10px; border: 1px solid var(--brass-dim); border-radius: 8px; background: #161b22; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45); font-size: 0.88em; }
+.action-toast.record { border-color: var(--line); }
+
+/* FG's desktop combat list: the turn order to come, along the top of the table. */
+.combat-list { position: fixed; left: 50%; top: 52px; translate: -50% 0; z-index: 5; display: flex; gap: 6px; align-items: center; margin: 0; padding: 4px 8px; list-style: none; border-radius: 22px; background: rgba(10, 12, 16, 0.72); }
+.combat-list-entry button { position: relative; display: grid; place-items: center; width: 38px; height: 38px; padding: 0; overflow: hidden; border: 2px solid var(--line); border-radius: 50%; background: var(--panel); color: var(--text); cursor: pointer; }
+.combat-list-entry.friend button { border-color: #3f9a5a; }
+.combat-list-entry.foe button { border-color: #b4483c; }
+.combat-list-entry.on button { width: 46px; height: 46px; border-color: var(--brass); box-shadow: 0 0 10px var(--brass-soft, rgba(200, 160, 80, 0.4)); }
+.combat-list-entry img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.combat-list-initials { font-size: 0.78em; font-weight: 600; }
+.combat-list-end { padding: 0 6px; border-inline: 2px solid var(--brass-dim); color: var(--muted); font-size: 0.8em; }

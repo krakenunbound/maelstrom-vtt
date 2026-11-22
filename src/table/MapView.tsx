@@ -3,7 +3,7 @@ import { Icon } from "../ui/icons";
 import { cssRect, cssX, cssY } from "../ui/pageZoom";
 import { tilesInView, watchTiles, type MapTile as PictureTile, type TileSet } from "./mapTiles";
 import { lazy, memo, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { diceStore } from "../dice/diceStore";
+import { diceStore, altHeld } from "../dice/diceStore";
 import { ReadAloudBubble, useMapShown } from "../books/ReadAloudBubble";
 import { MARKER_SETS, markerShapes } from "../../shared/map/deathMarkers.mjs";
 import { backgroundRect, colorWithAlpha, gridStops, sceneFrame, type BackgroundFit, type SceneFrame } from "../foundry/geometry";
@@ -756,12 +756,12 @@ function MapViewInner({
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
       // Alt+wheel over a token raises or lowers it (elevation), for the GM or its player.
-      if (event.altKey && !event.shiftKey) {
+      if (altHeld(event) && !event.shiftKey) {
         const over = (event.target as HTMLElement | null)?.closest?.("[data-token]")?.getAttribute("data-token");
         const step = -Math.sign(event.deltaY || event.deltaX);
         if (over && step && elevateRef.current(over, step)) return;
       }
-      if (event.ctrlKey && !event.shiftKey && !event.altKey) {
+      if (event.ctrlKey && !event.shiftKey && !altHeld(event)) {
         const over = (event.target as HTMLElement | null)?.closest?.("[data-token]")?.getAttribute("data-token");
         const step = -Math.sign(event.deltaY || event.deltaX);
         if (over && step && sizeRef.current(over, step)) return;
@@ -769,7 +769,7 @@ function MapViewInner({
       if (event.shiftKey) {
         const over = (event.target as HTMLElement | null)?.closest?.("[data-token]")?.getAttribute("data-token");
         const turn = Math.sign(event.deltaY || event.deltaX);
-        if (over && turn && turnRef.current(over, turn, event.ctrlKey || event.altKey)) return;
+        if (over && turn && turnRef.current(over, turn, event.ctrlKey || altHeld(event))) return;
       }
       const rect = cssRect(element);
       const pointerX = cssX(event.clientX) - rect.left;
@@ -1854,7 +1854,7 @@ function MapViewInner({
           if (!point) return;
           // Pointer to pointer: a plain click on a big token (its centre away from the pointer) is not a move.
           const moved = drag.moved || Math.hypot(point.x - drag.grab.x, point.y - drag.grab.y) > size * 0.2;
-          setDrag({ ...drag, at: point, moved, snap: !event.altKey });
+          setDrag({ ...drag, at: point, moved, snap: !altHeld(event) });
           return;
         }
         if (measure && measure.pointerId === event.pointerId) {
@@ -1996,8 +1996,8 @@ function MapViewInner({
             const lead = ghost ?? target;
             const dx = lead.x - drag.start.x;
             const dy = lead.y - drag.start.y;
-            actions.moveTokens([{ id: drag.id, x: target.x, y: target.y }, ...drag.group.map((item) => ({ id: item.id, x: item.x + dx, y: item.y + dy }))], !event.altKey);
-          } else if (drag.moved && dragTo) actions.moveToken(drag.id, dragTo.x, dragTo.y, !event.altKey, drag.waypoints);
+            actions.moveTokens([{ id: drag.id, x: target.x, y: target.y }, ...drag.group.map((item) => ({ id: item.id, x: item.x + dx, y: item.y + dy }))], !altHeld(event));
+          } else if (drag.moved && dragTo) actions.moveToken(drag.id, dragTo.x, dragTo.y, !altHeld(event), drag.waypoints);
           setDrag(null);
           return;
         }
@@ -2534,7 +2534,7 @@ function MapViewInner({
                 const point = worldAt(cssX(event.clientX), cssY(event.clientY));
                 if (!point) return;
                 if (viewport.current) capture(viewport.current, event.pointerId);
-                setDrag({ pointerId: event.pointerId, id: token.id, start: { x: token.x, y: token.y }, grab: point, at: point, moved: false, snap: !event.altKey, squares: token.squares, group: group.map((item) => ({ id: item.id, x: item.x, y: item.y, squares: item.squares })) });
+                setDrag({ pointerId: event.pointerId, id: token.id, start: { x: token.x, y: token.y }, grab: point, at: point, moved: false, snap: !altHeld(event), squares: token.squares, group: group.map((item) => ({ id: item.id, x: item.x, y: item.y, squares: item.squares })) });
               }}
               onContextMenu={(event) => {
                 event.preventDefault();

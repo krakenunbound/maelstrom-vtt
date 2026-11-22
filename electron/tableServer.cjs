@@ -342,6 +342,9 @@ function savedOptions(value) {
     clearTargets: ["never", "action", "turn"].includes(options.clearTargets) ? options.clearTargets : "never",
     // FG's Remove on miss (RMMT): off, on, or multi (FG's default: only when an attack had several targets).
     removeOnMiss: ["off", "on", "multi"].includes(options.removeOnMiss) ? options.removeOnMiss : "multi",
+    // FG's Token: Fog of war (TFOW, "pc"): what the players' tokens have seen stays dim on the map; off, only what they
+    // see now (nothing remembered).
+    tokenFog: options.tokenFog === "off" ? "off" : "pc",
     // FG's dice by type: damage dice in their damage type's colours, a creature's in its type's (on by default).
     typedDice: options.typedDice !== false,
     // Conditions and effects on tokens: animated, icons only, or not drawn (every seat).
@@ -1388,8 +1391,9 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
           const view = hidden ? emptyView() : map.viewFor(seatOf(client), client.assetToken);
           send(ws, { type: "map", ...view });
           // Fog of war: what this player sees now joins what they have seen (kept here, sent to them alone).
-          if (!hidden && view.vision && map.explore(client.name, view.vision)) explored = true;
-          if (!hidden) sendExplored(ws, client, map, client.name);
+          const remembers = options.tokenFog !== "off";
+          if (!hidden && remembers && view.vision && map.explore(client.name, view.vision)) explored = true;
+          if (!hidden) sendExplored(ws, client, map, remembers ? client.name : null);
           continue;
         }
         const working = gmMap();

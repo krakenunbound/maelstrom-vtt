@@ -73,6 +73,34 @@ function YouAtTheTable() {
       </SettingRow>
       <Toggle label="Damage and healing over tokens" hint="The numbers float up from a token as it is hurt or healed." setting="token-floats" checked={settings.tokenFloats !== false} onChange={(on) => diceStore.update({ tokenFloats: on })} />
       <Toggle label="Speech over tokens" hint="What a character or creature says shows in a bubble over its token as well as in the chat." setting="speech-bubbles" checked={settings.speechBubbles !== false} onChange={(on) => diceStore.update({ speechBubbles: on })} />
+      <Toggle label="Use the Alt key" hint="Alt at the table: a token dragged without snapping, Alt+Enter for out of character. Off when another program uses Alt (a voice chat's overlay)." setting="use-alt" checked={settings.useAlt !== false} onChange={(on) => diceStore.update({ useAlt: on })} />
+      <Toggle label="Short effect summary" hint="On the combat tracker: each effect as its first part (* when there is more), its time and [T] when it is targeted. Off: the whole effect." setting="effects-short" checked={settings.effectsShort !== false} onChange={(on) => diceStore.update({ effectsShort: on })} />
+      <Toggle label="Reopen my windows" hint="The windows you had open when you left open again when you come back to this table." setting="reopen-windows" checked={settings.reopenWindows !== false} onChange={(on) => diceStore.update({ reopenWindows: on })} />
+      <SettingRow label="Combat toasts" hint="A note in the corner for attacks, damage and effects, for so many seconds.">
+        <select value={settings.toastCombat ?? 5} onChange={(event) => diceStore.update({ toastCombat: Number(event.target.value) })} aria-label="Combat toasts" data-setting="toast-combat">
+          <option value={0}>None</option>
+          <option value={3}>3 seconds</option>
+          <option value={5}>5 seconds</option>
+          <option value={10}>10 seconds</option>
+        </select>
+      </SettingRow>
+      <SettingRow label="Record toasts" hint="A note in the corner when a record is added or deleted, for so many seconds.">
+        <select value={settings.toastInterface ?? 3} onChange={(event) => diceStore.update({ toastInterface: Number(event.target.value) })} aria-label="Record toasts" data-setting="toast-interface">
+          <option value={0}>None</option>
+          <option value={3}>3 seconds</option>
+          <option value={5}>5 seconds</option>
+          <option value={10}>10 seconds</option>
+        </select>
+      </SettingRow>
+      <SettingRow label="Combat list" hint="During a fight, the creatures to come in turn order along the top of the table (the round's end marked).">
+        <select value={settings.combatList ?? 6} onChange={(event) => diceStore.update({ combatList: Number(event.target.value) })} aria-label="Combat list" data-setting="combat-list">
+          <option value={0}>None</option>
+          <option value={6}>6</option>
+          <option value={8}>8</option>
+          <option value={10}>10</option>
+          <option value={12}>12</option>
+        </select>
+      </SettingRow>
       <SettingRow label="Speech bubble time" hint="How long a bubble stays over a token.">
         <select value={settings.speechSeconds ?? 0} onChange={(event) => diceStore.update({ speechSeconds: Number(event.target.value) })} aria-label="Speech bubble time" data-setting="speech-seconds">
           <option value={0}>As long as it takes to read</option>
@@ -208,6 +236,12 @@ export function SettingsWindow({ session }: { session: Session }) {
             </select>
           </SettingRow>
           <Toggle label="Dice by type" hint="Damage dice in their damage type's colours (fire red, cold blue, necrotic black...), a creature's dice in its type's (undead, fiends, celestials...), over each person's own set." setting="typed-dice" checked={(session.options as { typedDice?: boolean }).typedDice !== false} onChange={(on) => session.setTableOptions({ typedDice: on } as never)} />
+          <SettingRow label="Fog of war" hint="What the players' tokens have seen stays on their map, dim; or they see only what is in sight now.">
+            <select value={(session.options as { tokenFog?: string }).tokenFog ?? "pc"} onChange={(event) => session.setTableOptions({ tokenFog: event.target.value } as never)} aria-label="Fog of war" data-setting="token-fog">
+              <option value="pc">Remember what they saw</option>
+              <option value="off">Only what is in sight</option>
+            </select>
+          </SettingRow>
           <SettingRow label="Remove on miss" hint="After an attack, the targets it missed come off the attacker's targets: never, always, or only when it had several targets.">
             <select value={(session.options as { removeOnMiss?: string }).removeOnMiss ?? "multi"} onChange={(event) => session.setTableOptions({ removeOnMiss: event.target.value } as never)} aria-label="Remove on miss" data-setting="remove-on-miss">
               <option value="multi">With several targets</option>

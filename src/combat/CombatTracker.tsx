@@ -1,3 +1,4 @@
+import { diceStore } from "../dice/diceStore";
 import { useWindows } from "../ui/Windows";
 import { RestParty } from "../bookkeeping/RestParty";
 import { useState, useSyncExternalStore, type ReactNode } from "react";
@@ -61,6 +62,16 @@ function focusToken(tokenId: string | null) {
 // One row: whose turn, initiative, the creature, its defence and health,
 // and its effects. The GM edits it in place.
 function Row({ entry, session, active }: { entry: CombatEntry; session: Session; active: boolean }) {
+  // FG's EFFSHORT (this person's): an effect as its first part, * when there is more, [T] when targeted.
+  const effectsShort = useSyncExternalStore(diceStore.subscribe, diceStore.settings).effectsShort !== false;
+  const effectText = (item: { label: string }) => {
+    if (!effectsShort) return item.label;
+    // A targeted effect's label ends with its targets ("[-> Goblin]").
+    const targeted = /\s*\[-> [^\]]*\]$/.exec(item.label);
+    const base = targeted ? item.label.slice(0, targeted.index) : item.label;
+    const parts = base.split(";").map((part) => part.trim()).filter(Boolean);
+    return `${parts[0] ?? base}${parts.length > 1 ? "*" : ""}${targeted ? " [T]" : ""}`;
+  };
   const gm = session.role === "dm";
   const [amount, setAmount] = useState("");
   const [effect, setEffect] = useState("");
@@ -471,7 +482,7 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
                   {item.inactive ? "○" : item.skip ? "◐" : "●"}
                 </button>
               ) : null}
-              {item.label}
+              <span title={item.label} data-effect-text>{effectText(item)}</span>
               {/* Its time in its own units (8 h, 10 min), rounds counted underneath. */}
               {item.duration ? <small>{item.units ? `${Math.ceil(item.duration / ({ minute: 10, hour: 600, day: 14400 } as const)[item.units])} ${({ minute: "min", hour: "h", day: "d" } as const)[item.units]}` : item.duration}</small> : null}
               {gm ? (

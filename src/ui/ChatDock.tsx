@@ -3,7 +3,7 @@ import { usePreviewed } from "./pickerPreview";
 import { BRAND } from "../../shared/brand.mjs";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { ChatLine, DamageCard, RollResult, Session } from "../session/useSession";
-import { characterDice, DICE_LOOK_DRAG, diceStore, FATE_SIDES, fateFace, rolling, setThrow, tower as towerDrops, type DiceLook } from "../dice/diceStore";
+import { characterDice, DICE_LOOK_DRAG, diceStore, FATE_SIDES, fateFace, rolling, setThrow, tower as towerDrops, type DiceLook, altHeld } from "../dice/diceStore";
 import { ladder } from "../../shared/fate/rules.mjs";
 import { commandsFor, runChat, type Command } from "./chatCommands";
 import { slotDrag } from "./QuickSlots";
@@ -1281,9 +1281,9 @@ export function ChatDock({ session }: { session: Session }) {
             }
             if (event.key === "Escape") setHelpOpen(false);
             // FG's send keys: Ctrl+Enter the GM's story or a player's action, Ctrl+Shift+Enter an emote, Alt+Enter OOC.
-            if (event.key === "Enter" && (event.ctrlKey || event.metaKey || event.altKey) && draft.trim() && !draft.trim().startsWith("/")) {
+            if (event.key === "Enter" && (event.ctrlKey || event.metaKey || altHeld(event)) && draft.trim() && !draft.trim().startsWith("/")) {
               event.preventDefault();
-              const command = event.altKey ? "ooc" : event.shiftKey ? "emote" : session.role === "dm" ? "story" : "action";
+              const command = altHeld(event) ? "ooc" : event.shiftKey ? "emote" : session.role === "dm" ? "story" : "action";
               remember(draft);
               runLine(`/${command} ${draft.trim()}`);
               setDraft("");

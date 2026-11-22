@@ -1659,6 +1659,7 @@ const TOOLS = [
       motd: { type: "object", properties: { text: { type: "string" }, links: { type: "array" } } },
       clearTargets: { type: "string", enum: ["never", "action", "turn"] },
       removeOnMiss: { type: "string", enum: ["off", "on", "multi"] },
+      tokenFog: { type: "string", enum: ["pc", "off"], description: "FG's Token: Fog of war: pc (default) what the players' tokens have seen stays dim on the map; off, only what they see now" },
       tokenEffects: { type: "string", enum: ["full", "icons", "off"], description: "Conditions and effects on tokens: animated visuals (Zzz, flames, frost...), icons only, or not drawn" },
       playerEffects: { type: "string", enum: ["none", "lights", "conditions", "all"], description: "What players may put on their own characters from the Effects list" },
       autoApply: { type: "boolean", description: "Damage and healing land as the roll does (FG, true), or wait on the chat card's buttons (Foundry, false)" },
