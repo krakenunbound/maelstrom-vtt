@@ -705,10 +705,8 @@ export function buildFromSpec(spec, lib, rulesetId = RULESET) {
   const perLevel = toughnessOf(species) || toughnessOf(ancestry);
   const toughness = perLevel * level;
   const hp = die + con + (level - 1) * (Math.floor(die / 2) + 1 + con) + toughness;
-  const senses = (() => {
-    const dark = /Darkvision with a range of (\d+) feet/i.exec([...Object.values(species?.data?.traits ?? {}), ...Object.values(ancestry?.data?.traits ?? {})].map((trait) => trait.text ?? "").join(" "));
-    return dark ? `Darkvision ${dark[1]} ft` : "";
-  })();
+  // Senses and speed as the species' traits give them (speciesInfo: a 2014 Dwarf's 25 feet, its darkvision's 60).
+  const senses = kin?.darkvision ? `Darkvision ${kin.darkvision} ft` : "";
   const warnings = listed(spec.warnings).map(String).filter(Boolean);
   const data = derive({
     ruleset: profile.id,
@@ -735,7 +733,7 @@ export function buildFromSpec(spec, lib, rulesetId = RULESET) {
     packages: { "id-00001": { name: cls.name, packagetype: "Class", level, hitdie: die, ...(subclass ? { subclass: subclass.name } : {}) } },
     hitdice: { die, total: level, used: 0 },
     hp: { total: Math.max(1, hp), wounds: 0 },
-    speed: String(species?.data?.speed ?? "30 feet").replace(/\s*feet/i, " ft."),
+    speed: species?.data?.speed ? String(species.data.speed).replace(/\s*feet/i, " ft.") : `${kin?.speed ?? 30} ft.`,
     senses,
     inventorylist,
     coins,

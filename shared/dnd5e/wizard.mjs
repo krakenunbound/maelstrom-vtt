@@ -223,6 +223,10 @@ export function speciesInfo(species, ancestry) {
   for (const trait of traits) {
     const key = simplify(trait.name);
     const text = plain(trait.text);
+    // A Legacy species' speed is its Speed trait's ("Your base walking speed is 25 feet"); a lineage's may change it
+    // (a Wood Elf's Fleet of Foot: "increases to 35 feet").
+    const walking = /(?:base (?:walking |land )?speed|walking speed) (?:is|increases to) (\d+) feet/i.exec(text);
+    if (walking && !species.data?.speed) out.speed = Number(walking[1]);
     if (/darkvision/.test(key)) {
       const range = Number(/(\d+)/.exec(text)?.[1] ?? 0);
       if (range) out.darkvision = Math.max(out.darkvision, range);

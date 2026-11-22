@@ -32,6 +32,8 @@ const records = [
     {
       asi: { name: "Ability Score Increase", text: "<p>Your Constitution score increases by 2.</p>" },
       lang: { name: "Languages", text: "<p>You speak Common and Dwarvish. More about the tongue follows.</p>" },
+      speed: { name: "Speed", text: "<p>Your base walking speed is 25 feet. Heavy armor does not slow you.</p>" },
+      dark: { name: "Darkvision", text: "<p>You can see in dim light within 60 feet of you as if it were bright light.</p>" },
       tool: { name: "Tool Proficiency", text: "<p>You gain proficiency with the artisan's tools of your choice: smith's tools, brewer's supplies, or mason's tools.</p>" },
     },
     {
@@ -48,7 +50,7 @@ const records = [
     name: "Cleric",
     visibility: "all",
     source: "Test Legacy",
-    data: { name: "Cleric", hp: { hitdice: { text: "1d8 per cleric level" } }, proficiencies: { armor: { text: "Light armor, medium armor, shields" }, weapons: { text: "All simple weapons" }, savingthrows: { text: "Wisdom, Charisma" }, skills: { text: "Choose two from History, Insight, Medicine, Persuasion, and Religion" } }, features: { a: { name: "Divine Domain", level: 1, specializationchoice: 1, text: "<p>Choose a domain.</p>" } } },
+    data: { name: "Cleric", text: "<p>You start with the following equipment, in addition to the equipment granted by your background:</p><list><li>(a) a mace or (b) a warhammer (if proficient)</li><li>(a) scale mail, (b) leather armor, or (c) chain mail (if proficient)</li><li>(a) a light crossbow and 20 bolts or (b) any simple weapon</li><li>(a) a priest's pack or (b) an explorer's pack, shield and a holy symbol</li></list>", hp: { hitdice: { text: "1d8 per cleric level" } }, proficiencies: { armor: { text: "Light armor, medium armor, shields" }, weapons: { text: "All simple weapons" }, savingthrows: { text: "Wisdom, Charisma" }, skills: { text: "Choose two from History, Insight, Medicine, Persuasion, and Religion" } }, features: { a: { name: "Divine Domain", level: 1, specializationchoice: 1, text: "<p>Choose a domain.</p>" } } },
   },
   {
     id: "test-legacy:reference.class_specializationdata@Test Legacy",
@@ -117,8 +119,9 @@ const lib = { classes: of("class"), species: of("race"), ancestries: of("race_su
 const hero = buildFromSpec({ name: "Test", species: "Dwarf", ancestry: "Hill Dwarf", class: "Cleric", subclass: "Life Domain", level: 1, scores: { strength: 10, dexterity: 10, constitution: 14, intelligence: 10, wisdom: 15, charisma: 10 }, details: { deity: "A god of the forge", ideals: "Tradition." } }, lib).data;
 assert(hero.hp.total === 8 + 3 + 1, `Hill Dwarf cleric's hit points (8 + Con 3 + 1): ${hero.hp.total}`);
 assert(hero.hpperlevel === 1 && hero.deity === "A god of the forge" && hero.ideals === "Tradition.", "a hit point a level kept; the wizard's details on the sheet");
+assert(hero.speed === "25 ft." && hero.senses === "Darkvision 60 ft", `a 2014 Dwarf's speed and darkvision from its traits: ${hero.speed}, ${hero.senses}`);
 assert(/heavy armor/.test(hero.proficiencylist.armor), "heavy armor on the sheet");
-done.push("a Hill Dwarf cleric built: its toughness, heavy armor and details");
+done.push("a Hill Dwarf cleric built: its toughness, speed 25, darkvision 60, heavy armor and details");
 // The builder holds a spec to the class's own skill list as the wizard reads it ("Choose four from Acrobatics, ..."):
 // the first skill named counts, and so does a count in words.
 {
@@ -128,7 +131,8 @@ done.push("a Hill Dwarf cleric built: its toughness, heavy armor and details");
   assert(!built.problems.length && known === "acrobatics,deception,perception,stealth", `a 2014 Rogue's four skills, the first named too: ${known} ${built.problems}`);
   done.push("a 2014 class's skill choices held as the wizard reads them (four, the first named counts)");
 }
-// The 2014 starting kits: the class's (the ruleset's table) and the background's (its equipment sentence).
+// The 2014 starting kits, read from the book's words: the class's equipment list (each (a)/(b) line a choice; two packs
+// with more after the last: the rest comes with either) and the background's equipment sentence.
 const gear = [
   ["Mace", "Weapon", "Simple Melee Weapons"],
   ["Warhammer", "Weapon", "Martial Weapons"],
@@ -170,7 +174,7 @@ const kitted = buildFromSpec(
 ).data;
 const carried = Object.values(kitted.inventorylist).map((entry) => entry.name);
 assert(["Shield", "Emblem", "Warhammer", "Chain Mail", "Club"].every((name) => carried.includes(name)), `built with its kit: ${carried}`);
-done.push("2014 starting kits: a class's included items and choices (a kind picked from the books), a background's read from its sentence, built onto the sheet");
+done.push("2014 starting kits read from the book: a class's equipment list (choices, a kind picked from the books' items) and a background's sentence, built onto the sheet");
 // A campaign that made the book active under an older reader (no subrace records then) reads it again when it opens.
 {
   const { createBookShelf } = require("../electron/books.cjs");
