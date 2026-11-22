@@ -3567,7 +3567,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
 
       // The campaign's content (electron/content.cjs): copies, story, random tables, identifying
       // items, encounters, parcels, quests. The GM's, but for a table roll; answered as an op.
-      if (["record-copy", "story", "table-roll", "identify", "encounter", "parcel", "quest", "npc-import", "item-forge", "race-import", "item-import", "module-export"].includes(msg.type)) {
+      if (["record-copy", "record-revert", "story", "table-roll", "identify", "encounter", "parcel", "quest", "npc-import", "item-forge", "race-import", "item-import", "module-export"].includes(msg.type)) {
         const seat = seatOf(client);
         const reply = (ok, result, error) => send(ws, { type: "op-result", req: msg.req ?? null, ok, id: result?.id ?? "", ...(ok ? { result } : { error }) });
         require("./content.cjs")

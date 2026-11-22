@@ -26,6 +26,7 @@ const MESSAGES = {
   roll: "kraken_roll",
   op: "kraken_record_update",
   "record-copy": "kraken_record_duplicate",
+  "record-revert": "kraken_record_revert",
   story: "kraken_story",
   "table-roll": "kraken_table",
   "npc-import": "kraken_npc_import",

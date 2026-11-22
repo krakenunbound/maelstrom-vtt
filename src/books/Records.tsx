@@ -445,7 +445,43 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
             {status}
           </p>
         ) : null}
-        <div className="records-list">
+        <div
+          className="records-list"
+          // FG's list drops: a book's record copied into the campaign; a text file of stat blocks, races or items
+          // imported as this list's.
+          onDragOver={(event) => {
+            if (gm && list && ([...event.dataTransfer.types].includes(SLOT_DRAG) || [...event.dataTransfer.types].includes("Files"))) event.preventDefault();
+          }}
+          onDrop={(event) => {
+            if (!gm || !list) return;
+            const link = linkFrom(event);
+            const record = link?.kind === "record" && link.record ? session.records[link.record] : null;
+            if (record) {
+              event.preventDefault();
+              if (record.source && listOf(record) === list) void recordMenu.actions.copyToCampaign(record).catch((error: unknown) => setStatus(error instanceof Error ? error.message : String(error)));
+              else setStatus(record.source ? `${record.name} belongs in another list.` : `${record.name} is already the campaign's.`);
+              return;
+            }
+            const file = event.dataTransfer.files?.[0];
+            if (!file) return;
+            event.preventDefault();
+            const request = ({ npc: "npc-import", race: "race-import", item: "item-import" } as const)[list as "npc" | "race" | "item"];
+            if (!request || !(/^text\//.test(file.type) || /\.(txt|md|text)$/i.test(file.name))) {
+              setStatus("Drop a text file of stat blocks on NPCs, of races on Races, or of items on Items.");
+              return;
+            }
+            void file.text().then((text) =>
+              session
+                .content<TableRecord & { made?: TableRecord[]; problems?: string[] }>(request, request === "item-import" ? (/\|/.test(text) ? { list: text, text: "" } : { list: "", text }) : { text })
+                .then((made) => {
+                  const first = made.made?.[0] ?? (made.id ? made : null);
+                  setStatus(`${file.name}: ${made.made ? `${made.made.length} made` : `${made.name} made`}.${made.problems?.length ? ` ${made.problems.join(" ")}` : ""}`);
+                  if (first) onOpen(first);
+                })
+                .catch((error: unknown) => setStatus(error instanceof Error ? error.message : String(error))),
+            );
+          }}
+        >
           {books.map((book) => (
             <section key={book} data-records-book={book}>
               <h4>{book}</h4>
@@ -455,9 +491,15 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
               {items.map((record) => (
                 <div key={record.id} className="records-row" data-record-row={record.id} onContextMenu={gm ? (event) => recordMenu.show(event, record) : undefined}>
                   {gm ? <ShareMenu session={session} record={record} /> : null}
-                  <button type="button" className="records-name" title={gm ? `Open ${record.name} (right-click: Duplicate, Delete)` : `Open ${record.name}`} onClick={() => onOpen(record)} {...slotDrag({ kind: "record", record: record.id, label: record.name })}>
+                  <button type="button" className="records-name" title={gm ? `Open ${record.name} (right-click: ${record.source ? "Copy to campaign, Revert" : "Duplicate, Delete"})` : `Open ${record.name}`} onClick={() => onOpen(record)} {...slotDrag({ kind: "record", record: record.id, label: record.name })}>
                     {record.name}
                   </button>
+                  {/* FG's version column: the rules a record is written for (5E's 2014 or 2024). */}
+                  {typeof record.data.version === "string" && record.data.version ? (
+                    <span className="records-version" data-record-version={record.data.version} title={`Written for the ${record.data.version} rules`}>
+                      {record.data.version}
+                    </span>
+                  ) : null}
                 </div>
               ))}
               </Fragment>

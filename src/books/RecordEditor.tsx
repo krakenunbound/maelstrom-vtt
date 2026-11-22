@@ -180,12 +180,15 @@ export function useRecordActions(session: Session) {
     windows.close(`record:${record.id}`);
     undo.set({ record, at: Date.now() });
   };
+  // FG's Revert: a book's record as its book has it, the GM's changes dropped.
+  const revert = (record: TableRecord) => session.content<TableRecord>("record-revert", { id: record.id });
   const items = (record: TableRecord): MenuItem[] => [
     { label: "Open", icon: "open", run: () => windows.open("record", record.name, record.id) },
     ...(record.source ? [{ label: "Copy to campaign", icon: "import", run: () => void copyToCampaign(record) }] : [{ label: "Duplicate", icon: "plus", run: () => void duplicate(record) }]),
+    ...(record.source && typeof record.data.fgPath === "string" ? [{ label: "Revert to the book's", icon: "undo", run: () => void revert(record) }] : []),
     ...(record.source ? [] : [{ label: "Delete", icon: "trash", run: () => void remove(record) }]),
   ];
-  return { open, duplicate, copyToCampaign, remove, items };
+  return { open, duplicate, copyToCampaign, revert, remove, items };
 }
 
 // The Undo for the last delete, for a few seconds (the GM's desktop).

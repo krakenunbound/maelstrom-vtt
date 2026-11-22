@@ -32,6 +32,16 @@ async function copyRecord(table, { id, name, book, path }, readBook = table.read
   return table.records.duplicate(record.id, table.seat, { name: name ?? (record.source ? record.name : `${record.name} (copy)`) });
 }
 
+// FG's Revert: a book's record as its book has it again, the GM's changes to it dropped.
+async function revertRecord(table, { id }, readBook = table.readBookRecord) {
+  const record = must(table, id);
+  const bookPath = typeof record.data?.fgPath === "string" ? record.data.fgPath : "";
+  if (!record.source || !bookPath) throw new Error(`${record.name} is the campaign's own: there is no book's to go back to.`);
+  const found = await readBook?.(record.source, bookPath);
+  if (!found) throw new Error(`${record.source} has no ${bookPath} now (is the book active?).`);
+  return table.records.update(record.id, { name: found.name, data: found.data }, table.seat, { replace: true });
+}
+
 // --- Story --------------------------------------------------------------------
 // A story record (FG's story, with the Story Template's pages): its chapter
 // (the list's category), its order in it, and its pages in order: text (FG's
@@ -565,6 +575,7 @@ const MESSAGES = {
   "item-forge": (table, msg, ctx) => itemForge(table, msg, ctx.readBook),
   "npc-import": (table, msg) => npcImport(table, msg),
   "record-copy": (table, msg, ctx) => copyRecord(table, msg, ctx.readBook),
+  "record-revert": (table, msg, ctx) => revertRecord(table, msg, ctx.readBook),
   story: (table, msg) => storyAction(table, msg),
   "table-roll": (table, msg, ctx) => tableAction(table, msg, ctx.seat, ctx.from),
   identify: (table, msg) => identify(table, msg),
@@ -580,4 +591,4 @@ async function message(table, msg, ctx) {
   return handler(table, args, ctx);
 }
 
-module.exports = { moduleExport, itemImport, raceImport, itemForge, npcImport, message, copyRecord, storyAction, tableAction, rollOn, findTable, identify, parcelAction, parcelContents, encounterAction, encounterXp, questAction, unidentified, itemName };
+module.exports = { moduleExport, itemImport, raceImport, itemForge, npcImport, message, copyRecord, revertRecord, storyAction, tableAction, rollOn, findTable, identify, parcelAction, parcelContents, encounterAction, encounterXp, questAction, unidentified, itemName };

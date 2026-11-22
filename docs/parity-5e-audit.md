@@ -277,8 +277,8 @@ FG's Library, Modules window, record lists (`masterindex`), record windows and r
 | Sidebar categories, folding, icon modes, drag a list link | The same | Same |
 | List: name search, All / Shared, add, edit (delete), paging | Search, All / Shared, + New, right-click Duplicate / Delete with Undo, 400 rows then search | Better (undo) |
 | List: groups (custom categories): create, rename, delete, drop a record in | Your groups: + Group, drop a record on a chip, click to show, × to remove; a Group filter and By group | Done (no rename) |
-| List: drop a record link or file to copy or import | Copy to campaign; tables pasted | Partly |
-| List: row share icon, module icon, revert, version column | Eye per row; book in the subtitle | Partly (no revert per row, no version) |
+| List: drop a record link or file to copy or import | Copy to campaign; tables pasted; a book's record dropped on its list copied into the campaign; a text file dropped on NPCs, Races or Items imported (stat blocks, races, items) | Yes |
+| List: row share icon, module icon, revert, version column | Eye per row; book in the subtitle; Revert to the book's on a book record's right-click (kraken_record_revert); its version (2014, 2024) on the row | Yes |
 | 5E NPC filters: CR, type; views by letter, CR, type | CR, type and book filters | Same |
 | 5E Item filters: type, rarity, attunement; Armor, Weapons, Gear tables | Type, rarity, attunement and book filters; book armor and weapon tables | Same |
 | 5E Spell filters: level, school, source, ritual | Level, ritual, school, class, book | Same |

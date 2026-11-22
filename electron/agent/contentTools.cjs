@@ -24,6 +24,12 @@ const TOOLS = [
     run: async (args, ctx) => out(await content.copyRecord(needTable(ctx), args)),
   },
   {
+    name: "kraken_record_revert",
+    description: "FG's Revert, a list row's right-click menu: a book's record (an active book's, id) as its book has it again, the GM's changes to it dropped.",
+    inputSchema: object({ id: string("The book's record") }, ["id"]),
+    run: async (args, ctx) => out(await content.revertRecord(needTable(ctx), args)),
+  },
+  {
     name: "kraken_story",
     description:
       "The campaign's story (FG's story records, with the Story Template's pages): its chapters are the list's categories. action create (name, chapter, order, blocks or text, visibility); copy (path: an adventure's story entry, as kraken_library list kind story gives it, copied into the campaign); set (id: name, chapter, order, blocks: the whole list of pages); add-block (id, kind, text (formatted text: <p>, <h>, <b>, <i>, <u>, <list><li>, <table><tr><td>, <frame> for boxed read-aloud text, <link class recordname>), text2 (columns), link, frame, color, style, at); set-block (id, at, and any of text, text2, link, frame, color, style; frame or color \"\" clears it); remove-block (id, at). Share it with kraken_record_update visibility (all, or a list of players' names).",
