@@ -645,4 +645,6 @@ function modulePicture(reference, ownModule) {
   return { bytes: Buffer.from(bytes), mime };
 }
 
-module.exports = { readModule, prepareModule, importModule, listModules, fgDataFolder, convertXml, modulePicture, resolveModule };
+// converterVersion: this reader's own version (its code's hash); a campaign whose book records were read by another
+// reads them again (a newer reader makes 2014 subraces records of their own).
+module.exports = { readModule, prepareModule, importModule, listModules, fgDataFolder, convertXml, modulePicture, resolveModule, converterVersion: CONVERTER };

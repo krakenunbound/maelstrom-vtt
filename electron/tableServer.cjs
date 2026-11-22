@@ -619,6 +619,8 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   const shelf = {
     active: new Set(ids(saved.books?.active)),
     shared: new Set(ids(saved.books?.shared)),
+    // The reader each active book's records were read with (fgModule's converterVersion): another reader reads them again.
+    readWith: saved.books?.readWith && typeof saved.books.readWith === "object" ? Object.fromEntries(Object.entries(saved.books.readWith).filter(([, value]) => typeof value === "string").slice(0, 400)) : {},
     images: Array.isArray(saved.books?.images)
       ? saved.books.images.filter((item) => item && typeof item.book === "string" && typeof item.file === "string").slice(-40).map((item) => ({ id: text(item.id, "").slice(0, 40), book: item.book, file: item.file, name: text(item.name, "Picture").slice(0, 120), at: num(item.at, 0), ...(Array.isArray(item.to) && item.to.length ? { to: item.to.map((name) => text(name, "").slice(0, 24)).filter(Boolean).slice(0, 32) } : {}) }))
       : [],
@@ -1709,6 +1711,20 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     const file = books?.file?.(info.id);
     if (!file) return;
     const had = records.list({ source: info.name });
+    const reader = require("./importers/fgModule.cjs").converterVersion;
+    // Read by an older reader (or never stamped): its rules records are read again whole, so what the reader now
+    // makes (a 2014 race's subraces as records) reaches a campaign that made the book active before.
+    if (had.length && shelf.readWith[info.id] !== reader) {
+      try {
+        importModule(records, GM_SEAT, file, { only: new Set([...RULES_TYPES, ...LATER_TYPES]) });
+        shelf.readWith[info.id] = reader;
+        laterRead.add(info.id);
+      } catch {
+        /* as below */
+      }
+      return;
+    }
+    shelf.readWith[info.id] = reader;
     // An earlier, fuller load: take out what the rules do not use.
     for (const record of had) if (!RULES_TYPES.has(record.type)) records.remove(record.id, GM_SEAT);
     if (had.some((record) => RULES_TYPES.has(record.type))) {
@@ -5010,7 +5026,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         records: records.toJSON(),
         dice: dice.toJSON(),
         sound: soundscape,
-        books: shelfView(),
+        books: { ...shelfView(), readWith: shelf.readWith },
         soundTriggers,
         soundTriggersVersion: TRIGGERS_VERSION,
         chatCleared: Object.fromEntries(chatCleared),

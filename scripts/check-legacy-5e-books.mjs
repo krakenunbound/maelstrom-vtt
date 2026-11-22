@@ -160,5 +160,31 @@ const kitted = buildFromSpec(
 const carried = Object.values(kitted.inventorylist).map((entry) => entry.name);
 assert(["Shield", "Emblem", "Warhammer", "Chain Mail", "Club"].every((name) => carried.includes(name)), `built with its kit: ${carried}`);
 done.push("2014 starting kits: a class's included items and choices (a kind picked from the books), a background's read from its sentence, built onto the sheet");
+// A campaign that made the book active under an older reader (no subrace records then) reads it again when it opens.
+{
+  const { createBookShelf } = require("../electron/books.cjs");
+  const { createTableServer } = require("../electron/tableServer.cjs");
+  const shelf = createBookShelf({ folder: dir });
+  const table = createTableServer({ books: shelf, ruleset: "D&D 5E" });
+  await table.agent.activateBook("Test Legacy");
+  const subraces = (server) => server.agent.records.list({ type: "race_subrace" }).length;
+  assert(subraces(table) === 2, `made active: its subraces: ${subraces(table)}`);
+  const saved = JSON.parse(JSON.stringify(table.persisted()));
+  const id = Object.keys(saved.books.readWith)[0];
+  assert(id, "the reader each book was read with is kept with the campaign");
+  saved.books.readWith[id] = "an older reader";
+  const records = saved.records?.records ?? saved.records;
+  if (Array.isArray(records)) saved.records.records ? (saved.records.records = records.filter((record) => record.type !== "race_subrace")) : (saved.records = records.filter((record) => record.type !== "race_subrace"));
+  else for (const [key, record] of Object.entries(records)) if (record.type === "race_subrace") delete records[key];
+  const before = createTableServer({ books: shelf, ruleset: "D&D 5E", saved });
+  assert(subraces(before) === 0, "saved without them");
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  assert(subraces(before) === 2, `reopened, read again by this reader: ${subraces(before)}`);
+  assert(before.persisted().books.readWith[id] !== "an older reader", "and stamped with it");
+  await table.stop?.();
+  await before.stop?.();
+  done.push("a campaign whose books an older reader read gets them read again when it opens");
+}
 fs.rmSync(dir, { recursive: true, force: true });
 console.log(`ok legacy 5e books: ${done.join("; ")}`);
+process.exit(0);
