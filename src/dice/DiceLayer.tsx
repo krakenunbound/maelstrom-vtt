@@ -1,3 +1,4 @@
+import { naturalCheered } from "../../shared/rulesets/naturals.mjs";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import type { ChatLine } from "../session/useSession";
@@ -34,6 +35,8 @@ type Flight = { groups: THREE.Group[]; from: THREE.Vector3[]; to: THREE.Vector3;
 const FRAME_MS = 1000 / 60;
 // How long landed dice lie on the table (the GM's Dice on the table setting).
 let HOLD_MS = 2600;
+// The game's tests a natural 20 or 1 is cheered on (its manifest's naturalTests; none: every d20 thrown alone).
+let NATURAL_TESTS: string[] | undefined;
 const MAX_ON_TABLE = 16;
 const SHRINK_MS = 380;
 
@@ -182,7 +185,8 @@ function createEngine(host: HTMLDivElement) {
           });
         // A natural 20 or a 1 on a d20 flares where it lies: only a d20 thrown alone (a
         // check, an attack, a save). Among other dice (20d20, a handful) a 1 means nothing.
-        if (item.look.crit !== false && item.dice.length === 1)
+        // And only on a roll whose natural matters (a test of the game's: an attack, a save, a check; not initiative).
+        if (item.look.crit !== false && item.dice.length === 1 && naturalCheered(item.line?.roll?.label, NATURAL_TESTS))
           item.groups.forEach((group, die) => {
             if (item.dice[die].kind !== "d20") return;
             const shown = item.labels[die][topFace("d20", group.quaternion)];
@@ -313,12 +317,15 @@ function createEngine(host: HTMLDivElement) {
 }
 
 // The layer over the whole window that the dice roll on. Clicks go through it.
-export default function DiceLayer({ holdSeconds }: { holdSeconds?: number }) {
+export default function DiceLayer({ holdSeconds, naturalTests }: { holdSeconds?: number; naturalTests?: string[] }) {
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const seconds = Number(holdSeconds);
     HOLD_MS = Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 2600;
   }, [holdSeconds]);
+  useEffect(() => {
+    NATURAL_TESTS = naturalTests;
+  }, [naturalTests]);
   useEffect(() => {
     const element = host.current;
     if (!element) return;

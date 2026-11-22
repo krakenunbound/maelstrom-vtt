@@ -28,6 +28,9 @@ export default {
   id: "dnd5e",
   manualDie: "1d20",
   levelUpChoices: true,
+  // A natural 20 or 1 cheered on the game's tests: attacks, saves, ability and skill checks, death saves, concentration,
+  // the party sheet's group checks and saves; not initiative, not a table's roll.
+  naturalTests: ["ATTACK", "SAVE", "CHECK", "SKILL", "DEATH SAVE", "CONCENTRATION", "GROUP SAVE", "GROUP CHECK", "GROUP SKILL"],
   // Where a character keeps its classes (FG's classes list), for the roster, Character Selection and spells.
   // FG's characters keep a classes list; Maelstrom's builder a class package.
   classes: [{ rows: "classes", name: "name", level: "level" }, { rows: "packages", where: { packagetype: "Class" }, name: "name", level: "level" }],

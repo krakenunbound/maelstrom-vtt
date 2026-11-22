@@ -446,6 +446,10 @@ export interface RulesetManifest {
   // The rolls that die is for: check, save, skill, init (the sheet's), attack, death-save (the tracker's). Absent:
   // all of them. A roll not listed is the host's.
   manualKinds?: string[];
+  // The d20 rolls a natural 20 or 1 is cheered on (the die's flare and its fanfare or trombone): the label's tags of the
+  // game's tests (ATTACK, SAVE, CHECK...); a d20 with no tag (a free roll) too; any other (INIT, a table's) is a number
+  // only. Absent: every d20 thrown alone.
+  naturalTests?: string[];
   // A level up asks for the next level's choices first (FG's wizard: hit points rolled or fixed, a subclass, an
   // Ability Score Improvement or a feat; src/characters/LevelUpDialog.tsx, shared/dnd5e/levelup.mjs).
   levelUpChoices?: boolean;
