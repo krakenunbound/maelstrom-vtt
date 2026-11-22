@@ -74,7 +74,7 @@ export type TrapInfo = { damage?: string; damageType?: string; save?: { attribut
 export type HeldToken = { tokenId: string; name: string; held: { region: string; name: string; at: number; save?: { success: boolean | null; total: number }; damage?: { total: number } }; region: MapRegion | null };
 // An effect on a creature as its owner and the GM see it (the tracker's, or a token's out of the fight):
 // its words, rounds left of `total`, put out for now (a light), its picture, who put it on.
-export type TrackedEffect = { id: string; label: string; duration: number; total?: number; paused?: boolean; icon?: string; source?: string; gmOnly?: boolean };
+export type TrackedEffect = { id: string; label: string; duration: number; total?: number; paused?: boolean; icon?: string; source?: string; gmOnly?: boolean; inactive?: boolean; skip?: boolean; apply?: "roll" | "action" | "once"; units?: "minute" | "hour" | "day" };
 // An area template on the map (a spell's sphere, cone, line or cube): world pixels for
 // its origin, feet for its size; angle: degrees clockwise from east.
 export type MapTemplate = { id: string; shape: "circle" | "cone" | "line" | "square"; x: number; y: number; size: number; width: number; angle: number; spread?: number; color: string; label: string; by: string; attach?: string; turn?: boolean; entryId?: string };

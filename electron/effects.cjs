@@ -38,7 +38,7 @@ function createEffects(table) {
     const presets = effectsLib.presetsFor(declaration());
     const own = table.records
       .list({ type: "effect", seat })
-      .map((record) => ({ id: `custom:${record.id}`, recordId: record.id, kind: ["condition", "buff", "debuff", "light"].includes(record.data?.kind) ? record.data.kind : "buff", label: text(record.data?.label, record.name), icon: text(record.data?.icon, ""), text: text(record.data?.text, ""), duration: Number(record.data?.duration) || 0, burn: Number(record.data?.burn) || null, gmOnly: Boolean(record.data?.gmOnly), custom: true }));
+      .map((record) => ({ id: `custom:${record.id}`, recordId: record.id, kind: ["condition", "buff", "debuff", "light"].includes(record.data?.kind) ? record.data.kind : "buff", label: text(record.data?.label, record.name), icon: text(record.data?.icon, ""), text: text(record.data?.text, ""), duration: Number(record.data?.duration) || 0, burn: Number(record.data?.burn) || null, gmOnly: Boolean(record.data?.gmOnly), ...(["roll", "action", "once"].includes(record.data?.apply) ? { apply: record.data.apply } : {}), ...(["minute", "hour", "day"].includes(record.data?.units) ? { units: record.data.units } : {}), custom: true }));
     return [...presets, ...own];
   }
 
@@ -46,7 +46,8 @@ function createEffects(table) {
   // (a light's burn time in this game's rounds), its picture, who put it on.
   function fromPreset(item, extra = {}) {
     const rounds = item.kind === "light" ? effectsLib.burnRounds(item.burn, roundSeconds()) : Math.max(0, Math.round(Number(extra.duration ?? item.duration) || 0));
-    return { label: item.label, duration: rounds, total: rounds, icon: item.icon || undefined, gmOnly: Boolean(extra.gmOnly ?? item.gmOnly), source: extra.source };
+    // FG's Apply and duration units (a custom effect's): the tracker counts the units in rounds.
+    return { label: item.label, duration: rounds, total: rounds, icon: item.icon || undefined, gmOnly: Boolean(extra.gmOnly ?? item.gmOnly), source: extra.source, ...(item.apply ? { apply: item.apply } : {}), ...(item.kind !== "light" && item.units ? { units: item.units } : {}) };
   }
 
   // Where it goes: { entryId } | { tokenId } | { recordId }. Returns
@@ -113,7 +114,7 @@ function createEffects(table) {
       } else {
         const label = text(effect?.label);
         if (!label) throw new Error("An effect needs words: a name, then its parts (Bless; ATK: 1d4).");
-        item = { id: "", kind: kindOf(label), label, icon: text(effect?.icon), duration: Number(effect?.duration) || 0, burn: Number(effect?.burn) || null, gmOnly: Boolean(effect?.gmOnly) };
+        item = { id: "", kind: kindOf(label), label, icon: text(effect?.icon), duration: Number(effect?.duration) || 0, burn: Number(effect?.burn) || null, gmOnly: Boolean(effect?.gmOnly), ...(["roll", "action", "once"].includes(effect?.apply) ? { apply: effect.apply } : {}), ...(["minute", "hour", "day"].includes(effect?.units) ? { units: effect.units } : {}) };
       }
       mayTouch(where, seat, item.kind);
       // A light lit from the pack (bookkeeping): a torch, or a flask of oil for a lantern; a player with none is refused.
@@ -154,6 +155,9 @@ function createEffects(table) {
       if (patch.duration !== undefined && !(effect.total > 0)) clean.total = clean.duration;
       if (patch.gmOnly !== undefined) clean.gmOnly = Boolean(patch.gmOnly);
       if (patch.paused !== undefined) clean.paused = Boolean(patch.paused);
+      if (patch.inactive !== undefined) clean.inactive = Boolean(patch.inactive);
+      if (patch.skip !== undefined) clean.skip = Boolean(patch.skip);
+      if (patch.apply !== undefined) clean.apply = ["roll", "action", "once"].includes(patch.apply) ? patch.apply : "";
       let changed;
       if (where.kind === "entry") changed = table.combat.changeEffect(where.entry.id, effect.id, clean);
       else {
@@ -180,6 +184,8 @@ function createEffects(table) {
         text: text(input?.text).slice(0, 400),
         duration: Math.max(0, Math.round(Number(input?.duration) || 0)),
         burn: Number(input?.burn) > 0 ? Math.round(Number(input.burn)) : null,
+        apply: ["roll", "action", "once"].includes(input?.apply) ? input.apply : "",
+        units: ["minute", "hour", "day"].includes(input?.units) ? input.units : "",
         gmOnly: Boolean(input?.gmOnly),
       };
       const name = label.split(";")[0].trim().slice(0, 80);

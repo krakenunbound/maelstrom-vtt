@@ -68,6 +68,8 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
   const [effectGmOnly, setEffectGmOnly] = useState(false);
   const [effectOnTargets, setEffectOnTargets] = useState(false);
   const [effectEnds, setEffectEnds] = useState("");
+  const [effectUnits, setEffectUnits] = useState("");
+  const [effectApply, setEffectApply] = useState("");
   const windows = useWindows();
   const [open, setOpen] = useState(false);
   const [saveStat, setSaveStat] = useState("wisdom");
@@ -462,9 +464,16 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
       {entry.effects.length > 0 ? (
         <div className="ct-effects">
           {entry.effects.map((item) => (
-            <span key={item.id} className="ct-effect" title={item.duration ? `${item.duration} round${item.duration === 1 ? "" : "s"} left` : "Until removed"}>
+            <span key={item.id} className={["ct-effect", item.inactive ? "inactive" : "", item.skip ? "skip" : ""].filter(Boolean).join(" ")} data-effect-state={item.inactive ? "inactive" : item.skip ? "skip" : "active"} title={`${item.duration ? `${item.duration} round${item.duration === 1 ? "" : "s"} left` : "Until removed"}${item.apply ? ` · goes after ${item.apply === "roll" ? "one roll" : item.apply === "action" ? "one action" : "a single use"}` : ""}`}>
+              {/* FG's effect state: active, inactive (kept, counting for nothing), skipped once (from the next turn). */}
+              {gm ? (
+                <button type="button" className="ct-effect-state" aria-label={`${item.label}: ${item.inactive ? "inactive" : item.skip ? "skipped once" : "active"}`} title={item.inactive ? "Inactive: click to skip it once" : item.skip ? "Skipped once (counts from the next turn): click to make it active" : "Active: click to make it inactive"} onClick={() => session.effects("update", { to: { entryId: entry.id }, effectId: item.id, patch: item.inactive ? { inactive: false, skip: true } : item.skip ? { skip: false } : { inactive: true } })}>
+                  {item.inactive ? "○" : item.skip ? "◐" : "●"}
+                </button>
+              ) : null}
               {item.label}
-              {item.duration ? <small>{item.duration}</small> : null}
+              {/* Its time in its own units (8 h, 10 min), rounds counted underneath. */}
+              {item.duration ? <small>{item.units ? `${Math.ceil(item.duration / ({ minute: 10, hour: 600, day: 14400 } as const)[item.units])} ${({ minute: "min", hour: "h", day: "d" } as const)[item.units]}` : item.duration}</small> : null}
               {gm ? (
                 <button type="button" aria-label={`Remove ${item.label}`} onClick={() => session.ct("effect-remove", { id: entry.id, effectId: item.id })}>
                   ×
@@ -503,13 +512,26 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
             onSubmit={(event) => {
               event.preventDefault();
               if (!effect.trim()) return;
-              session.ct("effect", { id: entry.id, effect: { label: effect.trim(), duration: Number(rounds) || 0, ...(effectGmOnly ? { gmOnly: true } : {}), ...(effectOnTargets && entry.targets.length ? { targets: entry.targets } : {}), ...(effectEnds ? { ends: effectEnds } : {}) } });
+              session.ct("effect", { id: entry.id, effect: { label: effect.trim(), duration: Number(rounds) || 0, ...(effectGmOnly ? { gmOnly: true } : {}), ...(effectOnTargets && entry.targets.length ? { targets: entry.targets } : {}), ...(effectEnds ? { ends: effectEnds } : {}), ...(effectUnits ? { units: effectUnits } : {}), ...(effectApply ? { apply: effectApply } : {}) } });
               setEffect("");
               setRounds("");
             }}
           >
             <input aria-label="Effect" value={effect} placeholder="Effect, e.g. Bless; ATK: 1" onChange={(event) => setEffect(event.target.value)} />
-            <input aria-label="Rounds" type="number" min={0} value={rounds} placeholder="rnds" onChange={(event) => setRounds(event.target.value)} style={{ width: "4.2rem" }} />
+            <input aria-label="Lasts" type="number" min={0} value={rounds} placeholder="rnds" onChange={(event) => setRounds(event.target.value)} style={{ width: "4.2rem" }} />
+            {/* FG's duration units and Apply. */}
+            <select aria-label="Units" value={effectUnits} onChange={(event) => setEffectUnits(event.target.value)} data-field="ct-effect-units">
+              <option value="">rounds</option>
+              <option value="minute">minutes</option>
+              <option value="hour">hours</option>
+              <option value="day">days</option>
+            </select>
+            <select aria-label="Apply" value={effectApply} onChange={(event) => setEffectApply(event.target.value)} data-field="ct-effect-apply" title="When it goes: when its time is up, or after the one roll it counts on, the action, a single use">
+              <option value="">Until it ends</option>
+              <option value="roll">One roll</option>
+              <option value="action">One action</option>
+              <option value="once">Single use</option>
+            </select>
             {/* FG's effect: who sees it, the creatures it counts against (this one's targets), when it ends. */}
             <select aria-label="Effect ends" value={effectEnds} onChange={(event) => setEffectEnds(event.target.value)}>
               <option value="">Ends by rounds</option>

@@ -182,7 +182,28 @@ function cleanEffect(raw) {
     ...(num(raw.total, 0) > 0 ? { total: Math.round(num(raw.total, 0)) } : {}),
     ...(raw.paused ? { paused: true } : {}),
     ...(raw.warned ? { warned: true } : {}),
+    // FG's effect state: inactive (kept, counting for nothing), or skipped once (counting from the next turn on).
+    ...(raw.inactive ? { inactive: true } : {}),
+    ...(raw.skip ? { skip: true } : {}),
+    // FG's Apply: gone after the one roll it counts on, the action (an attack and its damage), or a single use.
+    ...(["roll", "action", "once"].includes(raw.apply) ? { apply: raw.apply } : {}),
+    // FG's duration units: the rounds are kept, the unit shown (a minute is 10 rounds).
+    ...(["minute", "hour", "day"].includes(raw.units) ? { units: raw.units } : {}),
   };
+}
+// An effect's duration in rounds from a number of its units (FG's: minutes, hours, days).
+const ROUNDS_IN = { minute: 10, hour: 600, day: 14400 };
+function inRounds(input) {
+  if (!input || typeof input !== "object" || !ROUNDS_IN[input.units] || input.inRounds) return input;
+  const factor = ROUNDS_IN[input.units];
+  return { ...input, duration: Math.round(num(input.duration, 0)) * factor, ...(num(input.total, 0) > 0 ? { total: Math.round(num(input.total, 0)) * factor } : {}), inRounds: true };
+}
+// The effects with an Apply limit that counted on a roll, by creature, until that roll (or action) is done.
+const usedNow = new Map();
+function markUsed(entry, effect) {
+  if (!effect.apply || !entry?.id) return;
+  if (!usedNow.has(entry.id)) usedNow.set(entry.id, new Set());
+  usedNow.get(entry.id).add(effect.id);
 }
 
 // Whether an effect counts on a roll against `against` (an entry, or none).
@@ -194,7 +215,7 @@ function effectAppliesTo(effect, against) {
 // out (a snuffed torch), and not those after "FAIL:" (what a failed repeated
 // save will bring: FG's "Sleep; Incapacitated; SAVEOE: ...; FAIL: inherit; Unconscious").
 function livePartsOf(effect) {
-  if (effect.paused) return [];
+  if (effect.paused || effect.inactive || effect.skip) return [];
   const parts = effect.label.split(";");
   const stop = parts.findIndex((part) => /^\s*fail\s*:/i.test(part));
   return stop < 0 ? parts : parts.slice(0, stop);
@@ -263,7 +284,10 @@ function effectDice(entry, tag, against) {
     if (!effectAppliesTo(effect, against)) continue;
     for (const part of livePartsOf(effect)) {
       const match = /^\s*([A-Z]+)\s*:\s*([+-]?\d*d\d+)(?:\s+[a-z][a-z ,]*)?\s*$/i.exec(part);
-      if (match && match[1].toUpperCase() === tag) out.push(match[2].startsWith("-") ? match[2] : `+${match[2].replace(/^\+/, "")}`);
+      if (match && match[1].toUpperCase() === tag) {
+        out.push(match[2].startsWith("-") ? match[2] : `+${match[2].replace(/^\+/, "")}`);
+        markUsed(entry, effect);
+      }
     }
   }
   return out.join("");
@@ -277,7 +301,10 @@ function effectBonus(entry, tag, against) {
     if (!effectAppliesTo(effect, against)) continue;
     for (const part of livePartsOf(effect)) {
       const match = /^\s*([A-Z]+)\s*:\s*([+-]?\d+)(?:\s+[a-z][a-z ,]*)?\s*$/i.exec(part);
-      if (match && match[1].toUpperCase() === tag) total += Number(match[2]);
+      if (match && match[1].toUpperCase() === tag && Number(match[2])) {
+        total += Number(match[2]);
+        markUsed(entry, effect);
+      }
     }
   }
   return total;
@@ -462,6 +489,20 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     table().say(`Effect ['${blocked.join("; ")}'] -> [to ${entry.name}] [IMMUNE]`, "Combat", Boolean(effect.gmOnly || entry.hidden));
     const kept = parts.filter((part) => !blocked.includes(part));
     return kept.length ? { ...effect, label: kept.join("; ") } : null;
+  }
+
+  // FG's Apply: after a roll, the effects that counted on it and go after a roll or a single use come off; after the
+  // whole action (its damage, a save), those that go after the action too.
+  function spendApplied(entry, end = false) {
+    const used = entry?.id ? usedNow.get(entry.id) : null;
+    if (!used?.size) return;
+    const gone = (entry.effects ?? []).filter((effect) => used.has(effect.id) && (effect.apply === "roll" || effect.apply === "once" || (end && effect.apply === "action")));
+    if (gone.length) {
+      entry.effects = entry.effects.filter((effect) => !gone.includes(effect));
+      table().say(`[EFFECT] ${gone.map((effect) => effect.label.split(";")[0].trim()).join(", ")} on ${entry.name}: used`, "Combat", Boolean(entry.hidden));
+    }
+    for (const effect of gone) used.delete(effect.id);
+    if (end) usedNow.delete(entry.id);
   }
 
   // An effect the tracker puts on by itself (no GM seat needed).
@@ -2386,6 +2427,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       results.push({ target: target.name, total: rolled.total, ac, hit, crit, natural: die, advantage, disadvantage: edge.disadvantage });
     }
     dropMissed(source, results.length);
+    spendApplied(source);
     changed();
     return results;
   }
@@ -2621,6 +2663,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       if (!group.targets.length) publish(card);
     }
     if (plan.entry && table().options?.().clearTargets === "action") plan.entry.targets = [];
+    spendApplied(plan.entry, true);
     changed();
     return { total, crit: anyCrit, targets: landed.map((target) => target.name), missed: missed.map((target) => target.name) };
   }
@@ -3095,7 +3138,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
             ...(entry.reacted && (seat.role === "dm" || owner(entry) === seat.name) ? { reacted: true } : {}),
             ...(seat.role === "dm" && entry.spent?.length ? { spent: entry.spent } : {}),
             ...(numbers ? { hp, wounds, ...(seat.role === "dm" || entry.faction === "friend" ? { ac } : {}), ...(temp ? { temp } : {}) } : {}),
-            effects: entry.effects.filter((effect) => seat.role === "dm" || !effect.gmOnly).map(({ id, label, duration, targets, icon, source, total, paused, gmOnly }) => ({ id, label: targets?.length ? `${label} [-> ${targets.map((tid) => state.entries.find((item) => item.id === tid)?.name ?? "?").join(", ")}]` : label, duration, ...(icon ? { icon } : {}), ...(source ? { source } : {}), ...(total ? { total } : {}), ...(paused ? { paused } : {}), ...(gmOnly ? { gmOnly } : {}) })),
+            effects: entry.effects.filter((effect) => seat.role === "dm" || !effect.gmOnly).map(({ id, label, duration, targets, icon, source, total, paused, gmOnly, inactive, skip, apply, units }) => ({ id, label: targets?.length ? `${label} [-> ${targets.map((tid) => state.entries.find((item) => item.id === tid)?.name ?? "?").join(", ")}]` : label, duration, ...(icon ? { icon } : {}), ...(source ? { source } : {}), ...(total ? { total } : {}), ...(paused ? { paused } : {}), ...(gmOnly ? { gmOnly } : {}), ...(inactive ? { inactive } : {}), ...(skip ? { skip } : {}), ...(apply ? { apply } : {}), ...(units ? { units } : {}) })),
             targets: seat.role === "dm" || owner(entry) === seat.name ? entry.targets.filter((id) => shown.some((item) => item.id === id)) : [],
             ...(five() ? { deathsaves: record(entry)?.type === "character" || numbers ? deathSaves(entry) : undefined } : {}),
             // A ship: its weapons (and who mans them), Thrust, criticals.
@@ -3463,6 +3506,8 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       if (seat.role !== "dm" && (!active || owner(active) !== seat.name)) throw new Error("It is not your turn.");
       // The table's option: a creature's targets clear when its turn ends.
       if (active && table().options?.().clearTargets === "turn") active.targets = [];
+      // FG's skip once: an effect skipped counts from this turn on.
+      for (const entry of state.entries) for (const effect of entry.effects ?? []) if (effect.skip) delete effect.skip;
       // Repeated saves at the end of its turn (2024 Sleep, Hold Person).
       if (active && state.round > 0) await endOfTurnSaves(active);
       // The active entry was removed mid-turn: carry on after its place.
@@ -3784,7 +3829,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       mustGM(seat);
       const entry = find(id);
       const active = state.entries.find((item) => item.id === state.active);
-      const asked = cleanEffect({ ...input, init: active ? active.initresult : entry.initresult });
+      const asked = cleanEffect({ ...inRounds(input), init: active ? active.initresult : entry.initresult });
       if (!asked) throw new Error("What effect?");
       const effect = withoutImmune(entry, asked);
       if (!effect) {
@@ -3846,7 +3891,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     putOn(id, input) {
       const entry = find(id);
       const active = state.entries.find((item) => item.id === state.active);
-      const asked = cleanEffect({ ...input, id: undefined, init: active ? active.initresult : entry.initresult });
+      const asked = cleanEffect({ ...inRounds(input), id: undefined, init: active ? active.initresult : entry.initresult });
       if (!asked) throw new Error("What effect?");
       const effect = withoutImmune(entry, asked);
       if (!effect) return { immune: true, label: asked.label };
@@ -4142,7 +4187,12 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       if (d35()) return save35(find(entryId), stat, cl, from, castName);
       if (d2e()) return save2e(find(entryId), stat, cl, from, castName);
       if (dbf()) return saveBf(find(entryId), stat, cl, from, castName);
-      if (five()) return save5e(find(entryId), stat, cl, from, castName, { advantage: ["advantage", "disadvantage"].includes(advantage) ? advantage : "" });
+      if (five()) {
+        const saved = await save5e(find(entryId), stat, cl, from, castName, { advantage: ["advantage", "disadvantage"].includes(advantage) ? advantage : "" });
+        spendApplied(find(entryId), true);
+        changed();
+        return saved;
+      }
       const { engine, game, options: opts } = await options();
       // "dex" as Map Studio's traps write it: the attribute it stands for.
       const short = String(stat ?? "").trim().toLowerCase();

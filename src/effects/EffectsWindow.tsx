@@ -14,7 +14,7 @@ import { EFFECT_DRAG, type DropTarget } from "./drops";
 import "./effects.css";
 import { GM } from "../ui/gmTitle";
 
-type Item = { id: string; kind: string; label: string; icon: string; text: string; burn?: number | null; duration?: number; custom?: boolean; recordId?: string };
+type Item = { id: string; kind: string; label: string; icon: string; text: string; burn?: number | null; duration?: number; custom?: boolean; recordId?: string; apply?: string; units?: string };
 const GROUPS: [string, string][] = [
   ["condition", "Conditions"],
   ["buff", "Buffs"],
@@ -26,7 +26,7 @@ const ICONS = ["generic", "buff", "debuff", "light", "fire", "cold", "poison", "
 export function EffectsWindow({ session }: { session: Session }) {
   const gm = session.role === "dm";
   const [search, setSearch] = useState("");
-  const [editing, setEditing] = useState<{ id?: string; label: string; kind: string; icon: string; duration: string; burn: string; text: string } | null>(null);
+  const [editing, setEditing] = useState<{ id?: string; label: string; kind: string; icon: string; duration: string; burn: string; text: string; apply?: string; units?: string } | null>(null);
   const roundSeconds = rulesetFor(session.ruleset).actions?.roundSeconds ?? 6;
   const allowed = session.options.playerEffects ?? "conditions";
   const items: Item[] = useMemo(() => {
@@ -34,7 +34,7 @@ export function EffectsWindow({ session }: { session: Session }) {
       .filter((record) => record.type === "effect")
       .map((record) => {
         const data = record.data as Record<string, unknown>;
-        return { id: `custom:${record.id}`, recordId: record.id, kind: String(data.kind ?? "buff"), label: String(data.label ?? record.name), icon: String(data.icon || "generic"), text: String(data.text ?? ""), duration: Number(data.duration) || 0, burn: Number(data.burn) || null, custom: true };
+        return { id: `custom:${record.id}`, recordId: record.id, kind: String(data.kind ?? "buff"), label: String(data.label ?? record.name), icon: String(data.icon || "generic"), text: String(data.text ?? ""), duration: Number(data.duration) || 0, burn: Number(data.burn) || null, apply: String(data.apply ?? ""), units: String(data.units ?? ""), custom: true };
       });
     return [...(presetsFor(rulesetFor(session.ruleset).actions) as Item[]), ...own];
   }, [session.records, session.ruleset]);
@@ -48,7 +48,7 @@ export function EffectsWindow({ session }: { session: Session }) {
     const token = session.map.tokens.find((item) => item.mine);
     return token ? { tokenId: token.id } : null;
   };
-  const time = (item: Item) => (item.kind === "light" ? (item.burn ? `burns ${item.burn >= 60 ? `${Math.round(item.burn / 60)} h` : `${item.burn} min`}` : "until put out") : item.duration ? `${item.duration} rounds` : "");
+  const time = (item: Item) => (item.kind === "light" ? (item.burn ? `burns ${item.burn >= 60 ? `${Math.round(item.burn / 60)} h` : `${item.burn} min`}` : "until put out") : item.duration ? `${item.duration} ${item.units ? `${item.units}${item.duration === 1 ? "" : "s"}` : "rounds"}` : "");
 
   return (
     <div className="effects-window" data-effects-window>
@@ -79,7 +79,7 @@ export function EffectsWindow({ session }: { session: Session }) {
           aria-label={editing.id ? "Change the effect" : "A new effect"}
           onSubmit={(event) => {
             event.preventDefault();
-            session.effects("save", { effect: { id: editing.id, label: editing.label, kind: editing.kind, icon: editing.icon, duration: Number(editing.duration) || 0, burn: Number(editing.burn) || null, text: editing.text } });
+            session.effects("save", { effect: { id: editing.id, label: editing.label, kind: editing.kind, icon: editing.icon, duration: Number(editing.duration) || 0, burn: Number(editing.burn) || null, text: editing.text, apply: editing.apply ?? "", units: editing.units ?? "" } });
             setEditing(null);
           }}
         >
@@ -112,8 +112,29 @@ export function EffectsWindow({ session }: { session: Session }) {
               </select>
             </label>
             <label>
-              Rounds
+              Lasts
               <input type="number" min={0} value={editing.duration} onChange={(event) => setEditing({ ...editing, duration: event.target.value })} />
+            </label>
+            {/* FG's duration units and Apply. */}
+            {editing.kind !== "light" ? (
+              <label>
+                Units
+                <select value={editing.units ?? ""} onChange={(event) => setEditing({ ...editing, units: event.target.value })} data-field="effect-units">
+                  <option value="">Rounds</option>
+                  <option value="minute">Minutes</option>
+                  <option value="hour">Hours</option>
+                  <option value="day">Days</option>
+                </select>
+              </label>
+            ) : null}
+            <label>
+              Apply
+              <select value={editing.apply ?? ""} onChange={(event) => setEditing({ ...editing, apply: event.target.value })} data-field="effect-apply" title="When it goes: when its time is up, or after the one roll it counts on, the action (an attack and its damage), a single use">
+                <option value="">Until it ends</option>
+                <option value="roll">One roll</option>
+                <option value="action">One action</option>
+                <option value="once">Single use</option>
+              </select>
             </label>
             {editing.kind === "light" ? (
               <label>
@@ -169,7 +190,7 @@ export function EffectsWindow({ session }: { session: Session }) {
                   </button>
                   {gm && item.custom ? (
                     <>
-                      <button type="button" className="icon-button" aria-label={`Change ${item.label.split(";")[0]}`} title="Change it" onClick={() => setEditing({ id: item.id, label: item.label, kind: item.kind, icon: item.icon, duration: String(item.duration ?? 0), burn: item.burn ? String(item.burn) : "", text: item.text })}>
+                      <button type="button" className="icon-button" aria-label={`Change ${item.label.split(";")[0]}`} title="Change it" onClick={() => setEditing({ id: item.id, label: item.label, kind: item.kind, icon: item.icon, duration: String(item.duration ?? 0), burn: item.burn ? String(item.burn) : "", text: item.text, apply: item.apply ?? "", units: item.units ?? "" })}>
                         ✎
                       </button>
                       <button type="button" className="icon-button" aria-label={`Delete ${item.label.split(";")[0]}`} title="Delete it" onClick={() => session.effects("delete", { id: item.recordId })}>
