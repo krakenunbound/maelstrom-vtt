@@ -12,6 +12,8 @@ import { rulesetFor } from "../../../shared/rulesets/registry.mjs";
 import { useState } from "react";
 import { useWindows } from "../../ui/Windows";
 import { slotDrag } from "../../ui/QuickSlots";
+import { FormattedText } from "../../books/Records";
+import { useId } from "react";
 
 // An attack or damage button drags onto a creature (FG's drag of a sheet's action onto a
 // token or tracker row): there it is rolled against that creature alone (src/effects/drops.ts).
@@ -296,7 +298,23 @@ function Links({ spec }: { spec: Extract<Part, { part: "links" }> }) {
         .map((name) => name.trim())
         .filter(Boolean);
       const types = Array.isArray(item.type) ? item.type : [item.type];
-      return { item, names: names.map((name) => ({ name, record: Object.values(sheet.session.records).find((record) => types.includes(record.type) && plain(record.name) === plain(name)) })) };
+      const candidates = Object.values(sheet.session.records).filter((record) => types.includes(record.type));
+      // Its very name first ("Magic Initiate (Cleric)"), then without what is in brackets.
+      const named = (name: string) => candidates.find((record) => record.name.trim().toLowerCase() === name.toLowerCase()) ?? candidates.find((record) => plain(record.name) === plain(name));
+      // An entry inside a record (a class's feature, a race's trait): in the record its brackets or the character name
+      // first ("Second Wind (Fighter 1)": the Fighter's).
+      const entryOf = (name: string) => {
+        const hint = [...name.matchAll(/\(([^)]*)\)/g)].map((match) => plain(match[1].replace(/\d+/g, ""))).concat(item.prefer ? [plain(String(at(sheet.data, item.prefer) ?? ""))] : []);
+        const found = candidates
+          .map((record) => {
+            const list = (record.data as Row | undefined)?.[item.within ?? ""];
+            const entry = list && typeof list === "object" ? Object.values(list as Record<string, Row>).find((row) => row && plain(String(row.name ?? "")) === plain(name)) : undefined;
+            return entry ? { record, entry } : null;
+          })
+          .filter((hit): hit is { record: (typeof candidates)[number]; entry: Row } => hit !== null);
+        return found.find((hit) => hint.includes(plain(hit.record.name))) ?? found[0] ?? null;
+      };
+      return { item, names: names.map((name) => (item.within ? { name, record: entryOf(name)?.record, entry: entryOf(name)?.entry } : { name, record: named(name), entry: undefined })) };
     })
     .filter((group) => group.names.length);
   if (!groups.length) return null;
@@ -306,8 +324,10 @@ function Links({ spec }: { spec: Extract<Part, { part: "links" }> }) {
       {groups.map(({ item, names }) => (
         <p key={item.label} className="cc-inline">
           <b>{item.label}</b>
-          {names.map(({ name, record }) =>
-            record ? (
+          {names.map(({ name, record, entry }) =>
+            record && entry ? (
+              <EntryLink key={name} name={name} text={String(entry.text ?? "")} record={record} />
+            ) : record ? (
               <button key={name} type="button" className="cc-link" data-link-record={record.id} title={`Open ${record.name}`} onClick={() => windows.open("record", record.name, record.id)} {...slotDrag({ kind: "record", record: record.id, label: record.name })}>
                 {name}
               </button>
@@ -320,6 +340,26 @@ function Links({ spec }: { spec: Extract<Part, { part: "links" }> }) {
         </p>
       ))}
     </div>
+  );
+}
+// FG's link to a feature or a trait (inside its class's or race's record): its own text in a popover, the record
+// it is in a click away.
+function EntryLink({ name, text, record }: { name: string; text: string; record: { id: string; name: string } }) {
+  const windows = useWindows();
+  const id = useId();
+  return (
+    <>
+      <button type="button" className="cc-link" popoverTarget={id} data-link-entry={name} title={`${name}: from ${record.name}`} {...slotDrag({ kind: "record", record: record.id, label: record.name })}>
+        {name}
+      </button>
+      <div id={id} popover="auto" className="entry-popover" data-entry-popover={name}>
+        <h4>{name.replace(/\s*\([^)]*\)\s*$/, "")}</h4>
+        <FormattedText text={text} />
+        <button type="button" className="cc-link" onClick={() => windows.open("record", record.name, record.id)}>
+          Open {record.name}
+        </button>
+      </div>
+    </>
   );
 }
 function DetailBoxes({ boxes, row, rowKey }: { boxes: DetailBox[]; row: Row; rowKey: string }) {

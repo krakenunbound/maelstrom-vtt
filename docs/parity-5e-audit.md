@@ -135,7 +135,7 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | Level up opens the wizard | Level up (+): rolls the hit die, posts it | Partly (no choices on level up) |
 | XP, next level | Experience / next | Same |
 | PROF | Prof | Same |
-| Background, race links and text | Read-only text | Partly (no links) |
+| Background, race links and text | Read-only text; on the Notes tab the race and background each a link to its record | Yes |
 | Abilities: score, modifier, check, save, save proficiency | The same, a DC box for every roll | Better |
 | Senses (text) | Senses on the Notes tab, the line under the boxes | Done |
 | Passive Perception | Passive Perception | Same |
@@ -159,7 +159,7 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 
 | FG control | Maelstrom | Verdict |
 |---|---|---|
-| Feats, features, traits, proficiencies, languages: add, delete, open | Each a box, one a line (the wizard fills them); a feat or spell dropped on the sheet | Partly (no link to open each) |
+| Feats, features, traits, proficiencies, languages: add, delete, open | Each a box, one a line (the wizard fills them); a feat or spell dropped on the sheet; each feat a link to its record, each feature and race trait a link to its own text (from its class's or race's record, that record a click away) | Yes |
 
 ### Inventory
 

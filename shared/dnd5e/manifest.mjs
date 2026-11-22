@@ -282,6 +282,18 @@ export default {
               { path: "notes", kind: "textarea", label: "Notes", fieldClass: "tall" },
             ],
           },
+          // FG's links: the race, background and feats open their records; a feature or a race trait its own text.
+          {
+            part: "links",
+            hook: "abilities",
+            items: [
+              { label: "{@species}", type: "race", path: "species" },
+              { label: "Background", type: "background", path: "background" },
+              { label: "Feats", type: "feat", path: "feats" },
+              { label: "Features", type: ["class", "class_specialization"], path: "features", within: "features" },
+              { label: "{@species} traits", type: ["race", "race_subrace"], path: "traits", within: "traits", prefer: "species" },
+            ],
+          },
           // FG's Abilities tab: feats, languages, proficiencies, traits and features (the wizard's, then the owner's), one a line.
           {
             part: "notes",

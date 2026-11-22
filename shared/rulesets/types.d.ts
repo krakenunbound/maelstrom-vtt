@@ -163,7 +163,9 @@ export type Part = (
   | { part: "tags"; label: string; hook: string; from: Path[] }
   // The records the character's words name (its race, classes, kit), each a link to the campaign's record
   // of that type and name (opened with a click, dragged as a link); path: a name, or a list (its rows' field).
-  | { part: "links"; label?: string; hook: string; items: { label: string; type: string | string[]; path: Path; field?: string }[] }
+  // within: the names are entries of a list inside those records (a class's features, a race's traits), each opened
+  // as its own text; prefer: the character's field naming the record to look in first (its race).
+  | { part: "links"; label?: string; hook: string; items: { label: string; type: string | string[]; path: Path; field?: string; within?: string; prefer?: Path }[] }
   | ({ part: "button" } & StepSpec)
   | { part: "row"; parts: Part[]; className?: string }
   | { part: "custom"; component: Ref; props?: Record<string, unknown> }
