@@ -163,6 +163,13 @@ const TOOLS = [
     inputSchema: object({ text: string("The whole race as text, its name on the first line") }, ["text"]),
     run: async (args, ctx) => out(await content.raceImport(needTable(ctx), args)),
   },
+  {
+    name: "kraken_item_import",
+    description:
+      "FG's Import Item (5E): items pasted as text become campaign items (GM only). Either a table (list): its type on line 1 ('Weapon'), its subtype on line 2 ('Martial Melee Weapons'), the column names on line 3 ('Name | Damage | Properties | Mastery | Weight | Cost'; armor: 'Armor | Armor Class (AC) | Strength | Stealth | Weight | Cost'), then a row per item, cells split by '|' or tabs; with text giving each its description (a line with the item's name, then its words). Or no table, magic items as the books print them in text: the name, then 'Weapon (Any Melee Weapon), Rare (Requires Attunement)', then its text; as many as are given. Returns the items made and what could not be read (problems).",
+    inputSchema: object({ list: string("The table (optional): type, subtype, column names, rows"), text: string("The descriptions for the table's items, or magic items as printed") }),
+    run: async (args, ctx) => out(await content.itemImport(needTable(ctx), args)),
+  },
 ];
 
 module.exports = { TOOLS };

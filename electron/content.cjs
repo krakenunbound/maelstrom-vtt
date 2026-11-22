@@ -496,7 +496,20 @@ async function raceImport(table, args) {
   return { ...record, subraces, problems: parsed.problems };
 }
 
+// FG's Import Item: items pasted as text (a table and their descriptions, or magic items as the books print them)
+// become campaign items, read by the game's own reader (its manifest's itemImport).
+async function itemImport(table, args) {
+  const { rulesetFor } = require("../shared/rulesets/registry.mjs");
+  const reader = rulesetFor(table.ruleset?.() ?? "").itemImport;
+  if (!reader) throw new Error("This game has no item import.");
+  const { parseItems } = await import(require("node:url").pathToFileURL(require("node:path").join(__dirname, "..", reader)).href);
+  const parsed = parseItems({ list: String(args.list ?? "").slice(0, 60000), text: String(args.text ?? "").slice(0, 200000) });
+  const made = parsed.items.slice(0, 500).map((item) => table.records.create({ type: "item", name: text(item.name), visibility: "gm", data: { ...item.data, name: text(item.name) } }, table.seat));
+  return { made, problems: parsed.problems };
+}
+
 const MESSAGES = {
+  "item-import": (table, msg) => itemImport(table, msg),
   "race-import": (table, msg) => raceImport(table, msg),
   "item-forge": (table, msg, ctx) => itemForge(table, msg, ctx.readBook),
   "npc-import": (table, msg) => npcImport(table, msg),
@@ -516,4 +529,4 @@ async function message(table, msg, ctx) {
   return handler(table, args, ctx);
 }
 
-module.exports = { raceImport, itemForge, npcImport, message, copyRecord, storyAction, tableAction, rollOn, findTable, identify, parcelAction, parcelContents, encounterAction, encounterXp, questAction, unidentified, itemName };
+module.exports = { itemImport, raceImport, itemForge, npcImport, message, copyRecord, storyAction, tableAction, rollOn, findTable, identify, parcelAction, parcelContents, encounterAction, encounterXp, questAction, unidentified, itemName };

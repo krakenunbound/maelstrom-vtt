@@ -411,6 +411,7 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
           </div>
         ) : null}
         {gm && list === "npc" ? <NpcImport session={session} onMade={(record) => onOpen(record)} /> : null}
+        {gm && list === "item" && rulesetFor(session.ruleset ?? "").itemImport ? <ItemImport session={session} onMade={(record) => onOpen(record)} /> : null}
         {gm && list === "race" && rulesetFor(session.ruleset ?? "").raceImport ? <RaceImport session={session} onMade={(record) => onOpen(record)} /> : null}
         {gm && (list === "item" || list === "itemtemplate") && rulesetFor(session.ruleset ?? "").forge ? <ItemForge session={session} onMade={(record) => onOpen(record)} /> : null}
         {gm && only ? (
@@ -945,6 +946,45 @@ function RaceImport({ session, onMade }: { session: Session; onMade: (record: Ta
               setStatus(`Made ${record.name}${subs}.${record.problems?.length ? ` ${record.problems.join(" ")}` : ""}`);
               setText("");
               onMade(record);
+            })
+            .catch((error: unknown) => setStatus(error instanceof Error ? error.message : "Could not read that."))
+        }
+      >
+        Import
+      </button>
+      <p className="hint" role="status">
+        {status}
+      </p>
+    </details>
+  );
+}
+
+// FG's Import Item: a table of items and their descriptions, or magic items as the books print them, made into
+// campaign items (the first opened).
+function ItemImport({ session, onMade }: { session: Session; onMade: (record: TableRecord) => void }) {
+  const [list, setList] = useState("");
+  const [text, setText] = useState("");
+  const [status, setStatus] = useState("");
+  const own = useId();
+  return (
+    <details className="table-import item-import">
+      <summary>Import items (paste them)</summary>
+      <label htmlFor={`${own}-text`}>Magic items as printed, or the table's descriptions</label>
+      <textarea id={`${own}-text`} value={text} onChange={(event) => setText(event.target.value)} placeholder={"Flame Tongue\nWeapon (Any Melee Weapon), Rare (Requires Attunement)\nWhile holding this magic weapon\u2026"} rows={7} />
+      <label htmlFor={`${own}-list`}>A table of items (optional)</label>
+      <textarea id={`${own}-list`} value={list} onChange={(event) => setList(event.target.value)} placeholder={"Weapon\nMartial Melee Weapons\nName | Damage | Properties | Mastery | Weight | Cost\nLongsword | 1d8 Slashing | Versatile (1d10) | Sap | 3 lb. | 15 GP"} rows={5} />
+      <button
+        type="button"
+        data-action="item-import"
+        disabled={!text.trim() && !list.trim()}
+        onClick={() =>
+          void session
+            .content<{ made: TableRecord[]; problems: string[] }>("item-import", { list, text })
+            .then(({ made, problems }) => {
+              setStatus(`Made ${made.length} item${made.length === 1 ? "" : "s"}: ${made.map((record) => record.name).join(", ")}.${problems.length ? ` ${problems.join(" ")}` : ""}`);
+              setList("");
+              setText("");
+              if (made[0]) onMade(made[0]);
             })
             .catch((error: unknown) => setStatus(error instanceof Error ? error.message : "Could not read that."))
         }

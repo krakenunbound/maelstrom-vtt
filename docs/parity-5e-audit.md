@@ -362,7 +362,7 @@ and utility windows, and player management against Maelstrom's.
 | Sound sets: triggers by chat pattern, content sounds on a record, Syrinscape | Sound window: library, triggers on hidden rolls, scene sounds, map sounds, playlists, Syrinscape | Better |
 | Item templates, Item Forge (base items and magic templates make new items) | Items and Item Templates lists: Item Forge (drop or pick base items and templates, items and spells as templates; the SRD's +1, +2, or +3 with a chosen bonus); the names, rarity, bonus, properties, damage, AC, cost and text combine, a spell makes a Spell Scroll of it, templates alone make a template; the forged item works on the sheet | Better (chosen bonus, costs kept, templates from any item) |
 | NPC import from stat block text; race import from text | NPCs list: Import from a stat block (2014 and 2024 layouts; every SRD creature reads back the same); Races list: Import a race (2014 and 2024 layouts, its subraces as their own records, linked; Creature Type, Size, Speed and Ability Score Increase into the race's fields; every SRD race and subrace reads back the same) | Better (subraces of one word, options kept inside their trait, fields filled) |
-| Item import from text (FG's Import Item) | Not found | Missing |
+| Item import from text (FG's Import Item) | Items list: Import items: a table (type, subtype, column names, rows; cells by `|` or tabs) with each item's description, or magic items as the books print them (name, type and rarity line, text), many at once; every SRD magic item, weapon and armor reads back the same | Better (magic items as printed, tabs, AC and Dex cap from the armor table, rarity kept) |
 | Story templates: text with `[Table]` rolls generates a story | Story list: From a template: `[Table]`, `[Table\|column]`, `[1d6]`, `[2x]` rolled into a new story | Same |
 | Options: groups, per user and GM, export and import a set | Settings: you, the table, combat, tokens, house rules; Export settings and Import settings | Same |
 | Currencies (name, weight, value), languages, MOTD, Setup, Token Lights, decal | Currency names, languages, MOTD, lights in Effects, decal, wallpaper, GM icon, themes | Partly (no coin weight or value) |
@@ -381,7 +381,7 @@ Any game can add its own the same way; nothing in the core names a game.
 
 All eight areas are compared, read from FG's ruleset files (CoreRPG and 5E) and
 Maelstrom's code, and what was missing is built (each area's commits name its
-check script). Still missing, by size: FG's module export from a campaign, item import from text, the
+check script). Still missing, by size: FG's module export from a campaign, the
 2024 Bastion tab, named holidays on calendar days, a random-encounter Generate,
 module sets, and the rows marked Partly. The **Check live** rows want FG open on
 the 5E campaign through the bridge, side by side with Maelstrom.
