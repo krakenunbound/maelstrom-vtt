@@ -23,16 +23,24 @@ wide.writeUInt32BE(2850, 16);
 wide.writeUInt32BE(2000, 20);
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), "kraken-fg-grid-"));
 const db = `<root><image><id-00001><name type="string">Village</name><scale type="string">10ft</scale><image type="image"><grid>on</grid><gridsize>25,25</gridsize><gridoffset>3,2</gridoffset><layers><layer><name>village.png</name><id>0</id><type>image</type><bitmap>village.png</bitmap><matrix>1,0,0,0,0,1,0,0,0,0,1,0,1425,-1000,0,1</matrix></layer></layers></image></id-00001></image></root>`;
-fs.writeFileSync(path.join(dir, "Grid.mod"), zipSync({ "definition.xml": strToU8("<root><name>Grid</name><ruleset>2E</ruleset></root>"), "db.xml": strToU8(db), "village.png": wide }));
-
-const open = () => {
-  const bundle = fgModuleBundle(path.join(dir, "Grid.mod"), { all: true });
+const modulePath = path.join(dir, "Grid.mod");
+const definition = strToU8("<root><name>Grid</name><ruleset>2E</ruleset></root>");
+const open = (xml = db) => {
+  fs.writeFileSync(modulePath, zipSync({ "definition.xml": definition, "db.xml": strToU8(xml), "village.png": wide }));
+  const bundle = fgModuleBundle(modulePath, { all: true });
   const scene = JSON.parse(strFromU8(unzipSync(bundle.bytes)["bundle.json"])).adventureData.scenes[0];
   return { scene, extra: bundle.extras[scene._id] };
 };
 const first = open();
 assert(first.extra.gridOffset.x === 3 && first.extra.gridOffset.y === 2, `FG's offset from the top left: ${JSON.stringify(first.extra.gridOffset)}`);
 assert(first.scene.grid.size === 25 && first.scene.grid.distance === 10 && first.scene.grid.units === "ft", `FG's square and its scale: ${JSON.stringify(first.scene.grid)}`);
+
+const nativeDistance = db.replace("<grid>on</grid>", "<grid>on</grid><distancebaseunit>15</distancebaseunit>");
+assert(open(nativeDistance).scene.grid.distance === 10, "the explicit scale takes precedence over the image distance");
+const distanceOnly = nativeDistance.replace('<scale type="string">10ft</scale>', "");
+const importedDistance = open(distanceOnly).scene.grid;
+assert(importedDistance.distance === 15 && importedDistance.units === "ft", "FG's image distance sets the scale when there is no explicit scale");
+assert(open(distanceOnly.replace(">15</distancebaseunit>", ">0</distancebaseunit>")).scene.grid.distance === 5, "an invalid FG image distance uses the default");
 
 const server = createTableServer();
 await server.listen({ port: 0, password: "" });

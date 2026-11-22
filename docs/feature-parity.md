@@ -30,10 +30,44 @@ Status of the work (2026-11-20, 0.1.0-beta.1):
 | Encounter spots on the map | Tokens where FG put them | Done |
 | Lighting switch, ambient light and colour, ambient mask | Scene darkness, ambient tint, lit areas | Done |
 | Default grid (on, no size) | 50 px | Done |
-| Distance per square (`distancebaseunit`) | Grid distance | To do (handoff) |
+| Distance per square (`distancebaseunit`) | Uses the image's distance when the record has no explicit scale | Implemented locally; FG map and grid regression checks pass |
 | Token lock, player drawing switch | Movement lock, a player-drawing setting | To do (handoff) |
 | Text and picture layers' own lighting switches | Lit labels, unlit tiles | To do (handoff) |
 | Link scale, vision preview | Opening zoom, GM preview | To do (handoff) |
+
+## Live comparison baseline (2026-11-21, Pacific)
+
+Maelstrom's target is Fantasy Grounds' discoverability and functional coverage with modern tabletop rendering. Keep the layout familiar to GMs and players and give Maelstrom its own visual design. Use **Race** in place of the 5E term for character origin across Maelstrom's ruleset UI. Keep other ruleset terminology, including Descending Darkness's **Kin**, and continue to read existing imported data keys.
+
+| Workflow | Observed or verified | Work to do |
+|---|---|---|
+| Select and launch a ruleset | Fantasy Grounds' 5E campaign shows its ruleset, extensions, theme, and Play together. Maelstrom's Saltmarsh Playtest has a searchable ruleset picker, campaign settings, and Play. Its picker uses the fixed catalog in `shared/rulesets/registry.mjs`. | Prove a new Maelstrom ruleset can be placed in a folder, discovered at setup, and selected without rebuilding. Its package must provide the sheet, records, actions, and automation to the GM and player clients. Test 5E general initiative and AD&D 2E weapon or spell initiative against the same tracker. |
+| Find 5E records | Fantasy Grounds groups Modules, Assets, Books, and Sound Sets under Library. Both tables expose these tools, the combat tracker, the party sheet, and the main record groups. The installed Maelstrom Beta 1 shows Species in the sidebar. The current source uses Races in the record index and Race on the 5E sheet and wizard. Fantasy Grounds shows Feats on its 5E sidebar. Maelstrom hides the Feats entry if its visible records contain no feats. The two live campaigns had different content active. | Verify the Race label in a build of the current checkout. Compare the same active books and the GM and player sidebar before deciding which lists should stay visible when empty. |
+| Open an imported map | Maelstrom's live Saltmarsh test campaign opens Lizardfolk One Players from its pack and exposes pins, Share, line of sight, and a player preview. This run did not open the corresponding map in Fantasy Grounds. A regression fixture confirms an FG image's distance now reaches the Maelstrom scene grid. | Open the same adventure and map on both tables. Compare coordinates, grid and ruler, pin destinations, encounter tokens, lighting and layer order in both GM and player views. |
+| Import complete content | Maelstrom already has `.kpack` and FG module readers, a Foundry Adventure Bundler reader, and Universal VTT map import. The live check exercised an already-installed Saltmarsh pack. | Verify module, full campaign or world, and asset-pack import independently for Fantasy Grounds and Foundry. Check preserved folders and links, content ownership and visibility, and repeat imports for duplication or lost GM edits. |
+| Compare scene rendering | Foundry v14 documents a PixiJS/WebGL layered canvas. Maelstrom now shares one Three.js TSL fog shader across WebGPU and WebGL2. Chrome pixel checks cover visible, explored, and unexplored areas and GPU loss on both backends. Lighting and several other overlays still use SVG. | Measure the same layered, animated scene for loading, pan and zoom, lighting, fog, and frame times from both seats. Use a busy scene to check the cost of rebuilding and uploading fog masks before expanding GPU lighting. |
+
+Foundry references: [Canvas API](https://foundryvtt.com/api/v14/classes/foundry.canvas.Canvas.html), [Adventure Documents](https://foundryvtt.com/article/adventure/), and [Adventure Bundler](https://foundryvtt.com/packages/adventure-bundler).
+
+### Map renderer technology review
+
+The map renderer draws and composites tiles, tokens, lighting, fog, and weather
+for the GM and each player. The fog implementation uses
+[Three.js WebGPURenderer and TSL](https://threejs.org/manual/pages/webgpurenderer)
+to share the blur and blending passes between WebGPU and WebGL2. Compare a
+shared map renderer against this pass and
+[PixiJS](https://pixijs.com/8.x/guides/components/renderers) before expanding
+it. Include visual fidelity, frame timing during movement, texture memory,
+and behavior when the GPU backend is unavailable.
+
+A Chrome capability probe found WebGPU available on localhost and an HTTPS
+origin and unavailable on an HTTP private-IP origin. WebGL2 was available in
+all three. Test the WebGPU path on secure origins and include the existing
+plain-HTTP LAN join flow when evaluating a compatibility backend.
+
+### Ruleset package acceptance test
+
+The engine discovers Maelstrom-format rulesets from a folder and loads the selected package by its declared ID. A test package must appear in campaign setup after installation and provide its own sheet, record lists, and roll behavior to both the host and browser player. The same test must work with a package ID the engine has never seen before, without editing the registry or rebuilding the application. The common tabletop supplies the rendering, campaign, and action interfaces. Each package owns the game-specific choices and can reuse shared components.
 
 ## Asked by the GM (2026-11-15): Done (unreleased)
 - Resource tracking, each with a GM option to turn it off ("fun mode", Settings > Bookkeeping, `kraken_table_options bookkeeping`):

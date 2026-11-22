@@ -127,7 +127,8 @@ function checkSheet(where, manifest) {
         : part.part === "statBlock" ? statFields(part)
         : part.part === "skills" ? [{ ...part.field, path: `${part.path}.%.${part.field.path}` }]
         : [];
-      if (part.part === "list") fields.push(...(part.fields ?? []).map((field) => ({ ...field, path: `${part.path}.*.${field.path}` })));
+      // A list's rows are id-n keys, or numbered (rows: "index": a list the rules work out, 2E's proficiencies).
+      if (part.part === "list") fields.push(...(part.fields ?? []).map((field) => ({ ...field, path: `${part.path}.${part.rows === "index" ? "#" : "*"}.${field.path}` })));
       if (part.part === "track") editable.push(part.each ? `${part.each}.#.${part.used}.#` : `${part.used}.#`);
       if (part.part === "strip") for (const item of part.items) if (item.kind === "xp") editable.push(item.path);
       // A field is typed into when it has an input kind (no kind: shown only) and is not edit: "never" or sent as an action.

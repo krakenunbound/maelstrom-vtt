@@ -233,6 +233,7 @@ export default {
           {
             part: "list",
             path: "profs.weaponrows",
+            rows: "index",
             hook: "weapon-prof",
             className: "five-items d2e-proficiencies",
             fields: [
@@ -270,6 +271,7 @@ export default {
           {
             part: "list",
             path: "profs.checks",
+            rows: "index",
             hook: "proficiency",
             className: "five-items d2e-proficiencies",
             name: { path: "name", flat: true },

@@ -15,6 +15,7 @@ import { createPortal } from "react-dom";
 import { useWindowSlot } from "../ui/Windows";
 import { MapEditor, kindColor, placePicture, type EditTab, type EditTool, type LabelStyle, type PaintStyle } from "./MapEditor";
 import { Lighting } from "./Lighting";
+import { FogOfWar } from "./FogOfWar";
 import { fxMaskImage, fxMaskStyle } from "./fxMask";
 import { SceneGraphics, SceneLegend, type OverlayToken } from "./SceneOverlay";
 import { SceneSettings, type SceneSettingsPatch } from "./SceneSettings";
@@ -131,12 +132,6 @@ function capture(element: Element, pointerId: number) {
   } catch {
     /* keep going */
   }
-}
-
-function polygonPoints(points: number[]): string {
-  const pairs: string[] = [];
-  for (let index = 0; index + 1 < points.length; index += 2) pairs.push(`${points[index]},${points[index + 1]}`);
-  return pairs.join(" ");
 }
 
 export type MapActions = {
@@ -2622,32 +2617,7 @@ function MapViewInner({
           );
         })}
         {vision ? (
-          <svg className="overlay sight" width={frame.worldWidth} height={frame.worldHeight} viewBox={`0 0 ${frame.worldWidth} ${frame.worldHeight}`}>
-            <defs>
-              {/* The edge of what a token sees fades over about half a square, as a light's does, never a hard line. */}
-              <filter id="sight-soft" filterUnits="userSpaceOnUse" x={0} y={0} width={frame.worldWidth} height={frame.worldHeight}>
-                <feGaussianBlur stdDeviation={Math.max(4, size * 0.22)} />
-              </filter>
-              <mask id="sight-explored">
-                <rect width={frame.worldWidth} height={frame.worldHeight} fill="#fff" />
-                <g filter="url(#sight-soft)">
-                  {[...exploredPolygons, ...vision].map((polygon, index) => (
-                    <polygon key={index} points={polygonPoints(polygon)} fill="#000" />
-                  ))}
-                </g>
-              </mask>
-              <mask id="sight-now">
-                <rect width={frame.worldWidth} height={frame.worldHeight} fill="#fff" />
-                <g filter="url(#sight-soft)">
-                  {vision.map((polygon, index) => (
-                    <polygon key={index} points={polygonPoints(polygon)} fill="#000" />
-                  ))}
-                </g>
-              </mask>
-            </defs>
-            <rect width={frame.worldWidth} height={frame.worldHeight} fill="#000" mask="url(#sight-explored)" />
-            <rect width={frame.worldWidth} height={frame.worldHeight} fill="#000" fillOpacity={0.55} mask="url(#sight-now)" />
-          </svg>
+          <FogOfWar width={frame.worldWidth} height={frame.worldHeight} softness={Math.max(4, size * 0.22)} explored={exploredPolygons} vision={vision} />
         ) : null}
       </div>
 

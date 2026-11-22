@@ -49,6 +49,12 @@ when it is not on the computer.
 
 ## Ground rules
 
+- **Review technology choices on their merits.** Before adopting, extending, or
+  replacing a major dependency or subsystem, ask what it does, what outcome it
+  serves, why it was chosen, and whether a more modern approach would do the
+  job better. Check current upstream capabilities, compare candidates on a
+  representative workload, and record the evidence and tradeoffs. An existing
+  choice alone does not establish that the project owner requested it.
 - **No game rules in the core.** Rulesets sit on the core as Fantasy
   Grounds' sit on CoreRPG.
 - **The host decides.** Every change goes through the host, which checks

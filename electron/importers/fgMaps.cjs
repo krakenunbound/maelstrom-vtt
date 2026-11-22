@@ -101,9 +101,12 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
   // FG writes no size for its default grid (50 pixels): a map with the grid on and no size is that.
   const [gridW] = nums(image.gridsize).length && nums(image.gridsize)[0] > 0 ? nums(image.gridsize) : [50];
   const [offsetX = 0, offsetY = 0] = nums(image.gridoffset);
-  // What one square measures: FG's scale ("10ft", "5 ft", "1.5m"), else 5 ft.
+  // The record's explicit scale also gives the unit. FG maps can instead store just the distance.
   const scaleMatch = /^\s*(\d+(?:\.\d+)?)\s*([a-z]*)/i.exec(String(record.data?.scale ?? ""));
-  const squareDistance = scaleMatch && Number(scaleMatch[1]) > 0 ? { value: Number(scaleMatch[1]), units: (scaleMatch[2] || "ft").toLowerCase() } : { value: 5, units: "ft" };
+  const imageDistance = Number(image.distancebaseunit ?? record.data?.distancebaseunit);
+  const squareDistance = scaleMatch && Number(scaleMatch[1]) > 0
+    ? { value: Number(scaleMatch[1]), units: (scaleMatch[2] || "ft").toLowerCase() }
+    : { value: Number.isFinite(imageDistance) && imageDistance > 0 ? imageDistance : 5, units: "ft" };
   // The picture layer's own place: an older module's is 0 (FG's origin the picture's centre); a newer one's
   // is half the picture (its origin the picture's top left, y up: Ghosts of Saltmarsh's (925, -925) on a 1850
   // map). Every layer is placed from it, so walls, pins and tiles land on the picture either way.
