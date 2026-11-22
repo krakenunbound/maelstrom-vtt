@@ -365,7 +365,7 @@ and utility windows, and player management against Maelstrom's.
 | Item import from text (FG's Import Item) | Items list: Import items: a table (type, subtype, column names, rows; cells by `|` or tabs) with each item's description, or magic items as the books print them (name, type and rarity line, text), many at once; every SRD magic item, weapon and armor reads back the same | Better (magic items as printed, tabs, AC and Dex cap from the armor table, rarity kept) |
 | Story templates: text with `[Table]` rolls generates a story | Story list: From a template: `[Table]`, `[Table\|column]`, `[1d6]`, `[2x]` rolled into a new story | Same |
 | Options: groups, per user and GM, export and import a set | Settings: you, the table, combat, tokens, house rules; Export settings and Import settings | Same |
-| Currencies (name, weight, value), languages, MOTD, Setup, Token Lights, decal | Currency names, languages, MOTD, lights in Effects, decal, wallpaper, GM icon, themes | Partly (no coin weight or value) |
+| Currencies (name, weight, value), languages, MOTD, Setup, Token Lights, decal | Currency names, each coin's weight (in the load) and value (the sheet's and parcel's worth), languages, MOTD, lights in Effects, decal, wallpaper, GM icon, themes | Yes |
 | Player management: whisper, ring, kick, AFK, release, identities, module player load | The same, view as, ban, accounts, pause | Better |
 
 ## How house rules work in Maelstrom

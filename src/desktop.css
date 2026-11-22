@@ -3057,3 +3057,9 @@ label.set-row { cursor: pointer; }
 .book-back { margin-inline-end: auto; }
 /* FG's "GM is typing" in the players' chat. */
 .chat-typing { margin: 2px 6px; font-style: italic; opacity: 0.8; }
+
+/* FG's currency weight and value (Settings > Currency). */
+.coin-details { border-collapse: collapse; }
+.coin-details th, .coin-details td { padding: 2px 6px; text-align: start; }
+.coin-details input { width: 6em; }
+.coin-worth { white-space: nowrap; }

@@ -1,3 +1,4 @@
+import { coinWorth } from "../../shared/party/worth.mjs";
 import { Field } from "../core/fields/Field";
 import { useState } from "react";
 import { ArtPicker, Picture } from "../characters/ArtPicker";
@@ -429,6 +430,16 @@ export function PartySheet({ session, compact = false }: { session: Session; com
                   </label>
                 ))}
               </div>
+              {(() => {
+                // FG's currency values: the parcel's coins' worth in the first coin.
+                const worth = coinWorth(Object.entries(party.parcel.coins ?? {}).map(([name, amount]) => ({ name, amount: Number(amount) || 0 })), session.options.currencyInfo);
+                const first = (session.options.currencies?.length ? session.options.currencies : game.party.currency)[0] ?? "";
+                return worth === null ? null : (
+                  <p className="hint" data-parcel-worth={worth}>
+                    Worth {worth} {first}
+                  </p>
+                );
+              })()}
               <ul className="sheet-list">
                 {Object.entries(party.parcel.items ?? {}).map(([id, item]) => (
                   <li key={id}>

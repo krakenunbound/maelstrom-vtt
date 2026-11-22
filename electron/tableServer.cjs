@@ -430,6 +430,17 @@ function savedOptions(value) {
     ...(Array.isArray(options.modifierPresets) && options.modifierPresets.length ? { modifierPresets: options.modifierPresets.map((item) => ({ label: String(item?.label ?? "").trim().slice(0, 24), value: Math.max(-99, Math.min(99, Math.round(Number(item?.value) || 0))) })).filter((item) => item.label && item.value).slice(0, 16) } : {}),
     // The GM's own coins (FG's Currency list), in place of the game's on the party sheet and parcels.
     ...(Array.isArray(options.currencies) && options.currencies.length ? { currencies: [...new Set(options.currencies.map((name) => String(name ?? "").trim().slice(0, 16)).filter(Boolean))].slice(0, 12) } : {}),
+    // FG's currency weight and value: a coin's weight (in the game's unit, each) and its value (in the first coin).
+    ...(options.currencyInfo && typeof options.currencyInfo === "object" && Object.keys(options.currencyInfo).length
+      ? {
+          currencyInfo: Object.fromEntries(
+            Object.entries(options.currencyInfo)
+              .slice(0, 24)
+              .map(([name, info]) => [String(name).trim().slice(0, 16), { ...(Number(info?.weight) >= 0 && Number(info?.weight) <= 100 && info?.weight !== "" && info?.weight !== null ? { weight: Number(info.weight) } : {}), ...(Number(info?.value) > 0 && Number(info?.value) <= 1e6 ? { value: Number(info.value) } : {}) }])
+              .filter(([name, info]) => name && Object.keys(info).length),
+          ),
+        }
+      : {}),
     ...(Array.isArray(options.languages) && options.languages.length ? { languages: [...new Set(options.languages.map((name) => String(name ?? "").trim().slice(0, 40)).filter(Boolean))].slice(0, 60) } : {}),
   };
 }

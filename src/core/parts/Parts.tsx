@@ -1,3 +1,4 @@
+import { coinWorth } from "../../../shared/party/worth.mjs";
 import { Fragment, type ComponentType } from "react";
 import type { BoxSpec, DetailBox, Part, Path, RollSpec, StatBlockSpec, StepSpec } from "../../../shared/rulesets/types";
 import { Icon } from "../../ui/icons";
@@ -965,6 +966,19 @@ function Strip({ spec }: { spec: Extract<Part, { part: "strip" }> }) {
   );
 }
 
+// FG's currency values: what the coins are worth in the first coin, when the GM gave values.
+function CoinWorth({ coins }: { coins: { name: string; amount: number }[] }) {
+  const sheet = useSheet();
+  const options = sheet.session.options;
+  const worth = coinWorth(coins, options.currencyInfo);
+  const first = (options.currencies?.length ? options.currencies : rulesetFor(sheet.session.ruleset ?? "").party?.currency)?.[0] ?? "";
+  return worth === null ? null : (
+    <span className="hint coin-worth" data-coin-worth={worth}>
+      Worth {worth} {first}
+    </span>
+  );
+}
+
 // The coins (FG's coin list): an amount to type per coin.
 function Coins({ spec }: { spec: Extract<Part, { part: "coins" }> }) {
   const sheet = useSheet();
@@ -995,6 +1009,7 @@ function Coins({ spec }: { spec: Extract<Part, { part: "coins" }> }) {
         ),
       )}
       {none ? <span className="hint">{spec.none?.text}</span> : null}
+      <CoinWorth coins={coins.map(([, coin]) => ({ name: String(coin.name ?? ""), amount: num(coin.amount) }))} />
       {spec.add && sheet.editable ? (
         <button type="button" className="ghost" data-action="coin-add" title="Another currency (gems, trade bars, a country's coin)" onClick={add}>
           + Coin

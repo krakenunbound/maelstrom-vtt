@@ -417,7 +417,48 @@ function CurrencySetting({ session }: { session: Session }) {
       <SettingRow className="set-row-wide" label="Your coins" hint={`The money of your world, most valuable first, comma between: the party sheet's and treasure parcels' coins. Empty: the game's own (${game || "none"}).`}>
         <input className="set-textarea" value={draft} placeholder={game || "Crowns, Shields, Pennies"} aria-label="Your coins" data-setting="currency-list" onChange={(event) => setDraft(event.target.value)} onBlur={(event) => send(event.target.value)} onKeyDown={(event) => event.key === "Enter" && !event.nativeEvent.isComposing && send((event.target as HTMLInputElement).value)} />
       </SettingRow>
+      <CoinDetails session={session} coins={(session.options.currencies?.length ? session.options.currencies : manifestOf(session.ruleset).party?.currency) ?? []} />
     </SettingsSection>
+  );
+}
+
+// FG's currency weight and value: each coin's weight (the game's unit, one coin) and value (in the first coin). A
+// weight counts toward a character's load in place of the game's coins to the pound; values give the coins' worth.
+function CoinDetails({ session, coins }: { session: Session; coins: string[] }) {
+  const info = session.options.currencyInfo ?? {};
+  const set = (coin: string, field: "weight" | "value", text: string) => {
+    const value = text.trim() === "" ? undefined : Number(text);
+    if (value !== undefined && !Number.isFinite(value)) return;
+    const next = { ...info, [coin]: { ...info[coin], [field]: value } };
+    if (value === undefined) delete next[coin][field];
+    if (JSON.stringify(next) !== JSON.stringify(info)) session.setTableOptions({ currencyInfo: next });
+  };
+  if (!coins.length) return null;
+  return (
+    <SettingRow className="set-row-wide" label="Weight and value" hint={`Each coin's weight (one coin, in the game's unit; empty: the game's own) and its value in ${coins[0]} (empty: no worth shown).`}>
+      <table className="coin-details" data-setting="currency-details">
+        <thead>
+          <tr>
+            <th scope="col">Coin</th>
+            <th scope="col">Weight</th>
+            <th scope="col">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {coins.map((coin) => (
+            <tr key={coin}>
+              <th scope="row">{coin}</th>
+              <td>
+                <input key={`w-${coin}-${info[coin]?.weight ?? ""}`} type="number" min={0} step="any" defaultValue={info[coin]?.weight ?? ""} placeholder="game's" aria-label={`${coin} weight`} onBlur={(event) => set(coin, "weight", event.target.value)} />
+              </td>
+              <td>
+                <input key={`v-${coin}-${info[coin]?.value ?? ""}`} type="number" min={0} step="any" defaultValue={info[coin]?.value ?? ""} placeholder="-" aria-label={`${coin} value`} onBlur={(event) => set(coin, "value", event.target.value)} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </SettingRow>
   );
 }
 

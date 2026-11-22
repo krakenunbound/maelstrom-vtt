@@ -20,7 +20,10 @@ export const SWITCHES = ["ammo", "consumables", "rations", "light", "encumbrance
 // The table's switches: each on unless the GM turned it off; the 5E variant encumbrance only when turned on.
 export function switchesOf(options) {
   const raw = options?.bookkeeping && typeof options.bookkeeping === "object" ? options.bookkeeping : {};
-  return { ammo: raw.ammo !== false, consumables: raw.consumables !== false, rations: raw.rations !== false, light: raw.light !== false, encumbrance: raw.encumbrance !== false, variant: raw.variant === true };
+  // FG's currency weights (the GM's, each coin's), by coin name in lower case.
+  const info = options?.currencyInfo && typeof options.currencyInfo === "object" ? options.currencyInfo : {};
+  const coinWeights = Object.fromEntries(Object.entries(info).filter(([, item]) => Number.isFinite(Number(item?.weight))).map(([name, item]) => [name.toLowerCase(), Number(item.weight)]));
+  return { ammo: raw.ammo !== false, consumables: raw.consumables !== false, rations: raw.rations !== false, light: raw.light !== false, encumbrance: raw.encumbrance !== false, variant: raw.variant === true, ...(Object.keys(coinWeights).length ? { coinWeights } : {}) };
 }
 
 const num = (value, fallback = 0) => (Number.isFinite(Number(value)) && value !== "" && value !== null ? Number(value) : fallback);
@@ -424,8 +427,9 @@ export function containersOf(decl, data) {
   });
 }
 // What the character carries, in the game's unit: carried rows, less what sits in a weightless
-// container, plus coin (decl coins: so many to the unit; 0 or absent: coins weigh nothing).
-export function carriedWeight(decl, data) {
+// container, plus coin (decl coins: so many to the unit; 0 or absent: coins weigh nothing; the GM's coin weights,
+// each coin's, in its place).
+export function carriedWeight(decl, data, coinWeights = null) {
   const spec = decl?.encumbrance ?? {};
   const boxes = containersOf(decl, data);
   const weightless = new Set(boxes.filter((box) => box.weightless).flatMap((box) => box.items));
@@ -438,7 +442,11 @@ export function carriedWeight(decl, data) {
     total += rowWeight(row) * worn;
   }
   const coinsPer = num(spec.coins, 0);
-  const coins = coinsPer > 0 ? Object.values(data?.coins ?? {}).reduce((sum, coin) => sum + Math.max(0, num(coin?.amount, 0)), 0) / coinsPer : 0;
+  const coins = Object.values(data?.coins ?? {}).reduce((sum, coin) => {
+    const amount = Math.max(0, num(coin?.amount, 0));
+    const own = coinWeights?.[String(coin?.name ?? "").toLowerCase()];
+    return sum + (own !== undefined ? amount * own : coinsPer > 0 ? amount / coinsPer : 0);
+  }, 0);
   return { items: Math.round(total * 100) / 100, coins: Math.round(coins * 100) / 100, total: Math.round((total + coins) * 100) / 100 };
 }
 // A path's value: "abilities.strength.score".
@@ -483,7 +491,7 @@ export function encumbranceOf(decl, data, switches = { encumbrance: true, varian
   let used = 0;
   let coins = 0;
   if (spec.mode === "weight") {
-    const weight = carriedWeight(decl, data);
+    const weight = carriedWeight(decl, data, switches.coinWeights);
     used = weight.total;
     coins = weight.coins;
   } else used = num(at(data, spec.used), 0);
