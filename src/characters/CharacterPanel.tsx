@@ -19,7 +19,7 @@ function ChosenWizard({ session, onDone }: { session: Session; onDone: (id: stri
 
 // selected: the character to show (else the first this seat can see).
 // create: open on the creation wizard; when it finishes, the new character's sheet.
-export function CharacterPanel({ session, selected: chosen, create = false, onTitle }: { session: Session; selected?: string | null; create?: boolean; onTitle?: (title: string) => void }) {
+export function CharacterPanel({ session, selected: chosen, create = false, onSheet }: { session: Session; selected?: string | null; create?: boolean; onSheet?: (id: string, name: string) => void }) {
   const characters = Object.values(session.records)
     .filter((record) => record.type === "character")
     .sort((a, b) => a.name.localeCompare(b.name));
@@ -29,11 +29,12 @@ export function CharacterPanel({ session, selected: chosen, create = false, onTi
     if (chosen) setSelected(chosen);
   }, [chosen]);
   const current = characters.find((record) => record.id === selected) ?? (creating ? null : characters[0]) ?? null;
-  // Once the wizard is done the window shows a sheet, so it takes the character's name.
-  const shownName = !creating && create && current ? current.name : "";
+  // Once the wizard is done the character's own sheet window takes its place (the one Character Selection opens,
+  // so the windows reopened after a reload show the sheet, not a new wizard).
+  const made = !creating && create && current ? current : null;
   useEffect(() => {
-    if (shownName) onTitle?.(shownName);
-  }, [shownName]);
+    if (made) onSheet?.(made.id, made.name);
+  }, [made?.id]);
   return (
     <section className="characters dock-characters" role="tabpanel">
       {creating ? (

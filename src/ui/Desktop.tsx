@@ -817,7 +817,7 @@ export function Desktop({
               </FloatingWindow>
             ) : (
             <FloatingWindow key={item.key} item={item} link={linkOf(item)}>
-              {item.kind === "characters" ? <CharacterPanel session={session} create={String(item.payload ?? "").startsWith("new")} onTitle={(title) => windows.open("characters", title, item.payload)} /> : null}
+              {item.kind === "characters" ? <CharacterPanel session={session} create={String(item.payload ?? "").startsWith("new")} onSheet={(id, name) => { windows.close(item.key); windows.open("sheet", name, id); }} /> : null}
               {item.kind === "records" ? <RecordsWindow session={session} only={item.payload} onOpen={(record) => windows.open("record", record.name, record.id)} /> : null}
               {item.kind === "adventure" && item.payload && gm ? <AdventureList session={session} kind={item.payload as AdventureKind} onStory={(path, name) => windows.open("story", name, path)} /> : null}
               {item.kind === "story" && item.payload && gm ? <StoryWindow session={session} path={item.payload} /> : null}
