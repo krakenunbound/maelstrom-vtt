@@ -410,7 +410,7 @@ function createBookkeeping(table) {
     if (!lib.bk || record?.type !== "character") return;
     const decl = declOf(record);
     if (!decl) return;
-    const wanted = lib.bk.autoEffects(decl, record.data, switches());
+    const wanted = lib.bk.autoEffects(decl, record.data, switches(), (key) => table.houseRule?.(key));
     const entry = table.combat.entries().find((item) => item.recordId === record.id);
     let token = null;
     if (!entry) {
@@ -476,7 +476,14 @@ function createBookkeeping(table) {
     await ready;
     mine(record, seat);
     const decl = declOf(record);
-    const spec = decl?.rest?.[kind];
+    // A game's rest changed by its house rules (5E: the 2024 rules give back every Hit Point Die; FG's healing
+    // variants, fast and slow): each override whose rule holds, in order.
+    let spec = decl?.rest?.[kind];
+    for (const over of spec ? decl.rest.byRule ?? [] : []) {
+      if (String(table.houseRule?.(over.rule) ?? "") !== String(over.value) || !over[kind]) continue;
+      const change = over[kind];
+      spec = { ...spec, ...change, ...(change.hitDice ? { hitDice: { ...(spec.hitDice ?? {}), ...change.hitDice } } : {}) };
+    }
     if (!spec) throw new Error(`${manifestOf(record).names?.[0] ?? "This game"} has no ${kind} rest${decl?.rest?.long && kind === "short" ? ": take a long rest" : ""}.`);
     const from = seat.role === "dm" ? record.name : seat.name;
     const lines = [];
@@ -511,8 +518,16 @@ function createBookkeeping(table) {
         words.push(`${plural(want, "Hit Point Die")} spent, ${healed} HP back`);
       } else words.push(left ? "no Hit Point Dice needed" : "no Hit Point Dice left");
     }
-    // Hit points back on a long rest: all, a number, a number a level, or dice.
-    if (spec.hp !== undefined) {
+    // Hit Point Dice back on a short rest (FG's fast healing: a quarter of them).
+    if (spec.hitDice && kind === "short" && spec.hitDiceBack === "quarter") {
+      const total = Math.max(1, num(at(data, spec.hitDice.total), num(data.level, 1)));
+      const used = num(at(data, spec.hitDice.used), 0);
+      const back = Math.min(used, Math.max(1, Math.floor(total / 4)));
+      setAt(data, spec.hitDice.used, used - back);
+      if (back) words.push(`${plural(back, "Hit Point Die")} back`);
+    }
+    // Hit points back on a long rest: all, a number, a number a level, or dice (null: none, FG's slow healing).
+    if (spec.hp !== undefined && spec.hp !== null) {
       let amount = 0;
       if (spec.hp === "full") amount = num(at(data, "hp.wounds"), 0);
       else if (typeof spec.hp === "number") amount = spec.hp;
@@ -617,7 +632,7 @@ function createBookkeeping(table) {
       load: decl?.encumbrance ? lib.bk.encumbranceOf(decl, data, sw) : null,
       exhaustion: decl?.exhaustion ? num(at(data, decl.exhaustion.path), 0) : null,
       effects: lib.bk.autoEffects(decl, data, sw),
-      rests: Object.keys(decl?.rest || {}),
+      rests: Object.keys(decl?.rest || {}).filter((key) => key !== "byRule"),
       packs: lib.bk.rowsOf(data).filter(([, row]) => lib.bk.packContents(row).length).map(([key, row]) => ({ key, name: row.name })),
     };
   }

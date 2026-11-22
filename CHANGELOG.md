@@ -8,6 +8,8 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **House rules for each game, starting with 5E's:** Settings has a House rules section drawn from the game's own list (the agent's `kraken_table_options rules`). D&D 5E has Fantasy Grounds' ten, with its defaults: the rules version (2014 or 2024: exhaustion and a long rest's hit dice follow it), automatic death saves, fixed NPC damage, a ranged attack next to an enemy at disadvantage, massive damage and system shock, exhaustion's modifier per level, on spell save DCs and after being healed from dying, fast or slow healing, and reliable skill rolls.
+- **5E attacks take advantage and disadvantage from everything:** ADVATK, DISATK, GRANTADVATK and GRANTDISATK effects (Faerie Fire, heavy encumbrance), the conditions (blinded, frightened, invisible, poisoned, prone at reach or range, restrained, paralyzed, stunned, unconscious); both cancel out.
 ## 0.1.0-beta.2: Their books and maps, whole
 
 Fantasy Grounds and Foundry content comes in as it was made: FG maps line up and keep their lighting, terrain, pins, encounters, switches and distances; Foundry map sets open whole with their music; module sounds join your library; fog of war is drawn on the GPU; AD&D 2E's sheet matches its FG ruleset control by control; and a guide shows an agent how to bring any game or content to Maelstrom. Played end to end with Ghosts of Saltmarsh and the 2E Keep on the Borderlands.

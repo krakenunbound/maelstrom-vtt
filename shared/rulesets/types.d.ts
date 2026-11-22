@@ -432,7 +432,9 @@ export interface RulesetManifest {
   // Initiative: who acts first ("low": the lowest, 2E; else the highest) and the die a side's roll uses (the tracker's sides option).
   initiativeOrder?: "low" | "high";
   initiativeDie?: number;
-  settings?: ({ key: string; label: string; hint?: string; kind: "toggle" | "select" | "checklist"; default: unknown; options?: string[] } | { component: Ref; gm?: boolean })[];
+  // The game's own settings: a house rule (key, its choices, the default; the GM's Settings > House rules, the
+  // agent's kraken_table_options rules; the host reads it with houseRule(key)), or a panel of its own.
+  settings?: ({ key: string; label: string; hint?: string; kind: "toggle" | "select" | "checklist"; default: unknown; options?: (string | { value: string; label: string })[]; group?: string } | { component: Ref; gm?: boolean })[];
   // modifiers: the modifier box and its keys (shared/rulesets/modifiers.mjs); false: none. kinds: the rolls it reads (all when left out).
   dice?: { extraTray?: string[]; resultWords?: Record<string, "good" | "mixed" | "bad">; modifiers?: false | { presets?: (string | import("./modifiers.mjs").ModifierKey)[]; kinds?: string[] } };
   windows?: WindowSpec[];
@@ -466,7 +468,8 @@ export interface PenaltySpec {
 }
 export interface RestSpec {
   hours?: number;
-  hp?: "full" | number | { perLevel: number; level: Path } | { dice: string; mod?: Path };
+  hp?: "full" | number | { perLevel: number; level: Path } | { dice: string; mod?: Path } | null;
+  hitDiceBack?: "quarter"; // a short rest gives back a quarter of the Hit Point Dice (FG's fast healing)
   temp?: boolean;
   hitDice?: { die?: Path; total?: Path; used: Path; mod?: Path; back?: "half" | "all" };
   reset?: string[]; // paths zeroed (globs: "slots.*.used")
@@ -475,12 +478,16 @@ export interface RestSpec {
   concentration?: boolean;
   via?: { module: string; action: string }; // the game's own (Cairn's rest and sleep)
 }
+// A rest changed by a house rule: any of its fields, its Hit Point Dice in part.
+export type RestChange = Omit<Partial<RestSpec>, "hitDice"> & { hitDice?: Partial<NonNullable<RestSpec["hitDice"]>> };
 export interface BookkeepingSpec {
   ammo: false | { recover: number; low?: number; engine?: "siege"; kinds?: { id: string; label: string; launcher: string; ammo: string }[] };
   consumables: false | { kinds?: { kind: string; match: string; spend: "count" | "uses" | "charges" }[] };
   rations: false | { food: { match: string }; water: false | { match: string; days?: number }; penalty: { food?: PenaltySpec; water?: PenaltySpec } };
   light: false | Record<string, false | { item?: string; fuel?: string; keep?: boolean }>;
-  exhaustion?: { path: Path; max: number; effect: string; text: string };
+  // editionRule/editions: a house rule choosing the effect (5E's GAVE: the 2014 levels, cumulative); perLevelRule and
+  // perLevelEffect: a house rule's own modifier per level ({x}: it times the level; 5E's HREX).
+  exhaustion?: { path: Path; max: number; effect: string; text: string; editionRule?: string; editions?: Record<string, string[]>; perLevelRule?: string; perLevelEffect?: string };
   encumbrance:
     | false
     | {
@@ -502,7 +509,8 @@ export interface BookkeepingSpec {
         containers?: { match: string; capacity: number; weightless?: boolean }[];
         note?: string;
       };
-  rest: false | { short?: RestSpec; long?: RestSpec };
+  // byRule: changes a house rule makes (5E's 2024 rules, FG's healing variants), in order.
+  rest: false | { short?: RestSpec; long?: RestSpec; byRule?: { rule: string; value: string; short?: RestChange; long?: RestChange }[] };
 }
 
 // What a game declares for targeting, actions and effects (shared/<id>/actions.mjs,

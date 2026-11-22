@@ -524,14 +524,25 @@ export function encumbranceOf(decl, data, switches = { encumbrance: true, varian
 // --- Conditions the books bring on: exhaustion and the load ----------------------------------------
 // The effects bookkeeping keeps on a creature (its token or tracker entry), each by its tag:
 // the load's penalty and, where the game has it, exhaustion by level.
-export function autoEffects(decl, data, switches) {
+// rule(key): the game's house rules (exhaustion's edition and its modifier per level, 5E's GAVE and HREX).
+export function autoEffects(decl, data, switches, rule = () => undefined) {
   const out = [];
   const load = switches.encumbrance ? encumbranceOf(decl, data, switches) : null;
   // Past the first level (and for a game whose load the core works out or reads): the level, its components.
   if (load?.level?.heavier) out.push({ tag: "encumbrance", label: load.level.effect ? `${load.level.label}; ${load.level.effect}` : load.level.label, text: load.level.text });
   const exhaustion = decl?.exhaustion;
   const level = exhaustion ? Math.max(0, Math.round(num(at(data, exhaustion.path), 0))) : 0;
-  if (exhaustion && level > 0) out.push({ tag: "exhaustion", label: exhaustion.effect.replace(/\{n\}/g, String(level)).replace(/\{(\d+)n\}/g, (whole, by) => String(Number(by) * level)) });
+  if (exhaustion && level > 0) {
+    // A house rule's modifier per level (every d20 test), or the edition's own effects, else the game's.
+    const per = exhaustion.perLevelRule ? Number(rule(exhaustion.perLevelRule)) : NaN;
+    const edition = exhaustion.editionRule ? rule(exhaustion.editionRule) : undefined;
+    const byEdition = edition !== undefined ? exhaustion.editions?.[String(edition)] : undefined;
+    let label;
+    if (Number.isFinite(per) && per !== 0 && exhaustion.perLevelEffect) label = exhaustion.perLevelEffect.replace(/\{n\}/g, String(level)).replace(/\{x\}/g, String(per * level));
+    else if (Array.isArray(byEdition)) label = [`Exhaustion ${level}`, ...byEdition.slice(0, level).filter(Boolean)].join("; ");
+    else label = exhaustion.effect.replace(/\{n\}/g, String(level)).replace(/\{(\d+)n\}/g, (whole, by) => String(Number(by) * level));
+    out.push({ tag: "exhaustion", label });
+  }
   return out;
 }
 

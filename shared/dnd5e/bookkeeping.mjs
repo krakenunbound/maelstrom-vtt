@@ -22,7 +22,9 @@ export default {
     },
   },
   light: { torch: {}, lantern: {}, lamp: {}, candle: {} },
-  exhaustion: { path: "exhaustion", max: 6, effect: "Exhaustion {n}; ATK: -{2n}; SAVE: -{2n}; CHECK: -{2n}; SKILL: -{2n}; SPEED: -{5n}", text: "Each level: d20 Tests -2 and Speed -5 feet; a Long Rest removes one; level 6 is death." },
+  // 2024 by default; the 2014 rules' six levels (cumulative) when the GM picks the 2014 rules; the house rule's own
+  // modifier per level on every d20 test (FG 5E's GAVE and HREX).
+  exhaustion: { path: "exhaustion", max: 6, effect: "Exhaustion {n}; ATK: -{2n}; SAVE: -{2n}; CHECK: -{2n}; SKILL: -{2n}; SPEED: -{5n}", editionRule: "GAVE", editions: { "2014": [`DISCHK: ${D20}; DISSKILL: ${D20}`, "NOTE: Speed halved", `DISATK: ${D20}; DISSAV: ${D20}`, "NOTE: Hit point maximum halved", "NOTE: Speed 0", "NOTE: Death"] }, perLevelRule: "HREX", perLevelEffect: "Exhaustion {n}; ATK: {x}; SAVE: {x}; CHECK: {x}; SKILL: {x}; INIT: {x}", text: "Each level: d20 Tests -2 and Speed -5 feet; a Long Rest removes one; level 6 is death." },
   encumbrance: {
     mode: "weight",
     unit: "lb.",
@@ -45,6 +47,13 @@ export default {
   },
   rest: {
     short: { hours: 1, hitDice: { die: "hitdice.die", total: "hitdice.total", used: "hitdice.used", mod: "abilities.constitution.bonus" } },
+    // The house rules' changes (FG 5E's): the 2024 rules give back every Hit Point Die on a long rest; fast healing
+    // also a quarter on a short rest; slow healing half on a long rest and no hit points.
+    byRule: [
+      { rule: "GAVE", value: "2024", long: { hitDice: { back: "all" } } },
+      { rule: "HRHV", value: "fast", long: { hp: "full", hitDice: { back: "all" } }, short: { hitDiceBack: "quarter" } },
+      { rule: "HRHV", value: "slow", long: { hp: null, hitDice: { back: "half" } } },
+    ],
     long: { hours: 8, hp: "full", temp: true, hitDice: { back: "half", used: "hitdice.used", total: "hitdice.total" }, reset: ["slots.*.used", "deathsaves.success", "deathsaves.failure"], exhaustion: -1, rations: true, concentration: true },
   },
 };

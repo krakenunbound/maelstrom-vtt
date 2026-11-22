@@ -46,8 +46,14 @@ async function check5e(table, record, { kind = "check", attribute, skill, dc, bo
   const against = Number(dc) > 0 ? Math.round(Number(dc)) : null;
   // The result goes with the roll card (FG's [SUCCESS] / [FAILURE] after the roll).
   const rolled = table.act(formula, kind === "save" ? "save" : "check");
+  // FG 5E's reliable skill rolls (HRFL: Insight, Investigation and Perception, or every skill): a d20 under 10 counts as 10.
+  const reliableRule = kind === "skill" ? table.houseRule?.("HRFL") : "";
+  const reliable = reliableRule === "all" || (reliableRule === "passive" && ["insight", "investigation", "perception"].includes(key));
+  const kept = (rolled.terms?.[0]?.rolls ?? []).filter((_die, index) => rolled.terms[0].kept?.[index] !== false);
+  const natural = kept.length ? Math.max(...kept) : null;
+  if (reliable && natural !== null && natural < 10) rolled.total += 10 - natural;
   const success = against === null ? null : rolled.total >= against;
-  const words = `${label ? `${label} ` : ""}${tag}${shaken.dread ? " [DREAD]" : ""}${advantage ? ` [${advantage.toUpperCase()}]` : ""}${against !== null ? ` [DC ${against}] [${success ? "SUCCESS" : "FAILURE"} ${rolled.total} vs ${against}]` : ""}`;
+  const words = `${label ? `${label} ` : ""}${tag}${reliable ? " [RELIABLE]" : ""}${shaken.dread ? " [DREAD]" : ""}${advantage ? ` [${advantage.toUpperCase()}]` : ""}${against !== null ? ` [DC ${against}] [${success ? "SUCCESS" : "FAILURE"} ${rolled.total} vs ${against}]` : ""}`;
   table.postRoll(rolled, words, from || record.name, false, { by: record.name, ...(against !== null ? { result: success ? "SUCCESS" : "FAILURE", against } : {}) });
   return { total: rolled.total, d20: rolled.terms[0].rolls, modifier: total, dc: against, success };
 }

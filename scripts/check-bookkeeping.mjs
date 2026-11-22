@@ -290,11 +290,12 @@ try {
   assert(data(ryn).hitdice.used === 2 && data(ryn).hp.wounds <= 15 - 6 && data(ryn).hp.wounds >= 0, `two Hit Point Dice: ${JSON.stringify(data(ryn).hp)} ${JSON.stringify(out.words)}`);
   refused = await tool("kraken_rest", { id: ryn.id, kind: "short", hitDice: 5 }).catch((error) => error.message);
   assert(/1 Hit Point Die left/.test(String(refused)), `not more than are left: ${refused}`);
-  // Long rest: every HP, half the dice (1 of 3), slots and death saves.
+  // Long rest (the 2024 rules, FG 5E's default; the 2014 rules give back half, see check-5e-house-rules): every HP,
+  // every Hit Point Die, slots and death saves.
   agent.records.update(ryn.id, { data: { slots: { l1: { used: 3 } }, deathsaves: { success: 1, failure: 2 } } }, agent.seat);
   await tool("kraken_rest", { id: ryn.id, kind: "long" });
   const rested = data(ryn);
-  assert(rested.hp.wounds === 0 && rested.hitdice.used === 1 && rested.slots.l1.used === 0 && rested.deathsaves.success === 0 && rested.deathsaves.failure === 0, `a long rest: ${JSON.stringify({ hp: rested.hp, hitdice: rested.hitdice, slots: rested.slots, deathsaves: rested.deathsaves })}`);
+  assert(rested.hp.wounds === 0 && rested.hitdice.used === 0 && rested.slots.l1.used === 0 && rested.deathsaves.success === 0 && rested.deathsaves.failure === 0, `a long rest: ${JSON.stringify({ hp: rested.hp, hitdice: rested.hitdice, slots: rested.slots, deathsaves: rested.deathsaves })}`);
   // The party rests: everyone, and the clock moves on 8 hours; not during a fight.
   const clock = (await tool("kraken_calendar", {})).hour ?? (await tool("kraken_calendar", { action: "view" })).hour;
   agent.records.update(ox.id, { data: { hp: { wounds: 9 } } }, agent.seat);

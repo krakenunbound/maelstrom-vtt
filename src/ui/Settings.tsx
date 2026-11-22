@@ -183,6 +183,7 @@ export function SettingsWindow({ session }: { session: Session }) {
       {gm ? <ModifierPresetsSetting session={session} /> : null}
       {gm ? <BookkeepingSettings session={session} /> : null}
       {gm ? <TokenOptionsSection session={session} /> : null}
+      {gm ? <HouseRulesSetting session={session} /> : null}
       {/* The rows the game adds (its manifest's settings), only in that game. */}
       {(manifestOf(session.ruleset).settings ?? []).map((item) => {
         const ref = "component" in item && (!item.gm || gm) ? item.component : "";
@@ -191,6 +192,42 @@ export function SettingsWindow({ session }: { session: Session }) {
       })}
       {gm ? <StudioFoldersSetting /> : null}
     </div>
+  );
+}
+
+// The game's house rules (its manifest's settings with a key): each a switch or a choice, grouped; the GM's
+// choice is kept with the campaign (table options rules) and the host's rules read it.
+function HouseRulesSetting({ session }: { session: Session }) {
+  const rules = (manifestOf(session.ruleset).settings ?? []).filter((item): item is Extract<typeof item, { key: string }> => "key" in item);
+  if (!rules.length) return null;
+  const chosen = session.options.rules ?? {};
+  // Only the rule changed: the host merges it with the others.
+  const set = (key: string, value: string | boolean) => session.setTableOptions({ rules: { [key]: value } });
+  const groups = [...new Set(rules.map((item) => item.group ?? ""))];
+  return (
+    <SettingsSection title="House rules" setting="house-rules">
+      {groups.map((group) => (
+        <div key={group || "rules"} className="house-rule-group">
+          {group ? <h4>{group}</h4> : null}
+          {rules
+            .filter((item) => (item.group ?? "") === group)
+            .map((item) => {
+              const value = chosen[item.key] ?? item.default;
+              if (item.kind === "toggle") return <Toggle key={item.key} label={item.label} hint={item.hint} checked={Boolean(value)} setting={`rule-${item.key}`} attrs={{ "data-house-rule": item.key }} onChange={(on) => set(item.key, on)} />;
+              return (
+                <SettingRow key={item.key} label={item.label} hint={item.hint}>
+                  <select data-house-rule={item.key} value={String(value)} onChange={(event) => set(item.key, event.target.value)}>
+                    {(item.options ?? []).map((option) => {
+                      const { value: id, label } = typeof option === "string" ? { value: option, label: option } : option;
+                      return <option key={id} value={id}>{label}</option>;
+                    })}
+                  </select>
+                </SettingRow>
+              );
+            })}
+        </div>
+      ))}
+    </SettingsSection>
   );
 }
 

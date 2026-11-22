@@ -1619,10 +1619,15 @@ const TOOLS = [
       modifierPresets: { type: "array", items: { type: "object", properties: { label: { type: "string" }, value: { type: "number" } } }, description: "The GM's own modifiers (FG's Modifiers window): named numbers shown beside every seat's modifier box; a click adds it to the box ([] for none)" },
       currencies: { type: "array", items: { type: "string" }, description: "The GM's own coins (FG's Currency list), most valuable first: the party sheet's and parcels' coins instead of the game's (an empty list: the game's again)" },
       languages: { type: "array", items: { type: "string" }, description: "The GM's own chat languages (FG's Languages list), offered beside the game's and those its characters know" },
+      rules: { type: "object", description: "The game's house rules (Settings > House rules; its manifest's settings), key -> value; only the keys given change. D&D 5E (FG 5E's options): GAVE rules version 2024|2014; HRST auto death saves true|false (default true); NPCD NPC damage off (rolled)|fixed (average); HRFFM a ranged attack next to an enemy at disadvantage true|false (default true); HRMD massive damage, system shock true|false; HREX exhaustion's roll modifier per level \"\" (the rules version's)|-1|-2|-3; HRSE exhaustion lowers a caster's spell save DC true|false; HRHE exhaustion levels when healed from dying off|1-5; HRHV healing \"\" (standard)|fast|slow; HRFL reliable skill rolls \"\"|passive|all" },
     }),
     run(args, ctx) {
       const agent = needTable(ctx);
-      return out(Object.keys(args).length > 0 ? agent.setOptions(args) : agent.options());
+      if (args.rules && typeof args.rules === "object") args = { ...args, rules: { ...(agent.options().rules ?? {}), ...args.rules } };
+      const set = Object.keys(args).length > 0 ? agent.setOptions(args) : agent.options();
+      // The house rules as they hold now (the game's defaults filled in).
+      const rules = Object.fromEntries((agent.houseRuleKeys?.() ?? []).map((key) => [key, agent.houseRule(key)]));
+      return out(Object.keys(rules).length ? { ...set, houseRules: rules } : set);
     },
   },
   {

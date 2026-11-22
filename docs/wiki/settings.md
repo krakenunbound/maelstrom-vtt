@@ -71,6 +71,19 @@ What is off is never sent to a player's browser. See [Tokens, vision and lightin
 
 Some games add their own rows here, shown only in that game.
 
+### House rules
+
+A game's optional rules, each a switch or a choice, kept with the campaign. D&D 5E has:
+
+- **Rules version** (2024 or 2014): exhaustion and how many hit dice a long rest gives back follow it.
+- **Auto death saves** (on): a dying character rolls its death save as its turn starts.
+- **NPC damage**: rolled, or fixed at the average.
+- **Ranged attack next to an enemy at disadvantage** (on), unless a feat lets the attacker ignore it.
+- **Massive damage**: a blow of half a creature's hit points asks a DC 15 Constitution save; a failure rolls the system shock table.
+- **Exhaustion**: its modifier per level, whether it lowers a caster's spell save DC, and levels gained when healed from dying.
+- **Healing**: standard, fast or slow rests.
+- **Reliable skill rolls**: a d20 under 10 counts as 10, for Insight, Investigation and Perception or every skill.
+
 ### Map Studio art
 
 The folders of your Dungeondraft packs and your art packs (`.mod`). See [Map Studio](map-studio.md#the-art-it-uses).

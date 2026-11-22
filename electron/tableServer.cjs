@@ -365,6 +365,11 @@ function savedOptions(value) {
     ...(["roll", "max"].includes(options.npcHp) ? { npcHp: options.npcHp } : {}),
     ...(["enemies", "all", "off"].includes(options.skipDead) ? { skipDead: options.skipDead } : {}),
     npcNumbering: ["append", "random", "off"].includes(options.npcNumbering) ? options.npcNumbering : "append",
+    // The game's house rules (its manifest's settings: 5E's auto death saves, fixed NPC damage...): key -> the
+    // GM's choice; read through houseRule(), which holds them to the manifest's own choices.
+    ...(options.rules && typeof options.rules === "object" && !Array.isArray(options.rules)
+      ? { rules: Object.fromEntries(Object.entries(options.rules).filter(([key, value]) => /^[A-Za-z0-9]{1,24}$/.test(key) && ["string", "boolean"].includes(typeof value)).slice(0, 60).map(([key, value]) => [key, typeof value === "boolean" ? value : String(value).slice(0, 24)])) }
+      : {}),
     // The GM's own chat languages (FG's Languages list), beside the game's and those its characters know.
     // The GM's theme for the whole table (Settings > Look): Kraken's brass by default.
     ...(THEMES.includes(options.theme) ? { theme: options.theme } : {}),
@@ -844,6 +849,8 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   }
   function setOptions(patch) {
     const next = patch && typeof patch === "object" ? patch : {};
+    // House rules change one at a time: only the keys sent (two quick clicks never undo each other).
+    if (next.rules && typeof next.rules === "object" && !Array.isArray(next.rules)) next.rules = { ...(options.rules ?? {}), ...next.rules };
     if (next.decal !== undefined && !(next.decal === "" || next.decal === "kraken" || (decals && decals.has(String(next.decal))))) throw new Error(`No decal "${next.decal}".`);
     if (next.wallpaper !== undefined && !(next.wallpaper === "" || (wallpapers && wallpapers.has(String(next.wallpaper))))) throw new Error(`No wallpaper "${next.wallpaper}".`);
     if (next.gmIcon !== undefined && !(next.gmIcon === "" || (gmIcons && gmIcons.has(String(next.gmIcon))))) throw new Error(`No GM icon "${next.gmIcon}".`);
@@ -895,6 +902,14 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       return null;
     }
   };
+  function houseRule(key) {
+    const item = (rulesetManifest()?.settings ?? []).find((entry) => "key" in entry && entry.key === key);
+    if (!item) return undefined;
+    const chosen = options.rules?.[key];
+    if (item.kind === "toggle") return typeof chosen === "boolean" ? chosen : Boolean(item.default);
+    const values = (item.options ?? []).map((option) => (typeof option === "string" ? option : option.value));
+    return values.includes(chosen) ? chosen : item.default;
+  }
   const { keysFor: modifierKeysFor, stackFor: modifierStackFor } = require("../shared/rulesets/modifiers.mjs");
   const modifiers = createModifiers({
     saved: saved.modifiers,
@@ -4050,6 +4065,10 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     records,
     dice,
     options: () => ({ ...options }),
+    // A house rule of the campaign's game (its manifest's settings): the GM's choice, if it is one the game
+    // offers, else the game's default.
+    houseRule: (key) => houseRule(key),
+    houseRuleKeys: () => (rulesetManifest()?.settings ?? []).filter((entry) => "key" in entry).map((entry) => entry.key),
     // The active books' random tables (the 2E krits find their Krits & Fumbles book's), read once per set of active books.
     bookTables: () => {
       const names = [...shelf.active].map((id) => books?.info(id)).filter((info) => info && fits(info)).map((info) => books?.file?.(info.id) || info.name);

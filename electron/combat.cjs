@@ -965,6 +965,10 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     // A turn passes: templates of instant spells come off the map.
     table().onTurn?.();
     table().say(`[TURN] ${entry.name}`, "Combat", secret);
+    // 5E's house rule (FG's HRST, on by default): a dying character rolls its death save as its turn starts.
+    if (five() && !bleeds() && table().houseRule?.("HRST") && record(entry)?.type === "character" && health(entry).status === "Dying" && !entry.stabilized && num(deathSaves(entry)?.failure, 0) < 3) {
+      await deathSave(entry.id, table().seat).catch(() => undefined);
+    }
     // 2E: what it rolled initiative with (a weapon's INIT), said as its turn starts, then cleared.
     if (entry.inititem) {
       table().say(`[INIT] ${entry.name}: ${entry.inititem}`, "Combat", secret);
@@ -2190,13 +2194,61 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     const term = rolled.terms[0];
     return term.kept ? term.rolls.find((_, i) => term.kept[i]) : term.rolls[0];
   };
+  // A 5E attack's advantage and disadvantage (FG 5E's: effects, conditions, range): the attacker's ADVATK and
+  // DISATK, the target's GRANTADVATK and GRANTDISATK (each may name melee or ranged), the conditions (an
+  // attacker blinded, frightened, poisoned, prone or restrained has disadvantage, an invisible one advantage; a
+  // target blinded, paralyzed, petrified, restrained, stunned or unconscious grants advantage, an invisible one
+  // disadvantage, a prone one advantage within 5 feet and disadvantage beyond), the house rule that a ranged attack
+  // next to an enemy has disadvantage (HRFFM), and 2014 Exhaustion 3+. Both cancel out.
+  function attackEdge(source, target, plan) {
+    const ranged = plan.type === "ranged";
+    const notes = [];
+    let adv = false;
+    let dis = false;
+    const tagged = (entry, tag) =>
+      (entry?.effects ?? []).some((effect) =>
+        livePartsOf(effect).some((part) => {
+          const match = new RegExp("^\\s*" + tag + "\\s*(?::\\s*(.*))?$", "i").exec(part);
+          if (!match) return false;
+          const only = String(match[1] ?? "").trim().toLowerCase();
+          return !only || (ranged ? /ranged/.test(only) : /melee/.test(only)) || !/melee|ranged/.test(only);
+        }),
+      );
+    if (tagged(source, "ADVATK") || tagged(target, "GRANTADVATK")) adv = true;
+    if (tagged(source, "DISATK") || tagged(target, "GRANTDISATK")) dis = true;
+    if (["blinded", "frightened", "poisoned", "prone", "restrained"].some((name) => hasCondition(source, name))) dis = true;
+    if (hasCondition(source, "invisible")) adv = true;
+    if (target) {
+      if (frozen(target) || ["blinded", "restrained"].some((name) => hasCondition(target, name))) adv = true;
+      if (hasCondition(target, "invisible")) dis = true;
+      if (hasCondition(target, "prone")) {
+        const near = source ? shipDistance(source, target) : null;
+        if ((near ?? (ranged ? 2 : 0)) <= 0) adv = true;
+        else dis = true;
+      }
+    }
+    // A ranged attack with an enemy (not incapacitated) within 5 feet, unless a feat says otherwise.
+    if (ranged && source && !hasCondition(source, "invisible") && table().houseRule?.("HRFFM")) {
+      const feats = JSON.stringify(record(source)?.data?.feats ?? []).toLowerCase();
+      const spell = plan.spell === true;
+      const exempt = (spell ? /spell sniper/.test(feats) : /sharpshooter/.test(feats)) || /crossbow expert/.test(feats);
+      const menaced = state.entries.some((other) => other !== source && other.faction !== source.faction && other.faction !== "neutral" && !frozen(other) && !hasCondition(other, "incapacitated") && shipDistance(source, other) === 0);
+      if (menaced && !exempt) {
+        dis = true;
+        notes.push("[RANGED ATTACK NEXT TO ENEMY]");
+      }
+    }
+    // 2014 rules: Exhaustion 3 or more gives disadvantage on attacks.
+    if (source && table().houseRule?.("GAVE") === "2014" && !table().houseRule?.("HREX") && num(record(source)?.data?.exhaustion, 0) >= 3) dis = true;
+    return { advantage: adv && !dis, disadvantage: dis && !adv, notes };
+  }
   async function attack5e(plan, from) {
     await r5Ready;
     const source = plan.entry;
     mustAct(source);
-    const formulaFor = (target, advantage) => {
+    const formulaFor = (target, advantage, disadvantage = false) => {
       const atk = plan.bonus + effectBonus(source, "ATK", target);
-      return `${advantage ? "2d20kh1" : "1d20"}${atk ? `${atk > 0 ? "+" : ""}${atk}` : ""}${effectDice(source, "ATK", target)}`;
+      return `${advantage ? "2d20kh1" : disadvantage ? "2d20kl1" : "1d20"}${atk ? `${atk > 0 ? "+" : ""}${atk}` : ""}${effectDice(source, "ATK", target)}`;
     };
     const kind = SHORT_TYPE[plan.type] ? ` (${SHORT_TYPE[plan.type]})` : "";
     const results = [];
@@ -2209,9 +2261,10 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     }
     for (const target of targets) {
       const ac = vitals(target).ac + effectBonus(target, "AC");
-      // FG's getDefenseAdvantage: attacks on a frozen creature have advantage.
-      const advantage = frozen(target);
-      const rolled = table().act(formulaFor(target, advantage), "attack");
+      // FG's advantage and disadvantage on this attack (effects, conditions, range, house rules).
+      const edge = attackEdge(source, target, plan);
+      const advantage = edge.advantage;
+      const rolled = table().act(formulaFor(target, advantage, edge.disadvantage), "attack");
       const die = natural(rolled);
       let crit = die === 20;
       const hit = crit || (die !== 1 && rolled.total >= ac);
@@ -2220,10 +2273,10 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       const converted = hit && !crit && plan.type === "melee" && (downStatus(target) || hasCondition(target, "unconscious") || hasCondition(target, "paralyzed"));
       if (converted) crit = true;
       const verdict = crit ? "CRITICAL HIT" : die === 1 ? "AUTOMATIC MISS" : hit ? "HIT" : "MISS";
-      const label = `[ATTACK]${kind} ${plan.name}${advantage ? " [ADVANTAGE]" : ""} [AC ${ac}] [${verdict} ${rolled.total} vs ${ac}]${converted ? " [CONVERTED TO CRIT]" : ""} -> [at ${target.name}]`;
+      const label = `[ATTACK]${kind} ${plan.name}${advantage ? " [ADVANTAGE]" : edge.disadvantage ? " [DISADVANTAGE]" : ""}${edge.notes.length ? ` ${edge.notes.join(" ")}` : ""} [AC ${ac}] [${verdict} ${rolled.total} vs ${ac}]${converted ? " [CONVERTED TO CRIT]" : ""} -> [at ${target.name}]`;
       table().postRoll(rolled, label, from, Boolean(target.hidden), { result: crit ? "CRITICAL" : hit ? "HIT" : "MISS", by: plan.actor, against: ac, target: target.name });
       if (source) source.hitOn[target.id] = crit ? "crit" : hit ? "hit" : "miss";
-      results.push({ target: target.name, total: rolled.total, ac, hit, crit, natural: die, advantage });
+      results.push({ target: target.name, total: rolled.total, ac, hit, crit, natural: die, advantage, disadvantage: edge.disadvantage });
     }
     changed();
     return results;
@@ -2289,10 +2342,43 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     if (health(entry).status === "Dead") return 0;
     const { wounds } = vitals(entry);
     const value = Math.min(Math.max(0, Math.round(amount)), wounds);
+    const wasDying = health(entry).status === "Dying";
     // Healed while dying (3.5E, 2E, C&C): it stops bleeding, as the tracker's Heal box makes it (5E has death saves).
-    if (value > 0 && !five() && health(entry).status === "Dying") entry.stabilized = true;
+    if (value > 0 && !five() && wasDying) entry.stabilized = true;
     if (value > 0) await applyWounds(entry, -value, why, {});
+    // 5E's house rule (FG's HRHE): brought back from dying, a character gains Exhaustion levels.
+    const levels = five() ? Number(table().houseRule?.("HRHE")) : NaN;
+    const linked = record(entry);
+    if (value > 0 && wasDying && levels > 0 && linked?.type === "character" && health(entry).status !== "Dying") {
+      const next = Math.min(6, num(linked.data?.exhaustion, 0) + levels);
+      table().records.update(linked.id, { data: { exhaustion: next } }, table().seat);
+      table().say(`${entry.name} comes back from dying: Exhaustion ${next}.`, "Combat", entry.hidden);
+    }
     return value;
+  }
+  // 5E's system shock (FG 5E's, from massive damage): a DC 15 Constitution save; on a failure a d10:
+  // 1 drops to 0 hit points, 2-3 to 0 but stable, 4-5 stunned until its next turn, 6-7 no reactions and
+  // disadvantage on attacks and checks, 8+ no reactions (each for one round; the GM's alone for a foe).
+  async function systemShock(target) {
+    const entry = state.entries.find((item) => item.id === target.id) ?? target;
+    const saved = await save5e(entry, "constitution", 15, "Combat", "System Shock").catch(() => null);
+    if (!saved || saved.success) return;
+    const rolled = table().roll("1d10", `[SYSTEM SHOCK RESULT] ${entry.name}`, "Combat", Boolean(entry.hidden), { by: entry.name });
+    const gmOnly = entry.faction !== "friend";
+    const die = rolled.total;
+    if (die <= 3) {
+      const { hp, wounds, temp } = vitals(entry);
+      const left = num(hp, 0) - (num(wounds, 0) - num(temp, 0));
+      if (left > 0) await applyWounds(entry, left + num(temp, 0), "[SYSTEM SHOCK]", {});
+      if (die >= 2) entry.stabilized = true;
+      for (const name of ["Unconscious", "Prone"]) if (!hasCondition(entry, name)) putEffect(entry, name, 0, gmOnly);
+      table().say(`${entry.name}: system shock, ${die >= 2 ? "dropped to 0 hit points, but stable" : "dropped to 0 hit points"}.`, "Combat", Boolean(entry.hidden));
+    } else {
+      const label = die <= 5 ? "System Shock; Stunned" : die <= 7 ? "System Shock; NOTE: No reactions; DISATK; DISCHK" : "System Shock; NOTE: No reactions";
+      putEffect(entry, label, 1, gmOnly);
+      table().say(`${entry.name}: system shock, ${die <= 5 ? "stunned" : die <= 7 ? "no reactions, and disadvantage on attacks and checks" : "no reactions"} for a round.`, "Combat", Boolean(entry.hidden));
+    }
+    changed();
   }
   // One creature's share of a card's roll: amount after its save (half, or the
   // whole), then its resistances by type; applied now unless the card waits.
@@ -2304,6 +2390,9 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     const was = vitals(target);
     await applyWounds(target, amount, why, opts);
     const moved = worn(vitals(state.entries.find((item) => item.id === target.id) ?? target)) - worn(was);
+    // 5E's massive damage house rule (FG's HRMD): damage of at least half its hit points that does not go past 0.
+    const hp = num(was.hp, 0);
+    if (five() && hp > 0 && amount >= hp / 2 && worn(was) + amount <= hp && table().houseRule?.("HRMD")) await systemShock(target);
     // A creature with no hit points to count (wounds kept elsewhere, a game's own characteristics): what was asked.
     return num(was.hp, 0) > 0 ? moved : amount;
   }
@@ -2366,9 +2455,26 @@ function createCombat({ saved, table, onChange = () => undefined }) {
   // creature only against it (Hunter's Quarry); a critical doubles their dice too.
   async function damage5e(plan, from, opts) {
     mustAct(plan.entry);
-    const baseFor = (target) => {
+    // FG 5E's fixed NPC damage (NPCD "fixed"): an NPC's dice become their average, half the die and every second die
+    // one more (2d6 is 7), counted across the roll; a critical's extra dice are still rolled.
+    const fixedNpc = table().houseRule?.("NPCD") === "fixed" && record(plan.entry)?.type !== "character";
+    const fixedOf = (formula) => {
+      let count = 0;
+      return formula.replace(/(\d*)d(\d+)/gi, (_whole, times, sides) => {
+        let sum = 0;
+        for (let i = 0; i < Math.max(1, Number(times) || 1); i++) {
+          count += 1;
+          sum += Math.floor(Number(sides) / 2) + (count % 2 === 0 ? 1 : 0);
+        }
+        return String(sum);
+      });
+    };
+    const diceOnly = (formula) => (formula.match(/[+-]?\d*d\d+/gi) ?? []).join("").replace(/^\+/, "");
+    const baseFor = (target, crit = false) => {
       const bonus = plan.damageBonus + effectBonus(plan.entry, "DMG", target);
-      return `${plan.damage.replace(/\s+/g, "")}${bonus ? `${bonus > 0 ? "+" : ""}${bonus}` : ""}${effectDice(plan.entry, "DMG", target)}`;
+      const own = plan.damage.replace(/\s+/g, "");
+      const dice = fixedNpc ? `${fixedOf(own)}${crit && diceOnly(own) ? `+${diceOnly(own)}` : ""}` : own;
+      return `${dice}${bonus ? `${bonus > 0 ? "+" : ""}${bonus}` : ""}${effectDice(plan.entry, "DMG", target)}`;
     };
     const kind = SHORT_TYPE[plan.type] ? ` (${SHORT_TYPE[plan.type]})` : "";
     const hitOn = plan.entry?.hitOn ?? null;
@@ -2381,7 +2487,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     const groups = [];
     for (const target of landed) {
       const crit = hitOn?.[target.id] === "crit";
-      const formula = crit ? doubled(baseFor(target)) : baseFor(target);
+      const formula = crit ? (fixedNpc ? baseFor(target, true) : doubled(baseFor(target))) : baseFor(target);
       const group = groups.find((item) => item.crit === crit && item.formula === formula);
       if (group) group.targets.push(target);
       else groups.push({ crit, formula, targets: [target] });
@@ -2394,7 +2500,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     for (const group of groups) {
       const formula = group.formula;
       const card = newCard("damage", plan.dmgtype, plan.name);
-      const roll = table().roll(formula, `[DAMAGE]${kind} ${plan.name}${group.crit ? " [CRITICAL]" : ""}${plan.dmgtype ? ` [TYPE: ${plan.dmgtype}]` : ""}`, from, false, { by: plan.actor, card: card.id });
+      const roll = table().roll(formula, `[DAMAGE]${kind} ${plan.name}${group.crit ? " [CRITICAL]" : ""}${fixedNpc ? " [FIXED]" : ""}${plan.dmgtype ? ` [TYPE: ${plan.dmgtype}]` : ""}`, from, false, { by: plan.actor, card: card.id });
       const amount = Math.max(0, roll.total);
       card.total = amount;
       total = Math.max(total, amount);
@@ -2471,7 +2577,11 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     const holds = isCharacter && /concentration/i.test(String(spell.data?.duration ?? ""));
     const castStat = isCharacter ? data.spellcasting?.stat : null;
     const castMod = isCharacter ? num(data.abilities?.[castStat]?.bonus, 0) : 0;
-    const dc = isCharacter ? num(data.spellcasting?.dc, 10) : Number(/spell save DC (\d+)/i.exec(JSON.stringify(data))?.[1] ?? 12);
+    // 5E's house rule (FG's HRSE): Exhaustion lowers the caster's spell save DC as it does a d20 test (2024: -2 a
+    // level; or the per-level house rule).
+    const tired = table().houseRule?.("HRSE") ? num(data.exhaustion, 0) : 0;
+    const perLevel = Number(table().houseRule?.("HREX")) || (table().houseRule?.("GAVE") === "2014" ? 0 : -2);
+    const dc = (isCharacter ? num(data.spellcasting?.dc, 10) : Number(/spell save DC (\d+)/i.exec(JSON.stringify(data))?.[1] ?? 12)) + tired * perLevel;
     const attackBonus = isCharacter ? num(data.spellcasting?.attack, 0) : Number(/([+-]\d+) to hit with spell attacks/i.exec(JSON.stringify(data))?.[1] ?? 4);
     const charLevel = isCharacter ? num(data.level, 1) : Math.max(1, Number(/^(\d+)/.exec(String(data.hd ?? "").replace(/[()]/g, ""))?.[1] ?? 1));
     const tiers = 1 + (charLevel >= 5) + (charLevel >= 11) + (charLevel >= 17);
@@ -3567,7 +3677,8 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       const { options: opts } = await options();
       const value = Math.round(num(amount, 0));
       if (value <= 0) throw new Error("How much damage?");
-      await applyWounds(find(id), value, "[DAMAGE]", opts);
+      // As any damage (5E's massive damage house rule reads it too).
+      await woundsLanded(find(id), value, "[DAMAGE]", opts);
     },
     async heal(id, amount, seat) {
       mustGM(seat);
@@ -3593,7 +3704,8 @@ function createCombat({ saved, table, onChange = () => undefined }) {
         return;
       }
       if (five()) {
-        await applyWounds(entry, -Math.min(value, wounds), "[HEAL]", opts);
+        // As any healing (5E's exhaustion from dying house rule reads it too).
+        await healBy(entry, value, "[HEAL]");
         return;
       }
       if (current <= dead) {
