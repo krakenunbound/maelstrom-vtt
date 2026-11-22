@@ -119,6 +119,15 @@ assert(hero.hp.total === 8 + 3 + 1, `Hill Dwarf cleric's hit points (8 + Con 3 +
 assert(hero.hpperlevel === 1 && hero.deity === "A god of the forge" && hero.ideals === "Tradition.", "a hit point a level kept; the wizard's details on the sheet");
 assert(/heavy armor/.test(hero.proficiencylist.armor), "heavy armor on the sheet");
 done.push("a Hill Dwarf cleric built: its toughness, heavy armor and details");
+// The builder holds a spec to the class's own skill list as the wizard reads it ("Choose four from Acrobatics, ..."):
+// the first skill named counts, and so does a count in words.
+{
+  const rogue = { type: "class", name: "Rogue", data: { name: "Rogue", hp: { hitdice: { text: "1d8 per rogue level" } }, proficiencies: { skills: { text: "Choose four from Acrobatics, Athletics, Deception, Insight, Intimidation, Investigation, Perception, Performance, Persuasion, Sleight of Hand, and Stealth" } } } };
+  const built = buildFromSpec({ name: "Quick", class: "Rogue", level: 1, scores: {}, skills: ["Acrobatics", "Perception", "Stealth", "Deception"] }, { ...lib, classes: [rogue] });
+  const known = Object.entries(built.data.skills).filter(([, value]) => value.prof).map(([key]) => key).sort().join(",");
+  assert(!built.problems.length && known === "acrobatics,deception,perception,stealth", `a 2014 Rogue's four skills, the first named too: ${known} ${built.problems}`);
+  done.push("a 2014 class's skill choices held as the wizard reads them (four, the first named counts)");
+}
 // The 2014 starting kits: the class's (the ruleset's table) and the background's (its equipment sentence).
 const gear = [
   ["Mace", "Weapon", "Simple Melee Weapons"],

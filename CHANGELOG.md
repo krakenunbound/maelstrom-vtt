@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **A 5E character built from a spec keeps every class skill chosen:** the builder read a class's skill list with its own looser reading ("Choose four from Acrobatics, ..." lost Acrobatics and counted two); it reads it as the character wizard does now (a Rogue's four, a Bard's any three). check-legacy-5e-books
 - **Full screen (F11) in the GM's app**, as in a browser: the table with nothing round it; F11's quick slot, when filled, keeps the key.
 - **A player rolls a table of a book shared with them by its name** (the character wizard's traits, ideals, bonds and flaws on a 2014 background's own tables, each roll in chat); a GM's book's tables stay the GM's. check-legacy-5e-books
 - **A campaign's books follow the reader:** each active book's records are stamped with the reader that read them; when Maelstrom's reader changes (as it did to make 2014 subraces records), a campaign that made the book active before reads it again when it opens, so it gains what the new reader makes. check-legacy-5e-books

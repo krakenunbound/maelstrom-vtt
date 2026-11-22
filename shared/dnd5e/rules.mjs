@@ -18,7 +18,7 @@
 //   deathsaves {success, failure}, hitdice {die, total, used}.
 
 import { backgroundKit2014, legacyKit, legacyKitItems } from "./kits2014.mjs";
-import { ancestriesOf, subclassesOf, backgroundInfo, classInfo, currenciesOf, gearCost, mainCurrency, payFrom, speciesInfo, totalWealth } from "./wizard.mjs";
+import { ancestriesOf, subclassesOf, parseSkillsField, backgroundInfo, classInfo, currenciesOf, gearCost, mainCurrency, payFrom, speciesInfo, totalWealth } from "./wizard.mjs";
 
 export const RULESET = "dnd5e";
 export const RULESET_NAME = "D&D 5E";
@@ -353,13 +353,12 @@ export function classSaves(classRecord) {
     .map(statOf)
     .filter(Boolean);
 }
-// The skills it lets a character choose from, and how many.
+// The skills it lets a character choose from, and how many: read as the character wizard reads them
+// (parseSkillsField: "Choose four from Acrobatics, ...", "Choose any three", a 2024 "Choose 2:"), so a spec is held to
+// what the wizard offers.
 export function classSkillChoices(classRecord) {
-  const text = String(classRecord?.data?.proficiencies?.skills?.text ?? "");
-  const count = Number(/choose\s+(?:any\s+)?(\d+)/i.exec(text)?.[1] ?? 2);
-  const any = /any/i.test(text);
-  const names = any ? Object.keys(SKILLS) : text.replace(/^[^:]*:/, "").split(/,|\bor\b|\band\b/i).map(skillKey).filter((key) => SKILLS[key]);
-  return { count, names };
+  const parsed = parseSkillsField(classRecord?.data?.proficiencies?.skills?.text ?? "", String(classRecord?.data?.version ?? "") === "2024");
+  return { count: parsed.picks || 2, names: parsed.options.filter((key) => SKILLS[key]) };
 }
 // true for all martial weapons; "light" or "finesse light" when the class has
 // only those (SRD 5.2.1 Monk and Rogue); false for none.
