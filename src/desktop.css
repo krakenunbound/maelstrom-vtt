@@ -2995,3 +2995,13 @@ label.set-row { cursor: pointer; }
 .ct-faction-chip.friend { color: #6fcf7a; }
 .ct-faction-chip.neutral { color: #e8c46a; }
 .ct-faction-chip.foe { color: #ff6f5e; }
+/* FG's list groups: chips to drop records on, a new group. */
+.records-groups { flex-wrap: wrap; gap: 6px; margin-block: 4px; }
+.records-group-chip { display: inline-flex; align-items: center; gap: 2px; padding: 1px 4px 1px 10px; border: 1px solid var(--brass, #b08a52); border-radius: 12px; cursor: pointer; font-size: 0.85em; }
+.records-group-chip.on { background: rgba(210, 161, 90, 0.2); }
+.records-groups form { display: inline-flex; gap: 4px; }
+.records-groups input { width: 9em; }
+/* A book's text search: the pages found, a few words of each. */
+.book-text-hits { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 4px; max-height: 40vh; overflow: auto; }
+.book-text-hits .book-page-link { display: grid; text-align: start; gap: 2px; }
+.book-back { margin-inline-end: auto; }

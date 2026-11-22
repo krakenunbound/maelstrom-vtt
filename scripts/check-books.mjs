@@ -222,6 +222,12 @@ try {
   assert((await get(player, `/book/page?book=${book}&page=gate`)).status === 404, "a player cannot read a book not shared");
   assert((await get(player, `/book/picture?book=${book}&file=images/keep.png`)).status === 404, "nor see its pictures");
   assert((await get(gm, `/book/page?book=${book}&page=gate`)).ok && (await get(gm, `/book/cover?book=${book}`)).headers.get("content-type") === "image/png", "the GM reads pages and covers");
+  // The words of every page searched: a word from the inn's text finds the inn page, with the words around it.
+  const innWords = books.page("Test Keep", "inn").blocks.map((block) => `${block.html ?? ""} ${block.text ?? ""}`).join(" ").replace(/<[^>]+>/g, " ");
+  const word = (innWords.match(/[A-Za-z]{6,}/g) ?? []).find((candidate) => !books.contents("Test Keep").chapters.flatMap((chapter) => chapter.sections.flatMap((section) => section.pages)).some((page) => page.name.toLowerCase().includes(candidate.toLowerCase())));
+  const found = await (await get(gm, `/book/search?book=${book}&q=${encodeURIComponent(word ?? "inn")}`)).json();
+  assert(found.results.some((hit) => hit.page === "inn" && hit.snippet.toLowerCase().includes((word ?? "inn").toLowerCase())), `text search: ${word} -> ${JSON.stringify(found.results)}`);
+  assert((await (await get(gm, `/book/search?book=${book}&q=q`)).json()).results.length === 0, "a one-letter search finds nothing");
 
   player.send({ type: "book-share", book: "Test Handbook" });
   await settle();

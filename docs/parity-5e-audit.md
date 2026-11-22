@@ -262,6 +262,36 @@ token lock, drawing, preview: `check-fg-classic-maps`).
 | Token right-click (engine): delete, visibility, facing, lock, scale | Token menu: name, light, vision, players' name, senses, sight, undo, elevation, combat, target, effects, hide, size 1 to 4, faction, remove | Partly (sizes past 4 by the wheel only) |
 | Fog of war by PC tokens; party vision; vision and light from effects | Explored fog, party vision, senses and lights | Same |
 
+## 5. Library and books
+
+FG's Library, Modules window, record lists (`masterindex`), record windows and reference books (CoreRPG and
+5E's `data_library_5E.lua`) against Maelstrom's Books window, sidebar lists, record windows and book window
+(`src/books/`).
+
+| FG control | Maelstrom | Verdict |
+|---|---|---|
+| Modules: load, unload, filters (name, author, loaded, shared, ruleset), paging | Activation: Active, Players, search, shelves by kind and series | Same |
+| Module sets (save and load a set of modules) | Not found | Missing |
+| Module permissions: block, allow, autoload for players | Players box per book (shared or not) | Same (FG's autoload is a share) |
+| Library Export: build a module from the campaign | Not found | Missing (large) |
+| Sidebar categories, folding, icon modes, drag a list link | The same | Same |
+| List: name search, All / Shared, add, edit (delete), paging | Search, All / Shared, + New, right-click Duplicate / Delete with Undo, 400 rows then search | Better (undo) |
+| List: groups (custom categories): create, rename, delete, drop a record in | Your groups: + Group, drop a record on a chip, click to show, × to remove; a Group filter and By group | Done (no rename) |
+| List: drop a record link or file to copy or import | Copy to campaign; tables pasted | Partly |
+| List: row share icon, module icon, revert, version column | Eye per row; book in the subtitle | Partly (no revert per row, no version) |
+| 5E NPC filters: CR, type; views by letter, CR, type | CR, type and book filters | Same |
+| 5E Item filters: type, rarity, attunement; Armor, Weapons, Gear tables | Type, rarity, attunement and book filters; book armor and weapon tables | Same |
+| 5E Spell filters: level, school, source, ritual | Level, ritual, school, class, book | Same |
+| Record: link drag, module icon, revert, duplicate, export, lock, share (public, a player by portrait drop), identified, unidentified name and notes | Anchor and name drag, lock, eye (everyone, chosen players, GM only), copy to campaign, duplicate, delete, identified (items), portrait drop for one player | Better (chosen players) |
+| Record: Send to chat | A chat button on every record: its link, and (the GM's) its text as the players know it | Same |
+| Record: Speak as (an NPC) | The GM's voice picker, the creature whose turn it is | Partly |
+| Story: simple and advanced pages, blocks, frames, image sizes, copy and paste a page | Block story pages, frames and colours, read-aloud | Same (no copy and paste of a page) |
+| Story templates | Not found | Missing |
+| Book: contents, search by name and keywords, add and arrange chapters, sections, pages, page lock | The same, page editor, sounds bound to links | Better (sounds) |
+| Book: previous and next section, links across books | Back (to the page a link or jump left), previous and next page, links | Better |
+| Library-wide or in-book full-text search | Search the text: every page of the book, the words around each find | Better (FG searches names and keywords) |
+| Players: only shared records, unidentified names, no GM buttons | The same; spells by their class | Same |
+
 ## How house rules work in Maelstrom
 
 A game declares its house rules in its manifest (`settings` with a `key`: a switch

@@ -318,6 +318,13 @@ function savedOptions(value) {
     decalFit: ["fill", "fit"].includes(options.decalFit) ? options.decalFit : "center",
     // FG's CLSH: the characters along the top: everyone's, or only those whose players are at the table.
     partyShown: options.partyShown === "active" ? "active" : "all",
+    // FG's record list groups (the GM's own categories): the groups of each list, and the group each record is in.
+    ...(options.groupNames && typeof options.groupNames === "object" && !Array.isArray(options.groupNames)
+      ? { groupNames: Object.fromEntries(Object.entries(options.groupNames).filter(([list, names]) => /^[a-z_]{1,40}$/.test(list) && Array.isArray(names)).slice(0, 60).map(([list, names]) => [list, [...new Set(names.map((name) => String(name ?? "").trim().slice(0, 40)).filter(Boolean))].slice(0, 60)])) }
+      : {}),
+    ...(options.recordGroups && typeof options.recordGroups === "object" && !Array.isArray(options.recordGroups)
+      ? { recordGroups: Object.fromEntries(Object.entries(options.recordGroups).filter(([id, name]) => id.length <= 120 && typeof name === "string" && name.trim()).slice(0, 5000).map(([id, name]) => [id, name.trim().slice(0, 40)])) }
+      : {}),
     // FG's TPTY: players see through every player's token and may move them all (off by default).
     ...(options.partyVision ? { partyVision: true } : {}),
     wallpaper: id(options.wallpaper, ""),
@@ -782,6 +789,27 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   // A book's contents as the GM changed them (FG's contents unlocked: pages added, renamed, moved and taken out,
   // chapters and sections too), kept with the campaign: book -> [{ name, sections: [{ name, pages: [{ id, name }] }] }].
   // A page added here is "new-..." (a page with no id is given one) and starts empty.
+  // Every page of a book whose words hold the query (case aside): its id, name and the words around it.
+  const searchBook = (client, book, query) => {
+    const wanted = String(query ?? "").trim().toLowerCase().slice(0, 80);
+    if (wanted.length < 2) return { results: [] };
+    const plain = (html) => String(html ?? "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ");
+    const results = [];
+    for (const ref of pagesIn(contentsFor(book).chapters ?? [])) {
+      let page;
+      try {
+        page = pageFor(client, book, ref.id);
+      } catch {
+        continue;
+      }
+      const words = [ref.name, ...(page?.blocks ?? []).flatMap((block) => [block.text, block.html, block.html2, block.text2, block.caption])].map(plain).join(" ");
+      const at = words.toLowerCase().indexOf(wanted);
+      if (at < 0) continue;
+      results.push({ page: ref.id, name: ref.name, snippet: `${at > 40 ? "…" : ""}${words.slice(Math.max(0, at - 40), at + wanted.length + 60).trim()}…` });
+      if (results.length >= 40) break;
+    }
+    return { results };
+  };
   const contentsFor = (book) => {
     const own = books.contents(book);
     const chapters = bookContents.get(book);
@@ -2048,6 +2076,15 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
               const found = books.record(book, url.searchParams.get("path") || "");
               return found ? json(found) : nothing();
             })
+            .catch(() => nothing());
+          return;
+        }
+        // A book's words searched (FG's search finds names and keywords; this reads every page): up to 40 pages,
+        // each with a few words around the first match.
+        if (url.pathname === "/book/search") {
+          const file = books.file?.(book);
+          (file ? prepareModule(file) : Promise.resolve())
+            .then(() => json(searchBook(client, book, url.searchParams.get("q") || "")))
             .catch(() => nothing());
           return;
         }

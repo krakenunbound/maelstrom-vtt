@@ -1628,6 +1628,8 @@ const TOOLS = [
       healthPc: { type: "string", enum: ["bar", "barhover", "dot", "dothover", "numbers", "off"] },
       names: { type: "string", enum: ["off", "hover", "always"] },
       decalFit: { type: "string", enum: ["center", "fill", "fit"], description: "FG's DECALPOS: the background decal picture in the middle (default), covering the table, or as large as fits" },
+      groupNames: { type: "object", description: "FG's record list groups: { list id (npc, item, spell...): [group names] }" },
+      recordGroups: { type: "object", description: "Each record's group: { record id: group name } (the whole map; a group not in groupNames is ignored)" },
       partyVision: { type: "boolean", description: "FG's TPTY: players see through every player's token (shared party vision) and may move them all (default off)" },
       partyShown: { type: "string", enum: ["all", "active"], description: "FG's CLSH: the characters along the top: all, or only those whose players are at the table" },
       healthGm: { type: "string", enum: ["bar", "barhover", "dot", "dothover", "off"], description: "FG's TGMH: what the GM sees of health on tokens (default dot)" },

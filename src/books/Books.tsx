@@ -448,11 +448,23 @@ export function BookWindow({ session, book }: { session: Session; book: string }
   // The page being read now (the section's pages scroll as one; the contents follow it), and a jump asked for.
   const [reading, setReading] = useState("");
   const [jump, setJump] = useState(0);
-  const goTo = (id: string) => {
+  // FG's back after a link: the pages left, the newest last.
+  const [history, setHistory] = useState<string[]>([]);
+  const goTo = (id: string, remember = true) => {
+    const from = reading || pageId;
+    if (remember && from && from !== id) setHistory((list) => [...list.slice(-49), from]);
     setPageId(id);
     setReading(id);
     setJump((n) => n + 1);
   };
+  const goBack = () => {
+    const last = history.at(-1);
+    if (!last) return;
+    setHistory((list) => list.slice(0, -1));
+    goTo(last, false);
+  };
+  // The words of every page searched (FG finds names and keywords; this reads the pages too).
+  const [textHits, setTextHits] = useState<{ page: string; name: string; snippet: string }[] | null>(null);
   const [view, setView] = useState<"book" | "pictures">("book");
   // The contents' lock (the GM's): open, its chapters, sections and pages are changed in place.
   const [tocOpen, setTocOpen] = useState(false);
@@ -682,7 +694,32 @@ export function BookWindow({ session, book }: { session: Session; book: string }
                   </div>
                 ))}
         </div>
-        <input type="search" className="books-search" placeholder="Search" aria-label="Search this book" value={search} onChange={(event) => setSearch(event.target.value)} />
+        <input type="search" className="books-search" placeholder="Search" aria-label="Search this book" value={search} onChange={(event) => {
+          setSearch(event.target.value);
+          setTextHits(null);
+        }} />
+        {/* The words of every page (Enter, or the button): the pages they are on, a few words around each. */}
+        {search.trim().length > 1 ? (
+          <button type="button" className="ghost book-text-search" data-action="book-text-search" title="Search the words of every page" onClick={() => void session.bookFetch<{ results: { page: string; name: string; snippet: string }[] }>("search", { book, q: search.trim() }).then((found) => setTextHits(found.results)).catch(() => setTextHits([]))}>
+            Search the text
+          </button>
+        ) : null}
+        {textHits ? (
+          <ul className="book-text-hits" aria-label="Pages with those words">
+            {textHits.length ? (
+              textHits.map((hit) => (
+                <li key={hit.page}>
+                  <button type="button" className="book-page-link" onClick={() => goTo(hit.page)}>
+                    <b>{hit.name}</b>
+                    <small className="hint">{hit.snippet}</small>
+                  </button>
+                </li>
+              ))
+            ) : (
+              <li className="hint">No page holds those words.</li>
+            )}
+          </ul>
+        ) : null}
       </aside>
       <article
         className={soundDrop ? "book-page sound-drop" : "book-page"}
@@ -721,6 +758,9 @@ export function BookWindow({ session, book }: { session: Session; book: string }
               onVisible={setReading}
             />
             <nav className="book-turn">
+              <button type="button" className="book-back" disabled={!history.length} aria-label="Back" title="Back to the page you came from" data-action="book-back" onClick={goBack}>
+                ↶ Back
+              </button>
               <button type="button" disabled={at <= 0} aria-label="Previous page" onClick={() => goTo(pages[at - 1].id)}>
                 ‹ {at > 0 ? pages[at - 1].name : ""}
               </button>

@@ -5,7 +5,7 @@ import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { inlineRollNodes } from "../ui/InlineRolls";
 import type { QuickSlot, Session, TableRecord } from "../session/useSession";
 import { Icon } from "../ui/icons";
-import { slotDrag, TABLE_RESULT_DRAG, useOpenLink } from "../ui/QuickSlots";
+import { linkFrom, SLOT_DRAG, slotDrag, TABLE_RESULT_DRAG, useOpenLink } from "../ui/QuickSlots";
 import { recordLabel, statblockFor } from "../rulesets/statblocks";
 import { useBookWindows, useContextMenu, usePictureActions } from "./Books";
 import { ReadAloudButton } from "./readAloud";
@@ -61,6 +61,24 @@ const LISTS: { id: string; label: string; group: string }[] = [
   { id: "location", label: "Locations", group: "World" },
 ];
 // Not lists: what has its own window (characters, the party, notes) or is the game's own setup.
+
+// FG's list filters from a record's own fields (5E's spell level and ritual, an NPC's CR, an item's rarity and
+// attunement): each shown only when the list's records hold two values or more of it; no game is named here.
+type FieldFilter = { key: string; label: string; all: string; value: (data: Record<string, unknown>) => string; show?: (value: string) => string; order?: (a: string, b: string) => number };
+const plainField = (key: string) => (data: Record<string, unknown>) => String(data[key] ?? "").replace(/<[^>]+>/g, "").trim();
+const crValue = (value: string) => (/^\d+\/\d+$/.test(value) ? Number(value.split("/")[0]) / Number(value.split("/")[1]) : Number(value) || 0);
+const FIELD_FILTERS: Record<string, FieldFilter[]> = {
+  spell: [
+    { key: "level", label: "Level", all: "All levels", value: plainField("level"), show: (value) => (value === "0" ? "Cantrips" : `Level ${value}`), order: (a, b) => Number(a) - Number(b) },
+    { key: "ritual", label: "Ritual", all: "Ritual or not", value: (data) => (/^(1|yes|true)$/i.test(String(data.ritual ?? "")) || /ritual/i.test(String(data.castingtime ?? "")) ? "Ritual" : "Not a ritual") },
+  ],
+  npc: [{ key: "cr", label: "CR", all: "Every CR", value: plainField("cr"), show: (value) => `CR ${value}`, order: (a, b) => crValue(a) - crValue(b) }],
+  item: [
+    { key: "rarity", label: "Rarity", all: "Every rarity", value: (data) => String(data.rarity ?? "").replace(/\(.*\)/, "").replace(/<[^>]+>/g, "").trim() },
+    { key: "attunement", label: "Attunement", all: "Attunement or not", value: (data) => (String(data.rarity ?? "") ? (/attunement/i.test(`${String(data.rarity ?? "")} ${String(data.description ?? "")}`) ? "Requires attunement" : "No attunement") : "") },
+  ],
+};
+
 const NOT_LISTED = new Set(["character", "party", "note", "siegegame", "fatetable"]);
 
 // A new record for a list: its type, and for C&C's Classes and Races the package's kind.
@@ -182,17 +200,22 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
   const [newName, setNewName] = useState("");
   const wanted = search.trim().toLowerCase();
   // Grouped by type (Weapons, Armor & Shields...; Humanoids, Undead...; Level 1...) or by book; filtered by either.
-  const [groupChoice, setGroupBy] = useState<"type" | "book" | null>(null);
+  const [groupChoice, setGroupBy] = useState<"type" | "book" | "group" | null>(null);
+  // FG's list groups: the GM's own categories, kept with the campaign (the table's options), any record in one.
+  const [groupWanted, setGroupWanted] = useState("");
+  const [newGroup, setNewGroup] = useState("");
   const [typeWanted, setTypeWanted] = useState("");
   const [bookWanted, setBookWanted] = useState("");
   // Spells: by school, and by the class that casts them.
   const [schoolWanted, setSchoolWanted] = useState("");
   const [classWanted, setClassWanted] = useState("");
+  const [fieldWanted, setFieldWanted] = useState<Record<string, string>>({});
   // Another list: its own types and books, so the filters start again.
   useEffect(() => {
     setTypeWanted("");
     setBookWanted("");
     setSchoolWanted("");
+    setFieldWanted({});
     setClassWanted("");
     setGroupBy(null);
   }, [list]);
@@ -213,14 +236,31 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
   const mine = (record: TableRecord) => gm || myClasses.some((name) => castsSpell(name, record));
   const schoolNames = useMemo(() => (spells ? [...new Set(inList.map((row) => row.sub).filter(Boolean))].sort() : []), [inList, spells]);
   const classNames = useMemo(() => (spells ? [...new Set(inList.filter((row) => mine(row.record)).flatMap((row) => spellClasses(row.record)))].sort() : []), [inList, spells, myClasses]);
-  const groupBy = groupChoice ?? (typed ? "type" : "book");
+  const groupNames = (session.options.groupNames ?? {})[list] ?? [];
+  const recordGroups = session.options.recordGroups ?? {};
+  const groupOf = (record: TableRecord) => (groupNames.includes(recordGroups[record.id] ?? "") ? recordGroups[record.id] : "");
+  const setGroups = (names: string[], moves: Record<string, string | null> = {}) => {
+    const nextGroups = { ...recordGroups };
+    for (const [id, name] of Object.entries(moves)) {
+      if (name) nextGroups[id] = name;
+      else delete nextGroups[id];
+    }
+    session.setTableOptions({ groupNames: { ...(session.options.groupNames ?? {}), [list]: names }, recordGroups: nextGroups } as never);
+  };
+  const groupBy = groupChoice === "group" && !groupNames.length ? (typed ? "type" : "book") : groupChoice ?? (typed ? "type" : "book");
   const typeCounts = useMemo(() => {
     const counts = new Map<string, number>();
     for (const row of inList) if (row.category && (!bookWanted || row.book === bookWanted)) counts.set(row.category, (counts.get(row.category) ?? 0) + 1);
     return [...counts].sort((a, b) => categoryOrder(a[0], b[0]));
   }, [inList, bookWanted]);
   const bookNames = useMemo(() => [...new Set(inList.map((row) => row.book))].sort((a, b) => (a === "Campaign" ? -1 : b === "Campaign" ? 1 : a.localeCompare(b))), [inList]);
+  // The record-field filters this list has (two values or more among its records).
+  const fieldFilters = (FIELD_FILTERS[list] ?? [])
+    .map((filter) => ({ filter, values: [...new Set(inList.map((row) => filter.value((row.record.data ?? {}) as Record<string, unknown>)).filter(Boolean))].sort(filter.order ?? ((a, b) => a.localeCompare(b))) }))
+    .filter((item) => item.values.length > 1);
   const picked = inList
+    .filter((row) => !groupWanted || (groupWanted === "-" ? !groupOf(row.record) : groupOf(row.record) === groupWanted))
+    .filter((row) => fieldFilters.every(({ filter }) => !fieldWanted[filter.key] || filter.value((row.record.data ?? {}) as Record<string, unknown>) === fieldWanted[filter.key]))
     .filter((row) => (!wanted || row.record.name.toLowerCase().includes(wanted)) && (!sharedOnly || shared(row.record)) && (!typeWanted || row.category === typeWanted) && (!bookWanted || row.book === bookWanted))
     .filter((row) => !spells || ((!schoolWanted || row.sub === schoolWanted) && (!classWanted || castsSpell(classWanted, row.record) || spellClasses(row.record).includes(classWanted)) && mine(row.record)))
     .sort((a, b) => a.record.name.localeCompare(b.record.name));
@@ -228,8 +268,8 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
   // By type: the type, then its kind within (Martial Melee, Magic; Human; Evocation). By book: the book, then the type.
   const groups = new Map<string, Map<string, TableRecord[]>>();
   for (const row of picked.slice(0, LIMIT)) {
-    const head = groupBy === "type" ? row.category || row.book : row.book;
-    const sub = groupBy === "type" ? (row.category ? row.sub : "") : row.category;
+    const head = groupBy === "group" ? groupOf(row.record) || "Uncategorized" : groupBy === "type" ? row.category || row.book : row.book;
+    const sub = groupBy === "group" ? "" : groupBy === "type" ? (row.category ? row.sub : "") : row.category;
     const inHead = groups.get(head) ?? new Map<string, TableRecord[]>();
     inHead.set(sub, [...(inHead.get(sub) ?? []), row.record]);
     groups.set(head, inHead);
@@ -281,6 +321,16 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
               ))}
             </select>
           ) : null}
+          {fieldFilters.map(({ filter, values }) => (
+            <select key={filter.key} aria-label={filter.label} data-filter={filter.key} value={fieldWanted[filter.key] ?? ""} onChange={(event) => setFieldWanted((now) => ({ ...now, [filter.key]: event.target.value }))} title={`Show one ${filter.label.toLowerCase()}`}>
+              <option value="">{filter.all}</option>
+              {values.map((value) => (
+                <option key={value} value={value}>
+                  {filter.show ? filter.show(value) : value}
+                </option>
+              ))}
+            </select>
+          ))}
           {bookNames.length > 1 ? (
             <select aria-label="Book" data-filter="book" value={bookWanted} onChange={(event) => setBookWanted(event.target.value)} title="Show one book's">
               <option value="">All books</option>
@@ -291,6 +341,22 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
               ))}
             </select>
           ) : null}
+          {groupNames.length ? (
+            <select aria-label="Group" data-filter="group" value={groupWanted} onChange={(event) => setGroupWanted(event.target.value)} title="Show one of your groups">
+              <option value="">All groups</option>
+              {groupNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+              <option value="-">Uncategorized</option>
+            </select>
+          ) : null}
+          {groupNames.length ? (
+            <button type="button" className={groupBy === "group" ? "ghost on" : "ghost"} data-action="records-by-group" aria-pressed={groupBy === "group"} title="Grouped by your own groups" onClick={() => setGroupBy(groupBy === "group" ? null : "group")}>
+              By group
+            </button>
+          ) : null}
           <button type="button" className="ghost" data-action="records-group" title={groupBy === "type" ? "Grouped by type: click to group by book" : "Grouped by book: click to group by type"} onClick={() => setGroupBy(groupBy === "type" ? "book" : "type")}>
             {groupBy === "type" ? "By type" : "By book"}
           </button>
@@ -300,6 +366,49 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
             </button>
           ) : null}
         </div>
+        {gm && list ? (
+          // FG's groups: chips to drop records on (or click to show), a new group, × to take one away.
+          <div className="records-groups cc-inline" aria-label="Groups">
+            {groupNames.map((name) => (
+              <span
+                key={name}
+                className={groupWanted === name ? "records-group-chip on" : "records-group-chip"}
+                data-group={name}
+                title={`${name}: drop a record here to put it in; click to show only it`}
+                onClick={() => setGroupWanted(groupWanted === name ? "" : name)}
+                onDragOver={(event) => {
+                  if ([...event.dataTransfer.types].includes(SLOT_DRAG)) event.preventDefault();
+                }}
+                onDrop={(event) => {
+                  const link = linkFrom(event);
+                  if (link?.kind !== "record" || !link.record) return;
+                  event.preventDefault();
+                  setGroups(groupNames, { [link.record]: name });
+                }}
+              >
+                {name}
+                <button type="button" className="ghost" aria-label={`Remove the group ${name}`} title="Remove the group (its records become uncategorized)" onClick={(event) => {
+                  event.stopPropagation();
+                  if (groupWanted === name) setGroupWanted("");
+                  setGroups(groupNames.filter((item) => item !== name), Object.fromEntries(Object.entries(recordGroups).filter(([, group]) => group === name).map(([id]) => [id, null])));
+                }}>
+                  ×
+                </button>
+              </span>
+            ))}
+            <form onSubmit={(event) => {
+              event.preventDefault();
+              const name = newGroup.trim().slice(0, 40);
+              if (name && !groupNames.includes(name)) setGroups([...groupNames, name]);
+              setNewGroup("");
+            }}>
+              <input value={newGroup} onChange={(event) => setNewGroup(event.target.value)} placeholder="New group" aria-label="New group" />
+              <button type="submit" disabled={!newGroup.trim()} data-action="records-new-group">
+                + Group
+              </button>
+            </form>
+          </div>
+        ) : null}
         {gm && only ? (
           // FG's + on a campaign list: a new record of the list's kind, opened to fill in.
           <form
@@ -522,6 +631,10 @@ export function RecordWindow({ session, id, record: given, book }: { session: Se
             </button>
           ) : null}
           {gm ? <ShareMenu session={session} record={record} words /> : null}
+          {/* FG's Send to chat: the record's link in the chat; the GM's also posts its text as the players know it. */}
+          <button type="button" className="ghost" data-action="record-to-chat" title={gm ? "Send to chat: its link and its text, as the players know it" : "Send to chat: its link"} aria-label="Send to chat" onClick={() => session.sendChat("", { link: { kind: "record", record: record.id, label: record.name }, ...(gm ? { share: true } : {}) })}>
+            <Icon name="chat" size={15} />
+          </button>
           {session.role === "dm" && (given || record.source) ? (
             <button
               type="button"
