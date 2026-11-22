@@ -2001,6 +2001,12 @@ function MapViewInner({
           return;
         }
         const point = worldAt(cssX(event.clientX), cssY(event.clientY));
+        // A double-click on a token (the map holds the pointer, so it arrives here): its sheet or record, not a ping.
+        const onToken = tokenAt(point);
+        if (onToken?.recordId) {
+          openTokenRecord(onToken);
+          return;
+        }
         if (point) actions.ping(point.x, point.y);
       }}
       onDragOver={(event) => {
