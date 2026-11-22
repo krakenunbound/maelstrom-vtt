@@ -2977,3 +2977,8 @@ label.set-row { cursor: pointer; }
 .five-casting-classes { gap: 12px; }
 /* FG 5E's React? box on a tracker row. */
 .ct-reaction { display: inline-flex; align-items: center; gap: 3px; font-size: 0.85em; }
+/* FG's initiative swap handle and an NPC action's [USED] mark on the tracker. */
+.ct-init-swap { cursor: grab; opacity: 0.55; padding-inline: 2px; user-select: none; }
+.ct-init-swap:hover { opacity: 1; }
+.ct-used { margin-inline-start: 6px; font-size: 0.8em; padding: 0 6px; }
+.ct-used.on { color: #ff9a6e; }

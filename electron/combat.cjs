@@ -240,6 +240,8 @@ function cleanEntry(raw) {
     ...(raw.delayed ? { delayed: true } : {}),
     // FG 5E's React? box: its reaction spent this round (back at the start of its turn).
     ...(raw.reacted ? { reacted: true } : {}),
+    // FG 5E's [USED] on an NPC's action (a recharge power: Fire Breath (Recharge 5-6)), by its name.
+    ...(Array.isArray(raw.spent) && raw.spent.length ? { spent: [...new Set(raw.spent.map((name) => text(name, "").slice(0, 120)).filter(Boolean))].slice(0, 40) } : {}),
     // 2E: the weapon its initiative was rolled with (FG's inititem), and that a player has rolled this round.
     ...(typeof raw.inititem === "string" && raw.inititem ? { inititem: raw.inititem.slice(0, 60) } : {}),
     ...(raw.initrolled ? { initrolled: true } : {}),
@@ -973,6 +975,17 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     const secret = entry.hidden;
     // Its reaction comes back as its turn starts.
     delete entry.reacted;
+    // FG 5E's recharge: each spent power marked "Recharge N" (or N-6) rolls a d6 at the start of its turn; N or more, it is back.
+    for (const name of [...(entry.spent ?? [])]) {
+      const at = /recharge\s*(\d)/i.exec(name);
+      if (!at) continue;
+      const rolled = table().roll("1d6", `[RECHARGE] ${entry.name}: ${name}`, "Combat", true);
+      if (rolled.total >= Number(at[1])) {
+        entry.spent = entry.spent.filter((item) => item !== name);
+        table().say(`[RECHARGE] ${entry.name}: ${name} is ready again (${rolled.total}).`, "Combat", true);
+      }
+    }
+    if (entry.spent && !entry.spent.length) delete entry.spent;
     // A turn passes: templates of instant spells come off the map.
     table().onTurn?.();
     // FG's turn notice (RSHE): the creature's effects with it, all or its conditions; the GM's line with every
@@ -987,11 +1000,13 @@ function createCombat({ saved, table, onChange = () => undefined }) {
             .map((effect) => effect.label);
     const gmEffects = listed(false);
     const playerEffects = entry.faction === "friend" ? listed(true) : [];
-    const turnLine = (effects) => `[TURN] ${entry.name}${effects.length ? `\n    ${effects.join("\n    ")}` : ""}`;
-    if (secret || gmEffects.join("|") === playerEffects.join("|")) table().say(turnLine(gmEffects), "Combat", secret);
+    const turnLine = (effects, name = entry.name) => `[TURN] ${name}${effects.length ? `\n    ${effects.join("\n    ")}` : ""}`;
+    // Players know an unidentified creature by its token's name (FG's nonid_name): their line says that.
+    const known = secret ? "" : unidentifiedName(entry);
+    if (secret || (gmEffects.join("|") === playerEffects.join("|") && !known)) table().say(turnLine(gmEffects), "Combat", secret);
     else {
       table().say(turnLine(gmEffects), "Combat", true);
-      table().say(turnLine(playerEffects), "Combat", false, { playersOnly: true });
+      table().say(turnLine(playerEffects, known || entry.name), "Combat", false, { playersOnly: true });
     }
     // 5E's house rule (FG's HRST, on by default): a dying character rolls its death save as its turn starts.
     if (five() && !bleeds() && table().houseRule?.("HRST") && record(entry)?.type === "character" && health(entry).status === "Dying" && !entry.stabilized && num(deathSaves(entry)?.failure, 0) < 3) {
@@ -1289,6 +1304,18 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     if (table().options?.().clearTargets === "action") source.targets = [];
     changed();
     return { hit: true, total: rolled.total, effect, damage: amount, critical };
+  }
+
+  // The name players know a creature by while unidentified (its token's, FG's nonid_name), else "".
+  function unidentifiedName(entry) {
+    try {
+      const map = table().map;
+      if (!map?.scene?.()) return "";
+      const token = map.tokens().find((item) => item.id === entry.tokenId) ?? map.tokens().find((item) => entry.recordId && item.recordId === entry.recordId);
+      return String(token?.unidentified ?? "");
+    } catch {
+      return "";
+    }
   }
 
   // The squares between two creatures' tokens on the open map (null: one has none).
@@ -3027,7 +3054,8 @@ function createCombat({ saved, table, onChange = () => undefined }) {
             id: entry.id,
             recordId: entry.recordId,
             tokenId: entry.tokenId,
-            name: entry.name,
+            // FG's unidentified name: players see what its token is called until the GM identifies it.
+            name: seat.role === "dm" ? entry.name : unidentifiedName(entry) || entry.name,
             faction: entry.faction,
             initresult: initShown(entry) ? entry.initresult : undefined,
             init: seat.role === "dm" ? entry.init : undefined,
@@ -3038,6 +3066,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
             ...(bar !== undefined ? { bar } : {}),
             ...(entry.delayed ? { delayed: true } : {}),
             ...(entry.reacted && (seat.role === "dm" || owner(entry) === seat.name) ? { reacted: true } : {}),
+            ...(seat.role === "dm" && entry.spent?.length ? { spent: entry.spent } : {}),
             ...(numbers ? { hp, wounds, ...(seat.role === "dm" || entry.faction === "friend" ? { ac } : {}), ...(temp ? { temp } : {}) } : {}),
             effects: entry.effects.filter((effect) => seat.role === "dm" || !effect.gmOnly).map(({ id, label, duration, targets, icon, source, total, paused, gmOnly }) => ({ id, label: targets?.length ? `${label} [-> ${targets.map((tid) => state.entries.find((item) => item.id === tid)?.name ?? "?").join(", ")}]` : label, duration, ...(icon ? { icon } : {}), ...(source ? { source } : {}), ...(total ? { total } : {}), ...(paused ? { paused } : {}), ...(gmOnly ? { gmOnly } : {}) })),
             targets: seat.role === "dm" || owner(entry) === seat.name ? entry.targets.filter((id) => shown.some((item) => item.id === id)) : [],
@@ -3549,6 +3578,48 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       return { round: state.round, active: state.active };
     },
     // Delay (the active creature's row): it leaves the order and the turn passes on; its owner or the GM.
+    // FG's Next Round menu: advance 5, 10, 15 or 20 rounds at once (each round as Next round has it).
+    async advanceRounds(count, seat) {
+      mustGM(seat);
+      const rounds = Math.max(1, Math.min(100, Math.round(num(count, 1))));
+      for (let step = 0; step < rounds; step++) await this.nextRound(seat);
+      return { round: state.round };
+    },
+    // FG's Wnd and Tmp typed on a row: the wounds (a character's on its sheet) and a character's temporary hit points,
+    // set as they are typed (no damage or healing rules run).
+    setHealth(id, patch, seat) {
+      mustGM(seat);
+      const entry = find(id);
+      const now = vitals(entry);
+      const wounds = patch.wounds === undefined ? now.wounds : Math.max(0, Math.round(num(patch.wounds, now.wounds)));
+      const temp = patch.temp === undefined ? undefined : Math.max(0, Math.round(num(patch.temp, 0)));
+      setVitals(entry, wounds, temp);
+      changed();
+      return vitals(entry);
+    },
+    // FG's initiative dragged onto another row: the two swap places.
+    swapInitiative(id, otherId, seat) {
+      mustGM(seat);
+      const a = find(id);
+      const b = find(otherId);
+      [a.initresult, b.initresult] = [b.initresult, a.initresult];
+      changed();
+      return { [a.name]: a.initresult, [b.name]: b.initresult };
+    },
+    // FG 5E's [USED] on an NPC's action: spent (on) or ready again.
+    spendAction(id, name, on, seat) {
+      mustGM(seat);
+      const entry = find(id);
+      const action = text(name, "").slice(0, 120);
+      if (!action) throw new Error("Which action?");
+      const list = new Set(entry.spent ?? []);
+      if (on) list.add(action);
+      else list.delete(action);
+      entry.spent = [...list];
+      if (!entry.spent.length) delete entry.spent;
+      changed();
+      return { spent: entry.spent ?? [] };
+    },
     // FG 5E's React? box: the GM or the creature's owner marks its reaction spent (or back).
     reaction(id, on, seat) {
       const entry = find(id);

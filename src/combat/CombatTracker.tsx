@@ -119,7 +119,7 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
       // A damage or healing roll from chat dropped here applies to this creature (FG's drop on the tracker).
       onDragOver={(event) => {
         if (carriesCreatureDrop([...event.dataTransfer.types])) event.preventDefault();
-        if (gm && [...event.dataTransfer.types].some((type) => type === "application/x-kraken-damage" || type === "application/x-kraken-turn")) event.preventDefault();
+        if (gm && [...event.dataTransfer.types].some((type) => type === "application/x-kraken-damage" || type === "application/x-kraken-turn" || type === "application/x-kraken-init")) event.preventDefault();
       }}
       onDrop={(event) => {
         // An effect from the Effects list, a chat roll (by its type: damage, healing, an attack), a sheet's action.
@@ -127,6 +127,14 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
           event.preventDefault();
           event.stopPropagation();
           dropOnCreature(event.dataTransfer, { entryId: entry.id }, { ct: session.ct, effects: session.effects, entryOfRecord: (recordId) => session.combat.entries.find((item) => item.recordId === recordId)?.id }, gm);
+          return;
+        }
+        // Another creature's initiative dropped here: the two swap (FG's).
+        const swap = event.dataTransfer.getData("application/x-kraken-init");
+        if (gm && swap) {
+          event.preventDefault();
+          event.stopPropagation();
+          if (swap !== entry.id) session.ct("swap-init", { id: swap, otherId: entry.id });
           return;
         }
         // The turn arrow dropped here: their turn now.
@@ -174,13 +182,29 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
           </span>
         )}
         {gm ? (
-          <input
-            className="ct-init"
-            aria-label={`${entry.name} initiative`}
-            type="number"
-            value={entry.initresult}
-            onChange={(event) => session.ct("update", { id: entry.id, patch: { initresult: Number(event.target.value) || 0 } })}
-          />
+          <>
+            <input
+              className="ct-init"
+              aria-label={`${entry.name} initiative`}
+              type="number"
+              value={entry.initresult}
+              onChange={(event) => session.ct("update", { id: entry.id, patch: { initresult: Number(event.target.value) || 0 } })}
+            />
+            {/* FG's initiative dragged onto another row: the two swap. */}
+            <span
+              className="ct-init-swap"
+              draggable
+              title="Drag onto another creature to swap initiative"
+              aria-label={`${entry.name}: swap initiative`}
+              onDragStart={(event) => {
+                event.stopPropagation();
+                event.dataTransfer.setData("application/x-kraken-init", entry.id);
+                event.dataTransfer.effectAllowed = "move";
+              }}
+            >
+              ⇅
+            </span>
+          </>
         ) : (
           <span className="ct-init">{entry.initresult}</span>
         )}
@@ -452,7 +476,7 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
       ) : null}
       {gm && open ? (
         <div className="ct-more">
-          {record?.type === "npc" ? <CreatureDetails session={session} recordId={record.id} name={entry.name} /> : null}
+          {record?.type === "npc" ? <CreatureDetails session={session} recordId={record.id} name={entry.name} spent={entry.spent ?? []} onSpend={(action, on) => session.ct("spend", { id: entry.id, action, on })} /> : null}
           {record?.type === "character" ? (
             // FG's row link: the character's sheet.
             <button type="button" data-action="open-sheet" onClick={() => windows.open("sheet", record.name, record.id)}>
@@ -522,6 +546,17 @@ function Row({ entry, session, active }: { entry: CombatEntry; session: Session;
               Bonus
               <NumberBox value={entry.init ?? 0} onSet={(init) => session.ct("update", { id: entry.id, patch: { init } })} width="3.6rem" />
             </label>
+            {/* FG's Wnd and Tmp typed on the row: set as typed, no damage rules. */}
+            <label>
+              Wounds
+              <NumberBox value={entry.wounds ?? 0} onSet={(wounds) => session.ct("set-health", { id: entry.id, wounds })} width="3.6rem" />
+            </label>
+            {record?.type === "character" ? (
+              <label>
+                Temp
+                <NumberBox value={entry.temp ?? 0} onSet={(temp) => session.ct("set-health", { id: entry.id, temp })} width="3.6rem" />
+              </label>
+            ) : null}
             {entry.recordId && session.records[entry.recordId]?.type === "character" ? null : (
               <>
                 <label>
@@ -729,6 +764,15 @@ function InitiativeTracker({ session }: { session: Session }) {
             <button type="button" onClick={() => session.ct("round")} disabled={combat.round === 0}>
               Next round
             </button>
+            {/* FG's Next round menu: several rounds at once (a long rest of the fight's clock, a spell running out). */}
+            <select aria-label="Advance rounds" data-action="advance-rounds" value="" disabled={combat.round === 0} onChange={(event) => event.target.value && session.ct("advance-rounds", { count: Number(event.target.value) })}>
+              <option value="">Advance…</option>
+              {[5, 10, 15, 20].map((count) => (
+                <option key={count} value={count}>
+                  {count} rounds
+                </option>
+              ))}
+            </select>
             <button type="button" onClick={() => session.ct("end", { removeNpcs: false })} disabled={combat.round === 0}>
               End combat
             </button>

@@ -3,6 +3,7 @@
 //  - Clear timed effects (FG's Clear Expiring Effects): effects with rounds left go, lasting ones stay
 //  - an effect's ending: on a short or long rest, on a long rest only; GM-only effects never reach players;
 //    an effect aimed at the creature's targets carries them
+//  - FG's advance rounds, typed wounds and temp, initiative swap, [USED] with recharge, unidentified names to players
 import "./loopback.mjs";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -80,6 +81,59 @@ try {
   labels = view().find((item) => item.id === H).effects.map((effect) => effect.label);
   assert(!labels.includes("Heroism"), `a long rest: ${labels}`);
   done.push("effects that end on a short or a long rest");
+
+  // FG's Next round menu: 5 rounds at once.
+  await tool("kraken_combat", { action: "next" });
+  const round = combat.viewFor(gm).round;
+  await tool("kraken_combat", { action: "advance-rounds", count: 5 });
+  assert(combat.viewFor(gm).round === round + 5, `five rounds on: ${round} -> ${combat.viewFor(gm).round}`);
+  done.push("advance five rounds");
+
+  // Wnd and Tmp typed: the orc's wounds on its row, the hero's on the sheet with temporary hit points.
+  await tool("kraken_combat", { action: "set-health", id: O, wounds: 4 });
+  await tool("kraken_combat", { action: "set-health", id: H, wounds: 3, temp: 5 });
+  const heroData = agent.records.get(hero.id).data;
+  assert(view().find((item) => item.id === O).wounds === 4 && heroData.hp.wounds === 3 && heroData.hp.temp === 5, `typed health: ${JSON.stringify({ orc: view().find((item) => item.id === O).wounds, hero: heroData.hp })}`);
+  done.push("wounds and temporary hit points typed");
+
+  // Initiative swapped by a drag.
+  await tool("kraken_combat", { action: "update", id: H, patch: { initresult: 18 } });
+  await tool("kraken_combat", { action: "update", id: O, patch: { initresult: 7 } });
+  await tool("kraken_combat", { action: "swap-init", id: H, otherId: O });
+  assert(view().find((item) => item.id === H).initresult === 7 && view().find((item) => item.id === O).initresult === 18, "initiative swapped");
+  done.push("initiative swapped");
+
+  // [USED] and recharge: a 1 at the orc's turn keeps it used, a 6 brings it back.
+  const breath = "Fire Breath (Recharge 5-6)";
+  await tool("kraken_combat", { action: "spend", id: O, name: breath });
+  assert(view().find((item) => item.id === O).spent?.includes(breath) && !combat.viewFor(ann).entries.find((item) => item.id === O).spent, "used, the GM's to see");
+  agent.dice.clearForced?.();
+  for (let step = 0; step < 4 && combat.viewFor(gm).active !== H; step++) await tool("kraken_combat", { action: "next" });
+  agent.dice.force([1]);
+  await tool("kraken_combat", { action: "next" });
+  agent.dice.clearForced?.();
+  assert(combat.viewFor(gm).active === O && view().find((item) => item.id === O).spent?.includes(breath), `a 1: still used: ${JSON.stringify({ active: combat.viewFor(gm).active, spent: view().find((item) => item.id === O).spent })}`);
+  await tool("kraken_combat", { action: "next" });
+  for (let step = 0; step < 4 && combat.viewFor(gm).active !== H; step++) await tool("kraken_combat", { action: "next" });
+  agent.dice.force([6]);
+  await tool("kraken_combat", { action: "next" });
+  agent.dice.clearForced?.();
+  assert(!view().find((item) => item.id === O).spent?.includes(breath), `a 6: ready again: ${JSON.stringify(view().find((item) => item.id === O).spent)}`);
+  assert(agent.chatLog(20).some((line) => /\[RECHARGE\] Orc: Fire Breath \(Recharge 5-6\) is ready again/.test(line.text ?? "") && line.secret), "the GM is told");
+  done.push("[USED] and recharge at its turn");
+
+  // An unidentified creature: players' tracker and turn notice call it by its token's name.
+  agent.map.setScene({ id: "cave", name: "Cave", width: 500, height: 500, padding: 0, backgroundColor: "#000", grid: { size: 50, type: 1, color: "#000", alpha: 0.2, distance: 5, units: "ft" }, walls: [], lights: [], tokens: [] });
+  const token = await tool("kraken_token_place", { name: "Orc", col: 2, row: 2 });
+  await tool("kraken_token_update", { id: token.id, unidentified: "Hulking brute" });
+  await tool("kraken_combat", { action: "update", id: O, patch: { tokenId: token.id } });
+  assert(combat.viewFor(ann).entries.find((item) => item.id === O).name === "Hulking brute" && view().find((item) => item.id === O).name === "Orc", `the players' name: ${combat.viewFor(ann).entries.find((item) => item.id === O).name}`);
+  for (let step = 0; step < 4 && combat.viewFor(gm).active !== H; step++) await tool("kraken_combat", { action: "next" });
+  const before = agent.chatLog(200).length;
+  await tool("kraken_combat", { action: "next" });
+  const notices = agent.chatLog(200).slice(before).filter((line) => /^\[TURN\]/.test(line.text ?? ""));
+  assert(notices.some((line) => line.playersOnly && /Hulking brute/.test(line.text)) && !notices.some((line) => !line.secret && !line.playersOnly && /\[TURN\] Orc/.test(line.text)), `turn notices: ${JSON.stringify(notices.map((line) => [line.text, line.secret, line.playersOnly]))}`);
+  done.push("an unidentified creature's name to players, on the tracker and its turn notice");
 } finally {
   await server.stop?.();
 }

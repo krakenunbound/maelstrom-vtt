@@ -23,7 +23,7 @@ const rowsOf = (value: unknown): { name: string; desc: string }[] =>
         .map((row) => ({ name: text(row.name), desc: text(row.desc) }))
     : [];
 
-export function CreatureDetails({ session, recordId, name }: { session: Session; recordId: string; name: string }) {
+export function CreatureDetails({ session, recordId, name, spent = [], onSpend }: { session: Session; recordId: string; name: string; spent?: string[]; onSpend?: (action: string, on: boolean) => void }) {
   const windows = useWindows();
   const record = session.records[recordId];
   if (!record || record.type !== "npc") return null;
@@ -92,7 +92,18 @@ export function CreatureDetails({ session, recordId, name }: { session: Session;
           <span className="ct-creature-title">{label}</span>
           {rows.map((row) => (
             <details key={row.name} className="ct-trait" data-trait={row.name}>
-              <summary>{row.name}</summary>
+              <summary>
+                {row.name}
+                {/* FG 5E's [USED]: a recharge power (a d6 at its turn brings it back) or one with uses a day. */}
+                {onSpend && /recharge|\/\s*day/i.test(row.name) ? (
+                  <button type="button" className={spent.includes(row.name) ? "ct-used on" : "ct-used"} data-action="spend" aria-pressed={spent.includes(row.name)} title={spent.includes(row.name) ? "Used: click when it is ready again" : "Mark it used"} onClick={(event) => {
+                    event.preventDefault();
+                    onSpend(row.name, !spent.includes(row.name));
+                  }}>
+                    {spent.includes(row.name) ? "[USED]" : "use"}
+                  </button>
+                ) : null}
+              </summary>
               <p>{row.desc || "No text."}</p>
             </details>
           ))}

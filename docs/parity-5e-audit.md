@@ -202,7 +202,7 @@ Maelstrom's (`src/combat/CombatTracker.tsx`, `electron/combat.cjs`).
 | FG control | Maelstrom | Verdict |
 |---|---|---|
 | Next actor, next round, round counter (GM edits) | Next turn, next round, round box, Back and Round back (undo) | Better (undo) |
-| Next round's menu: advance 5, 10, 15, 20 | One round at a time | Missing |
+| Next round's menu: advance 5, 10, 15, 20 | Advance… 5, 10, 15 or 20 rounds (each a round as Next round has it) | Done |
 | Menu: roll all / NPC / PC initiative, clear initiative | Buttons | Same |
 | Menu: delete non-friendly, foes only; clear all effects | Buttons | Same |
 | Menu: clear expiring effects | Clear timed effects (those with rounds left) | Done |
@@ -211,15 +211,15 @@ Maelstrom's (`src/combat/CombatTracker.tsx`, `electron/combat.cjs`).
 | Show or hide all NPCs (header) | Hide all creatures / Show all creatures (all but friends) | Done |
 | Row: active marker, drag it to another row | Turn arrow, dragged | Same |
 | Row: token (click outline, Ctrl+click target, drag to map) | Portrait (focus), Ctrl+click target, row dragged to the map | Same |
-| Row: identified toggle, the players' name while unidentified | The token's unidentified name | Check live (the tracker row's name) |
+| Row: identified toggle, the players' name while unidentified | The token's unidentified name, on the players' tracker and their turn notice (it showed the real name before) | Done |
 | Row: visibility eye (non-friends) | Eye | Same |
 | Row: record link (PC sheet or NPC) | NPC Record; a character's Sheet | Done |
 | Row: faction cycler | Faction button | Same |
-| Row: HP, temp, wounds as numbers (dropped numbers apply) | HP now/max, temp shown; damage and heal in an NPC's detail | Partly (no wounds or temp typed; nothing for characters) |
-| Row: initiative typed (re-sorts), dragged to swap | Initiative box (sent on every key) | Partly (no swap) |
+| Row: HP, temp, wounds as numbers (dropped numbers apply) | Wounds and a character's temp typed, damage and heal, a chat roll dropped applies | Done |
+| Row: initiative typed (re-sorts), dragged to swap | Initiative box; its ⇅ dragged onto another row swaps them | Done |
 | Offense: "React?" box (reaction used) | React box on the row (the GM's and its owner's), back at the start of its turn | Done |
 | Offense: init bonus (rolls), AC, DT, speed | Bonus, AC in the detail | Partly |
-| Offense: NPC actions, bonus actions, reactions, legendary, lair, innate spells, slots; a clause rolled by double-click, [USED], recharge | Attack and damage buttons, power buttons with uses, the stat block's lists to read | Partly (no recharge, no clause rolls) |
+| Offense: NPC actions, bonus actions, reactions, legendary, lair, innate spells, slots; a clause rolled by double-click, [USED], recharge | Attack and damage buttons, power buttons with uses, the stat block's lists; [USED] on a recharge or a day's-uses action, a recharge's d6 at its turn | Partly (no clause rolls) |
 | Defense: ability scores (check, Shift save), resistances, immunities, vulnerabilities, condition immunities typed | Read in the detail; a save picker with a DC | Partly (not typed) |
 | Space and reach | Read-only, NPCs | Partly |
 | Effects: add, active / inactive / skip once, GM-only, apply (once a turn, a round, an action, a roll), uses, label, duration, initiative it ticks on, whose turn, expiry (turn start or end, short or long rest), its targets, applied by | Add: text, rounds, ends (rounds, when hurt, a short or long rest, a long rest), GM only, on its targets; the buff bar (remove, rounds, put out) | Partly (no apply limits, no skip once) |

@@ -3764,6 +3764,14 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
               return combat.delay(String(msg.id ?? ""), seat);
             case "reaction":
               return combat.reaction(String(msg.id ?? ""), Boolean(msg.on), seat);
+            case "advance-rounds":
+              return combat.advanceRounds(Number(msg.count) || 1, seat);
+            case "set-health":
+              return combat.setHealth(String(msg.id ?? ""), { wounds: msg.wounds, temp: msg.temp }, seat);
+            case "swap-init":
+              return combat.swapInitiative(String(msg.id ?? ""), String(msg.otherId ?? ""), seat);
+            case "spend":
+              return combat.spendAction(String(msg.id ?? ""), String(msg.action ?? ""), msg.on !== false, seat);
             case "clear-timed-effects":
               return combat.clearTimedEffects(seat);
             case "act-now":

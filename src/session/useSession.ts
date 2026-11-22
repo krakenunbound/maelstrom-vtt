@@ -305,6 +305,8 @@ export type RosterEntry = { id: string; name: string; owner: string; released?: 
 export type CombatEntry = {
   // Its reaction spent this round (FG 5E's React? box).
   reacted?: boolean;
+  // The GM's: an NPC's actions marked used (FG 5E's [USED]; a recharge power rolls back).
+  spent?: string[];
   // 5E: death saves of a Dying character.
   deathsaves?: { success: number; failure: number };
   id: string;
