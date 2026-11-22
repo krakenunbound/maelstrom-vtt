@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Windows keep the place you gave them when the app window is resized:** opened while the app was still small (before it was maximized), the map squeezed to the left edge over the tracker and stayed there; now a smaller screen only squeezes them for the moment, and they go back to their place when there is room.
 - **A turn's path shows only while the fight is on:** the GM setting tokens out before combat no longer leaves a dotted trail and "155 ft this turn" on the players' screens; when combat starts every path begins empty. check-map-play
 - **The character wizard reads every choice a 2014 race gives:** a High Elf's cantrip from the wizard's list and its extra language are picked in the wizard (they showed as text only); a race's weapon and armor training (an Elf's longsword, shortsword, shortbow and longbow) is on the sheet. check-legacy-5e-books
 - **A player rolls a background's traits, ideals, bonds and flaws** from the active handbook even when the GM has not shared it with the players: the background they can see names the tables (the Roll buttons said "No table called Sage Personality Trait"). check-legacy-5e-books

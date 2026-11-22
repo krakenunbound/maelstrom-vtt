@@ -142,7 +142,8 @@ type Manager = {
   // Tucked away to the tray, and back where it was, in front.
   minimize: (key: string) => void;
   restore: (key: string) => void;
-  move: (key: string, placement: Partial<Placement>) => void;
+  // keep false: where it is shown only (squeezed onto a smaller screen), not where the person put it.
+  move: (key: string, placement: Partial<Placement>, keep?: boolean) => void;
   isOpen: (kind: WindowKind) => boolean;
   // Out to a window of its own (at that place on the screen), and back in.
   popOut: (key: string, place?: ScreenPlace) => boolean;
@@ -268,12 +269,12 @@ export function WindowProvider({ children }: { children: ReactNode }) {
     [windows, place, close, focus, restore],
   );
 
-  const move = useCallback((key: string, placement: Partial<Placement>) => {
+  const move = useCallback((key: string, placement: Partial<Placement>, keep = true) => {
     setWindows((current) =>
       current.map((item) => {
         if (item.key !== key) return item;
         const next = { ...item, ...placement };
-        remember(item.kind, next, item.payload);
+        if (keep) remember(item.kind, next, item.payload);
         return next;
       }),
     );
@@ -377,7 +378,12 @@ export function FloatingWindow({ item, children, link }: { item: OpenWindow; chi
 
   useEffect(() => {
     if (item.popped) return;
-    const onResize = () => move(item.key, fitToScreen(item));
+    // The main window resized: the window fitted from where it was put (kept), not from where a smaller screen
+    // squeezed it, and that squeeze is not kept (a window opened before the app is maximized comes back to its place).
+    const onResize = () => {
+      const put = remembered(item.kind, item.payload);
+      move(item.key, fitToScreen({ ...item, x: put.x, y: put.y, w: put.w, h: put.h }), false);
+    };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, [item, move]);
