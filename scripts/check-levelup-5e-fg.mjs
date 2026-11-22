@@ -28,7 +28,7 @@ const tool = async (name, args = {}) => {
 };
 const agent = server.agent;
 importModule(agent.records, agent.seat, path.join(ROOT, "games", "modules", "SRD 5.2.1 Player's Rules"));
-const lib = { classes: agent.records.list({ type: "class" }), subclasses: agent.records.list({ type: "class_specialization" }), feats: agent.records.list({ type: "feat" }) };
+const lib = { classes: agent.records.list({ type: "class" }), subclasses: agent.records.list({ type: "class_specialization" }), feats: agent.records.list({ type: "feat" }), spells: agent.records.list({ type: "spell" }) };
 const fails = (promise) => promise.then(() => "", (error) => error.message);
 try {
   const built = await tool("kraken_build_character", { spec: { name: "Brand", species: "Human", class: "Fighter", level: 2, scores: { strength: 15, dexterity: 14, constitution: 14, intelligence: 10, wisdom: 10, charisma: 8 } } });
@@ -76,6 +76,19 @@ try {
   const multi = levelUpPlan(agent.records.get(sage.id).data, lib, "Fighter");
   assert(multi.die === 10 && multi.classLevel === 1, `a new class's own die: ${JSON.stringify({ die: multi.die, level: multi.classLevel })}`);
   done.push("a new class: its own hit die");
+
+  // 5b. The Wizard's 4th level: one new cantrip and one new spell (its table: 3 -> 4 cantrips, 6 -> 7 prepared),
+  // from its own list, up to 2nd level; too many or too high refused.
+  const sageData = () => agent.records.get(sage.id).data;
+  const plan4w = levelUpPlan(sageData(), lib);
+  assert(plan4w.spells?.cantrips === 1 && plan4w.spells?.spells === 1, `the Wizard's new spells: ${JSON.stringify({ cantrips: plan4w.spells?.cantrips, spells: plan4w.spells?.spells })}`);
+  assert(plan4w.spells.options.every((spell) => spell.level <= 2) && plan4w.spells.options.some((spell) => spell.name === "Misty Step") && !plan4w.spells.options.some((spell) => spell.name === "Cure Wounds"), "its own list, up to 2nd level");
+  const cantrip = plan4w.spells.options.find((spell) => spell.level === 0).name;
+  assert(/not a Wizard spell to learn now/.test(await fails(tool("kraken_level_up", { id: sage.id, asi: { intelligence: 2 }, spells: ["Fireball"] }))), "a 3rd-level spell refused");
+  assert(/1 new spell at most/.test(await fails(tool("kraken_level_up", { id: sage.id, asi: { intelligence: 2 }, spells: ["Misty Step", "Shatter"] }))), "two spells refused");
+  await tool("kraken_level_up", { id: sage.id, asi: { intelligence: 2 }, spells: [cantrip, "Misty Step"] });
+  assert(sageData().spells.includes(cantrip) && sageData().spells.includes("Misty Step") && sageData().prepared["misty-step"] === 1, `learned and prepared: ${JSON.stringify({ spells: sageData().spells, prepared: sageData().prepared })}`);
+  done.push("new spells: the class's table, its list, prepared");
 
   // 6. A Rogue's 6th level: Expertise in two skills it is proficient in.
   const rogue = await tool("kraken_build_character", { spec: { name: "Wren", species: "Human", class: "Rogue", level: 5, scores: { strength: 8, dexterity: 16, constitution: 12, intelligence: 14, wisdom: 12, charisma: 10 } } });

@@ -1,8 +1,8 @@
 // FG's 5E level up through the character wizard: what the next level in a class brings (its features, a subclass
 // to choose, an Ability Score Improvement or a feat) and the choices applied. The sheet's dialog and the host read the
 // same plan: the host checks the choices against it.
-import { classInfo } from "./wizard.mjs";
-import { hitDie, SKILLS } from "./rules.mjs";
+import { classInfo, classSpells, spellCounts } from "./wizard.mjs";
+import { hitDie, SKILLS, slotsFor, spellSlug } from "./rules.mjs";
 
 const num = (value, fallback = 0) => (Number.isFinite(Number(value)) && value !== "" && value !== null ? Number(value) : fallback);
 const rows = (node) => Object.entries(node && typeof node === "object" ? node : {}).filter(([, value]) => value && typeof value === "object");
@@ -12,7 +12,7 @@ const featureLine = (feature, className) => `${feature.name} (${feature.subclass
 
 /**
  * @param {Record<string, any>} data the character's
- * @param {{ classes: any[]; subclasses: any[]; feats: any[] }} lib the campaign's records
+ * @param {{ classes: any[]; subclasses: any[]; feats: any[]; spells?: any[] }} lib the campaign's records
  * @param {string} [packageKey] a class package's key or a class's name (a new one: multiclass)
  */
 export function levelUpPlan(data, lib, packageKey = "") {
@@ -32,6 +32,14 @@ export function levelUpPlan(data, lib, packageKey = "") {
   const featDecision = decisions.find((item) => item.type === "feat");
   const subclasses = !subclass && has("subclass") ? (lib.subclasses ?? []).filter((record) => same(record.data?.class, cls.name)).map((record) => String(record.name)) : null;
   const known = new Set((Array.isArray(data.features) ? data.features : []).map((line) => String(line).toLowerCase()));
+  // FG's wizard on a level up: the class's new cantrips and spells (its table's counts at this level less the last),
+  // from its own list, up to the highest spell level its slots reach now; none the character has already.
+  const before = spellCounts(cls.name, classLevel - 1);
+  const after = spellCounts(cls.name, classLevel);
+  const fresh = classLevel === 1 ? { cantrips: after.cantrips, prepared: after.prepared } : { cantrips: Math.max(0, after.cantrips - before.cantrips), prepared: Math.max(0, after.prepared - before.prepared) };
+  const highest = Math.max(0, ...Object.keys(slotsFor(cls.name, classLevel)).map((key) => Number(key.slice(1))));
+  const learned = new Set((Array.isArray(data.spells) ? data.spells : []).map((name) => String(name).toLowerCase()));
+  const options = classSpells(lib.spells ?? [], cls.name, highest).filter((spell) => !learned.has(String(spell.name).toLowerCase())).map((spell) => ({ name: String(spell.name), level: Math.round(num(spell.data?.level, 0)) }));
   return {
     className: String(cls.name),
     key: owned ? owned[0] : null,
@@ -41,6 +49,7 @@ export function levelUpPlan(data, lib, packageKey = "") {
     features: (info?.features ?? []).filter((feature) => feature.level === classLevel && !known.has(featureLine(feature, cls.name).toLowerCase())).map((feature) => ({ name: feature.name, level: feature.level, subclass: feature.subclass })),
     subclasses: subclasses && subclasses.length ? subclasses : null,
     asi: has("asiorfeat"),
+    spells: fresh.cantrips || fresh.prepared ? { cantrips: fresh.cantrips, spells: fresh.prepared, options } : null,
     // Expertise: so many skills the character is proficient in, doubled.
     expertise: decisions.filter((item) => item.type === "expertise").length,
     skills: rows(data.skills).filter(([key, skill]) => SKILLS[key] && num(skill.prof) === 1).map(([key]) => ({ key, label: SKILLS[key][0] })),
@@ -63,7 +72,7 @@ export function levelUpPlan(data, lib, packageKey = "") {
  * subclass (and its features to this level), +2 to one score or +1 to two (to 20 at most), or a feat.
  * @param {Record<string, any>} data the data after the level up
  * @param {NonNullable<ReturnType<typeof levelUpPlan>>} plan the plan made before it
- * @param {{ subclass?: string; asi?: Record<string, number>; feat?: string; expertise?: string[] }} choices
+ * @param {{ subclass?: string; asi?: Record<string, number>; feat?: string; expertise?: string[]; spells?: string[] }} choices
  * @param {{ classes: any[]; subclasses: any[]; feats: any[] }} lib
  */
 export function applyLevelUp(data, plan, choices = {}, lib) {
@@ -91,6 +100,17 @@ export function applyLevelUp(data, plan, choices = {}, lib) {
       if (score > 20) throw new Error(`${stat[0].toUpperCase()}${stat.slice(1)} would pass 20.`);
       next.abilities[stat] = { ...next.abilities[stat], score };
     }
+  }
+  // New spells: so many cantrips and so many of the class's leveled spells, from the plan's list; leveled ones
+  // prepared (FG's wizard adds them ready to cast).
+  const picked = [...new Set((Array.isArray(choices.spells) ? choices.spells : []).map(String))];
+  if (picked.length) {
+    if (!plan.spells) throw new Error(`${plan.className} ${plan.classLevel} learns no new spells.`);
+    const chosen = picked.map((name) => plan.spells.options.find((spell) => same(spell.name, name)) ?? (() => { throw new Error(`${name} is not a ${plan.className} spell to learn now.`); })());
+    if (chosen.filter((spell) => spell.level === 0).length > plan.spells.cantrips) throw new Error(`${plan.spells.cantrips} new cantrip${plan.spells.cantrips === 1 ? "" : "s"} at most.`);
+    if (chosen.filter((spell) => spell.level > 0).length > plan.spells.spells) throw new Error(`${plan.spells.spells} new spell${plan.spells.spells === 1 ? "" : "s"} at most.`);
+    next.spells = [...new Set([...(Array.isArray(next.spells) ? next.spells : []), ...chosen.map((spell) => spell.name)])];
+    next.prepared = { ...(next.prepared ?? {}), ...Object.fromEntries(chosen.filter((spell) => spell.level > 0).map((spell) => [spellSlug(spell.name), 1])) };
   }
   const expert = [...new Set((Array.isArray(choices.expertise) ? choices.expertise : []).map(String))];
   if (expert.length) {

@@ -132,7 +132,7 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | Portrait, name | Portrait (picker, drag as a link), token picture, name | Better |
 | Inspiration counter, maximum by HRIS (1 to 5), a chat line on change | A count held to the house rule HRIS (standard 1, 2, 3, 5), a chat line | Done |
 | Class & level summary; Classes window (each class: level, caster multiplier, pact magic, hit die, used) | "Fighter 4 / Wizard 1"; Classes on the Main tab: each class's level, hit die and dice left, a level more in it, another class taken | Done (caster share by the SRD's rule, not by hand) |
-| Level up opens the wizard | Level up (+) opens the level's choices: hit points rolled or fixed, the new features listed (and added), a subclass at its level, an Ability Score Improvement (+2, +1/+1) or a General feat, a Fighting Style or Epic Boon feat where the level gives one, Expertise; checked by the host (kraken_level_up hp, subclass, asi, feat, expertise) | Partly (new spells are added on the Spells tab, not asked in the dialog) |
+| Level up opens the wizard | Level up (+) opens the level's choices: hit points rolled or fixed, the new features listed (and added), a subclass at its level, an Ability Score Improvement (+2, +1/+1) or a General feat, a Fighting Style or Epic Boon feat where the level gives one, Expertise, the class table's new cantrips and spells from its own list up to its highest slot (leveled ones prepared); checked by the host (kraken_level_up hp, subclass, asi, feat, expertise, spells) | Yes |
 | XP, next level | Experience / next | Same |
 | PROF | Prof | Same |
 | Background, race links and text | Read-only text; on the Notes tab the race and background each a link to its record | Yes |
@@ -381,6 +381,6 @@ Any game can add its own the same way; nothing in the core names a game.
 
 All eight areas are compared, read from FG's ruleset files (CoreRPG and 5E) and
 Maelstrom's code, and what was missing is built (each area's commits name its
-check script). Still Partly: the level up dialog's new spells (picked on the Spells tab). Proved in 5E only:
+check script). No row is Partly. Proved in 5E only:
 manual dice for the sheet's and tracker's rolls (the other d20 games declare their manual die and kinds). The **Check live** rows want FG open on
 the 5E campaign through the bridge, side by side with Maelstrom.

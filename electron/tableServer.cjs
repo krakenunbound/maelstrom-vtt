@@ -3331,7 +3331,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
           send(ws, { type: "error", reason: "You cannot level up that character." });
           return;
         }
-        const choices = msg.choices && typeof msg.choices === "object" ? { hp: msg.choices.hp === "average" ? "average" : "roll", subclass: text(msg.choices.subclass, "").slice(0, 120), asi: msg.choices.asi && typeof msg.choices.asi === "object" ? msg.choices.asi : {}, feat: text(msg.choices.feat, "").slice(0, 120), expertise: Array.isArray(msg.choices.expertise) ? msg.choices.expertise.slice(0, 4).map((key) => text(key, "").slice(0, 40)) : [] } : {};
+        const choices = msg.choices && typeof msg.choices === "object" ? { hp: msg.choices.hp === "average" ? "average" : "roll", subclass: text(msg.choices.subclass, "").slice(0, 120), asi: msg.choices.asi && typeof msg.choices.asi === "object" ? msg.choices.asi : {}, feat: text(msg.choices.feat, "").slice(0, 120), expertise: Array.isArray(msg.choices.expertise) ? msg.choices.expertise.slice(0, 4).map((key) => text(key, "").slice(0, 40)) : [], spells: Array.isArray(msg.choices.spells) ? msg.choices.spells.slice(0, 12).map((name) => text(name, "").slice(0, 120)) : [] } : {};
         levelUp(agentHandle, record, msg.package, client.role === "dm" ? record.name : client.name, choices).catch((error) =>
           send(ws, { type: "error", reason: error instanceof Error ? error.message : "Could not level up." }),
         );

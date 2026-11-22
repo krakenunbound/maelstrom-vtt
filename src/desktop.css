@@ -3091,3 +3091,5 @@ label.set-row { cursor: pointer; }
 .ask-dialog p { margin: 0 0 12px; line-height: 1.4; }
 .ask-dialog input { width: 100%; margin-bottom: 12px; }
 .ask-dialog .ask-buttons { display: flex; justify-content: flex-end; gap: 8px; }
+.level-up-dialog .level-up-spells { flex-direction: column; flex-wrap: nowrap; }
+.level-up-dialog .level-up-spell-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr)); gap: 2px 12px; max-height: 14rem; overflow: auto; }

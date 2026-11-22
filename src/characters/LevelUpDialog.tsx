@@ -19,6 +19,7 @@ export function levelUpWith(session: Session, id: string, key?: string) {
   changed();
 }
 
+type SpellOption = { name: string; level: number };
 const STATS = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"] as const;
 const short = (stat: string) => stat.slice(0, 3).toUpperCase();
 
@@ -33,11 +34,13 @@ export function LevelUpDialog() {
   const [second, setSecond] = useState("");
   const [feat, setFeat] = useState("");
   const [expert, setExpert] = useState<string[]>([]);
+  const [spells, setSpells] = useState<string[]>([]);
+  const [spellSearch, setSpellSearch] = useState("");
   const record = ask ? ask.session.records[ask.id] : null;
   const plan = useMemo(() => {
     if (!ask || !record) return null;
     const all = Object.values(ask.session.records);
-    const lib = { classes: all.filter((item) => item.type === "class"), subclasses: all.filter((item) => item.type === "class_specialization"), feats: all.filter((item) => item.type === "feat") };
+    const lib = { classes: all.filter((item) => item.type === "class"), subclasses: all.filter((item) => item.type === "class_specialization"), feats: all.filter((item) => item.type === "feat"), spells: all.filter((item) => item.type === "spell") };
     return levelUpPlan(record.data, lib, ask.key ?? "");
   }, [ask, record]);
   useEffect(() => {
@@ -48,6 +51,8 @@ export function LevelUpDialog() {
     setSecond("");
     setFeat("");
     setExpert([]);
+    setSpells([]);
+    setSpellSearch("");
     if (ask && dialog.current && !dialog.current.open) dialog.current.showModal();
     if (!ask && dialog.current?.open) dialog.current.close();
   }, [ask]);
@@ -70,7 +75,7 @@ export function LevelUpDialog() {
   const ready = Boolean(plan) && (!plan?.subclasses || Boolean(subclass)) && asiDone && (!plan?.feat || Boolean(feat) || !plan.feats.length) && expert.filter(Boolean).length === Math.min(plan?.expertise ?? 0, plan?.skills.length ?? 0);
   const go = () => {
     if (!ask || !plan || !ready) return;
-    ask.session.levelUp(ask.id, ask.key, { hp, ...(subclass ? { subclass } : {}), ...(Object.keys(asi).length ? { asi } : {}), ...(feat && (improve === "feat" || plan.feat) ? { feat } : {}), ...(expert.filter(Boolean).length ? { expertise: expert.filter(Boolean) } : {}) });
+    ask.session.levelUp(ask.id, ask.key, { hp, ...(subclass ? { subclass } : {}), ...(Object.keys(asi).length ? { asi } : {}), ...(feat && (improve === "feat" || plan.feat) ? { feat } : {}), ...(expert.filter(Boolean).length ? { expertise: expert.filter(Boolean) } : {}), ...(spells.length ? { spells } : {}) });
     close();
   };
   return (
@@ -165,6 +170,40 @@ export function LevelUpDialog() {
                     ))}
                 </select>
               ))}
+            </fieldset>
+          ) : null}
+          {plan.spells && plan.spells.options.length ? (
+            <fieldset className="level-up-spells" data-level-spells>
+              {(() => {
+                const levelOf = (name: string) => plan.spells?.options.find((spell: SpellOption) => spell.name === name)?.level ?? 0;
+                const cantrips = spells.filter((name) => levelOf(name) === 0).length;
+                const leveled = spells.length - cantrips;
+                const wanted = spellSearch.trim().toLowerCase();
+                return (
+                  <>
+                    <legend>
+                      New spells
+                      {plan.spells.cantrips ? ` · cantrips ${cantrips} of ${plan.spells.cantrips}` : ""}
+                      {plan.spells.spells ? ` · spells ${leveled} of ${plan.spells.spells}` : ""}
+                    </legend>
+                    <input type="search" value={spellSearch} onChange={(event) => setSpellSearch(event.target.value)} placeholder="Find a spell" aria-label="Find a spell" />
+                    <div className="level-up-spell-list">
+                      {plan.spells.options
+                        .filter((spell: SpellOption) => (spell.level === 0 ? plan.spells!.cantrips > 0 : plan.spells!.spells > 0) && (!wanted || spell.name.toLowerCase().includes(wanted) || spells.includes(spell.name)))
+                        .map((spell: SpellOption) => {
+                          const on = spells.includes(spell.name);
+                          const full = spell.level === 0 ? cantrips >= plan.spells!.cantrips : leveled >= plan.spells!.spells;
+                          return (
+                            <label key={spell.name} data-level-spell={spell.name}>
+                              <input type="checkbox" checked={on} disabled={!on && full} onChange={() => setSpells((now) => (on ? now.filter((name) => name !== spell.name) : [...now, spell.name]))} />
+                              {spell.name} <small className="hint">{spell.level ? `level ${spell.level}` : "cantrip"}</small>
+                            </label>
+                          );
+                        })}
+                    </div>
+                  </>
+                );
+              })()}
             </fieldset>
           ) : null}
           {((plan.asi && improve === "feat") || plan.feat) && plan.feats.length ? (

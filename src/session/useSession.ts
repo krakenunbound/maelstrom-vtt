@@ -1374,7 +1374,7 @@ export function useSession() {
     return Promise.resolve();
   }, []);
   // choices (5E, the level up dialog): hit points rolled or fixed, a subclass, an Ability Score Improvement or a feat.
-  const levelUp = useCallback((id: string, packageKey?: string, choices?: { hp?: "roll" | "average"; subclass?: string; asi?: Record<string, number>; feat?: string; expertise?: string[] }) => {
+  const levelUp = useCallback((id: string, packageKey?: string, choices?: { hp?: "roll" | "average"; subclass?: string; asi?: Record<string, number>; feat?: string; expertise?: string[]; spells?: string[] }) => {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     socket.send(JSON.stringify({ type: "level-up", id, ...(packageKey ? { package: packageKey } : {}), ...(choices ? { choices } : {}) }));

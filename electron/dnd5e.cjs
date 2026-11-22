@@ -20,6 +20,7 @@ const TYPES_5E = ["class", "race", "race_subrace", "background", "feat", "skill"
 
 function library5e(records) {
   const list = (type) => records.list({ type });
+  // (spells: a level up's new ones, shared/dnd5e/levelup.mjs)
   return { classes: list("class"), species: list("race"), ancestries: list("race_subrace"), backgrounds: list("background"), subclasses: list("class_specialization"), feats: list("feat"), items: list("item"), spells: list("spell") };
 }
 
@@ -100,6 +101,7 @@ async function levelUp5e(table, record, from, packageKey, choices = {}) {
     ...Object.entries(choices?.asi ?? {}).filter(([, n]) => Number(n) > 0).map(([stat, n]) => `${stat[0].toUpperCase()}${stat.slice(1, 3)} +${n}`),
     ...(choices?.feat ? [choices.feat] : []),
     ...((choices?.expertise ?? []).length ? [`Expertise: ${choices.expertise.join(", ")}`] : []),
+    ...((choices?.spells ?? []).length ? [`Spells: ${choices.spells.join(", ")}`] : []),
   ];
   table.say(`[LEVEL UP] ${record.name} is now ${line || className} (level ${data.level}): +${gain} hit points${average ? " (fixed)" : ""} (${data.hp.total}), proficiency ${rules.signed(data.prof)}.${gained.length ? ` ${gained.join(", ")}.` : ""}`, from || record.name);
   return { record: updated, gain, level: data.level, note: "" };
