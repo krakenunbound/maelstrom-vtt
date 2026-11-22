@@ -58,7 +58,7 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 | FG option | FG default | Maelstrom | Verdict |
 |---|---|---|---|
 | PC: Currency weight (CURR) | on | Bookkeeping: coin weight in encumbrance | Same |
-| PC: Attunement slots (HRAS) | 3 | Not found | Missing |
+| PC: Attunement slots (HRAS) | 3 | House rule: 3, 4, 5, 2 or the proficiency bonus | Done |
 | Game: Bastion support (HRBASTION) | off | Not found | Missing (2024 Bastions) |
 | Map: Diagonal distance (HRDD) | | `diagonal` (1, 1.5, raw) | Same |
 | PC: Encumbrance (HREN) | standard | Bookkeeping: encumbrance on or off, the variant | Same |
@@ -69,7 +69,7 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 | Exhaustion: Apply when heal from dying (HRHE) | off | House rule: 1 to 5 levels | Done |
 | PC: Healing variants (HRHV) | | House rule: fast and slow rests | Done |
 | Combat: Roll initiative each round (HRIR) | off | `initEachRound` | Same |
-| PC: Inspiration slots (HRIS) | | One Inspiration box | Check live |
+| PC: Inspiration slots (HRIS) | | House rule: standard (1), 2, 3, 5 | Done |
 | Combat: Massive system shock (HRMD) | off | House rule: DC 15 Constitution, the d10 system shock table | Done |
 | Combat: NPC hit points (HRNH) | off | `npcHp` | Same |
 | Exhaustion: Apply mod to spell DC (HRSE) | off | House rule: the caster's spell save DC | Done |
@@ -166,8 +166,8 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | FG control | Maelstrom | Verdict |
 |---|---|---|
 | Items: count, name, unidentified name, location (container), carried, link | Count, carried, containers (drag, Put in), thumbnails, party stash | Better (containers, stash) |
-| Weight per item | Load meter only | Missing (column) |
-| Attuned per item, attunement count (HRAS base, class, misc), red over the limit | Not found | Missing |
+| Weight per item | An item's weight beside its type, the load meter | Done |
+| Attuned per item, attunement count (HRAS base, class, misc), red over the limit | The Attuned box on items that require attunement; Attuned used / allowed (HRAS, class, misc), red over | Done |
 | Treasure: coins, add your own currency rows | The game's coins | Partly (no custom rows) |
 | Encumbrance: load, encumbered, heavy, maximum, lift/push/drag | Load meter, the variant | Partly (no lift/push/drag figure) |
 

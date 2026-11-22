@@ -3,6 +3,7 @@
 //  - Roll Initiative: a Dexterity check with the initiative; on the tracker it sets the character's place
 //  - Inspiration as a count, held to the house rule HRIS (1 by default; 3 when chosen), a chat line on change
 //  - death saves ticked by hand; a hit die rolled (spent) apart from a rest, healing
+//  - attunement: the box on an item that requires it, the attuned count, class slots
 //  - the character details FG keeps (deity, size, personality traits, ideals, bonds, flaws, appearance...)
 import "./loopback.mjs";
 import path from "node:path";
@@ -91,6 +92,16 @@ try {
   const reply = ann.inbox.find((msg) => msg.type === "op-result" && msg.req === "hd");
   assert(data().hitdice.used === usedBefore + 1 && data().hp.wounds < 20, `a hit die: ${JSON.stringify({ hitdice: data().hitdice, wounds: data().hp.wounds, reply })}`);
   done.push("death saves by hand, a hit die rolled apart from a rest");
+
+  // Attunement: a ring that requires it may be attuned; a rope may not. The count is the attuned.
+  const record = agent.records.get(id);
+  agent.records.update(id, { data: { ...record.data, inventorylist: { ...record.data.inventorylist, "id-90001": { name: "Ring of Protection", rarity: "Rare (requires attunement)", count: 1, carried: 2, weight: 0 }, "id-90002": { name: "Rope", count: 1, carried: 1, weight: 5 } } } }, agent.seat, { replace: true });
+  await edit([{ path: "inventorylist.id-90001.attune", value: 1 }, { path: "inventorylist.id-90002.attune", value: 1 }]);
+  const list = data().inventorylist;
+  assert(list["id-90001"].attunable === 1 && list["id-90001"].attune === 1 && list["id-90002"].attune === 0 && data().attunement.used === 1, `attunement: ${JSON.stringify({ ring: list["id-90001"], rope: list["id-90002"], attunement: data().attunement, errors: errors() })}`);
+  await edit([{ path: "attunement.class", value: 1 }]);
+  assert(data().attunement.class === 1, "the class's slots");
+  done.push("attunement: the box on items that require it, the count, class slots");
 
   // The character details.
   await edit([{ path: "deity", value: "Tempus" }, { path: "size", value: "Medium" }, { path: "ideals", value: "Glory" }, { path: "bonds", value: "My shield-brothers" }, { path: "flaws", value: "Proud" }, { path: "personalitytraits", value: "Loud" }, { path: "specialdefenses", value: "Resist fire" }]);

@@ -2956,3 +2956,7 @@ label.set-row { cursor: pointer; }
 .emblem.decal[data-fit="fill"], .emblem.decal[data-fit="fit"] { position: absolute; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; filter: none; }
 .emblem.decal[data-fit="fill"] { object-fit: cover; }
 .emblem.decal[data-fit="fit"] { object-fit: contain; }
+/* FG's attunement count on the 5E sheet's Inventory tab. */
+.five-attunement { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-block: 6px; }
+.five-attunement b.danger { color: #ff6f5e; }
+.five-attunement input.tiny { width: 3.5em; }

@@ -390,6 +390,22 @@ export function derive(input) {
   data.deathsaves = { success: Math.max(0, Math.min(3, Math.round(num(data.deathsaves?.success, 0)))), failure: Math.max(0, Math.min(3, Math.round(num(data.deathsaves?.failure, 0)))) };
   if (data.hitdice && typeof data.hitdice === "object") data.hitdice = { ...data.hitdice, used: Math.max(0, Math.round(num(data.hitdice.used, 0))) };
   if (profile.dread) data.dread = Math.min(6, Math.max(0, Math.round(num(data.dread, 0))));
+  // FG's attunement: an item whose rarity or text says it requires attunement may be attuned (its box); the count
+  // is the attuned items, beside the class's and misc slots (the house rule HRAS gives the base).
+  if (data.inventorylist && typeof data.inventorylist === "object") {
+    data.inventorylist = Object.fromEntries(
+      rows(data.inventorylist).map(([key, item]) => {
+        const words = `${typeof item.rarity === "string" ? item.rarity : ""} ${typeof item.description === "string" ? item.description : ""} ${typeof item.text === "string" ? item.text : ""}`;
+        const attunable = /requires attunement/i.test(words) ? 1 : 0;
+        return [key, { ...item, attunable, attune: attunable && num(item.attune, 0) ? 1 : 0 }];
+      }),
+    );
+  }
+  data.attunement = {
+    used: rows(data.inventorylist).filter(([, item]) => num(item.attune, 0) > 0).length,
+    class: Math.max(0, Math.round(num(data.attunement?.class, 0))),
+    misc: Math.round(num(data.attunement?.misc, 0)),
+  };
   return data;
 }
 

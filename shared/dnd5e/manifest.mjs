@@ -185,12 +185,18 @@ export default {
             hook: "item",
             // A count or carried of 0 shows as 1, as the hand-made sheet did.
             select: { path: "carried", kind: "select", number: true, label: "{name} carried", title: "Equipped, carried or not carried", options: [{ value: "2", label: "Equipped" }, { value: "1", label: "Carried" }, { value: "0", label: "Not carried" }], default: 1 },
-            fields: [{ path: "count", kind: "number", label: "{name} count", default: 1, zeroIsEmpty: true }],
+            fields: [
+              { path: "count", kind: "number", label: "{name} count", default: 1, zeroIsEmpty: true },
+              // FG's Attuned box, on an item that requires attunement.
+              { path: "attune", kind: "check", label: "{name} attuned", title: "Attuned", when: { positive: "attunable" } },
+            ],
             name: { path: "name" },
             head: { select: "Status", fields: ["#"], name: "Item" },
-            details: [{ text: "{subtype}", when: { not: { isNull: "subtype" } } }, { text: "{type}", when: { isNull: "subtype" } }],
+            details: [{ text: "{subtype}", when: { not: { isNull: "subtype" } } }, { text: "{type}", when: { isNull: "subtype" } }, { text: "{weight} lb.", when: { positive: "weight" } }],
             remove: { aria: "Drop {name}", title: "Drop it" },
           },
+          // FG's attunement: the attuned items of how many slots (the house rule HRAS, the class's, misc).
+          { part: "custom", component: "dnd5e.attunement" },
           { part: "coins", path: "coins", aria: "{name}", upper: true },
         ],
       },
@@ -245,7 +251,8 @@ export default {
       "hitdice.used",
       "dread",
       "coins.*.amount",
-      "inventorylist.*.(count|carried)",
+      "inventorylist.*.(count|carried|attune)",
+      "attunement.(class|misc)",
       "attacks.*.hands",
     ],
     // The container an item is in (FG's location), set by dragging it onto a backpack on the sheet.
@@ -258,6 +265,7 @@ export default {
   // House rules (the GM's Settings > House rules; FG 5E's options of the same keys, their choices and defaults).
   settings: [
     { key: "GAVE", group: "Game", label: "Rules version", kind: "select", default: "2024", options: [{ value: "2024", label: "2024" }, { value: "2014", label: "2014" }], hint: "Exhaustion and a long rest's hit dice follow this edition." },
+    { key: "HRAS", group: "Character", label: "Attunement slots", kind: "select", default: "3", options: [{ value: "3", label: "3" }, { value: "4", label: "4" }, { value: "5", label: "5" }, { value: "prof", label: "Proficiency bonus" }, { value: "2", label: "2" }], hint: "How many magic items a character may be attuned to, before class and other slots." },
     { key: "HRIS", group: "Character", label: "Inspiration", kind: "select", default: "", options: [{ value: "", label: "Standard (1)" }, { value: "2", label: "2" }, { value: "3", label: "3" }, { value: "5", label: "5" }], hint: "How many Inspiration a character may hold." },
     { key: "HRST", group: "Combat", label: "Auto death saves", kind: "toggle", default: true, hint: "A dying character rolls its death saving throw at the start of its turn." },
     { key: "NPCD", group: "Combat", label: "NPC damage", kind: "select", default: "off", options: [{ value: "off", label: "Rolled" }, { value: "fixed", label: "Fixed (average)" }] },

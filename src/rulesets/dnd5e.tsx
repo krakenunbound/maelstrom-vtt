@@ -152,3 +152,30 @@ export function Dnd5eHitDice() {
     </div>
   );
 }
+
+// FG's attunement count: the attuned items of the slots allowed (the house rule HRAS: 3, 4, 5, 2 or the
+// proficiency bonus; plus the class's and misc), red when over.
+export function Dnd5eAttunement() {
+  const { data, session, editable, change } = useSheet();
+  const tuned = (data.attunement ?? {}) as Row;
+  const rule = String((session.options as { rules?: Record<string, unknown> }).rules?.HRAS ?? "3");
+  const base = rule === "prof" ? num(data.prof) : Number(rule) || 3;
+  const allowed = base + num(tuned.class) + num(tuned.misc);
+  const used = num(tuned.used);
+  return (
+    <div className="five-attunement" data-attunement={`${used}/${allowed}`} data-over={used > allowed ? "" : undefined} title="Magic items attuned, of the slots allowed (the GM's house rule, your class's, and others)">
+      <small>Attuned</small>
+      <b className={used > allowed ? "danger" : ""}>
+        {used} / {allowed}
+      </b>
+      <label>
+        Class{" "}
+        <input type="number" className="tiny" value={num(tuned.class)} disabled={!editable} aria-label="Attunement slots from your class" onChange={(event) => change("attunement.class", Number(event.target.value) || 0)} />
+      </label>
+      <label>
+        Misc{" "}
+        <input type="number" className="tiny" value={num(tuned.misc)} disabled={!editable} aria-label="Other attunement slots" onChange={(event) => change("attunement.misc", Number(event.target.value) || 0)} />
+      </label>
+    </div>
+  );
+}
