@@ -107,14 +107,17 @@ export function BellAndHands({ session }: { session: Session }) {
   const bellSeen = useRef(session.bell?.id ?? 0);
   const handSeen = useRef(session.handRaised?.id ?? 0);
   // A whisper to this seat (not its own): a chime, unless the seat turned it off (Settings: Chime on a whisper).
-  const whispersSeen = useRef(session.chat.length);
+  // Follows the newest line, not the count: the chat keeps its last 1000 lines, so the count stops growing.
+  const whispersSeen = useRef(session.chat.at(-1));
+  const newest = session.chat.at(-1);
   useEffect(() => {
-    const fresh = session.chat.slice(whispersSeen.current);
-    whispersSeen.current = session.chat.length;
+    const at = whispersSeen.current ? session.chat.lastIndexOf(whispersSeen.current) : -1;
+    const fresh = whispersSeen.current && at < 0 ? session.chat.slice(-1) : session.chat.slice(at + 1);
+    whispersSeen.current = newest;
     const me = session.players.find((seat) => seat.id === session.selfId)?.name ?? "";
     const toMe = fresh.some((line) => Array.isArray(line.to) && line.to.length > 0 && line.id !== session.selfId && (line.to.some((name) => name.toLowerCase() === me.toLowerCase()) || (session.role === "dm" && line.to.some((name) => /^(gm|dm)$/i.test(name)))));
     if (toMe && diceStore.settings().whisperSound !== false) sound.yourTurn(session.ruleset);
-  }, [session.chat.length]);
+  }, [newest]);
   useEffect(() => {
     const bell = session.bell;
     if (!bell || bell.id === bellSeen.current) return;

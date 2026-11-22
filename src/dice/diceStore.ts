@@ -205,7 +205,7 @@ const keep = () => {
 };
 // The GM's app, which keeps these for this person (set when the seat is taken).
 let sink: ((patch: Record<string, unknown>) => void) | null = null;
-const SERVER_KEYS = ["show", "sound", "volume", "tray", "roll", "look", "npc", "damage", "color", "turnSound", "turnBanner", "turnCard", "readAloud"] as const;
+const SERVER_KEYS = ["show", "sound", "volume", "tray", "roll", "look", "npc", "damage", "color", "turnSound", "turnBanner", "turnCard", "readAloud", "whisperSound", "manualDice"] as const;
 const forServer = (from: Partial<DiceSettings>) => Object.fromEntries(SERVER_KEYS.filter((key) => from[key] !== undefined).map((key) => [key, from[key]]));
 function adopt(saved: Record<string, unknown>) {
   const look = saved.look && typeof saved.look === "object" ? fullLook(saved.look as Partial<DiceLook>) : DEFAULTS.look;
