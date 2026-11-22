@@ -29,7 +29,8 @@ const TOOLS = [
       "The campaign's story (FG's story records, with the Story Template's pages): its chapters are the list's categories. action create (name, chapter, order, blocks or text, visibility); copy (path: an adventure's story entry, as kraken_library list kind story gives it, copied into the campaign); set (id: name, chapter, order, blocks: the whole list of pages); add-block (id, kind, text (formatted text: <p>, <h>, <b>, <i>, <u>, <list><li>, <table><tr><td>, <frame> for boxed read-aloud text, <link class recordname>), text2 (columns), link, frame, color, style, at); set-block (id, at, and any of text, text2, link, frame, color, style; frame or color \"\" clears it); remove-block (id, at). Share it with kraken_record_update visibility (all, or a list of players' names).",
     inputSchema: object(
       {
-        action: { type: "string", enum: ["create", "copy", "set", "add-block", "set-block", "remove-block"] },
+        action: { type: "string", enum: ["create", "copy", "set", "add-block", "set-block", "remove-block", "generate"] },
+        template: string("generate (FG's story templates): words with [Table name], [Table name|column], [1d6] and [2x] rolled into a new story"),
         id: string("The story record (set, add-block, remove-block)"),
         name: string("Its name"),
         chapter: string("Its chapter (the story list's category)"),
@@ -63,7 +64,7 @@ const TOOLS = [
         column: string("roll: a column's label or number"),
         dice: string("roll: other dice (2d6); create, edit: the table's die (d20, d100)"),
         hide: { type: "boolean", description: "roll: for the GM alone" },
-        output: { type: "string", enum: ["", "parcel"], description: "roll: the results into a treasure parcel; edit: the table's own output" },
+        output: { type: "string", enum: ["", "parcel", "story", "encounter"], description: "roll: the results into a new treasure parcel, story or encounter (FG's table output); edit: the table's own output" },
         mod: number("The table's modifier"),
         resultscols: number("edit: how many columns"),
         labels: { type: "array", items: { type: "string" }, description: "edit: the columns' labels" },

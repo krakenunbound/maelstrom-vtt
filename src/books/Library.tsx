@@ -5,7 +5,7 @@ import type { BookInfo, LibraryItem, Session, TableRecord } from "../session/use
 import { Icon } from "../ui/icons";
 import { slotDrag } from "../ui/QuickSlots";
 import { useWindows } from "../ui/Windows";
-import { ShareMenu, TableImport, useRecordMenu } from "./RecordEditor";
+import { ShareMenu, StoryTemplate, TableImport, useRecordMenu } from "./RecordEditor";
 import { imageWindow } from "../table/imageWindow";
 
 // FG's Library for the GM's adventures: each kind in its own tab (Maps,
@@ -222,6 +222,7 @@ function CampaignRecords({ session, type, label, search }: { session: Session; t
         </button>
       </form>
       {type === "table" ? <TableImport session={session} onMade={made} /> : null}
+      {type === "story" ? <StoryTemplate session={session} onMade={made} /> : null}
       {status ? <p className="hint" role="status">{status}</p> : null}
       {rows.length === 0 ? <p className="hint">None of the campaign's own yet.</p> : null}
       {[...chapters].map(([chapter, list]) => (

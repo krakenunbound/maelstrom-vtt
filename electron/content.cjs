@@ -61,8 +61,42 @@ function cleanBlocks(blocks) {
       return out;
     });
 }
+// FG's story templates: the template's words with each [Table name] (or [Table name|column]) rolled on that table,
+// each [1d6] rolled, [2x] before a table rolling it that many times; the words a new story (the template stays).
+function storyFromTemplate(table, args) {
+  const template = String(args.template ?? "");
+  if (!template.trim()) throw new Error("What template? Words with [Table name] in them.");
+  let times = 1;
+  const filled = template.replace(/\[([^\]\[]{1,80})\]/g, (whole, inside) => {
+    const spec = String(inside).trim();
+    const many = /^(\d{1,2})x$/i.exec(spec);
+    if (many) {
+      times = Math.min(20, Number(many[1]));
+      return "";
+    }
+    if (/^[\d\s+\-dD*]+$/.test(spec) && /d/i.test(spec)) {
+      try {
+        return String(table.dice.roll(spec.replace(/\s+/g, "")).total);
+      } catch {
+        return whole;
+      }
+    }
+    const [name, column] = spec.split("|").map((part) => part.trim());
+    const target = findTable(table, { name });
+    if (!target) return whole;
+    const words = [];
+    for (let step = 0; step < times; step++) {
+      const roll = rollTable(target.data, { name: target.name, roll: (formula) => table.dice.roll(formula), find: (link) => findTable(table, link), ...(column ? { column } : {}) });
+      words.push(plainOf(resultWords(roll)));
+    }
+    times = 1;
+    return words.join(", ");
+  });
+  return storyAction(table, { action: "create", name: text(args.name) || "From a template", text: filled.split(/\n{2,}/).map((part) => `<p>${part.replace(/\n/g, "<br>")}</p>`).join("") });
+}
 function storyAction(table, args) {
   const action = String(args.action ?? "");
+  if (action === "generate") return storyFromTemplate(table, args);
   if (action === "create") {
     const blocks = cleanBlocks(args.blocks ?? (args.text ? [{ kind: "text", text: args.text }] : [{ kind: "text", text: "" }]));
     return table.records.create({ type: "story", name: text(args.name) || "New story", visibility: args.visibility ?? "gm", data: { chapter: text(args.chapter, 80), order: Number(args.order) || 0, blocks } }, table.seat);
@@ -151,7 +185,7 @@ function tableTarget(table, args, seat) {
 function rollOn(table, args, seat = table.seat, from = "GM") {
   const target = tableTarget(table, args, seat);
   const player = seat.role !== "dm";
-  if (player && args.output) throw new Error("Only the GM rolls a table into a parcel.");
+  if (player && args.output) throw new Error("Only the GM rolls a table into a parcel, a story or an encounter.");
   const roll = rollTable(target.data, { name: target.name, roll: (formula) => table.dice.roll(formula), find: (link) => findTable(table, link, seat), column: args.column, dice: args.dice, secret: args.hide === true });
   const post = (one) => {
     const links = one.results.filter((result) => result.link).map((result) => ({ class: result.link.class, recordname: result.link.recordname, name: plainOf(result.text) }));
@@ -162,7 +196,10 @@ function rollOn(table, args, seat = table.seat, from = "GM") {
   post(roll);
   const output = player ? "" : String(args.output ?? target.data.output ?? "");
   const parcel = output === "parcel" ? parcelFromRoll(table, roll) : null;
-  return { table: target.name, roll: roll.total, result: plainOf(resultWords(roll)), results: flatResults(roll).map((result) => ({ table: result.table, label: result.label, text: plainOf(result.text), link: result.link })), secret: roll.secret, ...(parcel ? { parcel: parcel.id } : {}) };
+  // FG's table output to a story (the results as a new story's text) or an encounter (the NPCs it named).
+  const story = output === "story" ? storyFromRoll(table, roll) : null;
+  const encounter = output === "encounter" ? encounterFromRoll(table, roll) : null;
+  return { table: target.name, roll: roll.total, result: plainOf(resultWords(roll)), results: flatResults(roll).map((result) => ({ table: result.table, label: result.label, text: plainOf(result.text), link: result.link })), secret: roll.secret, ...(parcel ? { parcel: parcel.id } : {}), ...(story ? { story: story.id } : {}), ...(encounter ? { encounter: encounter.id } : {}) };
 }
 function tableAction(table, args, seat = table.seat, from = "GM") {
   const action = String(args.action ?? "roll");
@@ -232,6 +269,25 @@ function identify(table, { id, item, on = true, name, notes }) {
 // identification kept) and coins in the game's money.
 function newParcel(table, name) {
   return table.records.create({ type: "treasureparcel", name: text(name) || "Treasure", visibility: "gm", data: { itemlist: {}, coinlist: {} } }, table.seat);
+}
+// A roll into a new story (FG's output Story): each result a paragraph, its table's column label before it.
+function storyFromRoll(table, roll) {
+  const lines = flatResults(roll).map((result) => `<p>${result.label ? `<b>${plainOf(result.label)}:</b> ` : ""}${plainOf(result.text)}</p>`);
+  return storyAction(table, { action: "create", name: `[ROLL] ${roll.name}`, text: lines.join("") || "<p>-</p>" });
+}
+// A roll into a new encounter (FG's output Enc.): each result that links an NPC, its count the number the text begins
+// with ("2 Goblins"), else 1.
+function encounterFromRoll(table, roll) {
+  const npclist = {};
+  let n = 0;
+  for (const result of flatResults(roll)) {
+    const record = result.link ? table.records.get(result.link.recordname) : null;
+    if (record?.type !== "npc") continue;
+    const count = /^\s*(\d+)/.exec(plainOf(result.text))?.[1] ?? "1";
+    n += 1;
+    npclist[`id-${String(n).padStart(5, "0")}`] = { name: record.name, count, faction: "foe", link: { class: "npc", recordname: record.id } };
+  }
+  return table.records.create({ type: "battle", name: `[ROLL] ${roll.name}`, visibility: "gm", data: { npclist } }, table.seat);
 }
 function parcelFromRoll(table, roll) {
   const parcel = newParcel(table, `[ROLL] ${roll.name}`);

@@ -110,6 +110,47 @@ export function SettingsWindow({ session }: { session: Session }) {
                 Your Maelstrom folder
               </button>
             ) : null}
+            {/* FG's Export and Import Campaign Options: the table's settings (house rules, combat, tokens, chat) as a file. */}
+            <button
+              type="button"
+              className="settings-button"
+              data-setting="settings-export"
+              title="Save the table's settings (house rules, combat, tokens, chat, look) as a file, to load into another campaign"
+              onClick={() => {
+                const { paused: _paused, ...kept } = session.options as Record<string, unknown>;
+                const file = new Blob([JSON.stringify({ maelstromSettings: 1, options: kept }, null, 2)], { type: "application/json" });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(file);
+                link.download = "maelstrom-settings.json";
+                link.click();
+                URL.revokeObjectURL(link.href);
+              }}
+            >
+              Export settings
+            </button>
+            <label className="settings-button" data-setting="settings-import" title="Load a settings file saved by Export settings (it replaces these settings)">
+              Import settings
+              <input
+                type="file"
+                accept=".json,application/json"
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = "";
+                  if (!file) return;
+                  void file.text().then((words) => {
+                    try {
+                      const loaded = JSON.parse(words) as { maelstromSettings?: number; options?: Record<string, unknown> };
+                      if (loaded.maelstromSettings !== 1 || !loaded.options || typeof loaded.options !== "object") throw new Error("not a settings file");
+                      const { paused: _paused, ...options } = loaded.options;
+                      session.setTableOptions(options as never);
+                    } catch {
+                      window.alert("That is not a Maelstrom settings file.");
+                    }
+                  });
+                }}
+              />
+            </label>
             {window.kraken?.openLogs ? (
               <button type="button" className="settings-button" data-setting="open-logs" title="Maelstrom's logs: what went wrong in the table server and in this window (the newest three files of each), for a bug report" onClick={() => void window.kraken?.openLogs?.()}>
                 Open logs

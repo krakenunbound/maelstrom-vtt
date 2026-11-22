@@ -345,6 +345,28 @@ FG's 5E party sheet (`ps_*` in CoreRPG and 5E's `manager_ps2.lua`) against Maels
 | Rests (not on FG's sheet) | Short and long rest for the party | Better |
 | Bastion tab (HRBASTION): facilities, orders, turns, log | Not found | Missing (2024) |
 
+## 8. GM tools
+
+FG's calendar, random tables, encounters, effects window, sound sets, item forge and importers, Options
+and utility windows, and player management against Maelstrom's.
+
+| FG control | Maelstrom | Verdict |
+|---|---|---|
+| Calendar: modules' calendars, date, era, time by Ctrl+wheel, to chat, set today, journal per day (player and GM notes), all journals | Eight calendars, date and time, +1h / +8h, rests move it, say date, set today, notes per day (players' and GM's) | Better (time moves with rests) |
+| Calendar: holidays by name on their days | Festival months | Partly (no named holidays on days) |
+| Tables: add by size, import from text, columns, ranges, links, nested rolls, `[1d6]`, `[2x]`, hide results, /rollon | The same; import from pasted text | Same |
+| Tables: output to chat, story, parcel or encounter | Output on the roll bar: chat, a new story, parcel or encounter (the NPCs it names, counted) | Same |
+| Encounters: NPCs, counts, faction, ID name, tokens placed, CR, XP, add to tracker, Quick Map | NPCs, counts (dice), faction, players' name, placed spots, XP, add to tracker, end | Partly (no CR) |
+| Random encounters: dice counts, Generate a new encounter | Dice counts rolled when added | Partly (no Generate) |
+| Effects window: lights, conditions, custom effects, click or drag to apply, GM-only, expiry, units, apply mode | Conditions, buffs, debuffs, lights, your own; click or drag; who may add | Partly (no units or apply mode on custom effects) |
+| Sound sets: triggers by chat pattern, content sounds on a record, Syrinscape | Sound window: library, triggers on hidden rolls, scene sounds, map sounds, playlists, Syrinscape | Better |
+| Item templates, Item Forge (base items and magic templates make new items) | Not found | Missing |
+| NPC import from stat block text; species import from text | Character import from files | Missing |
+| Story templates: text with `[Table]` rolls generates a story | Story list: From a template: `[Table]`, `[Table\|column]`, `[1d6]`, `[2x]` rolled into a new story | Same |
+| Options: groups, per user and GM, export and import a set | Settings: you, the table, combat, tokens, house rules; Export settings and Import settings | Same |
+| Currencies (name, weight, value), languages, MOTD, Setup, Token Lights, decal | Currency names, languages, MOTD, lights in Effects, decal, wallpaper, GM icon, themes | Partly (no coin weight or value) |
+| Player management: whisper, ring, kick, AFK, release, identities, module player load | The same, view as, ban, accounts, pause | Better |
+
 ## How house rules work in Maelstrom
 
 A game declares its house rules in its manifest (`settings` with a `key`: a switch
@@ -356,6 +378,10 @@ Any game can add its own the same way; nothing in the core names a game.
 
 ## Status
 
-Options: listed from FG's ruleset files; Maelstrom's side from its table options,
-Settings and code. The **Check live** rows and every area after Options need FG
-open on the 5E campaign through the bridge, side by side with Maelstrom.
+All eight areas are compared, read from FG's ruleset files (CoreRPG and 5E) and
+Maelstrom's code, and what was missing is built (each area's commits name its
+check script). Still missing, by size: FG's module export from a campaign, the
+Item Forge and item templates, NPC and species import from stat-block text, the
+2024 Bastion tab, named holidays on calendar days, a random-encounter Generate,
+module sets, and the rows marked Partly. The **Check live** rows want FG open on
+the 5E campaign through the bridge, side by side with Maelstrom.

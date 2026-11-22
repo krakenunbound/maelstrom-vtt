@@ -353,12 +353,14 @@ export function TableRollBar({ session, record, book }: { session: Session; reco
   const labels = labelsOf(record.data);
   const [column, setColumn] = useState("");
   const [hide, setHide] = useState(Number(record.data.hiderollresults) === 1);
+  // FG's table output: the chat alone, or a new story, parcel or encounter made of the results too.
+  const [output, setOutput] = useState(String(record.data.output ?? ""));
   const [last, setLast] = useState("");
   const inCampaign = Boolean(session.records[record.id]);
   const roll = () =>
     session
-      .content<{ result: string; roll: number }>("table-roll", { action: "roll", ...(inCampaign ? { id: record.id } : { data: record.data, name: record.name, book }), column, hide })
-      .then((result) => setLast(`${result.roll}: ${result.result}`))
+      .content<{ result: string; roll: number; parcel?: string; story?: string; encounter?: string }>("table-roll", { action: "roll", ...(inCampaign ? { id: record.id } : { data: record.data, name: record.name, book }), column, hide, ...(gm && output ? { output } : {}) })
+      .then((result) => setLast(`${result.roll}: ${result.result}${result.story ? " (a new story)" : result.parcel ? " (a new parcel)" : result.encounter ? " (a new encounter)" : ""}`))
       .catch((error) => setLast(error instanceof Error ? error.message : "Could not roll that."));
   return (
     <div className="table-roll-bar" data-table-roll={record.id}>
@@ -373,6 +375,14 @@ export function TableRollBar({ session, record, book }: { session: Session; reco
               {label || `Column ${index + 1}`}
             </option>
           ))}
+        </select>
+      ) : null}
+      {gm ? (
+        <select aria-label="Output" data-action="table-output" value={output} onChange={(event) => setOutput(event.target.value)} title="Where the results go besides the chat">
+          <option value="">Chat</option>
+          <option value="story">A new story</option>
+          <option value="parcel">A new parcel</option>
+          <option value="encounter">A new encounter</option>
         </select>
       ) : null}
       {gm ? (
@@ -487,6 +497,37 @@ export function TableEditor({ session, record }: { session: Session; record: Tab
 }
 
 // FG's Import Table: pasted rows into a new table.
+// FG's story templates: words with [Table name] (or [Table name|column]), [1d6] and [2x] rolled into a new story.
+export function StoryTemplate({ session, onMade }: { session: Session; onMade: (record: TableRecord) => void }) {
+  const [name, setName] = useState("");
+  const [template, setTemplate] = useState("");
+  const [status, setStatus] = useState("");
+  return (
+    <details className="table-import">
+      <summary>From a template</summary>
+      <input value={name} onChange={(event) => setName(event.target.value)} placeholder="The story's name" aria-label="Story from a template: its name" />
+      <textarea value={template} onChange={(event) => setTemplate(event.target.value)} placeholder={["The tavern is called [Tavern Names].", "", "Tonight [1d4] [Patrons] drink here."].join(String.fromCharCode(10))} aria-label="The template" rows={6} />
+      <button
+        type="button"
+        data-action="story-generate"
+        disabled={!template.trim()}
+        onClick={() =>
+          void session
+            .content<TableRecord>("story", { action: "generate", name: name.trim(), template })
+            .then((record) => {
+              setStatus("");
+              onMade(record);
+            })
+            .catch((error: unknown) => setStatus(error instanceof Error ? error.message : "Could not make it."))
+        }
+      >
+        Generate
+      </button>
+      {status ? <p className="hint" role="status">{status}</p> : null}
+    </details>
+  );
+}
+
 export function TableImport({ session, onMade }: { session: Session; onMade: (record: TableRecord) => void }) {
   const [name, setName] = useState("");
   const [text, setText] = useState("");
