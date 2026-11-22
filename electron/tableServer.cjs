@@ -1055,7 +1055,8 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     tableOptions: () => options,
     onRegion: (event) => regionSprang(event, false),
     // On the combat tracker (by its token, or a character's record): its path this turn is drawn.
-    onTracker: (token) => combat.entries().some((entry) => entry.tokenId === token.id || (token.recordId && !entry.tokenId && entry.recordId === token.recordId)),
+    // A turn's path shows while the fight is on (moves made before it, the GM setting the scene, are no one's turn).
+    onTracker: (token) => Boolean(combat.active?.()) && combat.entries().some((entry) => entry.tokenId === token.id || (token.recordId && !entry.tokenId && entry.recordId === token.recordId)),
     // A token's side changed (its menu, a tool): its tracker entry follows.
     onHidden: (token) => {
       for (const entry of combat.entries()) if (entry.tokenId === token.id && Boolean(entry.hidden) !== Boolean(token.hidden)) combat.update(entry.id, { hidden: Boolean(token.hidden) }, { role: "dm", name: "GM" });
@@ -1303,6 +1304,8 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   function turnStarted() {
     const now = combat.active?.() ?? null;
     if (now === turnOf) return;
+    // The fight begins: the moves made before it are no turn's path.
+    if (now && !turnOf) for (const token of map.tokens()) map.clearPath(token.id);
     turnOf = now;
     const entry = combat.entries().find((item) => item.id === now);
     if (!entry) return;

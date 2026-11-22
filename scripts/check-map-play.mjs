@@ -2,7 +2,7 @@
 // diagonal rule; FG's token options (who sees names and health, unidentified
 // names); fog of war kept on the host per player; senses beyond darkvision
 // (blindsight, tremorsense, truesight, Devil's Sight) and magical darkness;
-// undoing a move and this turn's path; the GM approving locked moves;
+// undoing a move and this turn's path (drawn only while the fight is on); the GM approving locked moves;
 // elevation; Map Studio's regions at the table (traps, difficult terrain,
 // teleports). Each through the table messages and the agent tools.
 import "./loopback.mjs";
@@ -259,14 +259,18 @@ try {
   await latest(ann, "map", (m) => m.tokens.some((t) => t.id === annToken.id && t.x === 75 && t.undo === undoable - 1), "Ann's last step undone");
   const path = await tool("kraken_token_move", { id: annToken.id, path: true });
   assert(path.moves.length === undoable - 1 && path.moves.at(-1).to.x === 75, `her path: ${JSON.stringify(path)}`);
-  // On the tracker her path is drawn; when her turn begins it starts again.
+  // On the tracker before the fight: no path (setting the scene is no one's turn). Her turn begins: the path starts
+  // again, and her walk in it is drawn.
   const entry = (await tool("kraken_combat", { action: "add", recordId: annRecord.id })).entries?.find?.((item) => item.recordId === annRecord.id) ?? server.agent.combat.entries().find((item) => item.recordId === annRecord.id);
   assert(entry, "Ann's character on the tracker");
-  const onTracker = server.agent.viewFor("Ann").tokens.find((t) => t.id === annToken.id);
-  assert(onTracker.path?.length === undoable * 2 && onTracker.path.at(-2) === 75, `her path on the tracker: ${JSON.stringify(onTracker.path)}`);
+  assert(!server.agent.viewFor("Ann").tokens.find((t) => t.id === annToken.id).path, "on the tracker, no fight yet: no path drawn");
   await tool("kraken_combat", { action: "set-turn", id: entry.id });
   for (let tries = 0; tries < 50 && server.agent.map.path(annToken.id).length; tries += 1) await wait(20);
   assert(server.agent.map.path(annToken.id).length === 0, "her turn begins: the path starts again");
+  ann.send({ type: "token-move", id: annToken.id, x: 125, y: 225 });
+  const inTurn = await latest(ann, "map", (m) => m.tokens.some((t) => t.id === annToken.id && t.x === 125 && t.path), "Ann's step in her turn");
+  const drawn = inTurn.tokens.find((t) => t.id === annToken.id).path;
+  assert(drawn.length === 4 && drawn.at(-2) === 125, `her turn's path drawn: ${JSON.stringify(drawn)}`);
   await tool("kraken_combat", { action: "end" });
   // The GM undoes anyone's move.
   await tool("kraken_token_move", { id: gob.id, col: 0, row: 0 });
