@@ -622,6 +622,15 @@ export function ChatDock({ session }: { session: Session }) {
     .filter((record) => record.type === "character" && (session.role === "dm" ? !record.owner || record.owner === me : record.owner === me))
     .map((record) => record.name)
     .sort();
+  // FG's Set GM voice to active CT (CTAV): the GM speaks as the creature whose turn it is (not a character),
+  // and as the GM again on a character's turn.
+  const activeEntry = session.combat.entries.find((entry) => entry.id === session.combat.active);
+  const voiceFollows = session.role === "dm" && Boolean((session.options as { gmVoiceActive?: boolean }).gmVoiceActive);
+  const activeVoice = voiceFollows && activeEntry && session.records[activeEntry.recordId ?? ""]?.type !== "character" ? activeEntry.name : "";
+  useEffect(() => {
+    if (voiceFollows) setSpeakAs(activeVoice);
+  }, [activeVoice, voiceFollows]);
+  const voices = activeVoice && !myCharacters.includes(activeVoice) ? [activeVoice, ...myCharacters] : myCharacters;
   const mineKey = myCharacters.join("|");
   const known = useRef<string[]>([]);
   useEffect(() => {
@@ -1205,9 +1214,9 @@ export function ChatDock({ session }: { session: Session }) {
           <Icon name="chat" />
         </button>
       </form>
-      {myCharacters.length > 0 ? (
+      {voices.length > 0 ? (
         <select className="chat-identity" aria-label="Speak as" value={speakAs} onChange={(event) => setSpeakAs(event.target.value)} title="Who you speak and roll as">
-          {myCharacters.map((name) => (
+          {voices.map((name) => (
             <option key={name} value={name}>
               {name}
             </option>

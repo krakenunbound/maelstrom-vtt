@@ -72,6 +72,8 @@ function diceSettings(patch: DiceSettingsPatch) {
     ...(typeof patch.turnSound === "boolean" ? { turnSound: patch.turnSound } : {}),
     ...(typeof patch.turnBanner === "boolean" ? { turnBanner: patch.turnBanner } : {}),
     ...(typeof patch.readAloud === "boolean" ? { readAloud: patch.readAloud } : {}),
+    ...(typeof patch.whisperSound === "boolean" ? { whisperSound: patch.whisperSound } : {}),
+    ...(typeof patch.manualDice === "boolean" ? { manualDice: patch.manualDice } : {}),
     ...(key === "look" ? { look } : patch.same ? { [key]: null } : changes ? { [key]: look } : {}),
   });
   const now = diceStore.settings();

@@ -159,7 +159,7 @@ export const PRESETS: ({ name: string } & DiceLook)[] = [
 // they follow them to any browser, past a reload, a restart and signing in again.
 // readAloud: the GM's read-aloud also shown on this screen as a bubble (off: only in chat).
 // turnCard: whose turn it is (a portrait card) for every turn. turnSound, turnBanner: when this person's turn comes round on the combat tracker, a chime, and a banner across the screen.
-export type DiceSettings = { show: boolean; sound: boolean; volume: number; tray: number; roll: number; look: DiceLook; npc: DiceLook | null; damage: DiceLook | null; color: string | null; turnSound: boolean; turnBanner: boolean; turnCard?: boolean; readAloud?: boolean };
+export type DiceSettings = { show: boolean; sound: boolean; volume: number; tray: number; roll: number; look: DiceLook; npc: DiceLook | null; damage: DiceLook | null; color: string | null; turnSound: boolean; turnBanner: boolean; turnCard?: boolean; readAloud?: boolean; whisperSound?: boolean; manualDice?: boolean };
 export type DiceSet = "look" | "npc" | "damage";
 type SettingsPatch = Partial<Omit<DiceSettings, "look" | "npc" | "damage">> & { look?: Partial<DiceLook>; npc?: Partial<DiceLook> | null; damage?: Partial<DiceLook> | null };
 const { name: _first, ...firstLook } = PRESETS.find((preset) => preset.name === "Classic Ruby") ?? PRESETS[0];
@@ -221,6 +221,10 @@ function adopt(saved: Record<string, unknown>) {
     damage: other(saved.damage),
     color: typeof saved.color === "string" ? saved.color : null,
     turnSound: typeof saved.turnSound === "boolean" ? saved.turnSound : DEFAULTS.turnSound,
+    // FG's Speech: Play sound on whisper (CWHR, on): a chime when a whisper comes to you.
+    whisperSound: typeof saved.whisperSound === "boolean" ? saved.whisperSound : true,
+    // FG's Dice: Manual entry (MANUALROLL, off): a roll asks for the faces of this person's own dice.
+    manualDice: saved.manualDice === true,
     turnBanner: typeof saved.turnBanner === "boolean" ? saved.turnBanner : DEFAULTS.turnBanner,
     ...(typeof saved.turnCard === "boolean" ? { turnCard: saved.turnCard } : {}),
     ...(typeof saved.readAloud === "boolean" ? { readAloud: saved.readAloud } : {}),

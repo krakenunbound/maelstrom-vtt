@@ -1135,18 +1135,26 @@ export function useSession() {
   const roll = useCallback((formula: string, label = "", tag = "", tower = false, mode: RollMode = "public", as = "") => {
     const socket = socketRef.current;
     if (!formula.trim() || !socket || socket.readyState !== WebSocket.OPEN) return;
-    socket.send(
-      JSON.stringify({
-        type: "roll",
-        formula: formula.trim().slice(0, 200),
-        label: label.slice(0, 120),
-        ...(tag ? { tag } : {}),
-        ...(tower ? { tower: true } : {}),
-        ...(mode !== "public" ? { mode } : {}),
-        ...(as ? { as } : {}),
-        ...throwIntent(),
-      }),
-    );
+    const send = (manual: number[] | null) =>
+      socket.send(
+        JSON.stringify({
+          type: "roll",
+          formula: formula.trim().slice(0, 200),
+          label: label.slice(0, 120),
+          ...(tag ? { tag } : {}),
+          ...(tower ? { tower: true } : {}),
+          ...(mode !== "public" ? { mode } : {}),
+          ...(as ? { as } : {}),
+          ...(manual?.length ? { manual } : {}),
+          ...throwIntent(),
+        }),
+      );
+    // FG's manual entry (this person's Settings): the faces their own dice show; cancelled, no roll. Not for the tower.
+    if (!tower && diceStore.settings().manualDice) {
+      void import("../dice/ManualDice").then(({ manualDice }) => manualDice.ask(formula.trim()).then((values) => values !== null && send(values)));
+      return;
+    }
+    send(null);
   }, []);
 
   // The creation wizard's character: the host builds it and answers with its id.

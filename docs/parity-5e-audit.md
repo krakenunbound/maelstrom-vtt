@@ -41,15 +41,15 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 | FG option | FG default | Maelstrom | Verdict |
 |---|---|---|---|
 | Desktop: Show PCs (CLSH) | all | Portrait bar | Check live (FG: all, owned, off) |
-| Chat: Set GM voice to active CT (CTAV) | off | GM's speaking-as picker | Missing (follow the active creature) |
+| Chat: Set GM voice to active CT (CTAV) | off | `gmVoiceActive`: the GM speaks as the creature whose turn it is (not a character), then back | Done |
 | Desktop: Background decal position (DECALPOS) | center | Decal always centred | Missing |
-| Dice: Limit rolls to chat window (DRMO) | off | Dice roll on the table | Missing |
+| Dice: Limit rolls to chat window (DRMO) | off | `diceInChat`: no 3D dice, rolls straight to chat | Done |
 | Game: Rules Version (GAVE) | 2024 | House rule: exhaustion and a long rest's hit dice follow it (the tracker mixed 2024 exhaustion with 2014 rests before) | Done |
 | Party Sheet (Player): Show inventory details (PSIN) | off | Party sheet | Check live |
 | Party Sheet (Player): Show character details (PSMN) | off | Party sheet | Check live |
-| Chat: Show GM rolls (REVL) | on | Roll mode (public, GM, tower) | Check live |
-| Chat: Show all whispers to GM (SHPW) | off | Not found | Missing |
-| Chat: Show results to players (SHRR) | on | Results shown | Check live (hiding them) |
+| Chat: Show GM rolls (REVL) | on | `revealGmRolls`: off, the GM's own rolls go to the GM alone (the roll mode and tower stay as they were) | Done |
+| Chat: Show all whispers to GM (SHPW) | off | `gmSeesWhispers`; before, the GM always saw every whisper | Done |
+| Chat: Show results to players (SHRR) | on | `resultsToPlayers`: on, with an ally, between allies, off. Hidden, the GM gets the full line and players the roll without HIT/MISS; a hidden creature's results never shown | Done |
 | Sound: Enable (SOUND) | on | Sound volume and mute | Same |
 | Desktop: Show dice tower (TBOX) | off | Dice tower, GM-only by default, options | Same |
 
@@ -81,7 +81,7 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 | FG option | FG default | Maelstrom | Verdict |
 |---|---|---|---|
 | Speech: Display location (CHATMAP) | image | Speech bubbles on the map | Check live |
-| Speech: Play sound on whisper (CWHR) | on | Not found | Missing |
+| Speech: Play sound on whisper (CWHR) | on | `whisperSound`, each person's own | Done |
 | Desktop: Combat actions (TOAST_COMBAT) | off | Table toasts | Check live |
 | Desktop: Interface actions (TOAST_INTERFACE) | off | Table toasts | Check live |
 | Desktop: Display location (TOAST_LOCATION) | | Not found | Missing |
@@ -98,7 +98,7 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 | Desktop: Combat list size (DESKTOPCTSIZE) | 6 | Not found | Check live |
 | Effect: Short summary display (EFFSHORT) | on | Effects on the tracker | Check live |
 | Input: Use Alt key for game actions (KALT) | on | Not found | Check live |
-| Dice: Manual entry (MANUALROLL) | off | Not found | Missing (type your physical dice) |
+| Dice: Manual entry (MANUALROLL) | off | `manualDice`, each person's own: a dialog for the faces, the host rolls with them, [MANUAL] in chat | Partly (tray and chat rolls; sheet and tracker rolls to follow) |
 | Combat: Remove on miss (RMMT) | multi | `clearTargets` (never, action, turn) | Partly (on a miss) |
 | Desktop: Restore windows on start (WSAV) | on | Windows remembered | Check live |
 

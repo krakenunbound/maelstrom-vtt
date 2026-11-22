@@ -4,6 +4,7 @@ import type { Seat, Session } from "../session/useSession";
 import { sound } from "../sound/soundEngine";
 import { Icon } from "./icons";
 import { startWhisper } from "./ChatDock";
+import { diceStore } from "../dice/diceStore";
 import "./session.css";
 import { cssRect, cssX, cssY, pageZoom } from "./pageZoom";
 import { GM } from "./gmTitle";
@@ -105,6 +106,15 @@ export function BellAndHands({ session }: { session: Session }) {
   const [flash, setFlash] = useState<{ id: number; text: string } | null>(null);
   const bellSeen = useRef(session.bell?.id ?? 0);
   const handSeen = useRef(session.handRaised?.id ?? 0);
+  // A whisper to this seat (not its own): a chime, unless the seat turned it off (Settings: Chime on a whisper).
+  const whispersSeen = useRef(session.chat.length);
+  useEffect(() => {
+    const fresh = session.chat.slice(whispersSeen.current);
+    whispersSeen.current = session.chat.length;
+    const me = session.players.find((seat) => seat.id === session.selfId)?.name ?? "";
+    const toMe = fresh.some((line) => Array.isArray(line.to) && line.to.length > 0 && line.id !== session.selfId && (line.to.some((name) => name.toLowerCase() === me.toLowerCase()) || (session.role === "dm" && line.to.some((name) => /^(gm|dm)$/i.test(name)))));
+    if (toMe && diceStore.settings().whisperSound !== false) sound.yourTurn(session.ruleset);
+  }, [session.chat.length]);
   useEffect(() => {
     const bell = session.bell;
     if (!bell || bell.id === bellSeen.current) return;

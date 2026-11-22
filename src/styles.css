@@ -1189,3 +1189,13 @@ button.link { background: none; border: none; color: var(--brass); padding: 0; t
 .coin-credit i { border-radius: 5px; color: #e8f6ff; background: linear-gradient(135deg, #3aa0e0, #1b4f86); }
 .coin-gem i { border-radius: 3px; rotate: 45deg; inline-size: 16px; block-size: 16px; background: linear-gradient(135deg, #b7f0ff, #4fd1c5 40%, #6f4fb0); }
 .parcel-coins label { display: inline-flex; align-items: center; gap: 4px; }
+
+/* Manual dice entry (a person's own Settings): the faces their dice show, one box a die. */
+dialog.manual-dice { width: min(420px, calc(100vw - 32px)); padding: 18px 20px; border-radius: 12px; border: 1px solid var(--line); background: var(--bar); color: var(--text); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.7); }
+dialog.manual-dice:modal { overscroll-behavior: contain; }
+dialog.manual-dice::backdrop { background: rgba(3, 5, 8, 0.6); overflow: hidden; overscroll-behavior: contain; }
+.manual-dice h3 { margin: 0 0 12px; font-family: var(--display); font-size: 1.05rem; letter-spacing: 0.04em; color: var(--gold); }
+.manual-dice-faces { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.manual-dice-faces label { display: grid; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+.manual-dice-faces input { width: 100%; box-sizing: border-box; font-size: 1.1rem; text-align: center; }
+.manual-dice-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }

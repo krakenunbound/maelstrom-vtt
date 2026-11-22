@@ -13,6 +13,8 @@ Opens the **Dice** window: your dice sets, colours, design, material, lettering,
 - **Your colour:** rings your tokens and colours your pings and drawings, so everyone knows who is who. **Auto** takes the table's colour for your name, or pick any colour.
 - **Chime on your turn:** a soft chime when your turn comes round in combat.
 - **Banner on your turn:** your name across the screen when it is your turn.
+- **Chime on a whisper:** a soft chime when someone whispers to you.
+- **Type in my own dice:** for real dice at the table. A roll from the tray or the chat asks for the faces your dice show, and the roll uses them; chat marks it **[MANUAL]**. Sheet and tracker rolls still roll themselves.
 
 ### Ability cards
 
@@ -50,6 +52,11 @@ Decals, wallpapers and GM icons each offer Maelstrom's own, a set for each game,
 - **Dice tower on the table:** the tower stands apart from the chat, for everyone; each person places it where they like. Off, it sits in the chat.
 - **The tower's look:** six drawn looks, painted towers, or a picture of your own.
 - **Dice stay on the table:** seconds the landed dice stay before they fade, for everyone.
+- **Dice roll in the chat only:** no 3D dice on the table; every roll goes straight to the chat.
+- **Players see your rolls:** off, the rolls you make yourself go to you alone.
+- **Players see results:** whether players see if your creatures' attacks hit and what their saves were: always, when an ally is in it, only between allies, or never. Players still see the roll, without its result. A hidden creature's results are never shown.
+- **See players' whispers to each other:** off by default; on, you see every whisper.
+- **Speak as the creature whose turn it is:** in a fight, what you say in chat comes from the creature whose turn it is (not a player's character), and goes back to you after.
 
 ### Combat
 

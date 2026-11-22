@@ -377,6 +377,14 @@ function savedOptions(value) {
     woundCategories: options.woundCategories === "detailed" ? "detailed" : "simple",
     healthColors: options.healthColors === "tiered" ? "tiered" : "gradient",
     turnEffects: ["all", "conditions", "off"].includes(options.turnEffects) ? options.turnEffects : "conditions",
+    // FG's chat options: the GM's rolls shown to players (REVL, on), results shown to players (SHRR: on, pc when an
+    // ally is involved, pconly between allies alone, off), the GM sees players' whispers to each other (SHPW, off).
+    ...(options.revealGmRolls === false ? { revealGmRolls: false } : {}),
+    resultsToPlayers: ["on", "pc", "pconly", "off"].includes(options.resultsToPlayers) ? options.resultsToPlayers : "on",
+    ...(options.gmSeesWhispers ? { gmSeesWhispers: true } : {}),
+    // FG's Set GM voice to active CT (CTAV) and Limit rolls to chat window (DRMO).
+    ...(options.gmVoiceActive ? { gmVoiceActive: true } : {}),
+    ...(options.diceInChat ? { diceInChat: true } : {}),
     // The game's house rules (its manifest's settings: 5E's auto death saves, fixed NPC damage...): key -> the
     // GM's choice; read through houseRule(), which holds them to the manifest's own choices.
     ...(options.rules && typeof options.rules === "object" && !Array.isArray(options.rules)
@@ -1394,11 +1402,13 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     // A self roll (Foundry's /selfroll) is the roller's alone.
     const sentIt = client.id === line.id || (typeof line.sentBy === "string" && line.sentBy === seatKey(client));
     if (line.self) return sentIt;
-    // A whisper: who sent it, who it is to, and the GM (as FG's GM sees every whisper).
-    // A whisper to a character reaches whoever holds it.
+    // A whisper: who sent it and who it is to; the GM when it is to or from the GM, sent by the table itself, or the
+    // GM chose to see players' whispers. A whisper to a character reaches whoever holds it.
     if (line.to)
       return (
-        client.role === "dm" ||
+        // FG's Show all whispers to GM (SHPW, off): the GM sees players' whispers to each other only when on; a
+        // whisper to or from the GM always.
+        (client.role === "dm" && (options.gmSeesWhispers || line.id === "agent" || line.to.some((name) => /^(gm|dm)$/i.test(String(name))) || line.sentBy === "@gm")) ||
         sentIt ||
         // To a seat by its name (a player, the GM's "GM"): that seat; otherwise to whoever holds the character of that name.
         line.to.some((name) => sameName(name, client.name) || (!RESERVED_NAMES.has(String(name).toLowerCase()) && ![...clients.values()].some((seat) => sameName(seat.name, name)) && records.list({ type: "character", owner: client.name }).some((record) => sameName(name, record.name))))
@@ -2871,6 +2881,12 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       if (msg.type === "roll") {
         // The tray's and /roll's: a plain roll for the modifier box, whatever its label says.
         const PLAIN = { modKind: "roll" };
+        // FG's manual entry (the roller's own setting): the faces their own dice showed, rolled as given; marked.
+        const manual = Array.isArray(msg.manual) ? msg.manual.slice(0, 40).map((value) => Math.round(Number(value))).filter((value) => Number.isFinite(value) && value >= 1 && value <= 1000) : [];
+        if (manual.length && !msg.tower) {
+          dice.force(manual);
+          msg.label = `${text(msg.label, "")} [MANUAL]`.trim();
+        }
         try {
           // The dice tower, as FG's: the GM's roll, marked [TOWER]. Its roller sees
           // what went in (FG's line with the dice, no result) unless the GM
@@ -2893,9 +2909,12 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
             // Foundry's /selfroll: the roller alone.
             const result = actRoll(msg.formula, "roll", text(msg.label, ""));
             addChat({ id: client.id, from: client.name, text: "", roll: { ...result, label: text(msg.label, "").slice(0, 160) }, at: Date.now(), self: true });
-          } else rollDice(msg.formula, msg.label, client.role === "dm" ? (msg.as ? text(msg.as, "").slice(0, 24) : client.name) : speaksAs(client, msg.as) || client.name, client.id, msg.tag, false, PLAIN);
+          } else rollDice(msg.formula, msg.label, client.role === "dm" ? (msg.as ? text(msg.as, "").slice(0, 24) : client.name) : speaksAs(client, msg.as) || client.name, client.id, msg.tag, client.role === "dm" && options.revealGmRolls === false, PLAIN);
         } catch (error) {
           send(ws, { type: "error", reason: error instanceof Error ? error.message : "Could not roll that." });
+        } finally {
+          // Faces given and not used (a formula with fewer dice) never reach the next roll.
+          if (manual.length) dice.clearForced?.();
         }
         return;
       }
@@ -4116,8 +4135,11 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     // A seat's modifier stack (FG's modifier box): view, add, remove, set, clear, key (who: a player's name; the GM's by default).
     modifiers: (args = {}, who = "@gm") => modifiers.act(!who || who === "GM" ? "@gm" : who, args),
     // Posts a roll already made (an attack decides HIT or MISS before its card goes out).
-    postRoll: (result, label, from = "Agent", secret = false, extra = null) =>
-      addChat({ id: "agent", from: text(from, "Agent").slice(0, 24), text: "", roll: { ...result, label: text(edgeTagged(result, label), "").slice(0, 160), ...(extra ?? {}) }, at: Date.now(), ...(secret ? { secret: true } : {}) }),
+    // extra.playersOnly: the players' own line (the GM has the full one), FG's results hidden from players.
+    postRoll: (result, label, from = "Agent", secret = false, extra = null) => {
+      const { playersOnly, ...rollExtra } = extra ?? {};
+      return addChat({ id: "agent", from: text(from, "Agent").slice(0, 24), text: "", roll: { ...result, label: text(edgeTagged(result, label), "").slice(0, 160), ...rollExtra }, at: Date.now(), ...(secret ? { secret: true } : {}), ...(playersOnly ? { playersOnly: true } : {}) });
+    },
     // A chat line with a link (a record, a page, a picture), or the GM's Share of a record's text.
     sayLink: (line, link, { from = "Agent", share = false, secret = false, extra = {} } = {}) => {
       const clean = cleanSlot(link);

@@ -1687,7 +1687,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       }
       const verdict = crit ? `CRITICAL HIT x${mult}` : die === 1 ? "AUTOMATIC MISS" : hit ? (confirm ? "HIT (threat not confirmed)" : "HIT") : "MISS";
       const label = `[ATTACK]${kind} ${plan.name}${full && swings.length > 1 ? ` #${index + 1}` : ""} [AC ${ac}] [${verdict} ${rolled.total} vs ${ac}]${confirm ? ` [CONFIRM ${confirm.total}]` : ""} -> [at ${target.name}]`;
-      table().postRoll(rolled, label, from, Boolean(target.hidden), { result: crit ? "CRITICAL" : hit ? "HIT" : "MISS", by: plan.actor, against: ac, target: target.name });
+      postResult(rolled, label, `[ATTACK] ${plan.name} -> [at ${target.name}]`, from, Boolean(target.hidden) || gmSecret(plan.entry), { result: crit ? "CRITICAL" : hit ? "HIT" : "MISS", by: plan.actor, against: ac, target: target.name }, plan.entry, target);
       if (source) {
         const now = crit ? { crit: mult } : hit ? "hit" : "miss";
         // A full attack's hits on one target add up: each hit is its own damage roll.
@@ -1831,7 +1831,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       const hit = die === 20 || (die !== 1 && rolled.total >= need);
       const verdict = die === 20 ? "AUTOMATIC HIT" : die === 1 ? "AUTOMATIC MISS" : hit ? "HIT" : "MISS";
       const label = `[ATTACK]${kind} ${swing.name}${full && rounds.length > 1 ? ` #${index + 1}` : ""} [THAC0 ${plan.thaco}] [AC ${ac}] [${verdict} ${rolled.total} vs ${need}] -> [at ${target.name}]`;
-      table().postRoll(rolled, label, from, Boolean(target.hidden), { result: hit ? "HIT" : "MISS", by: plan.actor, against: need, target: target.name });
+      postResult(rolled, label, `[ATTACK] ${plan.name} -> [at ${target.name}]`, from, Boolean(target.hidden) || gmSecret(plan.entry), { result: hit ? "HIT" : "MISS", by: plan.actor, against: need, target: target.name }, plan.entry, target);
       if (source) {
         const now = hit ? { name: swing.name, damage: swing.damage, damagelarge: swing.damagelarge } : "miss";
         const before = source.hitOn[target.id];
@@ -2265,6 +2265,24 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     if (source && table().houseRule?.("GAVE") === "2014" && !table().houseRule?.("HREX") && num(record(source)?.data?.exhaustion, 0) >= 3) dis = true;
     return { advantage: adv && !dis, disadvantage: dis && !adv, notes };
   }
+  // FG's Show results to players (SHRR): on; pc, when an ally is the source or the target; pconly, when both are
+  // (no target counts as an ally); off. A hidden target's results are never shown. FG's Show GM rolls (REVL): off
+  // makes the GM's creatures' rolls the GM's alone.
+  function resultsShown(source, target) {
+    const opt = String(table().options?.().resultsToPlayers ?? "on");
+    const friendly = (entry) => !entry || entry.faction === "friend";
+    const shown = opt === "off" ? false : opt === "pc" ? friendly(source) || friendly(target) : opt === "pconly" ? friendly(source) && friendly(target) : true;
+    return shown && !target?.hidden;
+  }
+  function gmSecret(entry) {
+    return table().options?.().revealGmRolls === false && Boolean(entry) && record(entry)?.type !== "character";
+  }
+  // A roll with its result: everyone's, or the GM's full line and the players' without the result.
+  function postResult(rolled, label, plain, from, secret, extra, source, target) {
+    if (secret || resultsShown(source, target)) return table().postRoll(rolled, label, from, secret, extra);
+    table().postRoll(rolled, label, from, true, extra);
+    return table().postRoll(rolled, plain, from, false, { by: extra?.by, playersOnly: true });
+  }
   async function attack5e(plan, from) {
     await r5Ready;
     const source = plan.entry;
@@ -2297,7 +2315,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       if (converted) crit = true;
       const verdict = crit ? "CRITICAL HIT" : die === 1 ? "AUTOMATIC MISS" : hit ? "HIT" : "MISS";
       const label = `[ATTACK]${kind} ${plan.name}${advantage ? " [ADVANTAGE]" : edge.disadvantage ? " [DISADVANTAGE]" : ""}${edge.notes.length ? ` ${edge.notes.join(" ")}` : ""} [AC ${ac}] [${verdict} ${rolled.total} vs ${ac}]${converted ? " [CONVERTED TO CRIT]" : ""} -> [at ${target.name}]`;
-      table().postRoll(rolled, label, from, Boolean(target.hidden), { result: crit ? "CRITICAL" : hit ? "HIT" : "MISS", by: plan.actor, against: ac, target: target.name });
+      postResult(rolled, label, `[ATTACK] ${plan.name} -> [at ${target.name}]`, from, Boolean(target.hidden) || gmSecret(plan.entry), { result: crit ? "CRITICAL" : hit ? "HIT" : "MISS", by: plan.actor, against: ac, target: target.name }, plan.entry, target);
       if (source) source.hitOn[target.id] = crit ? "crit" : hit ? "hit" : "miss";
       results.push({ target: target.name, total: rolled.total, ac, hit, crit, natural: die, advantage, disadvantage: edge.disadvantage });
     }
@@ -2523,7 +2541,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     for (const group of groups) {
       const formula = group.formula;
       const card = newCard("damage", plan.dmgtype, plan.name);
-      const roll = table().roll(formula, `[DAMAGE]${kind} ${plan.name}${group.crit ? " [CRITICAL]" : ""}${fixedNpc ? " [FIXED]" : ""}${plan.dmgtype ? ` [TYPE: ${plan.dmgtype}]` : ""}`, from, false, { by: plan.actor, card: card.id });
+      const roll = table().roll(formula, `[DAMAGE]${kind} ${plan.name}${group.crit ? " [CRITICAL]" : ""}${fixedNpc ? " [FIXED]" : ""}${plan.dmgtype ? ` [TYPE: ${plan.dmgtype}]` : ""}`, from, gmSecret(plan.entry), { by: plan.actor, card: card.id });
       const amount = Math.max(0, roll.total);
       card.total = amount;
       total = Math.max(total, amount);
@@ -2560,7 +2578,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     const success = dc > 0 ? !autoFail && rolled.total >= dc : autoFail ? false : null;
     const name = `${stat[0].toUpperCase()}${stat.slice(1)}`;
     const label = `[SAVE] ${castName ? `${castName} (${name})` : name}${shaken.dread ? " [DREAD]" : ""}${advantage ? ` [${advantage.toUpperCase()}]` : ""}${autoFail ? " [AUTOMATIC FAILURE]" : ""}${dc ? ` [DC ${dc}] [${success ? "SUCCESS" : "FAILURE"} ${rolled.total} vs ${dc}]` : ""}`;
-    if (!silent) table().postRoll(rolled, label, from ?? entry.name, Boolean(entry.hidden), { ...(dc ? { result: success ? "SAVED" : "FAILED" } : {}), by: entry.name });
+    if (!silent) postResult(rolled, label, `[SAVE] ${castName ? `${castName} (${name})` : name}`, from ?? entry.name, Boolean(entry.hidden) || gmSecret(entry), { ...(dc ? { result: success ? "SAVED" : "FAILED" } : {}), by: entry.name }, entry, null);
     return { name: entry.name, success, total: rolled.total, dc };
   }
   // A 5E spell (the SRD's actions as FG keeps them): a slot of its level spent
@@ -3868,7 +3886,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
         const rolled = table().act(formula, "attack");
         const hit = rolled.total >= ac;
         const label = `[ATTACK]${kind} ${plan.name} [AC ${ac}] [${hit ? "HIT" : "MISS"} ${rolled.total} vs ${ac}] -> [at ${target.name}]`;
-        table().postRoll(rolled, label, from, Boolean(target.hidden), { result: hit ? "HIT" : "MISS", by: plan.actor, against: ac, target: target.name });
+        postResult(rolled, label, `[ATTACK] ${plan.name} -> [at ${target.name}]`, from, Boolean(target.hidden) || gmSecret(plan.entry), { result: hit ? "HIT" : "MISS", by: plan.actor, against: ac, target: target.name }, plan.entry, target);
         const result = await krit(rolled, target, hit);
         results.push({ target: target.name, total: rolled.total, ac, hit, natural: natural(rolled), ...(result ? { krit: result } : {}) });
       }

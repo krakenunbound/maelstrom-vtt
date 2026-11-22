@@ -1626,6 +1626,11 @@ const TOOLS = [
       woundCategories: { type: "string", enum: ["simple", "detailed"], description: "FG's wound categories: simple (Wounded, Heavy) or detailed (Light, Moderate, Heavy, Critical)" },
       healthColors: { type: "string", enum: ["gradient", "tiered"], description: "FG's health bar colours: a gradient, or one colour a wound category" },
       turnEffects: { type: "string", enum: ["all", "conditions", "off"], description: "FG's turn notice effects: the active creature's effects in the chat with its turn: all, conditions (default), off; players see an ally's, never the GM's own" },
+      revealGmRolls: { type: "boolean", description: "FG's Chat: Show GM rolls (default true): false makes the GM's rolls (the tray, and the GM's creatures' attacks, damage and saves) the GM's alone" },
+      resultsToPlayers: { type: "string", enum: ["on", "pc", "pconly", "off"], description: "FG's Chat: Show results to players: on (default); pc, when an ally is the attacker or the target; pconly, when both are; off. The GM gets the full line, the players the roll without its result; a hidden target's never" },
+      gmSeesWhispers: { type: "boolean", description: "FG's Chat: Show all whispers to GM (default false): the GM also sees players' whispers to each other" },
+      gmVoiceActive: { type: "boolean", description: "FG's Chat: Set GM voice to active CT: the GM's chat speaks as the creature whose turn it is (not a character)" },
+      diceInChat: { type: "boolean", description: "FG's Dice: Limit rolls to chat window: no 3D dice across the table; the results in the chat alone" },
       rules: { type: "object", description: "The game's house rules (Settings > House rules; its manifest's settings), key -> value; only the keys given change. D&D 5E (FG 5E's options): GAVE rules version 2024|2014; HRST auto death saves true|false (default true); NPCD NPC damage off (rolled)|fixed (average); HRFFM a ranged attack next to an enemy at disadvantage true|false (default true); HRMD massive damage, system shock true|false; HREX exhaustion's roll modifier per level \"\" (the rules version's)|-1|-2|-3; HRSE exhaustion lowers a caster's spell save DC true|false; HRHE exhaustion levels when healed from dying off|1-5; HRHV healing \"\" (standard)|fast|slow; HRFL reliable skill rolls \"\"|passive|all" },
     }),
     run(args, ctx) {
@@ -2541,6 +2546,8 @@ const TOOLS = [
       character: string("A character (record id or name): set that character's own dice (the character tier, kept on it; every roll made as it uses them) instead of the GM's. Takes preset and the look parts, set mine or damage, same"),
       who: string("With color, turnSound or turnBanner: a player's name, to set that player's (their user settings) instead of the GM's"),
       turnSound: { type: "boolean", description: "When this person's turn comes round on the combat tracker: a soft chime (a console tone in the sci-fi games; Settings > You at the table)" },
+      whisperSound: { type: "boolean", description: "A chime when someone whispers to this person (FG's Speech: Play sound on whisper; Settings > You at the table; default on)" },
+      manualDice: { type: "boolean", description: "FG's Dice: Manual entry: this person's rolls from the dice tray or the chat ask for the faces their own dice show (Settings > You at the table: Type in my own dice)" },
       turnBanner: { type: "boolean", description: "When this person's turn comes round: a banner across their screen" },
       readAloud: { type: "boolean", description: "The GM's read-aloud text also popped up over the map on this screen (always in chat)" },
     }),
@@ -2565,7 +2572,7 @@ const TOOLS = [
       }
       if (args.who !== undefined && args.who !== "" && args.who !== "GM") {
         const table = needTable(ctx);
-        const patch = { ...(args.color !== undefined ? { color: args.color ? args.color : null } : {}), ...(typeof args.turnSound === "boolean" ? { turnSound: args.turnSound } : {}), ...(typeof args.turnBanner === "boolean" ? { turnBanner: args.turnBanner } : {}) };
+        const patch = { ...(args.color !== undefined ? { color: args.color ? args.color : null } : {}), ...(typeof args.turnSound === "boolean" ? { turnSound: args.turnSound } : {}), ...(typeof args.whisperSound === "boolean" ? { whisperSound: args.whisperSound } : {}), ...(typeof args.manualDice === "boolean" ? { manualDice: args.manualDice } : {}), ...(typeof args.turnBanner === "boolean" ? { turnBanner: args.turnBanner } : {}) };
         return out({ who: args.who, prefs: table.prefs(args.who, patch) });
       }
       return out(await ctx.ui({ kind: "dice-settings", patch: args }));

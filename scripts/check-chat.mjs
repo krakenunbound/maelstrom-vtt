@@ -97,9 +97,15 @@ try {
   ann.send({ type: "chat", text: "I check it.", to: ["GM"] });
   await settle();
   assert(last(gm).text === "I check it." && bob.lines.length === before.bob, "a whisper to the GM");
+  // FG's Show all whispers to GM (SHPW), off by default: players' whispers to each other stay theirs; on, the GM sees them.
   bob.send({ type: "chat", text: "Psst", to: ["Sir Aldric"] });
   await settle();
-  assert(last(cal).text === "Psst" && last(gm).text === "Psst" && last(ann).text !== "Psst", "the GM sees players' whispers too, as in FG");
+  assert(last(cal).text === "Psst" && last(gm).text !== "Psst" && last(ann).text !== "Psst", "a whisper between players is theirs alone (FG's default)");
+  server.agent.setOptions({ gmSeesWhispers: true });
+  bob.send({ type: "chat", text: "Psst again", to: ["Sir Aldric"] });
+  await settle();
+  assert(last(cal).text === "Psst again" && last(gm).text === "Psst again" && last(ann).text !== "Psst again", "with Show all whispers to GM on, the GM sees it");
+  server.agent.setOptions({ gmSeesWhispers: false });
 
   // Kinds of line; the GM's alone refused from players.
   ann.send({ type: "chat", text: "draws her sword", kind: "emote" });

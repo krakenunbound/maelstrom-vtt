@@ -58,6 +58,8 @@ function YouAtTheTable() {
       </div>
       <UiScaleRow />
       <Toggle label="Chime on your turn" hint="A soft chime when your turn comes round in combat." setting="turn-sound" checked={settings.turnSound !== false} onChange={(on) => diceStore.update({ turnSound: on })} />
+      <Toggle label="Chime on a whisper" hint="A soft chime when someone whispers to you." setting="whisper-sound" checked={settings.whisperSound !== false} onChange={(on) => diceStore.update({ whisperSound: on })} />
+      <Toggle label="Type in my own dice" hint="Roll your own dice at the table: a roll from the dice tray or the chat asks for the faces they show." setting="manual-dice" checked={Boolean(settings.manualDice)} onChange={(on) => diceStore.update({ manualDice: on })} />
       <Toggle label="Read aloud on screen" hint={GM("The GM's read-aloud text also pops up over the map in a bubble (it is always in the chat).")} setting="read-aloud-popup" checked={settings.readAloud !== false} onChange={(on) => diceStore.update({ readAloud: on })} />
       <Toggle label="Banner on your turn" hint="Your name across the screen when it is your turn." setting="turn-banner" checked={settings.turnBanner !== false} onChange={(on) => diceStore.update({ turnBanner: on })} />
       <Toggle label="Whose turn it is" hint="The portrait of whoever acts next, and the round as it begins, for a moment on every turn." setting="turn-card" checked={settings.turnCard !== false} onChange={(on) => diceStore.update({ turnCard: on })} />
@@ -121,6 +123,19 @@ export function SettingsWindow({ session }: { session: Session }) {
             onChange={(on) => session.setTableOptions({ towerExternal: on })}
           />
           <DiceHoldSetting session={session} />
+          {/* FG's dice and chat options. */}
+          <Toggle label="Dice roll in the chat only" hint="No dice across the table: every roll's result goes straight to the chat." setting="dice-in-chat" checked={Boolean((session.options as { diceInChat?: boolean }).diceInChat)} onChange={(on) => session.setTableOptions({ diceInChat: on } as never)} />
+          <Toggle label="Players see your rolls" hint="Off: your rolls, and your creatures' attacks, damage and saves, are yours alone." setting="reveal-gm-rolls" checked={(session.options as { revealGmRolls?: boolean }).revealGmRolls !== false} onChange={(on) => session.setTableOptions({ revealGmRolls: on } as never)} />
+          <SettingRow label="Players see results" hint="Whether an attack hit, a save succeeded: always, when an ally is involved, only between allies, or never. You always see them; a hidden target's are never shown.">
+            <select value={(session.options as { resultsToPlayers?: string }).resultsToPlayers ?? "on"} onChange={(event) => session.setTableOptions({ resultsToPlayers: event.target.value } as never)} aria-label="Players see results" data-setting="results-to-players">
+              <option value="on">Always</option>
+              <option value="pc">When an ally is involved</option>
+              <option value="pconly">Only between allies</option>
+              <option value="off">Never</option>
+            </select>
+          </SettingRow>
+          <Toggle label="See players' whispers to each other" hint="Off: a whisper between players is theirs alone (one to or from you, you always see)." setting="gm-sees-whispers" checked={Boolean((session.options as { gmSeesWhispers?: boolean }).gmSeesWhispers)} onChange={(on) => session.setTableOptions({ gmSeesWhispers: on } as never)} />
+          <Toggle label="Speak as the creature whose turn it is" hint="Your chat speaks as the active creature on its turn, and as you again on a character's turn." setting="gm-voice-active" checked={Boolean((session.options as { gmVoiceActive?: boolean }).gmVoiceActive)} onChange={(on) => session.setTableOptions({ gmVoiceActive: on } as never)} />
         </SettingsSection>
       ) : null}
       {gm ? (

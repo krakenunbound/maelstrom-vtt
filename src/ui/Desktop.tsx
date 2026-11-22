@@ -53,6 +53,7 @@ import { GM, gmTitle } from "./gmTitle";
 
 // The 3D dice (three.js and cannon) load when the table first shows them.
 const DiceLayer = lazy(() => import("../dice/DiceLayer"));
+import { ManualDiceDialog } from "../dice/ManualDice";
 
 // launch: the button's data-launch when it is not the kind (the player's Characters button opening Character Selection).
 
@@ -862,7 +863,9 @@ export function Desktop({
       <ReconnectBanner session={session} />
       {dice.show ? (
         <Suspense fallback={null}>
-          <DiceLayer holdSeconds={session.options.diceHold} />
+          {/* FG's Limit rolls to chat window (DRMO): no dice across the table, the results in the chat alone. */}
+          {(session.options as { diceInChat?: boolean }).diceInChat ? null : <DiceLayer holdSeconds={session.options.diceHold} />}
+          <ManualDiceDialog />
         </Suspense>
       ) : null}
     </div>
