@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Multiclass 5E characters:** the Main tab lists each class with its level, hit die and dice left; + takes a level more in that class, and another class can be taken from the campaign's classes. The level is the classes together, hit dice are kept per class, casters' slots come from their levels together (half casters' halved, rounded up), each casting class has its own DC and attack, and a multiclass warlock's Pact Magic is its own row of slots that a short rest gives back.
 - **More of the 5E sheet:** half proficiency in a skill (Jack of All Trades) and a misc bonus each; feats, features, race traits, languages and proficiencies written by hand, one a line; and on the Combat tab the critical range (a Champion's 19) and extra critical dice (Brutal Critical), melee and ranged, which attacks and damage now use.
 - **Spells and class resources on the 5E sheet:** spells by level with a Prepared box each and the count prepared, slot maximums by hand (a feat's or an item's extra slots kept beside the class's), Pact Magic named, and class resources (Rage, Ki, Channel Divinity, anything): uses ticked off, how many, and whether a short or a long rest gives them back, which rests now do.
 - **Attunement on the 5E sheet:** an item that requires attunement has an Attuned box; the Inventory tab counts the attuned items against the slots allowed (the house rule: 3, 4, 5, 2 or the proficiency bonus, plus the class's and others), red when over. Items show their weight.

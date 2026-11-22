@@ -131,7 +131,7 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 |---|---|---|
 | Portrait, name | Portrait (picker, drag as a link), token picture, name | Better |
 | Inspiration counter, maximum by HRIS (1 to 5), a chat line on change | A count held to the house rule HRIS (standard 1, 2, 3, 5), a chat line | Done |
-| Class & level summary; Classes window (each class: level, caster multiplier, pact magic, hit die, used) | One class package, "Wizard 3" | Missing (multiclass) |
+| Class & level summary; Classes window (each class: level, caster multiplier, pact magic, hit die, used) | "Fighter 4 / Wizard 1"; Classes on the Main tab: each class's level, hit die and dice left, a level more in it, another class taken | Done (caster share by the SRD's rule, not by hand) |
 | Level up opens the wizard | Level up (+): rolls the hit die, posts it | Partly (no choices on level up) |
 | XP, next level | Experience / next | Same |
 | PROF | Prof | Same |
@@ -144,7 +144,7 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | Speed: base, armor, misc, special move | Speed typed in the box | Partly (one text) |
 | Special defenses (text) | Special defenses on the Notes tab | Done |
 | HP: wounds, max, temp; numbers dropped on them | Current / max with a bar, Damage and Heal, wounds, temp and max boxes | Better (Damage and Heal) |
-| Hit dice per class: die, dice left, roll (spend) one; Hit Dice details (stat, 2nd stat, misc) | Hit dice box: the die, left of total, Roll one | Partly (one class; no stat choice) |
+| Hit dice per class: die, dice left, roll (spend) one; Hit Dice details (stat, 2nd stat, misc) | Hit dice box, Roll one; each class's dice left (the largest die spent first) | Partly (no stat choice; a short rest rolls the largest die) |
 | Death saves: roll button, 3 success and 3 failure boxes | Three boxes each, ticked by hand; Roll in a fight (and HRST rolls it itself) | Done |
 
 ### Skills

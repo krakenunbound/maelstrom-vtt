@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { signed, spellSlug } from "../../shared/dnd5e/rules.mjs";
+import { classLine, signed, spellSlug } from "../../shared/dnd5e/rules.mjs";
 import { num, rows, useSheet, type Row } from "../core/sheet/context";
 import { GM } from "../ui/gmTitle";
 
@@ -18,10 +18,8 @@ const plain = (html: unknown) => {
 };
 
 // The class's name and level, from the character's packages (FG 5E's class package).
-export const dnd5eClassName = (data: Row) => {
-  const pkg = rows(data.packages).find(([, item]) => String(item.packagetype).toLowerCase() === "class")?.[1];
-  return pkg ? `${String(pkg.name)} ${num(data.level)}` : "";
-};
+// Multiclass: every class and its level ("Fighter 3 / Wizard 2").
+export const dnd5eClassName = (data: Row) => classLine(data);
 
 // Spells, as FG's Actions tab: the save DC and attack, the slots (used boxes; the maximum by hand, Pact Magic
 // named), the spells by level with a prepared box and Cast, and the class resources (Rage, Ki) with their uses.
@@ -42,6 +40,16 @@ export function Dnd5eSpells() {
           <p className="cc-inline">
             <b>Spell save DC</b> <span className="cc-num" data-stat="spell-dc">{num(casting.dc)}</span> <b>Spell attack</b> <span className="cc-num">{signed(num(casting.attack))}</span> <small className="hint">{titled(String(casting.stat ?? ""))}</small> <small className="hint" data-stat="prepared">Prepared {preparedCount}</small>
           </p>
+          {Array.isArray(casting.classes) ? (
+            // Multiclass: each casting class's own DC and attack (FG's power groups).
+            <p className="cc-inline five-casting-classes">
+              {(casting.classes as Row[]).map((row) => (
+                <small key={String(row.name)} className="hint" data-casting-class={String(row.name)}>
+                  {String(row.name)}: DC {num(row.dc)}, attack {signed(num(row.attack))}
+                </small>
+              ))}
+            </p>
+          ) : null}
           <div className="five-slots">
             {casting.pact ? <b className="five-pact">Pact Magic</b> : null}
             {slots.map(([key, slot]) => (
@@ -56,6 +64,19 @@ export function Dnd5eSpells() {
               </span>
             ))}
           </div>
+          {rows(data.pactslots).length ? (
+            <div className="five-slots" data-pact>
+              <b className="five-pact">Pact Magic</b>
+              {rows(data.pactslots).map(([key, slot]) => (
+                <span key={key} className="five-slot" data-pact-slot={key}>
+                  <b>Level {key.slice(1)}</b>{" "}
+                  {Array.from({ length: num(slot.max) }, (_, index) => (
+                    <input key={index} type="checkbox" checked={index < num(slot.used)} disabled={!editable} aria-label={`Pact slot ${index + 1} used`} onChange={(event) => change(`pactslots.${key}.used`, event.target.checked ? index + 1 : index)} />
+                  ))}
+                </span>
+              ))}
+            </div>
+          ) : null}
         </>
       ) : (
         <p className="hint empty-state">No spellcasting in this class.</p>
@@ -238,6 +259,60 @@ export function Dnd5eAttunement() {
         Misc{" "}
         <input type="number" className="tiny" value={num(tuned.misc)} disabled={!editable} aria-label="Other attunement slots" onChange={(event) => change("attunement.misc", Number(event.target.value) || 0)} />
       </label>
+    </div>
+  );
+}
+
+// FG's Classes window, on the sheet: each class, its level and hit die, one more level in it, and a class added
+// (multiclass) from the campaign's classes.
+export function Dnd5eClasses() {
+  const { data, session, record, editable } = useSheet();
+  const classes = rows(data.packages).filter(([, item]) => String(item.packagetype).toLowerCase() === "class");
+  const pools = (Array.isArray((data.hitdice as Row | undefined)?.pools) ? (data.hitdice as Row).pools : []) as Row[];
+  const gm = session.role === "dm";
+  const ready = gm || (num(data.expnext) > 0 && num(data.exp) >= num(data.expnext));
+  const room = num(data.level) < 20;
+  const owned = new Set(classes.map(([, item]) => String(item.name).toLowerCase()));
+  const others = [...new Set(Object.values(session.records).filter((item) => item.type === "class").map((item) => item.name))].filter((name) => !owned.has(name.toLowerCase())).sort();
+  const [pick, setPick] = useState("");
+  if (!classes.length) return null;
+  return (
+    <div className="five-classes" data-part="classes">
+      <small>Classes</small>
+      <ul>
+        {classes.map(([key, item]) => {
+          const pool = pools.find((row) => String(row.name) === String(item.name));
+          const level = classes.length > 1 ? num(item.level) : num(data.level);
+          return (
+            <li key={key} data-class={String(item.name)}>
+              <b>{String(item.name)}</b> {level} <small className="hint">d{num(item.hitdie) || 8}{pool ? ` · ${num(pool.left)} of ${num(pool.total)} left` : ""}</small>
+              {editable && ready && room ? (
+                <button type="button" className="cc-levelup" data-action="class-level-up" title={`One level more as a ${String(item.name)}`} aria-label={`${String(item.name)}: one level more`} onClick={() => session.levelUp(record.id, key)}>
+                  +
+                </button>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+      {editable && ready && room && others.length ? (
+        <span className="five-add-class">
+          <select value={pick} onChange={(event) => setPick(event.target.value)} aria-label="Another class">
+            <option value="">Another class…</option>
+            {others.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+          <button type="button" data-action="add-class" disabled={!pick} onClick={() => {
+            session.levelUp(record.id, pick);
+            setPick("");
+          }}>
+            Take a level
+          </button>
+        </span>
+      ) : null}
     </div>
   );
 }

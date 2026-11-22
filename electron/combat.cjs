@@ -2616,16 +2616,19 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     if (isCharacter && Array.isArray(data.spells) && data.spells.length && !data.spells.some((name) => String(name).toLowerCase() === spell.name.toLowerCase())) throw new Error(`${caster.name} does not have ${spell.name}.`);
     // A slot: the spell's level, else the lowest free one above it.
     let slotLevel = level;
+    // A multiclass warlock's Pact Magic is a pool of its own (pactslots): the spell slots first, then the pact's.
+    let pool = "slots";
     if (isCharacter && level > 0) {
-      const slots = data.slots ?? {};
-      const free = Object.entries(slots).map(([key, slot]) => [Number(key.slice(1)), slot]).filter(([at, slot]) => at >= level && num(slot.used, 0) < num(slot.max, 0)).sort((a, b) => a[0] - b[0])[0];
+      const freeIn = (key) => Object.entries(data[key] ?? {}).map(([at, slot]) => [Number(at.slice(1)), slot]).filter(([at, slot]) => at >= level && num(slot.used, 0) < num(slot.max, 0)).sort((a, b) => a[0] - b[0])[0];
+      const free = freeIn("slots") ?? freeIn("pactslots");
       if (!free) throw new Error(`${caster.name} has no spell slot of level ${level} or higher left.`);
+      if (!freeIn("slots")) pool = "pactslots";
       slotLevel = free[0];
     }
     const spendSlot = () => {
       if (!isCharacter || level <= 0) return;
-      const slot = table().records.get(caster.id)?.data?.slots?.[`l${slotLevel}`] ?? {};
-      table().records.update(caster.id, { data: { slots: { [`l${slotLevel}`]: { used: num(slot.used, 0) + 1 } } } }, table().seat);
+      const slot = table().records.get(caster.id)?.data?.[pool]?.[`l${slotLevel}`] ?? {};
+      table().records.update(caster.id, { data: { [pool]: { [`l${slotLevel}`]: { used: num(slot.used, 0) + 1 } } } }, table().seat);
     };
     const holds = isCharacter && /concentration/i.test(String(spell.data?.duration ?? ""));
     const castStat = isCharacter ? data.spellcasting?.stat : null;

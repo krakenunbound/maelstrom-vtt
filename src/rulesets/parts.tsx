@@ -2,7 +2,7 @@ import type { CustomPart, Format } from "../core/parts/Parts";
 import type { WizardFunctions } from "../core/wizard/Steps";
 import { BfTurnUndead } from "./bfrpg";
 import { CairnRest, cairnBackgroundGold, cairnBackgroundOfRoll, cairnBuild, cairnItemSlots } from "./cairn";
-import { Dnd5eAttunement, Dnd5eDeathSaves, Dnd5eDread, Dnd5eDying, Dnd5eHitDice, Dnd5eSpells, dnd5eClassName } from "./dnd5e";
+import { Dnd5eAttunement, Dnd5eClasses, Dnd5eDeathSaves, Dnd5eDread, Dnd5eDying, Dnd5eHitDice, Dnd5eSpells, dnd5eClassName } from "./dnd5e";
 import { adnd2eClassKey } from "./adnd2e";
 import { Mgt2SkillPickers, mgt2Careers, mgt2SkillTotal } from "./mgt2";
 import { CncAbilities, CncPlayer, CncClassButton, CncClassPanel, CncInventory, CncLanguages, CncLoad, CncSpells, CncWeapons, cncClasses, cncRace } from "./cnc";
@@ -36,6 +36,7 @@ export const CUSTOM_PARTS: Record<string, CustomPart> = {
   "dnd5e.deathSaves": Dnd5eDeathSaves,
   "dnd5e.hitDice": Dnd5eHitDice,
   "dnd5e.attunement": Dnd5eAttunement,
+  "dnd5e.classes": Dnd5eClasses,
   "mgt2.skillPickers": Mgt2SkillPickers,
   "astra.marks": AstraMarks,
   "astra.trickNotes": AstraTrickNotes,

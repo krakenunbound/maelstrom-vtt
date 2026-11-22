@@ -345,7 +345,10 @@ export const spellSlug = (/** @type {string} */ name) => name.toLowerCase().repl
 export function derive(input) {
   const profile = profileFor(input?.ruleset in PROFILES ? input.ruleset : RULESET);
   const data = { ...input, ruleset: profile.id };
-  const level = Math.min(profile.maxLevel, Math.max(1, Math.round(num(data.level, 1))));
+  // FG's Classes: a character's level is its classes' levels together (multiclass), else its own.
+  const classRows = rows(data.packages).filter(([, pkg]) => String(pkg?.packagetype).toLowerCase() === "class");
+  const classLevels = classRows.reduce((sum, [, pkg]) => sum + Math.max(1, Math.round(num(pkg.level, 1))), 0);
+  const level = Math.min(profile.maxLevel, Math.max(1, Math.round(classRows.length > 1 ? classLevels : num(data.level, 1))));
   data.level = level;
   data.prof = proficiency(level);
   data.abilities = Object.fromEntries(
@@ -381,7 +384,30 @@ export function derive(input) {
   }
   const className = rows(data.packages).find(([, pkg]) => String(pkg.packagetype).toLowerCase() === "class")?.[1]?.name ?? "";
   const caster = CASTERS[skillKey(className)];
-  if (caster) {
+  // Multiclass (SRD 5.2.1): every casting class's DC and attack; slots from the full casters' levels and half the
+  // half casters' (rounded up) together, on the full caster's table; Pact Magic its own slots.
+  const casting = classRows.map(([, pkg]) => ({ name: String(pkg.name ?? ""), level: Math.max(1, Math.round(num(pkg.level, 1))), caster: CASTERS[skillKey(String(pkg.name ?? ""))] })).filter((row) => row.caster);
+  if (classRows.length > 1 && casting.length) {
+    const first = casting[0];
+    const of = (row) => ({ name: row.name, stat: row.caster.stat, dc: 8 + data.prof + data.abilities[row.caster.stat].bonus, attack: data.prof + data.abilities[row.caster.stat].bonus });
+    data.spellcasting = { ...of(first), ...(casting.length > 1 ? { classes: casting.map(of) } : {}), ...(first.caster.kind === "pact" && casting.length === 1 ? { pact: true } : {}) };
+    const spellcasters = casting.filter((row) => row.caster.kind !== "pact");
+    const pact = casting.find((row) => row.caster.kind === "pact");
+    const keep = (fresh, old) => Object.fromEntries(Object.entries(fresh).map(([key, slot]) => {
+      const extra = Math.round(num(old?.[key]?.extra, 0));
+      const max = Math.max(0, slot.max + extra);
+      return [key, { max, ...(extra ? { extra } : {}), used: Math.max(0, Math.min(max, Math.round(num(old?.[key]?.used, 0)))) }];
+    }));
+    let fresh = {};
+    if (spellcasters.length === 1) fresh = slotsFor(spellcasters[0].name, spellcasters[0].level);
+    else if (spellcasters.length > 1) {
+      const casterLevel = spellcasters.reduce((sum, row) => sum + (row.caster.kind === "half" ? Math.ceil(row.level / 2) : row.level), 0);
+      fresh = Object.fromEntries((FULL[Math.min(20, casterLevel) - 1] ?? []).map((count, index) => [`l${index + 1}`, { max: count, used: 0 }]));
+    } else if (pact) fresh = slotsFor(pact.name, pact.level);
+    data.slots = keep(fresh, data.slots);
+    if (pact && spellcasters.length) data.pactslots = keep(slotsFor(pact.name, pact.level), data.pactslots);
+    else delete data.pactslots;
+  } else if (caster) {
     const bonus = data.abilities[caster.stat].bonus;
     data.spellcasting = { stat: caster.stat, dc: 8 + data.prof + bonus, attack: data.prof + bonus, ...(caster.kind === "pact" ? { pact: true } : {}) };
     const fresh = slotsFor(className, level);
@@ -397,11 +423,35 @@ export function derive(input) {
     delete data.spellcasting;
     data.slots = {};
   }
+  if (classRows.length <= 1) delete data.pactslots;
   data.hp = { total: Math.max(1, Math.round(num(data.hp?.total, 1))), wounds: Math.max(0, Math.round(num(data.hp?.wounds, 0))), temp: Math.max(0, Math.round(num(data.hp?.temp, 0))) };
   data.exp = Math.max(0, Math.round(num(data.exp, 0)));
   data.expnext = profile.xp[level] ?? 0;
   data.deathsaves = { success: Math.max(0, Math.min(3, Math.round(num(data.deathsaves?.success, 0)))), failure: Math.max(0, Math.min(3, Math.round(num(data.deathsaves?.failure, 0)))) };
   if (data.hitdice && typeof data.hitdice === "object") data.hitdice = { ...data.hitdice, used: Math.max(0, Math.round(num(data.hitdice.used, 0))) };
+  // FG's hit dice per class (multiclass): each class's die and how many of them are spent. A rest or a roll changes
+  // the total spent; it is shared out to the classes, the largest die first (spent) or back first (recovered).
+  if (classRows.length > 1) {
+    const pools = classRows.map(([key, pkg]) => ({ key, name: String(pkg.name ?? ""), die: Math.round(num(pkg.hitdie, 8)), level: Math.max(1, Math.round(num(pkg.level, 1))), used: Math.max(0, Math.round(num(pkg.hdused, 0))) }));
+    for (const pool of pools) pool.used = Math.min(pool.used, pool.level);
+    const want = Math.max(0, Math.min(level, Math.round(num(data.hitdice?.used, pools.reduce((sum, pool) => sum + pool.used, 0)))));
+    let diff = want - pools.reduce((sum, pool) => sum + pool.used, 0);
+    const byDie = [...pools].sort((a, b) => b.die - a.die);
+    for (const pool of byDie) {
+      if (diff > 0) {
+        const take = Math.min(diff, pool.level - pool.used);
+        pool.used += take;
+        diff -= take;
+      } else if (diff < 0) {
+        const back = Math.min(-diff, pool.used);
+        pool.used -= back;
+        diff += back;
+      }
+    }
+    data.packages = { ...data.packages, ...Object.fromEntries(pools.map((pool) => [pool.key, { ...data.packages[pool.key], hdused: pool.used }])) };
+    const open = byDie.find((pool) => pool.used < pool.level) ?? byDie[0];
+    data.hitdice = { die: open.die, total: level, used: want, pools: pools.map((pool) => ({ name: pool.name, die: pool.die, left: pool.level - pool.used, total: pool.level })) };
+  }
   if (profile.dread) data.dread = Math.min(6, Math.max(0, Math.round(num(data.dread, 0))));
   // FG's attunement: an item whose rarity or text says it requires attunement may be attuned (its box); the count
   // is the attuned items, beside the class's and misc slots (the house rule HRAS gives the base).
@@ -635,15 +685,32 @@ export function buildFromSpec(spec, lib, rulesetId = RULESET) {
 
 
 // A level up: the hit die rolled (rolled: the die's number) + CON, at least 1; the next level's numbers.
-export function levelUp(input, rolled) {
+// "Fighter 3 / Wizard 2": a character's classes and levels (one class: "Fighter 5").
+export function classLine(data) {
+  const classes = rows(data?.packages).filter(([, item]) => String(item.packagetype).toLowerCase() === "class");
+  if (classes.length <= 1) return classes.length ? `${classes[0][1].name} ${num(data.level, 1)}` : "";
+  return classes.map(([, item]) => `${item.name} ${Math.max(1, Math.round(num(item.level, 1)))}`).join(" / ");
+}
+
+// One level more: in the class chosen (a class package's key, or its name), else the first; a class not yet
+// taken (name and hit die given) joins at level 1 (FG's multiclass: a class dropped on the Classes list).
+export function levelUp(input, rolled, choice = {}) {
   const data = derive(input);
   const top = profileFor(data).maxLevel;
   if (data.level >= top) throw new Error(`Already level ${top}.`);
-  const pkg = rows(data.packages).find(([, item]) => String(item.packagetype).toLowerCase() === "class");
-  const die = num(pkg?.[1]?.hitdie, num(data.hitdice?.die, 8));
+  const classes = rows(data.packages).filter(([, item]) => String(item.packagetype).toLowerCase() === "class");
+  const wanted = String(choice.key ?? choice.className ?? "").toLowerCase();
+  let pkg = classes.find(([key, item]) => key.toLowerCase() === wanted || String(item.name).toLowerCase() === wanted) ?? (wanted && choice.className ? null : classes[0]);
+  const fresh = !pkg && choice.className;
+  const die = fresh ? Math.round(num(choice.hitdie, 8)) : num(pkg?.[1]?.hitdie, num(data.hitdice?.die, 8));
   const gain = Math.max(1, Math.round(num(rolled, Math.floor(die / 2) + 1)) + data.abilities.constitution.bonus + num(data.hpperlevel, /dwarf/i.test(String(data.species ?? "")) && data.ruleset === RULESET ? 1 : 0));
   const next = { ...data, level: data.level + 1, hp: { ...data.hp, total: data.hp.total + gain } };
-  if (pkg) next.packages = { ...data.packages, [pkg[0]]: { ...pkg[1], level: data.level + 1 } };
-  next.hitdice = { die, total: data.level + 1, used: num(data.hitdice?.used, 0) };
-  return { data: derive(next), gain, die };
+  if (fresh) {
+    const n = classes.length ? Math.max(...rows(data.packages).map(([key]) => Number(key.replace(/\D/g, "")) || 0)) + 1 : 1;
+    // The first class's levels stay as they were (one package or more, the level is their sum from now on).
+    const firstKey = classes[0]?.[0];
+    next.packages = { ...data.packages, ...(firstKey ? { [firstKey]: { ...classes[0][1], level: Math.max(1, Math.round(num(classes[0][1].level, data.level))) } } : {}), [`id-${String(n).padStart(5, "0")}`]: { name: String(choice.className), packagetype: "Class", level: 1, hitdie: die } };
+  } else if (pkg) next.packages = { ...data.packages, [pkg[0]]: { ...pkg[1], level: (classes.length > 1 ? Math.max(1, Math.round(num(pkg[1].level, 1))) : data.level) + 1 } };
+  next.hitdice = { ...(data.hitdice ?? {}), die: classes.length > 1 || fresh ? data.hitdice?.die ?? die : die, total: data.level + 1, used: num(data.hitdice?.used, 0) };
+  return { data: derive(next), gain, die, className: fresh ? String(choice.className) : String(pkg?.[1]?.name ?? "") };
 }

@@ -48,7 +48,7 @@ export default {
   rest: {
     // FG's class resources: a short rest gives back those of the short rest, a long rest all of them.
     resources: { path: "resources", period: "period", used: "used" },
-    short: { hours: 1, hitDice: { die: "hitdice.die", total: "hitdice.total", used: "hitdice.used", mod: "abilities.constitution.bonus" } },
+    short: { hours: 1, hitDice: { die: "hitdice.die", total: "hitdice.total", used: "hitdice.used", mod: "abilities.constitution.bonus" }, reset: ["pactslots.*.used"] },
     // The house rules' changes (FG 5E's): the 2024 rules give back every Hit Point Die on a long rest; fast healing
     // also a quarter on a short rest; slow healing half on a long rest and no hit points.
     byRule: [
@@ -56,6 +56,6 @@ export default {
       { rule: "HRHV", value: "fast", long: { hp: "full", hitDice: { back: "all" } }, short: { hitDiceBack: "quarter" } },
       { rule: "HRHV", value: "slow", long: { hp: null, hitDice: { back: "half" } } },
     ],
-    long: { hours: 8, hp: "full", temp: true, hitDice: { back: "half", used: "hitdice.used", total: "hitdice.total" }, reset: ["slots.*.used", "deathsaves.success", "deathsaves.failure"], exhaustion: -1, rations: true, concentration: true },
+    long: { hours: 8, hp: "full", temp: true, hitDice: { back: "half", used: "hitdice.used", total: "hitdice.total" }, reset: ["slots.*.used", "pactslots.*.used", "deathsaves.success", "deathsaves.failure"], exhaustion: -1, rations: true, concentration: true },
   },
 };

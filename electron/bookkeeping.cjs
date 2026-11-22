@@ -548,8 +548,9 @@ function createBookkeeping(table) {
       if (back) words.push(`${plural(back, "Hit Point Die")} back`);
     }
     if (spec.reset?.length) {
+      const before = JSON.stringify(data);
       data = lib.bk.zeroPaths(data, spec.reset);
-      if (spec.reset.some((glob) => /slots|spellcasting/.test(glob))) words.push("spells back");
+      if (spec.reset.some((glob) => /slots|spellcasting/.test(glob)) && (kind === "long" || JSON.stringify(data) !== before)) words.push("spells back");
     }
     if (spec.exhaustion && decl.exhaustion) {
       const books = data.bookkeeping ?? {};

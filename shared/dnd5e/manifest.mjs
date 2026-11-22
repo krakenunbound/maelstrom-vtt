@@ -127,6 +127,8 @@ export default {
                   { label: "Inspiration", show: "field", path: "inspiration", hook: "inspiration", title: "Inspiration: the GM gives it; spend it for advantage on a roll", field: { path: "inspiration", kind: "number", label: "Inspiration", title: "How many Inspiration (the GM's house rule sets the most)" } },
                   // Hit dice: the die, how many are left, and one rolled (spent) apart from a rest.
                   { custom: "dnd5e.hitDice", when: { feature: "deathSaves" } },
+                  // FG's Classes window: each class, its level and hit die, a level more in it, another class.
+                  { custom: "dnd5e.classes", when: { feature: "deathSaves" } },
                   // Descending Darkness's Dread, its bleeding out at 0 Health; 5E's death saves.
                   { custom: "dnd5e.dread", when: { feature: "dread" } },
                   { custom: "dnd5e.dying", when: { all: [{ feature: "dying.bleed" }, { zero: { path: "hp.total", minus: "hp.wounds" } }] } },
@@ -265,6 +267,7 @@ export default {
       "ac.misc",
       "initiative.misc",
       "slots.l#.(used|extra)",
+      "pactslots.l#.(used|extra)",
       "prepared.&",
       "resources.*.(max|used)",
       "deathsaves.(success|failure)",

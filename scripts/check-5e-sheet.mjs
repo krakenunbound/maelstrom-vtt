@@ -6,6 +6,7 @@
 //  - attunement: the box on an item that requires it, the attuned count, class slots
 //  - a wizard's slots by hand, prepared spells (known ones only), class resources given back by their rests
 //  - skills' half proficiency and misc; feats, languages, proficiencies by hand; FG's weapon options (crit range, extra dice)
+//  - multiclass: another class taken at level 1, a chosen class levelled, hit dice per class, the casters' slots together
 //  - the character details FG keeps (deity, size, personality traits, ideals, bonds, flaws, appearance...)
 import "./loopback.mjs";
 import path from "node:path";
@@ -170,6 +171,39 @@ try {
   const dice = (hurt?.roll?.formula ?? "").match(/\d*d\d+/g) ?? [];
   assert(hurt && dice.length >= 2, `the critical's dice with one more: ${JSON.stringify(hurt?.roll?.formula)}`);
   done.push("weapon options: critical range, extra critical dice");
+
+  // Multiclass (FG's Classes): the fighter 3 takes a level of Wizard, then another of Fighter; then a Cleric.
+  const levelUp = async (choice) => {
+    ann.send({ type: "level-up", id, package: choice });
+    await settle(400);
+  };
+  const classOf = (name) => Object.values(data().packages).find((pkg) => pkg.packagetype === "Class" && pkg.name === name);
+  await tool("kraken_record_update", { id, data: { exp: 900000 } });
+  const hpBefore = data().hp.total;
+  await levelUp("Wizard");
+  assert(data().level === 4 && classOf("Fighter")?.level === 3 && classOf("Wizard")?.level === 1 && data().hp.total > hpBefore, `Fighter 3 / Wizard 1: ${JSON.stringify({ level: data().level, packages: data().packages, errors: errors() })}`);
+  assert(data().spellcasting?.stat === "intelligence" && data().slots.l1?.max === 2 + (data().slots.l1?.extra ?? 0), `a 1st-level wizard's slots: ${JSON.stringify({ casting: data().spellcasting, slots: data().slots })}`);
+  const fighterKey = Object.entries(data().packages).find(([, pkg]) => pkg.name === "Fighter")[0];
+  await levelUp(fighterKey);
+  assert(classOf("Fighter")?.level === 4 && classOf("Wizard")?.level === 1 && data().level === 5 && data().prof === 3, `Fighter 4 / Wizard 1: ${JSON.stringify({ level: data().level, prof: data().prof, packages: data().packages })}`);
+  // Hit dice: 4 d10 and 1 d6; two spent go from the d10s first.
+  await edit([{ path: "hitdice.used", value: 0 }]);
+  await edit([{ path: "hitdice.used", value: 2 }]);
+  const pools = data().hitdice.pools;
+  assert(data().hitdice.total === 5 && pools.find((pool) => pool.name === "Fighter").left === 2 && pools.find((pool) => pool.name === "Wizard").left === 1, `hit dice per class: ${JSON.stringify(data().hitdice)}`);
+  // A third caster level: Wizard 1 + Cleric 1 is a 2nd-level caster's slots (3 first-level), and two DCs.
+  await levelUp("Cleric");
+  assert(data().slots.l1?.max - (data().slots.l1?.extra ?? 0) === 3 && data().spellcasting.classes?.length === 2, `Wizard 1 + Cleric 1: ${JSON.stringify({ slots: data().slots, casting: data().spellcasting })}`);
+  assert(agent.chatLog(10).some((line) => /\[LEVEL UP\] Hero is now Fighter 4 \/ Wizard 1 \/ Cleric 1/.test(line.text ?? "")), "the chat names every class");
+  done.push("multiclass: a class taken, a class levelled, hit dice per class, the casters' slots together, each class's DC");
+
+  // Pact Magic beside spellcasting: a Wizard 3 / Warlock 2 has a wizard's slots and the warlock's two pact slots apart.
+  const rules = await import("../shared/dnd5e/rules.mjs");
+  const both = rules.derive({ ...data(), packages: { "id-00001": { name: "Wizard", packagetype: "Class", level: 3, hitdie: 6 }, "id-00002": { name: "Warlock", packagetype: "Class", level: 2, hitdie: 8 } }, slots: {}, pactslots: {} });
+  assert(both.level === 5 && both.slots.l1?.max === 4 && both.slots.l2?.max === 2 && both.pactslots?.l1?.max === 2, `wizard and warlock: ${JSON.stringify({ level: both.level, slots: both.slots, pact: both.pactslots })}`);
+  const alone = rules.derive({ ...data(), packages: { "id-00001": { name: "Warlock", packagetype: "Class", level: 2, hitdie: 8 } }, level: 2, slots: {}, pactslots: { l1: { max: 2, used: 1 } } });
+  assert(alone.slots.l1?.max === 2 && !alone.pactslots, `a warlock alone keeps its slots as they were: ${JSON.stringify({ slots: alone.slots, pact: alone.pactslots })}`);
+  done.push("Pact Magic apart from a multiclass caster's slots");
 
   // The character details.
   await edit([{ path: "deity", value: "Tempus" }, { path: "size", value: "Medium" }, { path: "ideals", value: "Glory" }, { path: "bonds", value: "My shield-brothers" }, { path: "flaws", value: "Proud" }, { path: "personalitytraits", value: "Loud" }, { path: "specialdefenses", value: "Resist fire" }]);

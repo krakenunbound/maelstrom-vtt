@@ -63,14 +63,28 @@ async function check5e(table, record, { kind = "check", attribute, skill, dc, bo
   return { total: rolled.total, d20: rolled.terms[0].rolls, modifier: total, dc: against, success };
 }
 
-async function levelUp5e(table, record, from) {
+// One level more, in the class chosen (packageKey: a class package's key or a class's name; a class the character
+// has not yet taken joins at level 1, its hit die from the campaign's class record: FG's multiclass).
+async function levelUp5e(table, record, from, packageKey) {
   const rules = await rules5e();
-  const pkg = Object.values(record.data.packages ?? {}).find((item) => String(item.packagetype).toLowerCase() === "class");
+  const classes = Object.entries(record.data.packages ?? {}).filter(([, item]) => String(item.packagetype).toLowerCase() === "class");
+  const wanted = String(packageKey ?? "").trim();
+  const owned = classes.find(([key, item]) => key === wanted || String(item.name).toLowerCase() === wanted.toLowerCase());
+  let choice = owned ? { key: owned[0] } : {};
+  if (wanted && !owned) {
+    const lib = library5e(table.records);
+    const cls = lib.classes.find((item) => item.name.toLowerCase() === wanted.toLowerCase());
+    if (!cls) throw new Error(`No class "${wanted}" in this campaign's books.`);
+    choice = { className: cls.name, hitdie: rules.hitDie(cls) };
+  }
+  const pkg = owned?.[1] ?? (choice.className ? { name: choice.className, hitdie: choice.hitdie, level: 0 } : classes[0]?.[1]);
   const die = Number(pkg?.hitdie) || Number(record.data.hitdice?.die) || 8;
-  const roll = table.roll(`1d${die}`, `${record.name}: ${pkg?.name ?? "Class"} ${(Number(record.data.level) || 1) + 1} hit points`, from || record.name);
-  const { data, gain } = rules.levelUp(record.data, roll.total);
+  const classLevel = (classes.length > 1 || choice.className ? Number(pkg?.level) || 0 : Number(record.data.level) || 1) + 1;
+  const roll = table.roll(`1d${die}`, `${record.name}: ${pkg?.name ?? "Class"} ${classLevel} hit points`, from || record.name);
+  const { data, gain, className } = rules.levelUp(record.data, roll.total, choice);
   const updated = table.records.update(record.id, { data }, table.seat, { replace: true });
-  table.say(`[LEVEL UP] ${record.name} is now ${pkg?.name ?? ""} ${data.level}: +${gain} hit points (${data.hp.total}), proficiency ${rules.signed(data.prof)}.`, from || record.name);
+  const line = rules.classLine ? rules.classLine(data) : className;
+  table.say(`[LEVEL UP] ${record.name} is now ${line || className} (level ${data.level}): +${gain} hit points (${data.hp.total}), proficiency ${rules.signed(data.prof)}.`, from || record.name);
   return { record: updated, gain, level: data.level, note: "" };
 }
 
