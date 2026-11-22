@@ -163,6 +163,32 @@ export function SettingsWindow({ session }: { session: Session }) {
               <option value="off">Off</option>
             </select>
           </SettingRow>
+          {/* FG's combat display options: what players see on the tracker, the turn notice, wound categories. */}
+          {(() => {
+            const o = session.options as { ctHealthPc?: string; ctHealthNpc?: string; turnOrder?: string; skipHidden?: boolean; woundCategories?: string; healthColors?: string; turnEffects?: string };
+            const pick = (key: string, label: string, hint: string, value: string, options: [string, string][]) => (
+              <SettingRow key={key} label={label} hint={hint}>
+                <select value={value} onChange={(event) => session.setTableOptions({ [key]: event.target.value } as never)} aria-label={label} data-setting={key}>
+                  {options.map(([id, text]) => (
+                    <option key={id} value={id}>
+                      {text}
+                    </option>
+                  ))}
+                </select>
+              </SettingRow>
+            );
+            return (
+              <>
+                {pick("turnOrder", "Players see the turn order", "Everyone's initiative, the allies' alone, or none (the tracker then lists allies first, by name).", o.turnOrder ?? "on", [["on", "Everyone"], ["friend", "Allies only"], ["off", "None"]])}
+                {pick("ctHealthPc", "Players see allies' health", "On the tracker: the hit points, the status words, or nothing.", o.ctHealthPc ?? "detailed", [["detailed", "Hit points"], ["status", "Status"], ["off", "Nothing"]])}
+                {pick("ctHealthNpc", "Players see enemies' health", "On the tracker: the hit points, the status words, or nothing.", o.ctHealthNpc ?? "status", [["detailed", "Hit points"], ["status", "Status"], ["off", "Nothing"]])}
+                {pick("woundCategories", "Wound categories", "Simple: Wounded and Heavy. Detailed: Light, Moderate, Heavy and Critical, a quarter of the hit points each.", o.woundCategories ?? "simple", [["simple", "Simple"], ["detailed", "Detailed"]])}
+                {pick("healthColors", "Health colours", "A smooth fade from green to red, or one colour for each wound category.", o.healthColors ?? "gradient", [["gradient", "Gradient"], ["tiered", "Tiered"]])}
+                {pick("turnEffects", "Effects on the turn notice", "The creature's effects with its turn in the chat: all of them, its conditions, or none. Players see an ally's, never the GM's own.", o.turnEffects ?? "conditions", [["all", "All"], ["conditions", "Conditions"], ["off", "None"]])}
+                <Toggle label="Skip hidden creatures" hint="A creature hidden from the players has no turn of its own." checked={Boolean(o.skipHidden)} onChange={(on) => session.setTableOptions({ skipHidden: on } as never)} setting="skip-hidden" />
+              </>
+            );
+          })()}
           <SettingRow label="Token effects" hint="Conditions and effects on tokens (Zzz, flames, frost, a buff's glow): animated, icons only, or not drawn. Everyone's screen; motion stops anyway where the computer asks for reduced motion.">
             <select value={session.options.tokenEffects ?? "full"} onChange={(event) => session.setTableOptions({ tokenEffects: event.target.value as "full" })} aria-label="Token effects" data-setting="token-effects">
               <option value="full">Animated</option>

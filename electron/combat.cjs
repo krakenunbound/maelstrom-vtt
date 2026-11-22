@@ -752,7 +752,8 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     if (ironOn()) return healthIron(entry);
     const { hp, wounds } = vitals(entry);
     if (!geometry) return { status: "Healthy", percent: 0, color: "#00C000" };
-    const status = geometry.healthStatus(hp, wounds, thresholdsFor(entry));
+    const shown = table().options?.() ?? {};
+    const status = geometry.healthStatus(hp, wounds, thresholdsFor(entry), { categories: shown.woundCategories, colors: shown.healthColors });
     // 5E: three failed death saves kill; three successes leave the character stable (Unconscious).
     if (record(entry)?.type === "starship") return status.status === "Dead" ? { ...status, status: "Destroyed" } : status;
     if (astraOn() && status.status === "Dying") return { ...status, status: "Down", color: "#6C2DC7" };
@@ -894,6 +895,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
   function skips(entry, opts) {
     // Delayed: out of the order until its Act now.
     if (entry.delayed) return true;
+    if (hiddenSkip(entry)) return true;
     // The table's option (Settings > Combat: skip the dead and the unconscious) wins over the game's own.
     const mode = String(table().options?.().skipDead ?? opts?.SIEGE_SKIP_UNCONSCIOUS ?? "enemies").toLowerCase();
     // Fate: the taken out and the conceded are out of the conflict.
@@ -911,6 +913,10 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     if (status === "Dead") return mode === "all" || record(entry)?.type !== "character";
     if (status !== "Unconscious") return false;
     return mode === "all" || entry.faction !== "friend";
+  }
+  // FG's skip hidden (CTSH): a creature hidden from the players has no turn of its own.
+  function hiddenSkip(entry) {
+    return Boolean(table().options?.().skipHidden && entry.hidden);
   }
 
   // The tracker's order: initiative high to low, then name, then id.
@@ -964,7 +970,24 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     const secret = entry.hidden;
     // A turn passes: templates of instant spells come off the map.
     table().onTurn?.();
-    table().say(`[TURN] ${entry.name}`, "Combat", secret);
+    // FG's turn notice (RSHE): the creature's effects with it, all or its conditions; the GM's line with every
+    // one, the players' (an ally's) without the GM's own.
+    const notice = String(table().options?.().turnEffects ?? "conditions");
+    const listed = (forPlayers) =>
+      notice === "off"
+        ? []
+        : entry.effects
+            .filter((effect) => !effect.paused && (!forPlayers || !effect.gmOnly))
+            .filter((effect) => notice === "all" || livePartsOf(effect).some((part) => (spellParse?.CONDITIONS ?? []).includes(part.trim().toLowerCase())))
+            .map((effect) => effect.label);
+    const gmEffects = listed(false);
+    const playerEffects = entry.faction === "friend" ? listed(true) : [];
+    const turnLine = (effects) => `[TURN] ${entry.name}${effects.length ? `\n    ${effects.join("\n    ")}` : ""}`;
+    if (secret || gmEffects.join("|") === playerEffects.join("|")) table().say(turnLine(gmEffects), "Combat", secret);
+    else {
+      table().say(turnLine(gmEffects), "Combat", true);
+      table().say(turnLine(playerEffects), "Combat", false, { playersOnly: true });
+    }
     // 5E's house rule (FG's HRST, on by default): a dying character rolls its death save as its turn starts.
     if (five() && !bleeds() && table().houseRule?.("HRST") && record(entry)?.type === "character" && health(entry).status === "Dying" && !entry.stabilized && num(deathSaves(entry)?.failure, 0) < 3) {
       await deathSave(entry.id, table().seat).catch(() => undefined);
@@ -2936,7 +2959,17 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     // What a seat sees of the tracker. The GM sees everything; players do not
     // see hidden entries or GM-only effects, and see foes' health as a status.
     viewFor(seat) {
-      const shown = sorted().filter((entry) => seat.role === "dm" || !entry.hidden);
+      const opts = table().options?.() ?? {};
+      // FG's turn order for players (CTSI): everyone's initiative (on), the allies' alone (friend), or none (off);
+      // those shown first by initiative, the rest after them, allies first, by name.
+      const order = seat.role === "dm" ? "on" : String(opts.turnOrder ?? "on");
+      const initShown = (entry) => seat.role === "dm" || order === "on" || (order === "friend" && entry.faction === "friend");
+      let shown = sorted().filter((entry) => seat.role === "dm" || !entry.hidden);
+      if (order !== "on") {
+        const known = shown.filter(initShown);
+        const rest = shown.filter((entry) => !initShown(entry)).sort((a, b) => (a.faction === "friend") !== (b.faction === "friend") ? (a.faction === "friend" ? -1 : 1) : a.name.localeCompare(b.name));
+        shown = [...known, ...rest];
+      }
       return {
         round: state.round,
         active: shown.some((entry) => entry.id === state.active) ? state.active : null,
@@ -2944,7 +2977,11 @@ function createCombat({ saved, table, onChange = () => undefined }) {
           const { hp, wounds, temp, ac } = vitals(entry);
           // What players see of a creature's health follows the token option (Settings > Tokens): off
           // none, a dot its status words, a bar the share left too, numbers the hit points.
-          const shows = seat.role === "dm" || entry.faction === "friend" ? "numbers" : String((record(entry)?.type === "character" ? table().options?.().healthPc : table().options?.().healthNpc) ?? "dot");
+          // FG's tracker health for players (SHPC for allies, default detailed; SHNPC for the rest, default status):
+          // detailed the hit points, status the words (a bar too where the token option shows one), off nothing.
+          const tracker = String((entry.faction === "friend" ? opts.ctHealthPc : opts.ctHealthNpc) ?? (entry.faction === "friend" ? "detailed" : "status"));
+          const tokenShows = String((record(entry)?.type === "character" ? opts.healthPc : opts.healthNpc) ?? "dot");
+          const shows = seat.role === "dm" || tracker === "detailed" ? "numbers" : tracker === "off" ? "off" : /^bar/.test(tokenShows) ? tokenShows : "dot";
           const status = shows === "off" ? { status: "", percent: 0, color: "" } : health(entry);
           const numbers = shows === "numbers";
           const bar = !numbers && /^bar/.test(shows) && hp > 0 ? Math.max(0, Math.min(1, (hp - wounds) / hp)) : undefined;
@@ -2954,7 +2991,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
             tokenId: entry.tokenId,
             name: entry.name,
             faction: entry.faction,
-            initresult: entry.initresult,
+            initresult: initShown(entry) ? entry.initresult : undefined,
             init: seat.role === "dm" ? entry.init : undefined,
             hidden: entry.hidden,
             owner: owner(entry),

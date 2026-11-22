@@ -365,6 +365,18 @@ function savedOptions(value) {
     ...(["roll", "max"].includes(options.npcHp) ? { npcHp: options.npcHp } : {}),
     ...(["enemies", "all", "off"].includes(options.skipDead) ? { skipDead: options.skipDead } : {}),
     npcNumbering: ["append", "random", "off"].includes(options.npcNumbering) ? options.npcNumbering : "append",
+    // FG's combat display options (CoreRPG): what players see on the tracker of allies' and enemies' health
+    // (detailed: the hit points; status: the words; off) and of the turn order (on: everyone's initiative; friend:
+    // the allies' alone; off: none, sorted by side and name); skip hidden creatures' turns; wound categories
+    // (simple: Wounded, Heavy; detailed: Light, Moderate, Heavy, Critical); health colours (gradient, tiered); the
+    // turn notice's effects (all, conditions, off).
+    ctHealthPc: ["detailed", "status", "off"].includes(options.ctHealthPc) ? options.ctHealthPc : "detailed",
+    ctHealthNpc: ["detailed", "status", "off"].includes(options.ctHealthNpc) ? options.ctHealthNpc : "status",
+    turnOrder: ["on", "friend", "off"].includes(options.turnOrder) ? options.turnOrder : "on",
+    ...(options.skipHidden ? { skipHidden: true } : {}),
+    woundCategories: options.woundCategories === "detailed" ? "detailed" : "simple",
+    healthColors: options.healthColors === "tiered" ? "tiered" : "gradient",
+    turnEffects: ["all", "conditions", "off"].includes(options.turnEffects) ? options.turnEffects : "conditions",
     // The game's house rules (its manifest's settings: 5E's auto death saves, fixed NPC damage...): key -> the
     // GM's choice; read through houseRule(), which holds them to the manifest's own choices.
     ...(options.rules && typeof options.rules === "object" && !Array.isArray(options.rules)
@@ -430,6 +442,8 @@ function savedChat(value) {
       ...(line.roll && typeof line.roll === "object" ? { roll: line.roll } : {}),
       ...(line.secret ? { secret: true } : {}),
       ...(typeof line.shownTo === "string" ? { shownTo: line.shownTo.slice(0, 24) } : {}),
+      // The players' own line (FG's turn notice to players): the GM has their own.
+      ...(line.playersOnly ? { playersOnly: true } : {}),
       ...(line.gm ? { gm: true } : {}),
       ...(CHAT_KINDS.has(line.kind) ? { kind: line.kind } : {}),
       ...(Array.isArray(line.to) ? { to: line.to.filter((name) => typeof name === "string").slice(0, 12) } : {}),
@@ -1389,6 +1403,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         // To a seat by its name (a player, the GM's "GM"): that seat; otherwise to whoever holds the character of that name.
         line.to.some((name) => sameName(name, client.name) || (!RESERVED_NAMES.has(String(name).toLowerCase()) && ![...clients.values()].some((seat) => sameName(seat.name, name)) && records.list({ type: "character", owner: client.name }).some((record) => sameName(name, record.name))))
       );
+    if (line.playersOnly) return client.role !== "dm";
     return !line.secret || client.role === "dm" || (line.shownTo && line.shownTo === client.name);
   };
 

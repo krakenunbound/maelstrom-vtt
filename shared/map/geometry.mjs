@@ -612,7 +612,9 @@ function distanceToSegment(px, py, x1, y1, x2, y2) {
 // SiegeCore's health status (onHealthStatus): dead at -10 current hit points,
 // dying at -7, unconscious at 0, else CoreRPG's wounded / heavy by percent.
 // The token dot colour follows CoreRPG's token health gradient.
-export function healthStatus(total, wounds, { dead = -10, dying = -7 } = {}) {
+// display: FG's wound categories (simple: Wounded, Heavy; detailed: Light, Moderate, Heavy, Critical at each
+// quarter) and its health colours (gradient, or tiered: one colour a category).
+export function healthStatus(total, wounds, { dead = -10, dying = -7 } = {}, { categories = "simple", colors = "gradient" } = {}) {
   const hp = Number(total) || 0;
   const hurt = Number(wounds) || 0;
   const percent = hp > 0 ? Math.min(Math.max(hurt / hp, 0), 1) : 0;
@@ -622,9 +624,12 @@ export function healthStatus(total, wounds, { dead = -10, dying = -7 } = {}) {
   else if (hp - hurt <= dead) status = "Dead";
   else if (hp - hurt <= dying) status = "Dying";
   else if (hp - hurt <= 0) status = "Unconscious";
+  else if (categories === "detailed") status = percent >= 0.75 ? "Critical" : percent >= 0.5 ? "Heavy" : percent >= 0.25 ? "Moderate" : "Light";
   else status = percent >= 0.5 ? "Heavy" : "Wounded";
-  return { status, percent, color: healthColor(status, percent) };
+  return { status, percent, color: colors === "tiered" ? TIER_COLOR[status] ?? healthColor(status, percent) : healthColor(status, percent) };
 }
+// FG's tiered token health colours, one a category.
+const TIER_COLOR = { Healthy: "#00C000", Wounded: "#80C000", Light: "#80C000", Moderate: "#FFC000", Heavy: "#FF6000", Critical: "#FF0000", Dead: "#404040", Dying: "#404040", Unconscious: "#6C2DC7" };
 
 const STATUS_COLOR = { Dead: "#404040", Dying: "#404040", Unconscious: "#6C2DC7" };
 

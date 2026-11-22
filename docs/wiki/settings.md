@@ -55,6 +55,9 @@ Decals, wallpapers and GM icons each offer Maelstrom's own, a set for each game,
 
 Clear targets, Initiative, Creatures' hit points, Roll initiative every round, Stop at the start of each round, Skip turns, NPC numbering, Token effects and Apply damage. Each is explained in [Combat tracker](combat-tracker.md#the-trackers-options).
 
+
+What players see in a fight: the turn order (everyone's initiative, the allies' alone, or none), the health of allies and of enemies on their tracker (hit points, status words, or nothing), and the effects with each turn in the chat (all, conditions, or none; never your own GM-only effects). Also: wound categories (simple, or detailed: Light, Moderate, Heavy, Critical), health colours (a gradient, or one colour a category), and whether hidden creatures get a turn.
+
 ### Bookkeeping
 
 Ammunition, Consumables, Rations and water, Light from the pack, Encumbrance and bag space, and Variant encumbrance. See [Bookkeeping and rest](bookkeeping-and-rest.md).

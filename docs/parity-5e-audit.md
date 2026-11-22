@@ -23,18 +23,18 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 
 | FG option | FG default | Maelstrom | Verdict |
 |---|---|---|---|
-| Health bar colors (BARC) | | Health colour from green to red on the tracker and tokens | Check live (FG offers colour schemes) |
+| Health bar colors (BARC) | standard | `healthColors`: gradient or tiered (FG's tier colours) | Done |
 | Turn: Skip dead non-ally (CTSD) | off | `skipDead` table option (enemies, all, off) | Same |
-| Turn: Skip hidden actor (CTSH) | off | Not found | Missing |
-| Combat (Player): Show turn order (CTSI) | on | Players see the tracker | Check live (FG can hide the order) |
+| Turn: Skip hidden actor (CTSH) | off | `skipHidden`, every game | Done |
+| Combat (Player): Show turn order (CTSI) | on | `turnOrder`: everyone, allies only, none (allies first by name) | Done |
 | Combat: Auto NPC initiative (INIT) | group | `initGroup` (each, kind, sides) | Same |
 | Combat: NPC numbering (NNPC) | append | `npcNumbering` (append, random, off) | Same |
 | Turn (Player): Notification sound (RING) | off | Turn chimes (Sound) | Same |
 | Turn: Stop at round start (RNDS) | off | `roundStop` | Same |
-| Turn: Show effects on notice (RSHE) | conditions | Turn card | Check live |
-| Combat (Player): Enemy health display (SHNPC) | status | `healthNpc` on tokens | Partly (tracker side to check) |
-| Combat (Player): Ally health display (SHPC) | detailed | `healthPc` on tokens | Partly (tracker side to check) |
-| Combat: Wound categories (WNDC) | off | Health status words | Check live |
+| Turn: Show effects on notice (RSHE) | conditions | `turnEffects`: the GM's line with every effect, the players' line (an ally's) without the GM's own (a new players-only chat line) | Done |
+| Combat (Player): Enemy health display (SHNPC) | status | `ctHealthNpc`: hit points, status, nothing (tokens keep their own option) | Done |
+| Combat (Player): Ally health display (SHPC) | detailed | `ctHealthPc`: hit points, status, nothing | Done |
+| Combat: Wound categories (WNDC) | off | `woundCategories`: simple (Wounded, Heavy) or detailed (Light, Moderate, Heavy, Critical) | Done |
 
 ### Game
 

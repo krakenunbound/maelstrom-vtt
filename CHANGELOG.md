@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **What players see in a fight, as the GM chooses:** Settings > Combat now has who players see the turn order of (everyone, allies only, none), how much of allies' and enemies' health their tracker shows (hit points, status, nothing), wound categories (simple or detailed: Light, Moderate, Heavy, Critical), health colours (gradient or tiered), the effects on the turn notice (all, conditions, none: the GM's line with every effect, the players' without the GM's own), and skipping hidden creatures' turns.
 - **House rules for each game, starting with 5E's:** Settings has a House rules section drawn from the game's own list (the agent's `kraken_table_options rules`). D&D 5E has Fantasy Grounds' ten, with its defaults: the rules version (2014 or 2024: exhaustion and a long rest's hit dice follow it), automatic death saves, fixed NPC damage, a ranged attack next to an enemy at disadvantage, massive damage and system shock, exhaustion's modifier per level, on spell save DCs and after being healed from dying, fast or slow healing, and reliable skill rolls.
 - **5E attacks take advantage and disadvantage from everything:** ADVATK, DISATK, GRANTADVATK and GRANTDISATK effects (Faerie Fire, heavy encumbrance), the conditions (blinded, frightened, invisible, poisoned, prone at reach or range, restrained, paralyzed, stunned, unconscious); both cancel out.
 ## 0.1.0-beta.2: Their books and maps, whole
