@@ -20,6 +20,15 @@ export const TABS = ["species", "class", "abilities", "background", "equipment",
 export const TAB_LABEL = { species: "Race", class: "Class", abilities: "Abilities", background: "Background", equipment: "Equipment", commit: "Commit" };
 
 export const is2024 = (record) => String(record?.data?.version ?? "") === "2024";
+// A class's subclasses, of its own edition: a book with both a 2014 and a 2024 Life Domain offers a 2014 Cleric the
+// 2014 one (its Disciple of Life at level 1). Each name once.
+export function subclassesOf(cls, list = []) {
+  const name = String(cls?.name ?? cls ?? "").toLowerCase();
+  const all = list.filter((record) => String(record.data?.class ?? "").toLowerCase() === name);
+  const edition = typeof cls === "object" && cls ? all.filter((record) => is2024(record) === is2024(cls)) : all;
+  const seen = new Set();
+  return (edition.length ? edition : all).filter((record) => !seen.has(String(record.name).toLowerCase()) && seen.add(String(record.name).toLowerCase()));
+}
 
 // FG's convertSingleNumberTextToNumber.
 const WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9 };
@@ -128,6 +137,7 @@ export function parseLanguagesField(text, version2024) {
 }
 
 // GameSystem.languagestandard: a 2024 species gives Common and two of these.
+export const EXOTIC_LANGUAGES = ["Abyssal", "Celestial", "Deep Speech", "Infernal", "Primordial", "Sylvan", "Undercommon"];
 export const STANDARD_LANGUAGES = ["Common Sign Language", "Draconic", "Dwarvish", "Elvish", "Giant", "Gnomish", "Goblin", "Halfling", "Orc"];
 
 // A decision: what the wizard asks (FG's decision windows).
@@ -176,6 +186,38 @@ export function speciesInfo(species, ancestry) {
         if (STATS.includes(stat)) out.increases[stat] = (out.increases[stat] ?? 0) + Number(match[2]);
       }
     }
+    // "Your ability scores each increase by 1" (Human); "two other ability scores of your choice increase by 1" (Half-Elf).
+    for (const trait of asi) {
+      const text = plain(trait.text);
+      const each = /ability scores each increase by (\d+)/i.exec(text);
+      if (each) for (const stat of STATS) out.increases[stat] = (out.increases[stat] ?? 0) + Number(each[1]);
+      const other = /(\w+) (?:other|different) ability scores? of your choice increases? by (\d+)/i.exec(text);
+      if (other) {
+        const opts = STATS.filter((stat) => !out.increases[stat]).map(titled);
+        out.decisions.push(...picksOf("species:abilityscoreincrease", "asi", countWord(other[1]), opts, { adj: Number(other[2]) }));
+      }
+    }
+    // Its languages ("Common and Dwarvish", "one extra language of your choice") and the skills its traits give
+    // (an Elf's Keen Senses, a Half-Elf's Skill Versatility).
+    const languageTrait = traits.find((trait) => /^languages$/i.test(String(trait.name)));
+    if (languageTrait) {
+      const text = plain(languageTrait.text).split(/\.\s/)[0];
+      const known = ["Common", ...STANDARD_LANGUAGES, ...EXOTIC_LANGUAGES];
+      out.languages.base = known.filter((language) => new RegExp(`\\b${language}\\b`, "i").test(text));
+      const extra = /(\w+) (?:extra|other|additional) languages? of your choice/i.exec(text);
+      if (extra) {
+        out.languages.picks = countWord(extra[1]) || 1;
+        out.languages.options = known.filter((language) => !out.languages.base.includes(language));
+        out.decisions.push(...picksOf("species:languages", "language", out.languages.picks, out.languages.options));
+      }
+    }
+    for (const trait of traits) {
+      const text = plain(trait.text);
+      if (!/proficiency (?:in|with)[^.]*skill/i.test(text)) continue;
+      const found = skillsFromTrait2024(text);
+      out.skills.base.push(...found.base);
+      if (found.picks > 0) out.decisions.push(...picksOf(`species:${simplify(trait.name)}`, "skill", found.picks, found.options));
+    }
     if (!asi.length && species.data?.abilityadjust === undefined && species.data?.classes === undefined) out.decisions.push(decision("species:asioption", "asioption", DECISION_LABEL.asioption, ["Option 1: One +2, One +1", "Option 2: Three +1's"]));
   }
   for (const trait of traits) {
@@ -190,6 +232,10 @@ export function speciesInfo(species, ancestry) {
       if (found.picks > 0) out.decisions.push(...picksOf(`species:${key}`, "skill", found.picks, found.options));
     } else if (version && key === "versatile") {
       out.decisions.push(decision("species:feat", "feat", DECISION_LABEL.feat, [], { category: "Origin" }));
+    } else if (!version && key === "toolproficiency" && /of your choice/i.test(text)) {
+      // A Legacy species' tool of the player's choice ("artisan's tools of your choice: smith's tools, brewer's supplies, or mason's tools").
+      const options = parseOptions(text.replace(/^[\s\S]*?of your choice:?/i, "").replace(/\.\s*$/, "")).map((part) => part.replace(/^(and|or)\s+/i, "").trim().replace(/(^|\s)\w/g, (letter) => letter.toUpperCase())).filter(Boolean);
+      if (options.length > 1) out.decisions.push(...picksOf(`species:${key}`, "toolprof", 1, options));
     } else if (!version && /feat/.test(key) && /feat of your choice/i.test(text)) {
       out.decisions.push(decision("species:feat", "feat", DECISION_LABEL.feat, []));
     }
@@ -197,7 +243,8 @@ export function speciesInfo(species, ancestry) {
   return out;
 }
 
-// The species' ancestries (FG: race_subrace records naming the species).
+// The species' ancestries (FG: race_subrace records naming the species; a 2014 book's nested subraces are made such
+// records when the book is read, electron/importers/fgModule.cjs).
 export const ancestriesOf = (species, list = []) => (species ? list.filter((item) => simplify(item.data?.race) === simplify(species.name)) : []);
 
 // The background (manager_charwizard_background.lua): ability options (2024),
@@ -294,6 +341,13 @@ export function classInfo(cls, level = 1, subclass) {
     else if (key === "abilityscoreimprovement") out.decisions.push(decision(`${id}:asiorfeat`, "asiorfeat", DECISION_LABEL.asiorfeat, ["Ability Score Increase", "Feat"], { feature: name }));
     else if (key === "expertise") out.decisions.push(...picksOf(`${id}`, "expertise", 2, [], { feature: name }));
     else if (version && FEAT_FEATURES_2024[key]) out.decisions.push(decision(`${id}:feat`, "feat", DECISION_LABEL.feat, [], { feature: name, category: FEAT_FEATURES_2024[key] }));
+    // A feature's armour or weapon proficiency (a Life Domain's "Bonus Proficiency": heavy armor).
+    const gained = /(?:gain|have) proficiency with ([^.]*(?:armor|weapons))/i.exec(plain(feature.text))?.[1] ?? "";
+    for (const part of gained.split(/,\s*|\s+and\s+/)) {
+      const what = part.trim().toLowerCase();
+      if (/armor$/.test(what) && !out.armor.toLowerCase().includes(what)) out.armor = [out.armor, what].filter(Boolean).join(", ");
+      else if (/weapons$/.test(what) && !out.weapons.toLowerCase().includes(what)) out.weapons = [out.weapons, what].filter(Boolean).join(", ");
+    }
   }
   return out;
 }
@@ -349,9 +403,15 @@ export function spellCounts(className, level) {
   return { cantrips, prepared: table ? table[at - 1] : 0 };
 }
 // The class's spells (a spell's source names the classes that cast it), up to the highest slot it has.
-export function classSpells(spells, className, maxLevel) {
-  const pattern = new RegExp(`\\b${String(className ?? "").replace(/[^A-Za-z ]/g, "")}\\b`, "i");
-  return spells.filter((spell) => num(spell.data?.level) <= maxLevel && (!spell.data?.source || pattern.test(String(spell.data.source)))).sort((a, b) => num(a.data?.level) - num(b.data?.level) || a.name.localeCompare(b.name));
+// A spell's source lists its classes ("Bard, Cleric Nature Domain, Druid"): a subclass's own spells ("Cleric Nature
+// Domain") count only for that subclass, not for every Cleric.
+export function classSpells(spells, className, maxLevel, subclassName = "") {
+  const mine = [simplify(className), ...(subclassName ? [simplify(`${className} ${subclassName}`), simplify(subclassName)] : [])];
+  const listed = (source) =>
+    String(source)
+      .split(/[,;]/)
+      .some((part) => mine.includes(simplify(part)));
+  return spells.filter((spell) => num(spell.data?.level) <= maxLevel && (!spell.data?.source || listed(spell.data.source))).sort((a, b) => num(a.data?.level) - num(b.data?.level) || a.name.localeCompare(b.name));
 }
 
 // The coins of a game (FG's CurrencyManager): 5E's five, Descending Darkness's gold crowns.

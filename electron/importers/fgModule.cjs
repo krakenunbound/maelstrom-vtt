@@ -417,6 +417,24 @@ function spreadReference(records) {
       }
     }
   }
+  return [...out, ...nestedSubraces(out)];
+}
+// FG's 2014 5E races keep their subraces inside the race (reference.racedata.dwarf.subraces.hilldwarf); a 2024 book
+// has them as race_subrace records naming their race. Each nested one becomes such a record too, so every reader of
+// the book (the wizard, the Races list, the character builder) finds Hill Dwarf as it finds a 2024 book's.
+function nestedSubraces(records) {
+  const have = new Set(records.filter((record) => record.type === "race_subrace").map((record) => `${String(record.data?.race ?? "").toLowerCase()}|${String(record.name).toLowerCase()}`));
+  const out = [];
+  for (const race of records) {
+    if (race.type !== "race" || !race.data?.subraces || typeof race.data.subraces !== "object") continue;
+    const [path, module] = String(race.data.fgPath ?? "").split("@");
+    for (const [key, sub] of Object.entries(race.data.subraces)) {
+      if (!sub || typeof sub !== "object" || typeof sub.name !== "string") continue;
+      if (have.has(`${race.name.toLowerCase()}|${sub.name.toLowerCase()}`)) continue;
+      const fgPath = `${path || "reference.racedata"}.subraces.${key}`;
+      out.push({ id: `${race.id}.subraces.${key}`.slice(0, 160), type: "race_subrace", name: sub.name, visibility: race.visibility, source: race.source, data: { ...sub, race: race.name, fgPath: module ? `${fgPath}@${module}` : fgPath } });
+    }
+  }
   return out;
 }
 

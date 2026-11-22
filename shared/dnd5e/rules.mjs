@@ -17,7 +17,7 @@
 //   spellcasting {stat, dc, attack}, slots {l1: {max, used}}, spells [names],
 //   deathsaves {success, failure}, hitdice {die, total, used}.
 
-import { backgroundInfo, classInfo, currenciesOf, gearCost, mainCurrency, payFrom, speciesInfo, totalWealth } from "./wizard.mjs";
+import { ancestriesOf, subclassesOf, backgroundInfo, classInfo, currenciesOf, gearCost, mainCurrency, payFrom, speciesInfo, totalWealth } from "./wizard.mjs";
 
 export const RULESET = "dnd5e";
 export const RULESET_NAME = "D&D 5E";
@@ -598,11 +598,11 @@ export function buildFromSpec(spec, lib, rulesetId = RULESET) {
   if (!cls) throw new Error(`No class ${spec.class} in the books (make a 5E Player's Handbook active in Modules).`);
   const species = spec.species || spec.race ? find(lib.species, spec.species ?? spec.race) : null;
   if ((spec.species || spec.race) && !species) problems.push(`No species ${spec.species ?? spec.race}.`);
-  const ancestry = spec.ancestry ? find(lib.ancestries, spec.ancestry) : null;
+  const ancestry = spec.ancestry ? find(ancestriesOf(species, lib.ancestries ?? []), spec.ancestry) ?? find(lib.ancestries, spec.ancestry) : null;
   if (spec.ancestry && !ancestry) problems.push(`No ancestry ${spec.ancestry}.`);
   const background = spec.background ? find(lib.backgrounds, spec.background) : null;
   if (spec.background && !background) problems.push(`No background ${spec.background}.`);
-  const subclass = spec.subclass ? find(lib.subclasses, spec.subclass) : null;
+  const subclass = spec.subclass ? find(subclassesOf(cls, lib.subclasses ?? []), spec.subclass) ?? find(lib.subclasses, spec.subclass) : null;
   if (spec.subclass && !subclass) problems.push(`No subclass ${spec.subclass}.`);
   const level = Math.min(profile.maxLevel, Math.max(1, Math.round(num(spec.level, 1))));
   const kin = speciesInfo(species, ancestry);
@@ -696,7 +696,7 @@ export function buildFromSpec(spec, lib, rulesetId = RULESET) {
   const tools = [...new Set([...(bg?.tools.base ?? []), ...listed(spec.tools).map(String)].filter(Boolean))];
   const die = hitDie(cls);
   const con = mod(abilities.constitution.score);
-  const perLevel = toughnessOf(species);
+  const perLevel = toughnessOf(species) || toughnessOf(ancestry);
   const toughness = perLevel * level;
   const hp = die + con + (level - 1) * (Math.floor(die / 2) + 1 + con) + toughness;
   const senses = (() => {
@@ -713,7 +713,9 @@ export function buildFromSpec(spec, lib, rulesetId = RULESET) {
     ...(ancestry ? { ancestry: ancestry.name } : {}),
     size: String(spec.size ?? kin?.size ?? "Medium"),
     background: background?.name ?? String(spec.background ?? ""),
-    alignment: String(spec.alignment ?? ""),
+    alignment: String(spec.alignment ?? spec.details?.alignment ?? ""),
+    // The wizard's details: who they are (gender, age, looks, deity) and the background's traits, ideals, bonds, flaws.
+    ...Object.fromEntries(["gender", "age", "height", "weight", "deity", "personalitytraits", "ideals", "bonds", "flaws"].map((key) => [key, String(spec.details?.[key] ?? "").slice(0, 2000)]).filter(([, value]) => value)),
     notes: [warnings.join("\n"), String(spec.notes ?? "")].filter(Boolean).join("\n\n"),
     abilities,
     skills,

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Session, TableRecord } from "../session/useSession";
 import { ArtChoice } from "./ArtPicker";
 import { RailFrame, WizardPlate as Plate } from "../core/wizard/RailFrame";
@@ -7,6 +7,7 @@ import { abilityAdjustments, CASTERS, mod, profileFor, signed, SKILLS, skillKey,
 import {
   addableItem,
   ancestriesOf,
+  subclassesOf,
   asiOrFeatDecisions,
   backgroundAsiDecisions,
   backgroundFixedIncreases,
@@ -178,6 +179,9 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState("");
   const [instructions, setInstructions] = useState(true);
+  // The character's details, and the background's tables (a 2014 book's "Acolyte Personality Trait" and the rest) to roll them on.
+  const [details, setDetails] = useState<Record<string, string>>({});
+  const [rollingDetail, setRollingDetail] = useState("");
 
   const speciesRecord = speciesList.find((item) => item.name === speciesName) ?? null;
   const ancestries = ancestriesOf(speciesRecord, ancestryList) as TableRecord[];
@@ -187,7 +191,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
   const kin = speciesInfo(speciesRecord, ancestryRecord) as Species | null;
   const bg = backgroundInfo(backgroundRecord, items) as Background | null;
   const subclassName = Object.entries(choices).find(([id]) => id.endsWith(":subclass") && id.startsWith("class:"))?.[1] ?? "";
-  const subclassRecord = subclasses.find((item) => item.name === subclassName && String(item.data.class ?? "").toLowerCase() === className.toLowerCase()) ?? null;
+  const subclassRecord = (subclassesOf(classRecord, subclasses) as TableRecord[]).find((item) => item.name === subclassName) ?? null;
   const klass = classInfo(classRecord, level, subclassRecord) as ClassInfo | null;
   const kinAdjust = abilityAdjustments(speciesRecord) as Record<string, number>;
   // A kin may limit the classes (Descending Darkness: a dwarf is a fighter, cleric or thief).
@@ -224,6 +228,32 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
   const total = (stat: Stat) => base[stat] + (backgroundAsi[stat] ?? 0) + (speciesAsi[stat] ?? 0) + (classAsi[stat] ?? 0) + misc[stat];
   const spent = pointsSpent(base);
 
+  // A class skill the background or race now gives anyway (Insight chosen, then the Acolyte): the choice opens again.
+  const fixedSkills = [...(bg?.skills.base ?? []), ...(kin?.skills.base ?? [])].join(",");
+  useEffect(() => {
+    const fixed = fixedSkills.split(",").filter(Boolean);
+    const clash = Object.entries(choices).filter(([id, value]) => id.startsWith("class:") && /:skill:\d+$/.test(id) && fixed.includes(skillKey(value)));
+    if (clash.length) setChoices((now) => Object.fromEntries(Object.entries(now).filter(([id]) => !clash.some(([taken]) => taken === id))));
+  }, [fixedSkills]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The background's tables of traits, ideals, bonds and flaws (its supporting tables, named in the book).
+  const detailTables = useMemo(() => {
+    const names = String(backgroundRecord?.data.supportingtables ?? "").split(",").map((item) => item.trim().toLowerCase()).filter(Boolean);
+    const tables = records.filter((item) => item.type === "table" && names.includes(item.name.toLowerCase()));
+    const find = (word: RegExp) => tables.find((item) => word.test(item.name)) ?? null;
+    return { personalitytraits: find(/personality/i), ideals: find(/ideal/i), bonds: find(/bond/i), flaws: find(/flaw/i) };
+  }, [backgroundRecord, records]);
+  const rollDetail = (key: keyof typeof detailTables) => {
+    const tableRecord = detailTables[key];
+    if (!tableRecord) return;
+    setRollingDetail(key);
+    session
+      .content<{ result: string }>("table-roll", { action: "roll", data: tableRecord.data, name: tableRecord.name })
+      .then((result) => setDetails((now) => ({ ...now, [key]: now[key] && key === "personalitytraits" ? `${now[key]}\n${result.result}` : result.result })))
+      .catch((error) => setProblem(error instanceof Error ? error.message : "Could not roll that."))
+      .finally(() => setRollingDetail(""));
+  };
+
   // Skills, for the expertise choices and the summary: every proficiency the character will have.
   const skillsHave = [...new Set([...(bg?.skills.base ?? []), ...(kin?.skills.base ?? []), ...chosen("skill").map(skillKey)])];
   // A choice's options: what another choice of its kind took is gone (refreshOverallDecision); a feat by category.
@@ -232,14 +262,16 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
       const taken = new Set([bg?.feat, ...allDecisions.filter((other) => other.type === "feat" && other.id !== item.id).map((other) => choices[other.id])].filter(Boolean));
       return feats.filter((feat) => feat.name !== "Ability Score Improvement" && (!item.category || String(feat.data.category ?? "").toLowerCase() === item.category.toLowerCase()) && !taken.has(feat.name)).map((feat) => feat.name);
     }
-    if (item.type === "subclass") return subclasses.filter((record) => String(record.data.class ?? "").toLowerCase() === className.toLowerCase()).map((record) => record.name);
+    if (item.type === "subclass") return (subclassesOf(classRecord, subclasses) as TableRecord[]).map((record) => record.name);
     const others = allDecisions.filter((other) => other.type === item.type && other.id !== item.id && (item.type !== "asi" || other.id.split(":").slice(0, -1).join(":") === item.id.split(":").slice(0, -1).join(":"))).map((other) => choices[other.id]);
     if (item.type === "expertise") return skillsHave.filter((key) => !others.map(skillKey).includes(key)).map((key) => SKILLS[key as keyof typeof SKILLS][0]);
     if (item.type === "skill") {
       const fixed = [...(bg?.skills.base ?? []), ...(kin?.skills.base ?? [])];
       return item.options.filter((key) => !fixed.includes(key) && !others.map(skillKey).includes(key)).map((key) => SKILLS[key as keyof typeof SKILLS]?.[0] ?? key);
     }
-    return item.options.filter((option) => !others.includes(option));
+    // A language the race or background already gives (a Dwarf's Dwarvish) is not offered again.
+    const known = item.type === "language" ? [...(kin?.languages.base ?? []), ...(bg?.languages.base ?? [])] : [];
+    return item.options.filter((option) => !others.includes(option) && !known.includes(option));
   };
   const choose = (item: Decision, value: string) => {
     const next = { ...choices, [item.id]: value };
@@ -276,7 +308,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
   const slots = caster ? (slotsFor(className, level) as Record<string, { max: number }>) : {};
   const maxSpellLevel = Math.max(0, ...Object.keys(slots).map((key) => Number(key.slice(1))));
   const counts = spellCounts(className, level);
-  const available = caster ? (classSpells(spellsAll, className, maxSpellLevel) as TableRecord[]) : [];
+  const available = caster ? (classSpells(spellsAll, className, maxSpellLevel, subclassName) as TableRecord[]) : [];
 
   // Equipment (manager_charwizard_equipment.lua): kits, or a Legacy class's rolled wealth.
   const classKits = klass?.kits ?? [];
@@ -396,7 +428,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
         backgroundSkills: pick("skill", "background"),
         expertise: pick("expertise", "class"),
         languages: [...pick("language", "species"), ...pick("language", "background")],
-        tools: pick("toolprof", "background"),
+        tools: [...pick("toolprof", "species"), ...pick("toolprof", "background")],
         feats: chosen("feat"),
         kits: processKits ? { ...(kits.class ? { class: kits.class } : {}), ...(kits.background ? { background: kits.background } : {}) } : {},
         gear: extra,
@@ -405,6 +437,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
         ...(showRolled && rolled > 0 ? { wealth: rolled } : {}),
         spells,
         warnings,
+        details,
         ...art,
       };
       const id = await session.buildCharacter(spec);
@@ -485,7 +518,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
                   )
                 ) : null}
                 <div className="ccw-panel w5-features">
-                  <Feature title="Size" text={String(speciesRecord?.data.size ?? kin.size)} alert={open("species", "species:size")}>
+                  <Feature title="Size" text={plain(kin.traits.find((trait) => /^size$/i.test(String(trait.name)))?.text ?? "") || String(speciesRecord?.data.size ?? kin.size)} alert={open("species", "species:size")}>
                     {decisionsUnder("species", "species:size")}
                   </Feature>
                   <Feature title="Speed" text={`${kin.speed} feet`} />
@@ -500,7 +533,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
                       {decisionsUnder("species", "species:asi")}
                     </Feature>
                   ) : null}
-                  {kin.traits.map((trait) => {
+                  {kin.traits.filter((trait) => !/^(size|speed)$/i.test(String(trait.name))).map((trait) => {
                     const key = String(trait.name ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
                     return (
                       <Feature key={`${String(trait.from)}-${String(trait.name)}`} title={String(trait.name)} text={plain(trait.text)} alert={open("species", `species:${key}`) || (key === "versatile" && open("species", "species:feat"))}>
@@ -897,6 +930,53 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
               </div>
               <ArtChoice session={session} race={speciesName} cls={className} value={art} onChange={setArt} />
               {problem ? <p className="ccw-warn">{problem}</p> : null}
+            </div>
+            <Plate>DETAILS</Plate>
+            <div className="ccw-panel w5-details" data-details>
+              <div className="w5-details-grid">
+                {(
+                  [
+                    ["gender", "Gender"],
+                    ["age", "Age"],
+                    ["height", "Height"],
+                    ["weight", "Weight"],
+                    ["deity", "Deity"],
+                  ] as const
+                ).map(([key, label]) => (
+                  <label key={key}>
+                    {label} <input value={details[key] ?? ""} onChange={(event) => setDetails({ ...details, [key]: event.target.value })} data-detail={key} />
+                  </label>
+                ))}
+                <label>
+                  Alignment{" "}
+                  <select value={details.alignment ?? ""} onChange={(event) => setDetails({ ...details, alignment: event.target.value })} data-detail="alignment">
+                    <option value="" />
+                    {["Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil", "Unaligned"].map((item) => (
+                      <option key={item}>{item}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {(
+                [
+                  ["personalitytraits", "Personality traits"],
+                  ["ideals", "Ideals"],
+                  ["bonds", "Bonds"],
+                  ["flaws", "Flaws"],
+                ] as const
+              ).map(([key, label]) => (
+                <div key={key} className="w5-detail-text">
+                  <span className="w5-detail-label">
+                    {label}
+                    {detailTables[key] ? (
+                      <button type="button" className="ccw-button" data-roll-detail={key} disabled={Boolean(rollingDetail)} title={`Roll on ${detailTables[key]?.name} (the roll goes to chat)`} onClick={() => rollDetail(key)}>
+                        {rollingDetail === key ? "Rolling…" : "Roll"}
+                      </button>
+                    ) : null}
+                  </span>
+                  <textarea rows={2} value={details[key] ?? ""} onChange={(event) => setDetails({ ...details, [key]: event.target.value })} data-detail={key} aria-label={label} />
+                </div>
+              ))}
             </div>
             <Plate>SUMMARY</Plate>
             <div className="ccw-panel w5-summary" data-summary>

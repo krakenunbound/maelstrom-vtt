@@ -1,7 +1,7 @@
 // FG's 5E level up through the character wizard: what the next level in a class brings (its features, a subclass
 // to choose, an Ability Score Improvement or a feat) and the choices applied. The sheet's dialog and the host read the
 // same plan: the host checks the choices against it.
-import { classInfo, classSpells, spellCounts } from "./wizard.mjs";
+import { classInfo, classSpells, spellCounts, subclassesOf } from "./wizard.mjs";
 import { hitDie, SKILLS, slotsFor, spellSlug } from "./rules.mjs";
 
 const num = (value, fallback = 0) => (Number.isFinite(Number(value)) && value !== "" && value !== null ? Number(value) : fallback);
@@ -24,13 +24,13 @@ export function levelUpPlan(data, lib, packageKey = "") {
   if (!cls) return null;
   const classLevel = owned ? (classes.length > 1 ? Math.max(1, Math.round(num(owned[1].level, 1))) : Math.round(num(data.level, 1))) + 1 : 1;
   const subName = String(owned?.[1]?.subclass ?? (classes.length <= 1 ? data.subclass ?? "" : "")).trim();
-  const subclass = subName ? (lib.subclasses ?? []).find((record) => same(record.name, subName)) : null;
+  const subclass = subName ? subclassesOf(cls, lib.subclasses ?? []).find((record) => same(record.name, subName)) ?? (lib.subclasses ?? []).find((record) => same(record.name, subName)) : null;
   const info = classInfo(cls, classLevel, subclass);
   const levelOf = (id) => Number(/^class:[^:]+:(\d+)/.exec(String(id))?.[1] ?? 0);
   const decisions = (info?.decisions ?? []).filter((item) => levelOf(item.id) === classLevel);
   const has = (kind) => decisions.some((item) => item.type === kind);
   const featDecision = decisions.find((item) => item.type === "feat");
-  const subclasses = !subclass && has("subclass") ? (lib.subclasses ?? []).filter((record) => same(record.data?.class, cls.name)).map((record) => String(record.name)) : null;
+  const subclasses = !subclass && has("subclass") ? subclassesOf(cls, lib.subclasses ?? []).map((record) => String(record.name)) : null;
   const known = new Set((Array.isArray(data.features) ? data.features : []).map((line) => String(line).toLowerCase()));
   // FG's wizard on a level up: the class's new cantrips and spells (its table's counts at this level less the last),
   // from its own list, up to the highest spell level its slots reach now; none the character has already.
