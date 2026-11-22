@@ -446,6 +446,9 @@ export interface RulesetManifest {
   // The rolls that die is for: check, save, skill, init (the sheet's), attack, death-save (the tracker's). Absent:
   // all of them. A roll not listed is the host's.
   manualKinds?: string[];
+  // A level up asks for the next level's choices first (FG's wizard: hit points rolled or fixed, a subclass, an
+  // Ability Score Improvement or a feat; src/characters/LevelUpDialog.tsx, shared/dnd5e/levelup.mjs).
+  levelUpChoices?: boolean;
   // The game's own settings: a house rule (key, its choices, the default; the GM's Settings > House rules, the
   // agent's kraken_table_options rules; the host reads it with houseRule(key)), or a panel of its own.
   settings?: ({ key: string; label: string; hint?: string; kind: "toggle" | "select" | "checklist"; default: unknown; options?: (string | { value: string; label: string })[]; group?: string } | { component: Ref; gm?: boolean })[];

@@ -3075,3 +3075,12 @@ label.set-row { cursor: pointer; }
 /* FG's power action rows, in words under a spell. */
 .sheet-5e .five-spells .five-spell-rows { display: flex; flex-basis: 100%; flex-wrap: wrap; gap: 2px 14px; margin: 2px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: 0.86em; }
 .sheet-5e .five-spells .five-spell-rows li { display: inline; margin: 0; padding: 0; border: none; }
+
+/* FG's level up through the wizard: the next level's choices. */
+.level-up-dialog { min-width: min(26rem, 92vw); padding: 14px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); color: var(--text); }
+.level-up-dialog::backdrop { background: rgba(0, 0, 0, 0.5); }
+.level-up-dialog h3 { margin: 0 0 8px; }
+.level-up-dialog fieldset { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 0; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; }
+.level-up-dialog .level-up-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
+.level-up-dialog .level-up-features ul { margin: 4px 0 8px; padding-inline-start: 1.2em; }
+.level-up-dialog .level-up-buttons { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }

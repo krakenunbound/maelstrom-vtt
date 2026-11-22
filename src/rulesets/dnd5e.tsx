@@ -1,3 +1,4 @@
+import { levelUpWith } from "../characters/LevelUpDialog";
 import { spellRows } from "../../shared/dnd5e/spellrows.mjs";
 import { useState } from "react";
 import { classLine, signed, spellSlug } from "../../shared/dnd5e/rules.mjs";
@@ -356,7 +357,7 @@ export function Dnd5eClasses() {
             <li key={key} data-class={String(item.name)}>
               <b>{String(item.name)}</b> {level} <small className="hint">d{num(item.hitdie) || 8}{pool ? ` · ${num(pool.left)} of ${num(pool.total)} left` : ""}</small>
               {editable && ready && room ? (
-                <button type="button" className="cc-levelup" data-action="class-level-up" title={`One level more as a ${String(item.name)}`} aria-label={`${String(item.name)}: one level more`} onClick={() => session.levelUp(record.id, key)}>
+                <button type="button" className="cc-levelup" data-action="class-level-up" title={`One level more as a ${String(item.name)}`} aria-label={`${String(item.name)}: one level more`} onClick={() => levelUpWith(session, record.id, key)}>
                   +
                 </button>
               ) : null}
@@ -375,7 +376,7 @@ export function Dnd5eClasses() {
             ))}
           </select>
           <button type="button" data-action="add-class" disabled={!pick} onClick={() => {
-            session.levelUp(record.id, pick);
+            levelUpWith(session, record.id, pick);
             setPick("");
           }}>
             Take a level

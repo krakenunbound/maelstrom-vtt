@@ -132,7 +132,7 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | Portrait, name | Portrait (picker, drag as a link), token picture, name | Better |
 | Inspiration counter, maximum by HRIS (1 to 5), a chat line on change | A count held to the house rule HRIS (standard 1, 2, 3, 5), a chat line | Done |
 | Class & level summary; Classes window (each class: level, caster multiplier, pact magic, hit die, used) | "Fighter 4 / Wizard 1"; Classes on the Main tab: each class's level, hit die and dice left, a level more in it, another class taken | Done (caster share by the SRD's rule, not by hand) |
-| Level up opens the wizard | Level up (+): rolls the hit die, posts it | Partly (no choices on level up) |
+| Level up opens the wizard | Level up (+) opens the level's choices: hit points rolled or fixed, the new features listed (and added), a subclass at its level, an Ability Score Improvement (+2, +1/+1) or a General feat, a Fighting Style or Epic Boon feat where the level gives one; checked by the host (kraken_level_up hp, subclass, asi, feat) | Yes |
 | XP, next level | Experience / next | Same |
 | PROF | Prof | Same |
 | Background, race links and text | Read-only text; on the Notes tab the race and background each a link to its record | Yes |

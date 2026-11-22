@@ -8,6 +8,8 @@ const { pathToFileURL } = require("url");
 
 let loaded = null;
 const rules5e = () => (loaded ??= import(pathToFileURL(path.join(__dirname, "..", "shared", "dnd5e", "rules.mjs")).href));
+let levelUpLoaded = null;
+const levelUpRules = () => (levelUpLoaded ??= import(pathToFileURL(path.join(__dirname, "..", "shared", "dnd5e", "levelup.mjs")).href));
 const RULESET_NAME = "D&D 5E";
 // The d20 family's games (shared/dnd5e/rules.mjs PROFILES): their campaign names and record ids.
 const D20 = { "D&D 5E": "dnd5e", "Descending Darkness": "descending" };
@@ -65,8 +67,12 @@ async function check5e(table, record, { kind = "check", attribute, skill, dc, bo
 
 // One level more, in the class chosen (packageKey: a class package's key or a class's name; a class the character
 // has not yet taken joins at level 1, its hit die from the campaign's class record: FG's multiclass).
-async function levelUp5e(table, record, from, packageKey) {
+// choices (FG's level up through the wizard): hp "average" (the die's fixed value, else rolled), subclass, asi
+// {stat: n}, feat; the level's features are added either way (shared/dnd5e/levelup.mjs).
+async function levelUp5e(table, record, from, packageKey, choices = {}) {
   const rules = await rules5e();
+  const { levelUpPlan, applyLevelUp } = await levelUpRules();
+  const plan = levelUpPlan(record.data, library5e(table.records), packageKey);
   const classes = Object.entries(record.data.packages ?? {}).filter(([, item]) => String(item.packagetype).toLowerCase() === "class");
   const wanted = String(packageKey ?? "").trim();
   const owned = classes.find(([key, item]) => key === wanted || String(item.name).toLowerCase() === wanted.toLowerCase());
@@ -80,11 +86,21 @@ async function levelUp5e(table, record, from, packageKey) {
   const pkg = owned?.[1] ?? (choice.className ? { name: choice.className, hitdie: choice.hitdie, level: 0 } : classes[0]?.[1]);
   const die = Number(pkg?.hitdie) || Number(record.data.hitdice?.die) || 8;
   const classLevel = (classes.length > 1 || choice.className ? Number(pkg?.level) || 0 : Number(record.data.level) || 1) + 1;
-  const roll = table.roll(`1d${die}`, `${record.name}: ${pkg?.name ?? "Class"} ${classLevel} hit points`, from || record.name);
-  const { data, gain, className } = rules.levelUp(record.data, roll.total, choice);
+  // The hit die rolled in front of the table, or its fixed value (half the die + 1).
+  const average = choices?.hp === "average";
+  const rolled = average ? Math.floor(die / 2) + 1 : table.roll(`1d${die}`, `${record.name}: ${pkg?.name ?? "Class"} ${classLevel} hit points`, from || record.name).total;
+  const raised = rules.levelUp(record.data, rolled, choice);
+  const { gain, className } = raised;
+  const data = plan ? rules.derive(applyLevelUp(raised.data, plan, choices ?? {}, library5e(table.records))) : raised.data;
   const updated = table.records.update(record.id, { data }, table.seat, { replace: true });
   const line = rules.classLine ? rules.classLine(data) : className;
-  table.say(`[LEVEL UP] ${record.name} is now ${line || className} (level ${data.level}): +${gain} hit points (${data.hp.total}), proficiency ${rules.signed(data.prof)}.`, from || record.name);
+  const gained = [
+    ...(plan?.features ?? []).map((feature) => feature.name),
+    ...(choices?.subclass ? [choices.subclass] : []),
+    ...Object.entries(choices?.asi ?? {}).filter(([, n]) => Number(n) > 0).map(([stat, n]) => `${stat[0].toUpperCase()}${stat.slice(1, 3)} +${n}`),
+    ...(choices?.feat ? [choices.feat] : []),
+  ];
+  table.say(`[LEVEL UP] ${record.name} is now ${line || className} (level ${data.level}): +${gain} hit points${average ? " (fixed)" : ""} (${data.hp.total}), proficiency ${rules.signed(data.prof)}.${gained.length ? ` ${gained.join(", ")}.` : ""}`, from || record.name);
   return { record: updated, gain, level: data.level, note: "" };
 }
 

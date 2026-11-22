@@ -23,6 +23,7 @@ import { has, rulesetFor } from "../../shared/rulesets/registry.mjs";
 import { Mark } from "./Emblem";
 import { DecalPicker, SettingsWindow, TableDecal } from "./Settings";
 import { DiceWindow } from "../dice/DiceWindow";
+import { LevelUpDialog } from "../characters/LevelUpDialog";
 import { SoundWindow } from "../sound/SoundWindow";
 import { QuickSlots, slotDrag } from "./QuickSlots";
 import { KritsWindow } from "../combat/KritsWindow";
@@ -867,6 +868,7 @@ export function Desktop({
       </div>
       <PlayerMenu session={session} menu={playerMenu.state} onClose={playerMenu.close} />
       <ReconnectBanner session={session} />
+      <LevelUpDialog />
       {dice.show ? (
         <Suspense fallback={null}>
           {/* FG's Limit rolls to chat window (DRMO): no dice across the table, the results in the chat alone. */}

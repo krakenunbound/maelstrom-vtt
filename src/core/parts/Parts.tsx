@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useWindows } from "../../ui/Windows";
 import { slotDrag } from "../../ui/QuickSlots";
 import { FormattedText } from "../../books/Records";
+import { levelUpWith } from "../../characters/LevelUpDialog";
 import { useId } from "react";
 
 // An attack or damage button drags onto a creature (FG's drag of a sheet's action onto a
@@ -888,7 +889,7 @@ function Strip({ spec }: { spec: Extract<Part, { part: "strip" }> }) {
               <span key={index} className="cc-inline" title={item.hint ? fill(item.hint, scope) : undefined}>
                 <b>Level</b> <span className="cc-num" data-stat="level">{level}</span>
                 {editable && (ready(item.exp, item.next) || gm) && level < Number(item.max) ? (
-                  <button type="button" className="cc-levelup" data-action="level-up" title={textOf(item.title, scope, modifiers)} onClick={() => session.levelUp(record.id)}>
+                  <button type="button" className="cc-levelup" data-action="level-up" title={textOf(item.title, scope, modifiers)} onClick={() => levelUpWith(session, record.id)}>
                     <Icon name="add" size={14} />
                   </button>
                 ) : null}
@@ -905,7 +906,7 @@ function Strip({ spec }: { spec: Extract<Part, { part: "strip" }> }) {
                     <span key={name} className="cc-inline" title={textOf(item.title, scope, modifiers)}>
                       <b>{name}</b> <span className="cc-num" data-stat={`level-${sheet.formats[item.hook]?.(row) ?? ""}`}>{num(row.level)}</span>
                       {editable && (ready(item.exp, item.next) || gm) && num(row.level) < item.max ? (
-                        <button type="button" className="cc-levelup" data-action="level-up" data-level-class={name} title={textOf(item.buttonTitle, scope, modifiers)} onClick={() => session.levelUp(record.id, name)}>
+                        <button type="button" className="cc-levelup" data-action="level-up" data-level-class={name} title={textOf(item.buttonTitle, scope, modifiers)} onClick={() => levelUpWith(session, record.id, name)}>
                           <Icon name="add" size={14} />
                         </button>
                       ) : null}

@@ -81,8 +81,8 @@ async function siegeCheck(table, record, { attribute, cl = 0, bonus = 0, addLeve
 // Raises a character one level in front of the table: the host rolls the new
 // level's hit points (or adds the flat gain), the sheet is rebuilt, and chat
 // says so.
-async function levelUp(table, record, packageKey, from) {
-  if (dnd5e.is5e(record)) return dnd5e.levelUp5e(table, record, from, packageKey);
+async function levelUp(table, record, packageKey, from, choices = {}) {
+  if (dnd5e.is5e(record)) return dnd5e.levelUp5e(table, record, from, packageKey, choices);
   if (dnd35.is35(record)) return dnd35.levelUp35(table, record, from);
   if (adnd2e.is2e(record)) return adnd2e.levelUp2e(table, record, from, packageKey);
   if (ironsworn.isIronsworn(record)) throw new Error("Ironsworn has no levels: spend experience on assets (Advance).");

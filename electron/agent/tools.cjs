@@ -351,13 +351,20 @@ const TOOLS = [
   },
   {
     name: "kraken_level_up",
-    description: "Raise a character one level in its class. The host rolls the new level's hit points in front of the table, then the sheet is rebuilt (BtH, hit dice, XP to next level, slots, class abilities). Experience is not checked: the GM may level a character early.",
-    inputSchema: object({ id: string("Character record id"), package: string("Package key under packages, when the character has more than one class (AD&D 2E: the class's name, for a multi-class character)") }, ["id"]),
+    description: "Raise a character one level in its class. The host rolls the new level's hit points in front of the table, then the sheet is rebuilt (BtH, hit dice, XP to next level, slots, class abilities). Experience is not checked: the GM may level a character early. 5E as FG's wizard: the level's features are added, and its choices given (hp average, subclass, asi or feat).",
+    inputSchema: object({
+      id: string("Character record id"),
+      package: string("Package key under packages, when the character has more than one class (AD&D 2E: the class's name, for a multi-class character; 5E: a new class's name multiclasses)"),
+      hp: { type: "string", enum: ["roll", "average"], description: "5E: the hit die rolled (default) or its fixed value" },
+      subclass: string("5E: the subclass chosen at the level that asks for one"),
+      asi: { type: "object", description: "5E: an Ability Score Improvement, {strength: 2} or {dexterity: 1, constitution: 1}" },
+      feat: string("5E: a feat in place of the Ability Score Improvement (or the level's own feat: Epic Boon, Fighting Style)"),
+    }, ["id"]),
     async run(args, ctx) {
       const agent = needTable(ctx);
       const record = agent.records.get(args.id);
       if (!record) throw new Error(`No record ${args.id}.`);
-      const { record: updated, gain, level } = await levelUp(agent, record, args.package);
+      const { record: updated, gain, level } = await levelUp(agent, record, args.package, undefined, { hp: args.hp, subclass: args.subclass, asi: args.asi, feat: args.feat });
       return out({ id: updated.id, level, gain, hp: updated.data.hp.total, ...(dnd5e.is5e(updated) ? { prof: updated.data.prof } : dnd35.is35(updated) ? { bab: updated.data.bab } : adnd2e.is2e(updated) ? { thaco: updated.data.thaco } : require("../bfrpg.cjs").isBf(updated) ? { ab: updated.data.ab } : { bth: updated.data.bth }), expnext: updated.data.expnext });
     },
   },

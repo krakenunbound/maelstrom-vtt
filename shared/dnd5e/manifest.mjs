@@ -27,6 +27,7 @@ const SKILL_LIST = SKILLS;
 export default {
   id: "dnd5e",
   manualDie: "1d20",
+  levelUpChoices: true,
   // Where a character keeps its classes (FG's classes list), for the roster, Character Selection and spells.
   // FG's characters keep a classes list; Maelstrom's builder a class package.
   classes: [{ rows: "classes", name: "name", level: "level" }, { rows: "packages", where: { packagetype: "Class" }, name: "name", level: "level" }],
