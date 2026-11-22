@@ -2523,7 +2523,8 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     const missed = hitOn ? all.filter((target) => !(target.id in hitOn) || hitOn[target.id] === "miss") : [];
     const landed = all.filter((target) => !missed.includes(target));
     if (plan.entry) plan.entry.hitOn = null;
-    for (const target of missed) table().say(`[DAMAGE]${kind} ${plan.name} -> ${target.name}: the attack missed`, "Combat", Boolean(target.hidden));
+    // A miss is a result: kept to the GM when results are hidden from players.
+    for (const target of missed) table().say(`[DAMAGE]${kind} ${plan.name} -> ${target.name}: the attack missed`, "Combat", Boolean(target.hidden) || !resultsShown(plan.entry, target));
     // One roll for each different damage: critted or not, and each target's own effects.
     const groups = [];
     for (const target of landed) {

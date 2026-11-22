@@ -2883,7 +2883,9 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         const PLAIN = { modKind: "roll" };
         // FG's manual entry (the roller's own setting): the faces their own dice showed, rolled as given; marked.
         const manual = Array.isArray(msg.manual) ? msg.manual.slice(0, 40).map((value) => Math.round(Number(value))).filter((value) => Number.isFinite(value) && value >= 1 && value <= 1000) : [];
-        if (manual.length && !msg.tower) {
+        if (manual.length && !msg.tower && /\d*d(\d|F|%)/i.test(String(msg.formula ?? ""))) {
+          // The person's own faces, first in line: anything queued before is dropped.
+          dice.clearForced?.();
           dice.force(manual);
           msg.label = `${text(msg.label, "")} [MANUAL]`.trim();
         }

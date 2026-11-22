@@ -1,9 +1,11 @@
 // FG's chat options on the host, with a GM and a player connected:
 //  - Show GM rolls (REVL) off: the GM's tray roll and the GM's creatures' attacks reach the GM alone
 //  - Show results to players (SHRR): off, the GM gets the attack's full line, the player the roll without its result;
-//    pc, a result with an ally in it is everyone's; a hidden target's never
+//    pc, a result with an ally in it is everyone's; pconly, only between allies; a miss's damage line follows it;
+//    a hidden target's never
 //  - Dice: manual entry (MANUALROLL): the faces a person typed are the roll's, marked [MANUAL]; extra faces never
-//    reach the next roll
+//    reach the next roll, faces queued before never take their place, a roll with no dice is not marked
+//  - GM voice follows the active creature (CTAV) and dice in the chat only (DRMO) are stored
 // (Show all whispers to GM is in check-chat.)
 import "./loopback.mjs";
 import path from "node:path";
@@ -81,13 +83,46 @@ try {
   const annSaw = newLines(ann, mark.ann).filter((line) => /\[ATTACK\]/.test(line.roll?.label ?? ""));
   assert(gmSaw.length === 1 && /HIT|MISS/.test(gmSaw[0].roll.label) && gmSaw[0].secret, `the GM's full line: ${JSON.stringify(gmSaw.map((line) => line.roll.label))}`);
   assert(annSaw.length === 1 && !/HIT|MISS|AC \d/.test(annSaw[0].roll.label) && !annSaw[0].roll.result, `the player's line without the result: ${JSON.stringify(annSaw.map((line) => line.roll))}`);
+  // A miss's damage line is a result too: the GM's alone while results are hidden.
+  agent.dice.force([1]);
+  await tool("kraken_combat", { action: "attack", id: S.id, weapon: S.attacks[0].key });
+  mark = { gm: gm.lines.length, ann: ann.lines.length };
+  await tool("kraken_combat", { action: "damage-roll", id: S.id, weapon: S.attacks[0].key });
+  await settle();
+  assert(newLines(gm, mark.gm).some((line) => /the attack missed/.test(line.text ?? "")) && !newLines(ann, mark.ann).some((line) => /the attack missed/.test(line.text ?? "")), "a miss's damage line, the GM's alone");
+  // pconly: an enemy at an ally is not between allies.
+  await tool("kraken_table_options", { resultsToPlayers: "pconly" });
+  mark = { gm: gm.lines.length, ann: ann.lines.length };
+  await tool("kraken_combat", { action: "attack", id: S.id, weapon: S.attacks[0].key });
+  await settle();
+  assert(newLines(ann, mark.ann).some((line) => /\[ATTACK\]/.test(line.roll?.label ?? "")) && !newLines(ann, mark.ann).some((line) => /HIT|MISS/.test(line.roll?.label ?? "")), "pconly: an enemy's attack on an ally hides its result");
   await tool("kraken_table_options", { resultsToPlayers: "pc" });
   mark = { gm: gm.lines.length, ann: ann.lines.length };
   await tool("kraken_combat", { action: "attack", id: S.id, weapon: S.attacks[0].key });
   await settle();
   assert(newLines(ann, mark.ann).some((line) => /HIT|MISS/.test(line.roll?.label ?? "")), "pc: an attack on an ally shows its result");
+  // A hidden target, results on: the attack is the GM's alone.
   await tool("kraken_table_options", { resultsToPlayers: "on" });
-  done.push("Show results to players");
+  await tool("kraken_combat", { action: "add", entry: { name: "Hidden ally", faction: "friend", hp: 10, ac: 10, init: 0 } });
+  const hiddenId = (await tool("kraken_combat", { action: "view" })).entries.find((item) => item.name === "Hidden ally").id;
+  await tool("kraken_combat", { action: "update", id: hiddenId, patch: { hidden: true } });
+  await tool("kraken_combat", { action: "target", id: S.id, targetId: H, on: false });
+  await tool("kraken_combat", { action: "target", id: S.id, targetId: hiddenId, on: true });
+  mark = { gm: gm.lines.length, ann: ann.lines.length };
+  await tool("kraken_combat", { action: "attack", id: S.id, weapon: S.attacks[0].key });
+  await settle();
+  assert(newLines(gm, mark.gm).some((line) => /Hidden ally/.test(line.roll?.label ?? "")) && !newLines(ann, mark.ann).some((line) => /Hidden ally/.test(`${line.roll?.label ?? ""}${line.text ?? ""}`)), "a hidden target's attack, the GM's alone");
+  await tool("kraken_combat", { action: "target", id: S.id, targetId: hiddenId, on: false });
+  await tool("kraken_combat", { action: "target", id: S.id, targetId: H, on: true });
+  done.push("Show results to players (on, pc, pconly, off, a miss's damage line, a hidden target)");
+  // REVL off: the GM's creature's attack is the GM's alone too.
+  await tool("kraken_table_options", { revealGmRolls: false });
+  mark = { gm: gm.lines.length, ann: ann.lines.length };
+  await tool("kraken_combat", { action: "attack", id: S.id, weapon: S.attacks[0].key });
+  await settle();
+  assert(newLines(gm, mark.gm).some((line) => /\[ATTACK\]/.test(line.roll?.label ?? "")) && !newLines(ann, mark.ann).some((line) => /\[ATTACK\]/.test(line.roll?.label ?? "")), "the GM's creature's attack, the GM's alone");
+  await tool("kraken_table_options", { revealGmRolls: true });
+  done.push("Show GM rolls: the GM's creatures' attacks");
 
   // MANUALROLL: Ann typed 3 and 4 on her 2d6.
   mark = { ann: ann.lines.length };
@@ -95,13 +130,28 @@ try {
   await settle();
   const manual = newLines(ann, mark.ann).find((line) => /My dice/.test(line.roll?.label ?? ""));
   assert(manual && manual.roll.total === 8 && /\[MANUAL\]/.test(manual.roll.label), `manual faces: ${JSON.stringify(manual?.roll)}`);
-  agent.dice.force?.([]);
+  assert(agent.dice.toJSON().forced.length === 0, `the unused 6 never reaches the next roll: ${JSON.stringify(agent.dice.toJSON().forced)}`);
+  // Faces queued before (a test's) never take the person's place.
+  agent.dice.force([6, 6]);
   mark = { ann: ann.lines.length };
-  ann.send({ type: "roll", formula: "1d20", label: "Next roll" });
+  ann.send({ type: "roll", formula: "2d6", label: "Snake eyes", manual: [1, 1] });
   await settle();
-  const next = newLines(ann, mark.ann).find((line) => /Next roll/.test(line.roll?.label ?? ""));
-  assert(next && !/MANUAL/.test(next.roll.label), "the next roll is the dice's own");
-  done.push("manual dice entry");
+  const own = newLines(ann, mark.ann).find((line) => /Snake eyes/.test(line.roll?.label ?? ""));
+  assert(own?.roll.total === 2 && agent.dice.toJSON().forced.length === 0, `the person's own faces: ${JSON.stringify(own?.roll)}`);
+  // No dice in it, no [MANUAL].
+  mark = { ann: ann.lines.length };
+  ann.send({ type: "roll", formula: "5", label: "Flat", manual: [3] });
+  await settle();
+  const flat = newLines(ann, mark.ann).find((line) => /Flat/.test(line.roll?.label ?? ""));
+  assert(flat && !/MANUAL/.test(flat.roll.label), `a roll with no dice is not manual: ${JSON.stringify(flat?.roll)}`);
+  done.push("manual dice entry (unused faces cleared, queued faces dropped, no dice no mark)");
+
+  // The GM's voice and the dice in the chat are stored as the GM set them.
+  const set = await tool("kraken_table_options", { gmVoiceActive: true, diceInChat: true });
+  const kept = server.options?.() ?? set.options ?? set;
+  assert(kept.gmVoiceActive === true && kept.diceInChat === true, `stored: ${JSON.stringify({ gmVoiceActive: kept.gmVoiceActive, diceInChat: kept.diceInChat })}`);
+  await tool("kraken_table_options", { gmVoiceActive: false, diceInChat: false });
+  done.push("GM voice and dice in chat stored");
 } finally {
   gm.ws.close();
   ann.ws.close();
