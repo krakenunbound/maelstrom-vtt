@@ -11,7 +11,7 @@ import path from "node:path";
 import os from "node:os";
 import fs from "node:fs";
 import { createRequire } from "node:module";
-import { zipSync, strToU8 } from "fflate";
+import { zipSync, strToU8, unzipSync, strFromU8 } from "fflate";
 import { ancestriesOf, classInfo, classSpells, speciesInfo, subclassesOf } from "../shared/dnd5e/wizard.mjs";
 import { buildFromSpec } from "../shared/dnd5e/rules.mjs";
 import { backgroundKit2014, legacyKit, legacyKitItems } from "../shared/dnd5e/kits2014.mjs";
@@ -204,6 +204,16 @@ done.push("2014 starting kits read from the book: a class's equipment list (choi
   await new Promise((resolve) => setTimeout(resolve, 1500));
   assert(subraces(before) === 2, `reopened, read again by this reader: ${subraces(before)}`);
   assert(before.persisted().books.readWith[id] !== "an older reader", "and stamped with it");
+  // The pack itself changed since (a creature given its token art in the pack): read again, the campaign's copy updated.
+  const book = JSON.parse(strFromU8(unzipSync(fs.readFileSync(file))["records.json"]));
+  const dwarf = book.find((record) => record.type === "race" && record.name === "Dwarf");
+  dwarf.data.token = "tokens/new-art.png";
+  fs.writeFileSync(file, zipSync({ "kraken-pack.json": strToU8(JSON.stringify({ format: FORMAT, version: VERSION, name: "Test Legacy", ruleset: "D&D 5E", hasBook: true })), "records.json": strToU8(JSON.stringify(book)) }));
+  fs.utimesSync(file, new Date(), new Date(Date.now() + 60000));
+  const again = createTableServer({ books: createBookShelf({ folder: dir }), ruleset: "D&D 5E", saved: JSON.parse(JSON.stringify(before.persisted())) });
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  const reread = again.agent.records.list({ type: "race" }).find((record) => record.name === "Dwarf");
+  assert(reread?.data?.token === "tokens/new-art.png", `the pack changed: its records read again: ${reread?.data?.token}`);
   // A player rolls a table of a book shared with them by its name (the wizard's ideals), never of a book kept the GM's.
   const content = require("../electron/content.cjs");
   const player = { seat: { role: "player", name: "Tess" }, from: "Tess" };

@@ -1717,7 +1717,16 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     const file = books?.file?.(info.id);
     if (!file) return;
     const had = records.list({ source: info.name });
-    const reader = require("./importers/fgModule.cjs").converterVersion;
+    // The reader, and the book as it is on disk: a newer reader, or the pack itself changed since (a creature given
+    // its token art in the pack), reads its rules records again.
+    let edition = "";
+    try {
+      const stat = require("node:fs").statSync(file);
+      edition = `|${stat.size}-${Math.round(stat.mtimeMs)}`;
+    } catch {
+      /* not a file: the reader alone */
+    }
+    const reader = `${require("./importers/fgModule.cjs").converterVersion}${edition}`;
     // Read by an older reader (or never stamped): its rules records are read again whole, so what the reader now
     // makes (a 2014 race's subraces as records) reaches a campaign that made the book active before.
     if (had.length && shelf.readWith[info.id] !== reader) {
