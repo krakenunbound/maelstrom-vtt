@@ -152,10 +152,17 @@ export function weaponInfo(item) {
 // Proficiency with a weapon: simple ones always; martial ones when the class
 // has them all (true), or only those with a property (SRD 5.2.1: a Monk's
 // "Martial weapons that have the Light property", a Rogue's "Finesse or Light").
-function proficientWith(data, info) {
+function proficientWith(data, info, item = null) {
+  // FG's own tick on the weapon (its weapon row's prof: 0 not proficient, 1 proficient), where it was set.
+  if (item && (item.prof === 0 || item.prof === "0")) return false;
+  if (item && (item.prof === 1 || item.prof === "1")) return true;
   if (!info.martial) return true;
   const martial = data.proficiencies?.martial;
   if (martial === true || martial === 1 || martial === "all") return true;
+  // The character's weapon proficiencies by name: "Martial weapons", or the weapon itself ("Longswords").
+  const listed = (Array.isArray(data.proficiencylist?.weapons) ? data.proficiencylist.weapons : String(data.proficiencylist?.weapons ?? "").split(/[,;\n]/)).map((name) => String(name).trim().toLowerCase().replace(/s$/, "")).filter(Boolean);
+  const own = String(item?.name ?? "").trim().toLowerCase().replace(/,.*$/, "").replace(/s$/, "");
+  if (listed.some((name) => /^martial/.test(name) || (own && (name === own || own.endsWith(` ${name}`))))) return true;
   if (typeof martial !== "string" || !martial) return false;
   return (/light/.test(martial) && info.light) || (/finesse/.test(martial) && info.finesse);
 }
@@ -261,7 +268,7 @@ export function weaponAttack(data, item, { hands = 1, thrown = false } = {}) {
   const str = mod(data.abilities?.strength?.score ?? 10);
   const dex = mod(data.abilities?.dexterity?.score ?? 10);
   const ability = info.ranged ? dex : info.finesse ? Math.max(str, dex) : str;
-  const proficient = proficientWith(data, info);
+  const proficient = proficientWith(data, info, item);
   const bonus = ability + (proficient ? num(data.prof, 2) : 0) + num(item.bonus, 0);
   const style = /two[- ]weapon fighting/i.test([...(Array.isArray(data.features) ? data.features : []), ...Object.values(data.features && typeof data.features === "object" ? data.features : {}).map((row) => row?.name ?? row), ...(Array.isArray(data.feats) ? data.feats : [])].map(String).join(" | "));
   const dmg = (offHand && ability > 0 && !style ? 0 : ability) + num(item.bonus, 0);

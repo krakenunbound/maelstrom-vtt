@@ -20,12 +20,16 @@ const xml = `<?xml version="1.0" encoding="utf-8"?><root version="5.1"><characte
   <classes><id-00001><name type="string">Sorcerer</name><level type="number">1</level><hddie type="dice">1d6</hddie><hdused type="number">0</hdused><specialization type="string">Wild Magic</specialization></id-00001></classes>
   <skilllist>${skill("id-00001", "Perception", 1)}${skill("id-00002", "Arcana", 1)}${skill("id-00003", "Persuasion", 1)}${skill("id-00004", "Stealth", 0)}</skilllist>
   <languagelist>${listOf(["Common", "Elvish", "Choice"])}</languagelist>
-  <proficiencylist>${listOf(["Weapon: Daggers", "Tool: Playing Card Set"])}</proficiencylist>
+  <proficiencylist>${listOf(["Weapon: Daggers", "Weapon: Longswords", "Tool: Playing Card Set"])}</proficiencylist>
   <featurelist>${listOf(["Position of Privilege"])}</featurelist><traitlist>${listOf(["Darkvision", "Fey Ancestry"])}</traitlist>
   <powers>${power("id-00001", "Tides of Chaos", "Class (Sorcerer)", 0, 1)}${power("id-00002", "Fire Bolt", "Spells (Sorcerer)", 0, 0)}${power("id-00003", "Sleep", "Spells (Sorcerer)", 1, 1)}</powers>
   <hp><total type="number">8</total><wounds type="number">0</wounds></hp>
   <coins><id-00001><name type="string">GP</name><amount type="number">24</amount></id-00001></coins>
-  <inventorylist><id-00001><name type="string">Dagger</name><type type="string">Weapon</type><damage type="string">1d4 piercing</damage><properties type="string">Finesse, light, thrown (range 20/60)</properties><carried type="number">2</carried><count type="number">1</count><weight type="number">1</weight></id-00001></inventorylist>
+  <inventorylist><id-00001><name type="string">Dagger</name><type type="string">Weapon</type><damage type="string">1d4 piercing</damage><properties type="string">Finesse, light, thrown (range 20/60)</properties><carried type="number">2</carried><count type="number">1</count><weight type="number">1</weight></id-00001>
+    <id-00002><name type="string">Longsword</name><type type="string">Weapon</type><subtype type="string">Martial Melee Weapons</subtype><damage type="string">1d8 slashing</damage><properties type="string">Versatile (1d10)</properties><carried type="number">2</carried><count type="number">1</count></id-00002>
+    <id-00003><name type="string">Greataxe</name><type type="string">Weapon</type><subtype type="string">Martial Melee Weapons</subtype><damage type="string">1d12 slashing</damage><properties type="string">Heavy, two-handed</properties><carried type="number">2</carried><count type="number">1</count></id-00003>
+    <id-00004><name type="string">Club</name><type type="string">Weapon</type><subtype type="string">Simple Melee Weapons</subtype><damage type="string">1d4 bludgeoning</damage><properties type="string">Light</properties><carried type="number">2</carried><count type="number">1</count></id-00004></inventorylist>
+  <weaponlist><id-00001><name type="string">Club</name><prof type="number">0</prof><shortcut type="windowreference"><class>item</class><recordname>....inventorylist.id-00004</recordname></shortcut></id-00001></weaponlist>
 </character></root>`;
 
 const server = createTableServer({ ruleset: "D&D 5E" });
@@ -48,6 +52,11 @@ try {
   assert(data.spells.includes("Fire Bolt") && data.spells.includes("Sleep") && !data.spells.includes("Tides of Chaos") && data.prepared.sleep === 1, `spells: ${JSON.stringify({ spells: data.spells, prepared: data.prepared })}`);
   assert(JSON.stringify(data.languages) === JSON.stringify(["Common", "Elvish"]) && data.proficiencylist.weapons.includes("Daggers") && data.traits.includes("Fey Ancestry") && data.features.includes("Position of Privilege"), "languages, proficiencies, traits, features");
   done.push("spells (prepared), languages, proficiencies, traits, features");
+  // Weapon proficiency: the list's "Longswords" (+2 proficiency, STR -1: +1); a greataxe, not on the list (-1); a club
+  // FG marks not proficient (-1).
+  const attackOf = (name) => Object.values(data.attacks ?? {}).find((attack) => attack.name === name)?.bonus;
+  assert(attackOf("Longsword") === 1 && attackOf("Greataxe") === -1 && attackOf("Club") === -1, `weapon proficiency: ${JSON.stringify({ longsword: attackOf("Longsword"), greataxe: attackOf("Greataxe"), club: attackOf("Club") })}`);
+  done.push("weapon proficiency: the list's own weapons, FG's tick on a weapon");
 } finally {
   await server.stop?.();
 }

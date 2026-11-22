@@ -84,7 +84,15 @@ export function fromFg5eCharacter(ch, rules) {
     ...(num(ch.defenses?.ac?.misc) ? { ac: { misc: num(ch.defenses.ac.misc) } } : {}),
     ...(num(ch.initiative?.misc) ? { initiative: { misc: num(ch.initiative.misc) } } : {}),
     speed: `${num(ch.speed?.base, 30)} ft.`,
-    inventorylist: Object.fromEntries(rows(ch.inventorylist).map((row, index) => [`id-${String(index + 1).padStart(5, "0")}`, Object.fromEntries(Object.entries(row).filter(([key]) => !["locked", "shortcut"].includes(key)))])),
+    // FG's own keys kept (its weapon rows point at them); each weapon's proficient tick (FG: proficient unless unticked).
+    inventorylist: Object.fromEntries(
+      Object.entries(ch.inventorylist && typeof ch.inventorylist === "object" ? ch.inventorylist : {})
+        .filter(([, row]) => row && typeof row === "object")
+        .map(([key, row]) => {
+          const weapon = rows(ch.weaponlist).find((item) => String(item.shortcut?.recordname ?? "").endsWith(`inventorylist.${key}`));
+          return [key, { ...Object.fromEntries(Object.entries(row).filter(([field]) => !["locked", "shortcut"].includes(field))), ...(weapon ? { prof: weapon.prof === 0 ? 0 : 1 } : {}) }];
+        }),
+    ),
     coins: Object.fromEntries(rows(ch.coins).map((row, index) => [`id-${String(index + 1).padStart(5, "0")}`, { name: String(row.name ?? ""), amount: num(row.amount) }])),
     spells,
     prepared,
