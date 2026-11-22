@@ -189,6 +189,21 @@ const TOOLS = [
     ),
     run: async (args, ctx) => out(content.moduleExport(needTable(ctx), args)),
   },
+  {
+    name: "kraken_bastion",
+    description:
+      "Bastions (5E 2024, on when the house rule HRBASTION is): a character's bastion and its facilities, as the party sheet's Bastion tab. action name (character, name: the bastion's), add (character, name, or link: a record (a location) as a facility), rename (character, facility, name), remove (character, facility), order (character, facility, order: Craft, Empower, Harvest, Maintain, Recruit, Research or Trade; the same order again adds a turn), clear (character, facility: no order), advance (the bastion turn: the log gets it, every order counts down a turn), log (the log and turn), log-clear, turn (turn: the count). Returns the bastion, or the log.",
+    inputSchema: object({
+      action: { type: "string", enum: ["name", "add", "rename", "remove", "order", "clear", "advance", "log", "log-clear", "turn"] },
+      character: string("The character's id"),
+      facility: string("A facility's key (id-00001)"),
+      name: string("A name"),
+      order: string("Craft, Empower, Harvest, Maintain, Recruit, Research or Trade"),
+      link: { type: "object", description: "A record as a facility: { kind: record, record, label }" },
+      turn: number("The turn count"),
+    }, ["action"]),
+    run: (args, ctx) => out(require("../bastion.cjs").bastionAction(needTable(ctx), { role: "dm", name: "GM" }, args)),
+  },
 ];
 
 module.exports = { TOOLS };

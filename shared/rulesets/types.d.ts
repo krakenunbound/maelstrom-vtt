@@ -411,6 +411,7 @@ export interface RulesetManifest {
   engine: string | null; // "shared/cairn/rules.mjs"; null for no rules (Worldbuilding)
   forge?: string; // the Item Forge's rules, a module exporting forgeItems (shared/dnd5e/forge.mjs); none, no forge
   raceImport?: string; // a race pasted as text read into records, a module exporting parseRace (shared/dnd5e/raceblock.mjs)
+  bastion?: { rule?: string; orders: string[] }; // 2024's bastions: the house rule that turns them on, the orders facilities take
   itemImport?: string; // items pasted as text read into records, a module exporting parseItems (shared/dnd5e/itemblock.mjs)
   host: { module: string | null; message?: string; tool?: string };
   // Where a character keeps its classes (read by the roster, Character Selection, the party sheet, spells):

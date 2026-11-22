@@ -2710,6 +2710,21 @@ label.set-row { cursor: pointer; }
 .table-editor > .cc-inline { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-bottom: 6px; }
 .table-editor .cc-inline .cc-field { width: 5rem; }
 .table-import { margin: 6px 0; }
+.bastion-tab { display: grid; gap: 10px; }
+.bastion-orders { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.bastion-order { padding: 2px 8px; border: 1px solid var(--panel-edge); border-radius: 999px; cursor: grab; font-size: 0.85em; user-select: none; }
+.bastion-order:active { cursor: grabbing; }
+.bastion-gm { margin-left: auto; display: flex; gap: 4px; }
+.bastion-log { border: 1px solid var(--panel-edge); border-radius: 8px; padding: 6px 10px; max-height: 240px; overflow: auto; }
+.bastion-log input[type="number"] { width: 5em; }
+.bastion-member h4 { display: flex; align-items: baseline; gap: 6px; margin: 4px 0; }
+.bastion-member h4 input { font: inherit; min-width: 0; flex: 1; }
+.bastion-facilities { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.bastion-facility { display: grid; grid-template-columns: minmax(0, 1fr) 9em 4.5em 2.2em 2.2em; gap: 6px; align-items: center; padding: 2px 4px; border-radius: 6px; }
+.bastion-facility select { width: 100%; }
+.bastion-facility.over { outline: 2px dashed var(--brass); background: var(--brass-soft); }
+.bastion-turns { font-size: 0.85em; opacity: 0.8; text-align: right; }
+.bastion-add input { flex: 1; min-width: 0; }
 .module-export { display: grid; gap: 8px; padding: 4px 2px; min-width: 0; overflow-y: auto; }
 .module-export-fields input { width: 100%; min-width: 0; box-sizing: border-box; }
 .module-export-fields { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 8px; align-items: center; }

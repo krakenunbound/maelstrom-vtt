@@ -40,6 +40,9 @@ export default {
   raceImport: "shared/dnd5e/raceblock.mjs",
   // Items pasted as text (a table and descriptions, or magic items as printed): content.cjs's item-import.
   itemImport: "shared/dnd5e/itemblock.mjs",
+  // 2024's bastions (electron/bastion.cjs; the party sheet's Bastion tab): the orders a facility carries out, on
+  // when the GM turns on the house rule.
+  bastion: { rule: "HRBASTION", orders: ["Craft", "Empower", "Harvest", "Maintain", "Recruit", "Research", "Trade"] },
   host: { module: "electron/dnd5e.cjs" },
   // The modifier box's keys beside the chat (shared/rulesets/modifiers.mjs).
   dice: { modifiers: { presets: ["adv", "dis", "plus2", "minus2", "plus5", "minus5", "opp", "cover", "scover", "crit", "max", "half"] } },
@@ -299,6 +302,7 @@ export default {
   settings: [
     { key: "GAVE", group: "Game", label: "Rules version", kind: "select", default: "2024", options: [{ value: "2024", label: "2024" }, { value: "2014", label: "2014" }], hint: "Exhaustion and a long rest's hit dice follow this edition." },
     { key: "HRAS", group: "Character", label: "Attunement slots", kind: "select", default: "3", options: [{ value: "3", label: "3" }, { value: "4", label: "4" }, { value: "5", label: "5" }, { value: "prof", label: "Proficiency bonus" }, { value: "2", label: "2" }], hint: "How many magic items a character may be attuned to, before class and other slots." },
+    { key: "HRBASTION", group: "Character", label: "Bastions", kind: "toggle", default: false, hint: "Each character keeps a bastion (2024): its facilities take orders on the party sheet's Bastion tab, and the GM advances the bastion turn." },
     { key: "HRIS", group: "Character", label: "Inspiration", kind: "select", default: "", options: [{ value: "", label: "Standard (1)" }, { value: "2", label: "2" }, { value: "3", label: "3" }, { value: "5", label: "5" }], hint: "How many Inspiration a character may hold." },
     { key: "HRST", group: "Combat", label: "Auto death saves", kind: "toggle", default: true, hint: "A dying character rolls its death saving throw at the start of its turn." },
     { key: "NPCD", group: "Combat", label: "NPC damage", kind: "select", default: "off", options: [{ value: "off", label: "Rolled" }, { value: "fixed", label: "Fixed (average)" }] },

@@ -5,6 +5,7 @@ import { Icon } from "../ui/icons";
 import { hasLink, linkFrom, TOKEN_DRAG } from "../ui/QuickSlots";
 import type { Session } from "../session/useSession";
 import { CrewSheet } from "./CrewSheet";
+import { BastionTab, bastionsOn } from "./Bastion";
 import { carriesCreatureDrop, dropOnCreature } from "../effects/drops";
 import { has, rulesetFor } from "../../shared/rulesets/registry.mjs";
 import { RestParty } from "../bookkeeping/RestParty";
@@ -114,7 +115,7 @@ const isIdentified = (item: { identified?: number; item?: { isidentified?: unkno
 export function PartySheet({ session, compact = false }: { session: Session; compact?: boolean }) {
   const party = session.party;
   const gm = session.role === "dm";
-  const [tab, setTab] = useState<(typeof TABS)[number]["id"] | "crew">("main");
+  const [tab, setTab] = useState<(typeof TABS)[number]["id"] | "crew" | "bastion">("main");
   const [checkStat, setCheckStat] = useState("strength");
   const [checkCl, setCheckCl] = useState(0);
   const [groupKind, setGroupKind] = useState<"check" | "save" | "skill">("check");
@@ -141,7 +142,12 @@ export function PartySheet({ session, compact = false }: { session: Session; com
   // A game's own tabs first (Forged in the Dark: the crew sheet).
   const ownTabs = (game.party.tabs ?? []).filter((item) => item.first && (!item.feature || has(game, item.feature)) && (!item.gm || gm));
   const crew = ownTabs.some((item) => item.id === "crew");
-  const visibleTabs: { id: (typeof TABS)[number]["id"] | "crew"; label: string }[] = [...ownTabs.map((item) => ({ id: item.id as "crew", label: item.label })), ...(gm ? TABS : TABS.filter((item) => item.id !== "xp")).map((item) => (growth && item.id === "xp" ? { ...item, label: "Growth" } : milestones && item.id === "xp" ? { ...item, label: "Milestones" } : item))];
+  const visibleTabs: { id: (typeof TABS)[number]["id"] | "crew" | "bastion"; label: string }[] = [
+    ...ownTabs.map((item) => ({ id: item.id as "crew", label: item.label })),
+    ...(gm ? TABS : TABS.filter((item) => item.id !== "xp")).map((item) => (growth && item.id === "xp" ? { ...item, label: "Growth" } : milestones && item.id === "xp" ? { ...item, label: "Milestones" } : item)),
+    // 5E 2024's bastions, when the game has them and the GM turned them on.
+    ...(bastionsOn(session) ? [{ id: "bastion" as const, label: "Bastion" }] : []),
+  ];
   const attributes = game.party.groupCheck ? game.party.groupCheck.stats : ATTRIBUTES;
   // The opposition on Fate's ladder instead of a challenge level.
   const ladder = has(game, "fatePoints");
@@ -522,6 +528,7 @@ export function PartySheet({ session, compact = false }: { session: Session; com
       ) : null}
 
       {tab === "order" ? <OrderTab session={session} party={party} /> : null}
+      {tab === "bastion" && bastionsOn(session) ? <BastionTab session={session} party={party} /> : null}
 
       {tab === "xp" && gm && growth ? (
         <div className="party-xp" data-cairn-growth>

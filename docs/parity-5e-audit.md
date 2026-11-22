@@ -59,7 +59,7 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 |---|---|---|---|
 | PC: Currency weight (CURR) | on | Bookkeeping: coin weight in encumbrance | Same |
 | PC: Attunement slots (HRAS) | 3 | House rule: 3, 4, 5, 2 or the proficiency bonus | Done |
-| Game: Bastion support (HRBASTION) | off | Not found | Missing (2024 Bastions) |
+| Game: Bastion support (HRBASTION) | off | Settings > House rules: Bastions, off | Same |
 | Map: Diagonal distance (HRDD) | | `diagonal` (1, 1.5, raw) | Same |
 | PC: Encumbrance (HREN) | standard | Bookkeeping: encumbrance on or off, the variant | Same |
 | Exhaustion: Roll modifier per level (HREX) | | House rule: -1, -2, -3 a level on every d20 test | Done |
@@ -178,7 +178,7 @@ Abilities, Inventory, Notes, Actions; Maelstrom's: Main, Skills, Combat, Spells,
 | Gender, age, height, weight, size, alignment, deity | All of them on the Notes tab | Done |
 | Personality traits, ideals, bonds, flaws, appearance, notes | All of them | Done |
 | Logs: faction, DCI, adventures list | Not found | Missing |
-| Bastion (HRBASTION) | Not found | Missing |
+| Bastion (HRBASTION) | The party sheet's Bastion tab: each character's bastion, named and kept by its player | Same (on the party sheet, not a button on the Notes tab) |
 
 ### Actions (Maelstrom: Combat and Spells)
 
@@ -343,7 +343,7 @@ FG's 5E party sheet (`ps_*` in CoreRPG and 5E's `manager_ps2.lua`) against Maels
 | XP: party list, XP dropped on a PC | Award to the party; each member's XP and Give for them alone | Same |
 | XP: encounters and quests with CR, XP, Aw? checkbox, Award, Award one | Encounters and quests, Award all, Award one, × | Same |
 | Rests (not on FG's sheet) | Short and long rest for the party | Better |
-| Bastion tab (HRBASTION): facilities, orders, turns, log | Not found | Missing (2024) |
+| Bastion tab (HRBASTION): facilities, orders, turns, log | Bastion tab: each member's facilities (a location dropped in links it), the seven orders dragged onto a facility or chosen on it (the same again: a turn more), turns left; the GM's Next turn, Clear, Log with the turn count and Clear the log | Same |
 
 ## 8. GM tools
 
@@ -382,6 +382,6 @@ Any game can add its own the same way; nothing in the core names a game.
 All eight areas are compared, read from FG's ruleset files (CoreRPG and 5E) and
 Maelstrom's code, and what was missing is built (each area's commits name its
 check script). Still missing, by size: the
-2024 Bastion tab, named holidays on calendar days, a random-encounter Generate,
+named holidays on calendar days, a random-encounter Generate,
 module sets, and the rows marked Partly. The **Check live** rows want FG open on
 the 5E campaign through the bridge, side by side with Maelstrom.

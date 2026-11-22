@@ -4020,6 +4020,17 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         return;
       }
 
+      // Bastions (5E 2024): a player manages their own character's, the GM any, and advances the bastion turn.
+      if (msg.type === "party-bastion") {
+        try {
+          const result = require("./bastion.cjs").bastionAction(agentHandle, seatOf(client), msg);
+          send(ws, { type: "op-result", req: msg.req ?? null, ok: true, id: "", result });
+        } catch (error) {
+          send(ws, { type: "op-result", req: msg.req ?? null, ok: false, id: "", error: error instanceof Error ? error.message : "Could not do that." });
+        }
+        return;
+      }
+
       // The party's stash, where players trade: put an item of your character's in, take one out into your character's gear.
       if (msg.type === "party-stash") {
         const seat = seatOf(client);
