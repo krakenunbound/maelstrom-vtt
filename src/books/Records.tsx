@@ -533,7 +533,7 @@ export function FormattedText({ text, onLink, onOpen }: { text: string; onLink?:
 
 // The fields a record window leaves out: FG's bookkeeping, or shown on their own.
 const HIDDEN = new Set(["name", "fgPath", "fgCategory", "version", "picture", "public", "token", "isidentified", "locked", "ccgen", "nonid_name", "nonidentified", "abilities", "packagetype", "token3Dflat", "text"]);
-const LABELS: Record<string, string> = { castingtime: "Casting time", ac: "AC", hp: "Hit points", hd: "Hit dice", cr: "Challenge", xp: "XP", acbonus: "AC bonus", bth: "BtH", subtype: "Subtype", damagetype: "Damage type" };
+const LABELS: Record<string, string> = { savingthrows: "Saving throws", castingtime: "Casting time", ac: "AC", hp: "Hit points", hd: "Hit dice", cr: "Challenge", xp: "XP", acbonus: "AC bonus", bth: "BtH", subtype: "Subtype", damagetype: "Damage type" };
 const labelOf = (key: string) => LABELS[key] ?? key.replace(/[_-]+/g, " ").replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (letter) => letter.toUpperCase());
 const isText = (value: unknown) => typeof value === "string" && /<\/?(p|b|i|h|list|li|table|frame|linklist)\b/.test(value);
 const STATS = ["strength", "dexterity", "constitution", "intelligence", "wisdom", "charisma"];
