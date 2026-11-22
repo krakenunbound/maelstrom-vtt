@@ -90,12 +90,13 @@ function firstPlace(kind: WindowKind): Placement {
   return place;
 }
 
-// Whether the map fills the table behind the windows (kept per screen).
+// Whether the map fills the table behind the windows (kept per screen). Until the GM chooses, it does: a map put on the
+// table never covers the tracker, the chat or the sheets.
 function readBackdrop() {
   try {
-    return window.localStorage.getItem("kraken-map-backdrop") === "1";
+    return window.localStorage.getItem("kraken-map-backdrop") !== "0";
   } catch {
-    return false;
+    return true;
   }
 }
 

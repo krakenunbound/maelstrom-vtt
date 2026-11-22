@@ -125,6 +125,11 @@ try {
   await seat.click('button[type="submit"]');
   await seat.waitForSelector(".sidebar");
   await seat.waitForSelector('.window[data-window="map"] .viewport', { timeout: 20000 });
+  // A map opens behind every window until the person chooses otherwise (it never covers the tracker or the chat);
+  // the steps below use it in a window of its own.
+  await seat.waitForSelector('.window[data-window="map"][data-backdrop="on"]', { timeout: 5000 });
+  await seat.click('.window[data-window="map"] [data-action="map-window"]');
+  await seat.waitForSelector('.window[data-window="map"] .window-title', { timeout: 5000 });
   const seatMap = '.window[data-window="map"] .viewport';
   await seat.waitForSelector(`${seatMap} [data-token="${heroToken.id}"]`);
 

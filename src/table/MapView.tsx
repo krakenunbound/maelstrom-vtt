@@ -694,7 +694,11 @@ function MapViewInner({
   // The camera as the last fit set it (null once the GM pans or zooms it away).
   const fitted = useRef<Camera | null>(null);
   // The view kept as it changes, for when the map moves to another window.
+  // Not the placeholder it starts with: framed in this very commit, the camera set is not here yet, and kept with the
+  // framing it would come back at 10% and never be framed again (the map moved behind every window, or back).
+  const placeholder = useRef(camera);
   useEffect(() => {
+    if (camera === placeholder.current && !views.has(scene.id)) return;
     if (framedFor.current.startsWith(`${scene.id}|`)) views.set(scene.id, { camera, framed: framedFor.current });
   }, [camera, scene.id]);
   // A focus asked for while this map is showing: framed again at once.
