@@ -3,9 +3,14 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 // FG's Dice: Manual entry (MANUALROLL, each person's own): a roll asks for the faces this person's own dice show,
 // then the host rolls with exactly those. Settings > You at the table: Type in my own dice.
 type Ask = { formula: string; dice: number[]; resolve: (values: number[] | null) => void };
-let asking: Ask | null = null;
+// FG's manual dice queue: every roll waiting for its faces, the first shown.
+const queue: Ask[] = [];
+let shown: { ask: Ask; waiting: number } | null = null;
 const listeners = new Set<() => void>();
-const changed = () => listeners.forEach((listener) => listener());
+const changed = () => {
+  shown = queue[0] ? { ask: queue[0], waiting: queue.length } : null;
+  listeners.forEach((listener) => listener());
+};
 
 // The dice of a formula, one entry a die (its sides): "2d6+1d20+3" is [6, 6, 20]; "dF" a Fate die (3 faces).
 export function diceOf(formula: string): number[] {
@@ -19,13 +24,13 @@ export function diceOf(formula: string): number[] {
 }
 
 export const manualDice = {
-  // The faces typed in, or null when the person cancelled (the roll is not made).
+  // The faces typed in, none (the host rolls it: Roll for me), or null when the person cancelled (the roll is not
+  // made). Asked while another waits, it waits its turn.
   ask(formula: string): Promise<number[] | null> {
     const dice = diceOf(formula);
     if (!dice.length) return Promise.resolve([]);
-    asking?.resolve(null);
     return new Promise((resolve) => {
-      asking = { formula, dice, resolve };
+      queue.push({ formula, dice, resolve });
       changed();
     });
   },
@@ -33,11 +38,12 @@ export const manualDice = {
     listeners.add(listener);
     return () => void listeners.delete(listener);
   },
-  current: () => asking,
+  current: () => shown,
 };
 
 export function ManualDiceDialog() {
-  const ask = useSyncExternalStore(manualDice.subscribe, manualDice.current);
+  const head = useSyncExternalStore(manualDice.subscribe, manualDice.current);
+  const ask = head?.ask ?? null;
   const dialog = useRef<HTMLDialogElement>(null);
   const [values, setValues] = useState<string[]>([]);
   useEffect(() => {
@@ -46,8 +52,7 @@ export function ManualDiceDialog() {
     if (!ask && dialog.current?.open) dialog.current.close();
   }, [ask]);
   const finish = (result: number[] | null) => {
-    const current = asking;
-    asking = null;
+    const current = queue.shift();
     changed();
     current?.resolve(result);
   };
@@ -65,7 +70,10 @@ export function ManualDiceDialog() {
             if (valid) finish(values.map(Number));
           }}
         >
-          <h3 id="manual-dice-title">Your dice: {ask.formula}</h3>
+          <h3 id="manual-dice-title">
+            Your dice: {ask.formula}
+            {head && head.waiting > 1 ? <small data-manual-waiting={head.waiting}> · 1 of {head.waiting}</small> : null}
+          </h3>
           <div className="manual-dice-faces">
             {ask.dice.map((sides, index) => (
               <label key={index}>
@@ -87,6 +95,9 @@ export function ManualDiceDialog() {
           <div className="manual-dice-buttons">
             <button type="button" onClick={() => finish(null)}>
               Cancel
+            </button>
+            <button type="button" onClick={() => finish([])} data-action="manual-dice-host" title="The table rolls this one">
+              Roll for me
             </button>
             <button type="submit" disabled={!valid} data-action="manual-dice-roll">
               Roll

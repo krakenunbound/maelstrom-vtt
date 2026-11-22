@@ -265,6 +265,9 @@ function cleanGroup(raw) {
   return { name, shown: raw.shown !== false, players: raw.players !== false, locked: Boolean(raw.locked), nextNumber: Math.max(1, Math.round(num(raw.nextNumber, 1))), prefix: text(raw.prefix, "").slice(0, 6) };
 }
 
+// The drag (through waypoints) being moved now: its legs are logged under it.
+let dragNow = "";
+
 // A point within half a brush's width of its stroke (a line through points).
 function nearStroke(x, y, points, half) {
   if (points.length === 2) return Math.hypot(x - points[0], y - points[1]) <= half;
@@ -1014,7 +1017,8 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
     token.x = at.x;
     token.y = at.y;
     if (at.x !== from.x || at.y !== from.y) {
-      const log = [...logOf(token), { from, to: { ...at }, by: seat.name }].slice(-40);
+      // A drag through waypoints logs each leg under one drag, undone together.
+      const log = [...logOf(token), { from, to: { ...at }, by: seat.name, ...(dragNow ? { drag: dragNow } : {}) }].slice(-40);
       state.moveLog.set(logKey(token), log);
     }
     if (sprang) onRegion({ region: sprang, token, seat, sceneId: scene.id });
@@ -1667,9 +1671,14 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       if (!legs.length || legs.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y))) throw new Error("Where to?");
       if (seat.role !== "dm" && scene && state.locked[scene.id] && !String(seat.name ?? "").startsWith("@")) return this.move(id, legs.at(-1), seat, options);
       let done = null;
-      for (const to of legs) {
-        done = this.move(id, to, seat, options);
-        if (done.requested || done.blocked || done.sprang || done.gone) break;
+      dragNow = crypto.randomBytes(4).toString("hex");
+      try {
+        for (const to of legs) {
+          done = this.move(id, to, seat, options);
+          if (done.requested || done.blocked || done.sprang || done.gone) break;
+        }
+      } finally {
+        dragNow = "";
       }
       return done;
     },
@@ -1708,9 +1717,12 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
         if (state.locked[scene.id]) throw new Error("The GM has locked token movement.");
         if (token.held) throw new Error(`${token.name}: The trap holds it: the GM decides what happens.`);
       }
-      token.x = last.from.x;
-      token.y = last.from.y;
-      state.moveLog.set(logKey(token), log.slice(0, -1));
+      // A drag through waypoints: all its legs.
+      let first = log.length - 1;
+      while (last.drag && first > 0 && log[first - 1].drag === last.drag) first -= 1;
+      token.x = log[first].from.x;
+      token.y = log[first].from.y;
+      state.moveLog.set(logKey(token), log.slice(0, first));
       changed({ keepVision: true });
       return { token, undone: log.length };
     },

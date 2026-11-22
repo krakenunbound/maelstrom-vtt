@@ -441,6 +441,9 @@ export interface RulesetManifest {
   // Manual dice (each person's "Type in my own dice"): the die a check, save or attack from the sheet or the tracker
   // throws, asked for before the roll ("1d20"; advantage asks for two). None: those rolls are the host's.
   manualDie?: string;
+  // The rolls that die is for: check, save, skill, init (the sheet's), attack, death-save (the tracker's). Absent:
+  // all of them. A roll not listed is the host's.
+  manualKinds?: string[];
   // The game's own settings: a house rule (key, its choices, the default; the GM's Settings > House rules, the
   // agent's kraken_table_options rules; the host reads it with houseRule(key)), or a panel of its own.
   settings?: ({ key: string; label: string; hint?: string; kind: "toggle" | "select" | "checklist"; default: unknown; options?: (string | { value: string; label: string })[]; group?: string } | { component: Ref; gm?: boolean })[];

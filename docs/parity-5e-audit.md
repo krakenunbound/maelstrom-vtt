@@ -98,7 +98,7 @@ FG's 5E ruleset (5E on CoreRPG) registers 71 options (`scripts/data_options_5E.l
 | Desktop: Combat list size (DESKTOPCTSIZE) | 6 | Not found | Check live |
 | Effect: Short summary display (EFFSHORT) | on | Effects on the tracker | Check live |
 | Input: Use Alt key for game actions (KALT) | on | Not found | Check live |
-| Dice: Manual entry (MANUALROLL) | off | `manualDice`, each person's own: a dialog for the faces, the host rolls with them, [MANUAL] in chat; the tray's, chat's, sheet's (checks, saves, skills, initiative) and tracker's (attacks, saves, death saves) rolls, the ruleset's die (`manualDie`) | Yes |
+| Dice: Manual entry (MANUALROLL) | off | `manualDice`, each person's own: a dialog for the faces, the host rolls with them, [MANUAL] in chat; the tray's, chat's, sheet's (checks, saves, skills, initiative) and tracker's (attacks, saves, death saves) rolls, the ruleset's die (`manualDie`, for its `manualKinds`; two with ADV or DIS); a line with some of the host's dice (an effect's advantage, a crit confirmation) says so | Yes (5E proved; the other d20 games declare theirs) |
 | Combat: Remove on miss (RMMT) | multi | `clearTargets` (never, action, turn); Remove on miss: with several targets (FG's default), always, never | Same |
 | Desktop: Restore windows on start (WSAV) | on | Windows remembered | Check live |
 
@@ -316,7 +316,7 @@ FG's chat window, slash commands, dice tray, modifier box, Modifiers window, dic
 | 5E keys: ADV, DIS, +2, -2, +5, -5 | All six; +5 and -5 stack with +2 and -2 | Same |
 | Modifiers window: Opportunity, Cover, Sup. Cover, Critical, Max, Half; custom rows | Keys for each; the GM's preset buttons | Same |
 | Dice tower: drop a roll; drop text to whisper the GM | Drop dice; external tower; a player's text dropped on the tower whispers the GM | Yes |
-| Manual dice: a queue window, OK, Roll, Faux roll (GM), Cancel | A dialog per roll (tray, chat, sheet, tracker), Roll, Cancel | Partly (no queue or faux roll) |
+| Manual dice: a queue window, OK, Roll, Faux roll (GM), Cancel | A queue: rolls asked together wait their turn (1 of N); Roll, Roll for me (the host rolls that one), Cancel | Yes |
 | Portraits: whisper, ring the bell (GM), kick; drop a number or text on a portrait | Whisper, Ring bell, View as, Kick, Ban; a record dropped shares it, words or a number dropped are whispered to them | Better |
 
 ## 7. Party sheet

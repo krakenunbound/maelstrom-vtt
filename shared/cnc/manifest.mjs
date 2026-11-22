@@ -222,6 +222,8 @@ const sheet = {
 export default {
   id: "cnc",
   manualDie: "1d20",
+  // Its initiative, damage and the rest are other dice: the host's.
+  manualKinds: ["check", "save", "attack"],
   // Where a character keeps its classes: its class packages (SiegeCore's).
   classes: { rows: "packages", where: { packagetype: "class" }, name: "name", level: "level" },
   names: ["Castles & Crusades"],

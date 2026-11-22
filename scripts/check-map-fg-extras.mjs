@@ -71,12 +71,14 @@ try {
   await settle();
   const path = map.path(hero.id).map((move) => [move.to.x, move.to.y]);
   assert(JSON.stringify(squareOf(hero.id)) === JSON.stringify({ col: 1, row: 4 }) && JSON.stringify(path.slice(-3)) === JSON.stringify([[175, 125], [175, 225], [75, 225]]), `through its waypoints: ${JSON.stringify({ at: squareOf(hero.id), path })}`);
-  await tool("kraken_token_move", { id: hero.id, col: 1, row: 2 });
+  // Undo takes back the whole drag, not one leg.
+  await tool("kraken_token_move", { id: hero.id, undo: true });
+  assert(JSON.stringify(squareOf(hero.id)) === JSON.stringify({ col: 1, row: 2 }), `undo: the whole drag: ${JSON.stringify(squareOf(hero.id))}`);
   await tool("kraken_wall", { action: "add", points: [250, 0, 250, 300] });
   await tool("kraken_token_move", { id: hero.id, col: 9, row: 2, via: [{ col: 3, row: 4 }], asPlayer: true });
   const stopped = squareOf(hero.id);
   assert(stopped.col < 5, `a wall stops the leg: ${JSON.stringify(stopped)}`);
-  done.push("waypoints while dragging, each leg stopped by walls");
+  done.push("waypoints while dragging, each leg stopped by walls, undone as one");
 
   // 3. A gargantuan's six squares.
   await tool("kraken_token_update", { id: orc.id, squares: 6 });

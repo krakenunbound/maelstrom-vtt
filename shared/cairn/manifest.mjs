@@ -20,6 +20,8 @@ const TRAIT_WORDS = TRAIT_NAMES;
 export default {
   id: "cairn",
   manualDie: "1d20",
+  // Its initiative, damage and the rest are other dice: the host's.
+  manualKinds: ["save", "check"],
   names: ["Cairn"],
   blurb: "Cairn, Second Edition (Yochai Gal, CC BY-SA 4.0): three attributes and Hit Protection, saves under a d20, attacks that always hit, Scars, Fatigue and ten inventory slots, backgrounds instead of classes. Its Player's Guide, Warden's Guide and Trouble in Twin Lakes come with Kraken.",
   engine: "shared/cairn/rules.mjs",

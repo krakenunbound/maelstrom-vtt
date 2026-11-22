@@ -66,6 +66,8 @@ const ORDINAL = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th"];
 export default {
   id: "adnd2e",
   manualDie: "1d20",
+  // Its initiative, damage and the rest are other dice: the host's.
+  manualKinds: ["check", "save", "attack"],
   // Where a character keeps its classes (FG's classes list), for the roster, Character Selection and spells.
   classes: { rows: "classes", name: "name", level: "level" },
   // Spells name their tradition in type (FG's 2E: Arcane for mages and bards, Divine for priests).

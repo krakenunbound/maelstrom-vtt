@@ -24,6 +24,8 @@ const DETAILS = ["playername", "deity", "languages", "gender", "age", "height", 
 export default {
   id: "bfrpg",
   manualDie: "1d20",
+  // Its initiative, damage and the rest are other dice: the host's.
+  manualKinds: ["check", "save", "attack"],
   // Where a character keeps its class: one class, its level beside it.
   classes: { field: "className", level: "level" },
   names: ["Basic Fantasy"],

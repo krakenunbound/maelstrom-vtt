@@ -1564,12 +1564,16 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   // Manual dice for a sheet's or the tracker's roll: the faces the roller typed in go first (dice.force), any not used
   // are dropped after it; the rolls it made are marked [MANUAL].
   let manualNow = 0;
+  // The host's draws when the typed faces went in (or at the last line marked): a line whose dice were not all typed
+  // in says so.
+  let manualDraws = 0;
   const manualOf = (msg) => (Array.isArray(msg.manual) ? msg.manual.slice(0, 40).map((value) => Math.round(Number(value))).filter((value) => Number.isFinite(value) && value >= 1 && value <= 1000) : []);
   async function withManual(msg, go) {
     const faces = manualOf(msg);
     if (!faces.length) return go();
     dice.clearForced?.();
     dice.force(faces);
+    if (!manualNow) manualDraws = dice.hostDraws?.() ?? 0;
     manualNow++;
     try {
       return await go();
@@ -1579,7 +1583,12 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     }
   }
   function addChat(entry) {
-    if (manualNow && entry.roll && !/\[MANUAL\]/.test(String(entry.roll.label ?? ""))) entry.roll = { ...entry.roll, label: `${String(entry.roll.label ?? "")} [MANUAL]`.trim() };
+    if (manualNow && entry.roll && !/\[MANUAL/.test(String(entry.roll.label ?? ""))) {
+      const draws = dice.hostDraws?.() ?? 0;
+      const mixed = draws > manualDraws;
+      manualDraws = draws;
+      entry.roll = { ...entry.roll, label: `${String(entry.roll.label ?? "")} ${mixed ? "[MANUAL, some dice the host's]" : "[MANUAL]"}`.trim() };
+    }
     // The roller's roll mode (the chat bar's): the GM and them, the GM alone, or them alone.
     const asked = entry.roll && !entry.secret && !entry.self && !entry.to && !entry.tower ? modifiers.modeNow() : null;
     if (asked) {

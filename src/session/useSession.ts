@@ -527,10 +527,17 @@ export function useSession() {
   // FG's manual entry for the sheet's and the tracker's rolls (this person's "Type in my own dice"): the faces of the
   // ruleset's own die (its manualDie; two with advantage or disadvantage) asked first, sent with the roll; cancelled,
   // no roll.
-  const withManual = (advantage: unknown, go: (manual?: number[]) => void) => {
-    const die = diceStore.settings().manualDice ? (rulesetFor(rulesetNow.current).manualDie ?? "") : "";
+  const manualFor = (kind: string) => {
+    const game = rulesetFor(rulesetNow.current);
+    return diceStore.settings().manualDice && game.manualDie && (!game.manualKinds || game.manualKinds.includes(kind)) ? game.manualDie : "";
+  };
+  const withManual = (kind: string, advantage: unknown, go: (manual?: number[]) => void) => {
+    const die = manualFor(kind);
     if (!die) return void go();
-    const formula = advantage && /^1d/.test(die) ? `2${die.slice(1)}` : die;
+    // Two with advantage or disadvantage (asked, or the ADV or DIS key on, not both).
+    const keys = modifiersNow.current.keys ?? [];
+    const two = Boolean(advantage) || keys.includes("adv") !== keys.includes("dis");
+    const formula = two && /^1d/.test(die) ? `2${die.slice(1)}` : die;
     void import("../dice/ManualDice").then(({ manualDice }) => manualDice.ask(formula).then((values) => values !== null && go(values.length ? values : undefined)));
   };
   // The GM's: the open scene's own sound, if it has one.
@@ -541,6 +548,8 @@ export function useSession() {
   const [bookContentsStamps, setBookContentsStamps] = useState<Record<string, number>>({});
   const [quickSlots, setQuickSlotsState] = useState<(QuickSlot | null)[]>(Array(12).fill(null));
   const [modifiers, setModifiers] = useState<ModifierStack>({ slots: [], keys: [], total: 0 });
+  const modifiersNow = useRef(modifiers);
+  modifiersNow.current = modifiers;
   const [bookShelf, setBookShelf] = useState<BookShelf>({ active: [], shared: [], images: [] });
   // The last picture the GM showed the players (a player's screen opens it).
   const [imageShown, setImageShown] = useState<{ id: string; at: number } | null>(null);
@@ -1290,7 +1299,7 @@ export function useSession() {
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     const intent = throwIntent();
-    withManual(extra?.advantage, (manual) => socket.send(JSON.stringify({ type: "siege-check", id, attribute, cl, ...(save ? { label: `${attribute[0].toUpperCase()}${attribute.slice(1)} save` } : {}), ...(extra ?? {}), ...(manual ? { manual } : {}), ...intent })));
+    withManual(extra?.kind ?? (save ? "save" : "check"), extra?.advantage, (manual) => socket.send(JSON.stringify({ type: "siege-check", id, attribute, cl, ...(save ? { label: `${attribute[0].toUpperCase()}${attribute.slice(1)} save` } : {}), ...(extra ?? {}), ...(manual ? { manual } : {}), ...intent })));
   }, []);
 
   // Dual class or reclass at a level up (the Adventurer's Backpack).
@@ -1555,9 +1564,9 @@ export function useSession() {
         return send({ type: "ct", place: true, ...rest, action, ...(castAction ? { castAction } : {}), ...throwIntent() });
       }
       // A roll of the creature's own die (an attack, a save, a death save): manual dice asked first.
-      if (["attack", "save", "death-save"].includes(action) && diceStore.settings().manualDice && rulesetFor(rulesetNow.current).manualDie) {
+      if (["attack", "save", "death-save"].includes(action) && manualFor(action)) {
         const intent = throwIntent();
-        withManual(payload.advantage, (manual) => send({ type: "ct", action, ...payload, ...(manual ? { manual } : {}), ...intent }));
+        withManual(action, payload.advantage, (manual) => send({ type: "ct", action, ...payload, ...(manual ? { manual } : {}), ...intent }));
         return true;
       }
       return send({ type: "ct", action, ...payload, ...throwIntent() });

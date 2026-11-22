@@ -199,6 +199,10 @@ function createDice(state = {}) {
     clearForced() {
       forced.length = 0;
     },
+    // The host's own draws so far (a die from a fixed or typed-in face is not one).
+    hostDraws() {
+      return generator.draws();
+    },
     reseed(next) {
       seed = String(next || crypto.randomBytes(16).toString("hex"));
       generator = makeGenerator(seed, 0);

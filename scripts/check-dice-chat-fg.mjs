@@ -4,7 +4,7 @@
 //    table's typedDice, on by default); off, the roller's own set
 //  - the party sheet's roll for one member (members)
 //  - manual dice for the sheet's and the tracker's rolls: the faces typed in are the roll's, marked [MANUAL]; faces
-//    not used never reach the next roll
+//    not used never reach the next roll; a line with some of the host's dice says so
 import "./loopback.mjs";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -98,7 +98,14 @@ try {
   await settle(400);
   const after = lastRoll(ann, /Wisdom/);
   assert(after && !/\[MANUAL\]/.test(after.roll.label) && JSON.stringify(after.roll).includes("11"), `the next roll is its own: ${JSON.stringify(after?.roll)}`);
-  done.push("manual dice: the sheet's roll, faces not used dropped");
+  // Fewer faces than the roll needs (advantage on the host's side): the line says some were the host's.
+  ann.send({ type: "modifiers", action: "key", key: "adv", on: true });
+  await settle();
+  ann.send({ type: "siege-check", id: hero.id, attribute: "charisma", kind: "check", label: "Charisma check", manual: [5] });
+  await settle(400);
+  const mixed = lastRoll(ann, /Charisma/);
+  assert(mixed && /\[MANUAL, some dice the host's\]/.test(mixed.roll.label), `a typed face and a host's die: ${JSON.stringify(mixed?.roll?.label)}`);
+  done.push("manual dice: the sheet's roll, faces not used dropped, a line with the host's dice says so");
 
   // 5. Manual dice: the tracker's attack.
   const bandit = agent.records.create({ type: "npc", name: "Bandit", data: { ac: 12, hp: 11, abilities: { strength: { score: 12, bonus: 1 }, dexterity: { score: 12, bonus: 1 } }, actions: { "id-00001": { name: "Scimitar", desc: "Melee Weapon Attack: +3 to hit, reach 5 ft., one target. Hit: 4 (1d6 + 1) slashing damage." } } } }, agent.seat);
