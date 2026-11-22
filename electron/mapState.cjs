@@ -618,7 +618,7 @@ const MAX_WALLS_STUDIO = 20000;
 
 // Weather Map Studio can hold (krakenBridge.cjs TO_STUDIO_FX); any other kind stays as the table had it.
 const STUDIO_WEATHER = new Set(["rain", "snow", "blizzard", "fog", "clouds", "water"]);
-function createMapState({ saved, records, onChange = () => undefined, hasArt = () => false, hasPicture = () => false, artFor = () => null, hasTile = () => true, combatFor = () => null, activeRecord = () => null, sharedWith = null, colorOf = playerColor, tableOptions = () => ({}), onRegion = () => undefined, onTracker = () => false, onFaction = () => undefined }) {
+function createMapState({ saved, records, onChange = () => undefined, hasArt = () => false, hasPicture = () => false, artFor = () => null, hasTile = () => true, combatFor = () => null, activeRecord = () => null, sharedWith = null, colorOf = playerColor, tableOptions = () => ({}), onRegion = () => undefined, onTracker = () => false, onFaction = () => undefined, onHidden = () => undefined }) {
   // One master per map: a second state (the GM's private image window) works on
   // the very same walls, lights, tokens, paint and effects as the table's.
   const state = sharedWith ? sharedWith.rawState() : savedMap(saved);
@@ -1907,6 +1907,7 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       if (patch.light !== undefined) token.light = typeof patch.light === "string" ? presetLight(patch.light, lightProfiles()) : cleanCarried(patch.light);
       if (patch.vision !== undefined) token.vision = patch.vision == null ? null : Math.min(1000, Math.max(0, num(patch.vision, 0)));
       if (patch.name !== undefined) token.name = text(patch.name, token.name).slice(0, 48);
+      const wasHidden = Boolean(token.hidden);
       if (patch.hidden !== undefined) token.hidden = Boolean(patch.hidden);
       if (patch.squares !== undefined) token.squares = Math.min(50, Math.max(0.25, num(patch.squares, token.squares)));
       const wasFaction = token.faction;
@@ -1915,6 +1916,8 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       changed({ keepVision: true });
       // Its tracker entry takes the same side (FG's friend/foe on both).
       if (token.faction !== wasFaction && token.faction !== "none") onFaction(token);
+      // And is shown or hidden with it (FG's tracker visibility and the token are one).
+      if (Boolean(token.hidden) !== wasHidden) onHidden(token);
       return token;
     },
     remove(id, seat) {

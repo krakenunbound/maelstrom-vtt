@@ -23,7 +23,8 @@ const DEFAULTS: Record<WindowKind, Placement> = {
   characters: { x: 120, y: 50, w: 940, h: 800 },
   sheet: { x: 160, y: 50, w: 860, h: 820 },
   party: { x: 180, y: 60, w: 760, h: 720 },
-  combat: { x: 260, y: 70, w: 640, h: 520 },
+  // At the table's left edge, over the chat: the map's window opens to its right (firstPlace).
+  combat: { x: 8, y: 50, w: 640, h: 560 },
   players: { x: 300, y: 120, w: 480, h: 360 },
   folders: { x: 320, y: 110, w: 460, h: 520 },
   // Wide enough that each setting keeps its switch on the right of its label.
@@ -80,7 +81,7 @@ function firstPlace(kind: WindowKind): Placement {
     const surface = cssRect(document.querySelector(".desktop-surface"));
     // The table's right side, the left column kept for the combat tracker and the chat (a wide screen; a narrow one
     // gets the whole table). Behind every window is the map's other place, chosen from its title bar.
-    const left = surface && surface.width >= 1400 ? Math.round(Math.min(560, Math.max(420, surface.width * 0.26))) : 6;
+    const left = surface && surface.width >= 1500 ? DEFAULTS.combat.x + DEFAULTS.combat.w + 8 : 6;
     if (surface && surface.width > 200 && surface.height > 200) return { x: Math.round(surface.left + left), y: Math.round(surface.top + 6), w: Math.round(surface.width - left - 6), h: Math.round(surface.height - 12) };
   }
   // A first opening stays left of the sidebar (Character Selection at its usual spot covered the sidebar's

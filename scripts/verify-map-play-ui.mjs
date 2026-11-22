@@ -131,7 +131,7 @@ try {
     const table = document.querySelector(".desktop-surface").getBoundingClientRect();
     return { left: map.left - table.left, right: table.right - map.right, wide: table.width };
   });
-  assert(opened.wide < 1400 || (opened.left >= 400 && opened.right < 20), `the map leaves the left column free: ${JSON.stringify(opened)}`);
+  assert(opened.wide < 1500 || (opened.left >= 560 && opened.right < 20), `the map leaves the left column free: ${JSON.stringify(opened)}`);
   // Its title bar's empty space moves it (the map's toolbar is drawn in it), not only the title.
   {
     const bar = await seat.evaluate(() => {

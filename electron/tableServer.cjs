@@ -1057,6 +1057,9 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     // On the combat tracker (by its token, or a character's record): its path this turn is drawn.
     onTracker: (token) => combat.entries().some((entry) => entry.tokenId === token.id || (token.recordId && !entry.tokenId && entry.recordId === token.recordId)),
     // A token's side changed (its menu, a tool): its tracker entry follows.
+    onHidden: (token) => {
+      for (const entry of combat.entries()) if (entry.tokenId === token.id && Boolean(entry.hidden) !== Boolean(token.hidden)) combat.update(entry.id, { hidden: Boolean(token.hidden) }, { role: "dm", name: "GM" });
+    },
     onFaction: (token) => {
       for (const entry of combat.entries()) if (entry.tokenId === token.id && entry.faction !== token.faction) combat.update(entry.id, { faction: token.faction }, { role: "dm", name: "GM" });
     },
@@ -2387,9 +2390,11 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       const kind = url.searchParams.get("kind") === "portrait" ? "picture" : url.searchParams.get("kind") === "card" ? "card" : "token";
       // A character's: its token (or portrait, or its race and class's), from the art library, as a still;
       // the party's token (the party sheet's) the same way.
-      if (allowed && (record.type === "character" || record.type === "party") && art) {
+      // Any other record's picture the GM gave it from the art library (a creature's own token) the same way.
+      const libraryPicture = Boolean(art) && ["token", "picture", "portrait"].some((key) => typeof record?.data?.[key] === "string" && art.has(record.data[key]));
+      if (allowed && (record.type === "character" || record.type === "party" || libraryPicture) && art) {
         const data = record.data ?? {};
-        const wanted = kind === "picture" ? [data.portrait, data.token] : [data.token, data.portrait];
+        const wanted = kind === "picture" ? [data.portrait, data.picture, data.token] : [data.token, data.portrait, data.picture];
         const id = [...wanted, record.type === "character" ? artForCharacter(data) : null].find((item) => typeof item === "string" && art.has(item));
         const still = id && /\.webm$/i.test(id) && art.has(id.replace(/\.webm$/i, ".png")) ? id.replace(/\.webm$/i, ".png") : id;
         const file = still ? art.file(still) : null;
