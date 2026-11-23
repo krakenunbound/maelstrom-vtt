@@ -172,6 +172,12 @@ try {
   const elf = { xpbonus: [{ all: { strength: 13, intelligence: 13 }, bonus: 5 }, { all: { strength: 13, intelligence: 16 }, bonus: 10 }] };
   const scores = (strength, intelligence) => ({ abilities: { strength: { score: strength }, intelligence: { score: intelligence } } });
   assert(xpBonusOf(elf, scores(13, 13)) === 5 && xpBonusOf(elf, scores(13, 16)) === 10 && xpBonusOf(elf, scores(12, 18)) === 0, "two prime requisites' XP bonus");
+  // A class a later book writes again: what the first left empty ({}), the later fills; levels merge.
+  const { classesOf, turnAgainst } = await import("../shared/packgame/rules.mjs");
+  const merged = classesOf({ classes: [{ name: "Elf", data: { xpbonus: {}, maxlevel: "", levels: { 1: { xp: 0 } } } }, { name: "Elf", data: { xpbonus: elf.xpbonus, maxlevel: 10, levels: { 4: { xp: 16000 } } } }] })[0];
+  assert(Array.isArray(merged.xpbonus) && merged.maxlevel === 10 && Object.keys(merged.levels).join() === "1,4", `a later book fills what the first left empty: ${JSON.stringify(merged)}`);
+  // "D+": destroyed, and the turn reaches the definition's affectedPlus (one die more than affected by default).
+  assert(turnAgainst({ skeleton: "D+" }, "skeleton").plus === true && rulesetNamed(GAME).packGame.turning.affectedPlus === "3d6", "D+ reaches 3d6 hit dice");
   done.push("a thief's Hear Noise on a d6, two prime requisites' XP bonus, a dagger in melee and thrown, a book's sample character taken as printed, initiative a side by default");
 
   // --- The fight -------------------------------------------------------------------------------------------------------

@@ -33,6 +33,11 @@ function pieces(template: string, read: (path: string) => unknown): string[] {
 const scopeOf = (wizard: WizardContext) => ({ data: wizard.spec });
 
 // The step: its number and title (and the words its condition adds), then its parts.
+// A step with nothing to show (an optional choice the books have nothing for: no sample characters) is left out.
+export function stepShows(step: WizardStep, wizard: WizardContext) {
+  return step.parts.some((part) => holds(part.when, scopeOf(wizard), { gm: false, editable: true }) && !(part.kind === "choose-record" && part.optional && !wizard.recordsOf(part.fromType).length));
+}
+
 export function StepView({ step, number, functions }: { step: WizardStep; number: number; functions: WizardFunctions }) {
   const wizard = useWizard();
   return (

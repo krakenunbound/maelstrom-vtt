@@ -48,7 +48,9 @@ export function classesOf(lib) {
     const key = slug(name);
     const was = byName.get(key) ?? { name, levels: {}, abilities: {} };
     const merged = { ...data, ...was, name: was.name || name, levels: { ...was.levels }, abilities: { ...was.abilities } };
-    for (const [field, value] of Object.entries(data)) if (merged[field] === undefined || merged[field] === "" || (field !== "levels" && field !== "abilities" && was[field] === undefined)) merged[field] = value;
+    // A field the first book left empty ({} or [] too: Basic's xpbonus for an Elf) is filled by a later book's.
+    const empty = (/** @type {unknown} */ value) => value === undefined || value === null || value === "" || (Array.isArray(value) ? value.length === 0 : typeof value === "object" && Object.keys(/** @type {object} */ (value)).length === 0);
+    for (const [field, value] of Object.entries(data)) if (field !== "levels" && field !== "abilities" && (empty(merged[field]) || empty(was[field]))) merged[field] = value;
     for (const [level, row] of Object.entries(data.levels ?? {})) if (Number(level) > 0 && row && typeof row === "object") merged.levels[String(Number(level))] = { ...(merged.levels[String(Number(level))] ?? {}), ...row };
     for (const [id, row] of rows(data.abilities)) merged.abilities[`${record.id ?? name}:${id}`] = row;
     for (const [rank, row] of rows(data.attackranks)) merged.attackranks = { ...(merged.attackranks ?? {}), [rank]: row };
@@ -420,7 +422,9 @@ export function turnAgainst(turning, kind) {
   const value = String(turning?.[kind] ?? "").trim().toUpperCase();
   if (!value || value === "-" || value === "NO") return { can: false };
   if (value === "T") return { can: true, auto: "turned" };
-  if (value === "D" || value === "D+") return { can: true, auto: "destroyed" };
+  if (value === "D") return { can: true, auto: "destroyed" };
+  // "D+": destroyed, and the turn reaches more hit dice (the definition's affectedPlus: BECMI's 3d6).
+  if (value === "D+") return { can: true, auto: "destroyed", plus: true };
   const need = num(value, NaN);
   return Number.isFinite(need) ? { can: true, need } : { can: false };
 }

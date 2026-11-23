@@ -44,6 +44,34 @@ Once Set 1 (with its game.json) is in `Documents/Kraken VTT/Packs/D&D BECMI/`,
 **Folders > Refresh** (or a restart) and **D&D BECMI** is on the campaign
 screen.
 
+### One game, or one game per set
+
+Two ways work; choose before converting, and keep to it for the whole line.
+
+- **One game, `D&D BECMI` (as above).** Set 1 carries `game.json`; every
+  later set says `"ruleset": "D&D BECMI"`, has no `game.json`, and adds what
+  it brings: the class levels it prints (4 to 14 for Expert; it may repeat
+  1 to 3), its spells, its items, its monsters. A campaign activates the sets
+  it plays with; a character goes from 1st level in Basic to 14th in Expert
+  without leaving the campaign, and Set 1's monsters and tables stay
+  available. Tested 2026-11-23: Set 1 with a copy of Set 2 relabelled this
+  way gives one campaign both books, 106 monsters and a Magic-User levelled
+  from Basic into Expert.
+- **One game per set (`D&D BECMI Expert`, id `becmiexpert`...).** Each set's
+  pack is a whole game on its own: its own `game.json` (its own id, name and
+  `maxLevel`), **every** class level from 1, and everything a table needs
+  that the set does not print again: the `Monster Attack Table`, the
+  `Normal Man` table, the monsters, the equipment. Its campaigns see only
+  that set's books (an Expert campaign cannot open Set 1 or its monsters),
+  and characters do not move between a Basic and an Expert campaign. An
+  adventure belongs to one of the games (its `ruleset`). Use this only when
+  the GM wants each set played on its own.
+
+In either way, a later book that writes a class again may leave fields out
+or empty; Maelstrom fills an empty field (`{}`, `[]`, `""`) from the other
+book. It keeps the first book's value when both give one, so fix a wrong
+value in the book that has it.
+
 A boxed set's books (Players Manual, Dungeon Masters Rulebook) go in one pack
 for the set, a chapter per book. An adventure inside a set (Set 1's solo
 adventure and "Castle Mistamere"-style starters) is part of that set's pack.
@@ -336,3 +364,46 @@ play as the book prints them. To fix in the pack:
    counted as shot. Leave it if the book sells them only together.
 5. **No item has `encumbrance`.** Set 1 gives no weights, so this is right
    for it; the Expert set's equipment list does, so give them there.
+
+## 6. Set 2: Expert Rules, as made on 2026-11-23
+
+Made as its own game, `D&D BECMI Expert`. Tested in Maelstrom: the campaign
+screen offers it; the wizard builds all seven classes; every class levels to
+its top (humans 14, Dwarf 12, Elf 10, Halfling 8) with the book's titles,
+hit dice, saves and spells a day; the two-score XP bonus works; cleric
+turning works, `D+` included; all 106 pages open. To fix in the pack:
+
+1. **Magic-User THAC0 is one row off.** The book's Character Hit Rolls
+   table (its own Combat page) gives Magic-Users 19 at levels 1 to 5, 17 at
+   6 to 10 and 15 at 11 to 15; the pack gives 17, 15 and 13. A 1st level
+   Magic-User hits as a 6th. Read each class's THAC0 from the AC 0 column of
+   its own row.
+2. **Javelin has no `damage` or `range`; Staff has no `damage`.** Give them
+   as the weapons table prints them. Without `damage` a weapon is not an
+   attack on the sheet.
+3. **Barding is `"type": "Armor"` with `ac`.** A character who buys it wears
+   it (AC 5). Make it `"type": "Gear"` with its Armor Class in its text, as
+   it is a horse's.
+4. **Light Catapult is a `Weapon` with no damage.** Give its damage, or
+   type it `Gear` (a siege engine, not a character's weapon).
+5. **No monsters.** The Expert rules' monster chapter and The Isle of Dread
+   have many; the pack has no `npc` records, so an Expert campaign has
+   nothing to fight. Add each as section 2's Monsters says.
+6. **The Isle of Dread has no story records.** Its keyed areas need
+   `encounter` records, a `battle` for each fight, its creatures, and a
+   `treasureparcels` for each hoard (section 3). It is TSR's module X1:
+   better as its own pack (`kind: "adventure"`, `group: "X series"`,
+   `order: "X1"`) with the same `ruleset`.
+7. **Every map has `"grid": "off"`.** The temple levels, the pirate lair and
+   the cave lairs are battle maps: give them `"grid": "on"`, their
+   `gridsize` and `gridoffset`. Region and continent maps may stay off.
+8. **87 of the 106 pages are a scan only** (not 74). Their text, tables and
+   monsters cannot be searched, linked or rolled until transcribed.
+9. Ammunition items (`Quiver with 20 Arrows`, `Case with 30 Quarrels`,
+   `Silver-tipped Arrow`) have no `encumbrance`; the book's equipment table
+   gives them.
+
+Checked and right: the Monster Attack Table and the Normal Man table (spell
+save 17, as this book prints it); hit dice past 9th level (`9d8+10`);
+cleric turning rows to 14th level; the Thief's skills (Pick Pockets 125% at
+14th: the sheet shows at most 99%, the GM rules above it).

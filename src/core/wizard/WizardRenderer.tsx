@@ -5,7 +5,7 @@ import type { Session, TableRecord } from "../../session/useSession";
 import { useHostRolls } from "../../characters/hostRolls";
 import { at, holds, num, type Row } from "../sheet/context";
 import { WizardFrame } from "./WizardFrame";
-import { moneyOf, StepView, type Ware, type WizardFunctions } from "./Steps";
+import { moneyOf, StepView, stepShows, type Ware, type WizardFunctions } from "./Steps";
 import { tableRows, tablesOf, WizardCtx, type WizardContext } from "./context";
 
 // A wizard laid out by its manifest (wizard: a WizardSpec): the core's frame,
@@ -121,9 +121,11 @@ export function WizardRenderer({ spec: wizardSpec, session, onDone, functions }:
   return (
     <WizardCtx.Provider value={wizard}>
       <WizardFrame hook={wizardSpec.hook} aria={wizardSpec.aria} title={wizardSpec.title} ready={ready} finishTitle={wizardSpec.finish.title} onFinish={() => void finish()} onCancel={() => onDone(null)} problem={problem}>
-        {wizardSpec.steps.map((step, index) => (
-          <StepView key={step.id} step={step} number={index + 1} functions={functions} />
-        ))}
+        {wizardSpec.steps
+          .filter((step) => stepShows(step, wizard))
+          .map((step, index) => (
+            <StepView key={step.id} step={step} number={index + 1} functions={functions} />
+          ))}
       </WizardFrame>
     </WizardCtx.Provider>
   );

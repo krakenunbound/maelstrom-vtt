@@ -266,6 +266,47 @@ being read; warnings are worth fixing.
 10. **Make and check:** `npm run kpack:make -- <folder>`; fix every error and
     warning `kpack:check` reports; then open it in Maelstrom (Modules: make it
     active, read it in Books, open its maps) and compare with the PDF.
+11. **Play it, not only open it.** `kpack:check` checks the shape, not the
+    numbers. In a campaign of the game: build one character of every class;
+    raise each to its top level and compare its to-hit, saves, hit dice and
+    spells with the book's tables; attack with a melee, a thrown and a
+    missile weapon; roll a save and a skill; put three of the book's
+    monsters on the tracker and fight; take every sample character and
+    compare it with the book; open every page and every map.
+
+### Mistakes conversions have made (check for each)
+
+- **Numbers read from the wrong row or column** of a printed table (a class's
+  to-hit one level band off). Check each class's first and last level of
+  every band against the book's summary table, not only its own page.
+- **Weapons without `damage`**, thrown and missile weapons without `range`:
+  they do not appear as attacks. Every weapon a character can buy needs
+  both where the book gives them.
+- **Things characters cannot wear typed as armor** (horse barding, siege
+  engines as weapons): a character who buys them wears or wields them. Type
+  them `Gear`.
+- **Empty fields that mean "none"** (`xpbonus: {}`) where the book gives a
+  value: leave a field out rather than empty when the book is silent, and
+  fill it when the book is not.
+- **A rules book's monsters left as pages.** If the book has a monster
+  chapter, each monster is an `npc` record; without them the game's
+  campaigns have nothing to fight.
+- **An adventure printed inside a rules book** kept as pages only: give it
+  its encounters, battles, creatures and treasure (steps 4 to 6), or make it
+  its own `adventure` pack.
+- **Battle maps with no grid** (`"grid": "off"`): tokens cannot move by
+  squares or measure. Give dungeon and building maps their grid; region
+  maps may stay without one.
+- **Pages kept as a scan** (a picture-only page) to transcribe later: count
+  them and say so when the pack is handed over; their tables and monsters
+  are not records until transcribed.
+- **One game split into several rulesets** without meaning to: every book of
+  one game uses the same `ruleset`, so its campaigns see all of its books.
+  A separate ruleset is a separate game whose campaigns see only its own
+  books (see becmi-packs.md, "One game, or one game per set").
+- **The same item in several books of one game**: the shop lists it once per
+  book. Write each item in the book that first sells it; a later book
+  writes it again only to change it.
 
 Only convert books the GM owns, for the GM's own use. A book's content is its
 publisher's: packs made from licensed books are never committed to the
