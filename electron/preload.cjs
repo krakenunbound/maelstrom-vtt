@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld("kraken", {
   rulesetLogos: () => ipcRenderer.invoke("ruleset-logos"),
   // The games the GM's packs define (shared/packgame): their game.json, read.
   packGames: () => ipcRenderer.invoke("pack-games"),
+  // The games whose books are installed (the campaign screen offers only these).
+  installedGames: () => ipcRenderer.invoke("installed-games"),
   studioUrl: () => ipcRenderer.invoke("studio-url"),
   studioOpenImage: (input) => ipcRenderer.invoke("studio-open-image", input),
   studioSettings: (input) => ipcRenderer.invoke("studio-settings", input),

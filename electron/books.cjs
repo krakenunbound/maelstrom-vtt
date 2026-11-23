@@ -899,4 +899,12 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
   };
 }
 
-module.exports = { chaptersOf, createBookShelf, toHtml, fitsRuleset, forPlayers, isAdventure, describe };
+// The games whose books are on the shelf (the campaign screen offers only these): a game is there when a pack made
+// for it (not one for any game) that is not an adventure is installed: its rules, its monsters, its setting. A
+// game's adventures alone do not make it playable. Worldbuilding needs no books.
+function installedGames(infos, names) {
+  const books = infos.filter((info) => info.kraken && info.kraken !== "Any" && !ANY.has(String(info.kraken).toLowerCase()) && !isAdventure(info));
+  return names.filter((name) => name === "Worldbuilding" || books.some((info) => fitsRuleset(info, name)));
+}
+
+module.exports = { chaptersOf, createBookShelf, toHtml, fitsRuleset, forPlayers, isAdventure, describe, installedGames };

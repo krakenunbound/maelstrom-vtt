@@ -856,6 +856,13 @@ const calls = {
   "ruleset-logos": () => rulesetLogos(),
   // The games the GM's packs define (the campaign screen lists them with the built-in ones).
   "pack-games": () => packGames(),
+  // The games whose books are installed (the campaign screen offers only these); KRAKEN_ALL_GAMES (tests): every one.
+  "installed-games": () => {
+    packGames();
+    const names = require("../shared/rulesets/registry.mjs").CAMPAIGN_RULESETS.slice();
+    if (process.env.KRAKEN_ALL_GAMES) return names;
+    return require("./books.cjs").installedGames(books().list(), names);
+  },
   "studio-url": () => studioUrl(),
   "studio-open-image": (input) => studioOpenImage(input ?? {}),
   "studio-settings": (input) => (input ? setStudioSettings(input) : { ...studioSettings(), found: Object.fromEntries([...studioSettings().dungeondraftFolders, ...studioSettings().packFolders].map((folder) => [folder, fs.existsSync(folder)])) }),

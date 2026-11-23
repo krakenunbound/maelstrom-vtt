@@ -252,6 +252,7 @@ for (const name of [
   "campaign-ruleset",
   "ruleset-logos",
   "pack-games",
+  "installed-games",
   "studio-url",
   "studio-open-image",
   "studio-settings",

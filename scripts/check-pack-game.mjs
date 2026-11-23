@@ -88,7 +88,13 @@ try {
   const adventure = infos.find((info) => info.name === "Test Adventure");
   assert(fitsRuleset(adventure, GAME) && fitsRuleset(withGame[0], GAME) && !fitsRuleset(adventure, "Worldbuilding") && !fitsRuleset(adventure, "AD&D 2E"), "its books (and an adventure for it) in its own campaigns, not Worldbuilding's or another game's");
   assert(manifest.wizard?.steps?.map((step) => step.id).join() === "abilities,class,gear,details" && manifest.sheet.tabs.some((tab) => tab.id === "skills") && manifest.tracker.saves.keys.join() === "death,wands,paralysis,breath,spells", "its wizard, sheet and tracker from the definition");
-  done.push("a pack's game.json read and registered (the campaign list has it; its books, an adventure too, fit it alone)");
+  // The campaign screen offers only the games whose books are installed: this one (its rules book), Worldbuilding
+  // (no books needed); not a game whose only pack is an adventure, nor one with packs for any game only.
+  const { installedGames } = require("../electron/books.cjs");
+  const extra = [...infos, { kraken: "Traveller", title: "A Traveller adventure", category: "Adventures", kind: "adventure" }, { kraken: "Any", title: "Token pack", category: "Tokens", kind: "tokens" }];
+  const offered = installedGames(extra, ["Castles & Crusades", "Traveller", GAME, "Worldbuilding"]);
+  assert(offered.join() === `${GAME},Worldbuilding`, `only games with books installed: ${offered}`);
+  done.push("a pack's game.json read and registered (the campaign list has it; its books, an adventure too, fit it alone); the campaign screen offers only games whose books are installed");
 
   // --- A table of it ---------------------------------------------------------------------------------------------------
   server = createTableServer({ books: shelf, ruleset: GAME });

@@ -22,7 +22,7 @@ const OUT = process.argv[2] ?? path.join(tmpdir(), "kraken-core-parts");
 mkdirSync(OUT, { recursive: true });
 const profile = mkdtempSync(path.join(tmpdir(), "kraken-core-parts-"));
 for (const dir of ["no-fg-modules", "Packs"]) mkdirSync(path.join(profile, dir), { recursive: true });
-const env = { ...process.env, KRAKEN_WINDOW_AT: process.env.KRAKEN_WINDOW_AT ?? "-2500,40", KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0", KRAKEN_BOOKS: path.join(profile, "no-fg-modules"), KRAKEN_PACKS: path.join(profile, "Packs") };
+const env = { ...process.env, KRAKEN_ALL_GAMES: "1", KRAKEN_WINDOW_AT: process.env.KRAKEN_WINDOW_AT ?? "-2500,40", KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0", KRAKEN_BOOKS: path.join(profile, "no-fg-modules"), KRAKEN_PACKS: path.join(profile, "Packs") };
 const app = await electron.launch({ args: [".", "--mute-audio", `--user-data-dir=${profile}`], cwd: process.cwd(), env });
 const page = await app.firstWindow();
 await page.waitForSelector("text=My Campaigns", { timeout: 60000 });

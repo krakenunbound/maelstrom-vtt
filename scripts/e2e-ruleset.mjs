@@ -79,7 +79,7 @@ async function runRuleset(ruleset, plan) {
 
   const profile = mkdtempSync(path.join(tmpdir(), "kraken-e2e-"));
   // A plan may play with only the books Kraken ships (plan.shipped: no FG modules, no Kraken packs of the GM's).
-  const env = { ...process.env, KRAKEN_WINDOW_AT: AT.join(","), KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0", ...(plan.shipped ? { KRAKEN_BOOKS: path.join(profile, "no-fg-modules"), KRAKEN_PACKS: path.join(profile, "Kraken VTT", "Packs") } : {}) };
+  const env = { ...process.env, KRAKEN_ALL_GAMES: "1", KRAKEN_WINDOW_AT: AT.join(","), KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0", ...(plan.shipped ? { KRAKEN_BOOKS: path.join(profile, "no-fg-modules"), KRAKEN_PACKS: path.join(profile, "Kraken VTT", "Packs") } : {}) };
   if (plan.shipped) for (const dir of [env.KRAKEN_BOOKS, env.KRAKEN_PACKS]) mkdirSync(dir, { recursive: true });
   let app = null;
   let browser = null;

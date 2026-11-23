@@ -20,6 +20,11 @@ definition.
 - Every pack of the game (the rules books and its adventures) has
   `"ruleset": "<the game's name>"` in its `kraken-pack.json`, the same name as
   `game.json`'s `name`. Those packs show in campaigns of that game only.
+- The campaign screen offers only the games whose books are installed: a
+  game appears once a pack made for it (not an adventure: its rules, its
+  monsters, its setting) is in `Documents/Kraken VTT/Packs`, read when
+  Maelstrom starts. Worldbuilding needs no books. (Tests list every game with
+  `KRAKEN_ALL_GAMES=1`.)
 - **Folders > Refresh** (or a restart) reads a new or changed `game.json`.
   A campaign already of the game reads the changed definition when it opens.
 

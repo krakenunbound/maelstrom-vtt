@@ -229,7 +229,10 @@ export function SetupScreen({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // The games a campaign can be made with: the built-in ones, and those the GM's packs define (shared/packgame), read
   // from the host once the screen opens.
-  const [RULESETS, setRulesets] = useState(campaignRulesets);
+  // Only the games whose books are installed (Documents/Kraken VTT/Packs, read when Maelstrom starts) are offered;
+  // Worldbuilding needs none. Until the host answers, every game.
+  const [allRulesets, setRulesets] = useState(campaignRulesets);
+  const [installed, setInstalled] = useState<string[] | null>(null);
   useEffect(() => {
     void window.kraken
       ?.packGames?.()
@@ -243,10 +246,17 @@ export function SetupScreen({
           }
         }
         setRulesets(campaignRulesets());
+        const names = await window.kraken?.installedGames?.();
+        if (Array.isArray(names)) setInstalled(names);
       })
       .catch(() => undefined);
   }, []);
+  const RULESETS = installed ? allRulesets.filter((item) => installed.includes(item.name)) : allRulesets;
   const [ruleset, setRuleset] = useState(RULESETS[0].name);
+  // The game chosen is one offered (the list narrows once the host says which games are installed).
+  useEffect(() => {
+    if (RULESETS.length && !RULESETS.some((item) => item.name === ruleset)) setRuleset(RULESETS[0].name);
+  }, [RULESETS, ruleset]);
   // The rulesets: found by a part of the name or blurb once there are many;
   // each with the GM's own picture for it, if they keep one.
   const [rulesetQuery, setRulesetQuery] = useState("");
@@ -784,6 +794,11 @@ export function SetupScreen({
                     ))}
                     {rulesetsShown.length === 0 ? <p className="hint">No ruleset by that name.</p> : null}
                   </div>
+                  {installed ? (
+                    <p className="hint" data-installed-games={installed.length}>
+                      Games appear here when their books are installed: put a game&apos;s packs in Documents/Kraken VTT/Packs and restart Maelstrom.
+                    </p>
+                  ) : null}
                   {chosen ? (
                     <p className="ruleset-about" data-ruleset-about={chosen.name}>
                       <b>{chosen.name}.</b> {chosen.blurb}
