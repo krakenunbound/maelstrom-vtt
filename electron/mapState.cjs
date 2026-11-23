@@ -86,6 +86,9 @@ function cleanToken(raw) {
     facing: cleanFacing(raw.facing),
     // What players call it until it is known (FG's unidentified name); "": its name.
     unidentified: text(raw.unidentified, "").slice(0, 48),
+    // Its picture's own scale (Foundry's texture scale): an animated top-down token drawn larger than its squares,
+    // over its ring and unclipped (1: the picture fills its disc). The record's tokenScale when the token has none.
+    ...(raw.artScale !== undefined && raw.artScale !== null && Number(raw.artScale) !== 1 ? { artScale: Math.min(4, Math.max(0.2, num(raw.artScale, 1))) } : {}),
     // How high it is, in the scene's units (FG's and Foundry's elevation): flying, on a ledge, under water.
     elevation: Math.round(Math.min(100000, Math.max(-100000, num(raw.elevation, 0))) * 10) / 10,
     // Its own senses line, over its character's ("Darkvision 60 ft, Blindsight 10 ft"); "": the record's.
@@ -618,7 +621,7 @@ const MAX_WALLS_STUDIO = 20000;
 
 // Weather Map Studio can hold (krakenBridge.cjs TO_STUDIO_FX); any other kind stays as the table had it.
 const STUDIO_WEATHER = new Set(["rain", "snow", "blizzard", "fog", "clouds", "water"]);
-function createMapState({ saved, records, onChange = () => undefined, hasArt = () => false, hasPicture = () => false, artFor = () => null, hasTile = () => true, combatFor = () => null, activeRecord = () => null, sharedWith = null, colorOf = playerColor, tableOptions = () => ({}), onRegion = () => undefined, onTracker = () => false, onFaction = () => undefined, onHidden = () => undefined }) {
+function createMapState({ saved, records, onChange = () => undefined, hasArt = () => false, isVideoArt = () => false, hasPicture = () => false, artFor = () => null, hasTile = () => true, combatFor = () => null, activeRecord = () => null, sharedWith = null, colorOf = playerColor, tableOptions = () => ({}), onRegion = () => undefined, onTracker = () => false, onFaction = () => undefined, onHidden = () => undefined }) {
   // One master per map: a second state (the GM's private image window) works on
   // the very same walls, lights, tokens, paint and effects as the table's.
   const state = sharedWith ? sharedWith.rawState() : savedMap(saved);
@@ -1170,6 +1173,11 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       x: token.x,
       y: token.y,
       squares: token.squares,
+      // Its picture's scale: its own, else its record's (a creature's tokens all drawn alike).
+      ...(() => {
+        const scale = num(token.artScale ?? (token.recordId ? records.get(token.recordId)?.data?.tokenScale : null), 1);
+        return scale !== 1 && scale > 0 ? { artScale: Math.min(4, Math.max(0.2, scale)) } : {};
+      })(),
       owner: token.owner,
       faction: token.faction,
       // A player's token rings in the colour they chose (Settings > You at the table), as their pings and drawings.
@@ -1202,10 +1210,14 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
     if (picture) {
       out.art = `/art/file?token=${assetToken}&id=${encodeURIComponent(picture)}`;
       out.video = picture.toLowerCase().endsWith(".webm");
-    } else if (token.sourceId && hasArt(token.sourceId)) out.art = `/table/token?token=${assetToken}&id=${encodeURIComponent(token.sourceId)}`;
-    else if (token.recordId && (data?.token || data?.picture) && records.get(token.recordId)?.type !== "character") {
-      // An NPC's own token picture, from its module.
+    } else if (token.sourceId && hasArt(token.sourceId)) {
+      out.art = `/table/token?token=${assetToken}&id=${encodeURIComponent(token.sourceId)}`;
+      // An animated token (a .webm with its transparency) plays on the map; a .gif or animated .webp plays as a picture.
+      out.video = isVideoArt(token.sourceId);
+    } else if (token.recordId && (data?.token || data?.picture) && records.get(token.recordId)?.type !== "character") {
+      // An NPC's own token picture, from its module (an animated one plays).
       out.art = `/table/record-art?token=${assetToken}&record=${encodeURIComponent(token.recordId)}`;
+      out.video = /\.webm(@|$)/i.test(String(data?.token || data?.picture || ""));
     }
     return out;
   }
@@ -1892,6 +1904,14 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
         if (!canMove(token, seat) || keys.some((key) => key !== "light" && key !== "facing" && key !== "elevation")) throw new Error("Only the GM can change tokens.");
       }
       if (patch.facing !== undefined) token.facing = cleanFacing(patch.facing);
+      // Its picture's scale (the GM's): 1 (or null) back to filling its disc. forRecord: every token of its record
+      // too (the record's tokenScale: the goblins placed later).
+      if (patch.artScale !== undefined) {
+        const scale = patch.artScale === null ? 1 : Math.min(4, Math.max(0.2, num(patch.artScale, 1)));
+        if (scale === 1) delete token.artScale;
+        else token.artScale = Math.round(scale * 100) / 100;
+        if (patch.forRecord && token.recordId && records.get(token.recordId)) records.update(token.recordId, { data: { tokenScale: scale === 1 ? null : token.artScale } }, seat);
+      }
       if (patch.elevation !== undefined) token.elevation = cleanToken({ x: 0, y: 0, elevation: patch.elevation }).elevation;
       if (patch.unidentified !== undefined) token.unidentified = text(patch.unidentified, "").slice(0, 48);
       if (patch.senses !== undefined) token.senses = text(patch.senses, "").slice(0, 200);

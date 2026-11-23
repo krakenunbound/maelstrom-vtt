@@ -145,7 +145,7 @@ export type MapActions = {
   setDoor: (id: string, state?: number) => void;
   setSight: (on: boolean) => void;
   setLocked: (on: boolean) => void;
-  updateToken: (id: string, patch: Partial<Pick<MapToken, "name" | "hidden" | "squares" | "faction" | "owner" | "vision" | "facing" | "unidentified" | "senses" | "elevation">> & { light?: string | MapToken["light"] }) => void;
+  updateToken: (id: string, patch: Partial<Pick<MapToken, "name" | "hidden" | "squares" | "faction" | "owner" | "vision" | "facing" | "unidentified" | "senses" | "elevation">> & { light?: string | MapToken["light"]; artScale?: number | null; forRecord?: boolean }) => void;
   updateSettings: (patch: SceneSettingsPatch) => void;
   placeLight: (light: Partial<SceneLightRecord> & { preset?: string }) => void;
   updateLight: (id: string, patch: Partial<SceneLightRecord>) => void;
@@ -2582,7 +2582,7 @@ function MapViewInner({
                   fontSize: span * tokenLook.fill * 0.38,
                 }}
               >
-                {token.art && token.video ? (
+                {token.art && token.artScale ? null : token.art && token.video ? (
                   <video src={token.art} autoPlay loop muted playsInline style={token.facing != null ? { transform: `rotate(${token.facing}deg)` } : undefined} />
                 ) : token.art ? (
                   <img src={token.art} alt="" draggable={false} style={token.facing != null ? { transform: `rotate(${token.facing}deg)` } : undefined} />
@@ -2590,6 +2590,13 @@ function MapViewInner({
                   <span>{initials(token.name)}</span>
                 )}
               </div>
+              {token.art && token.artScale ? (
+                // A picture at its own scale (an animated top-down token): over the ring, centred, unclipped, its
+                // transparency and animation as they are; turned with the token's facing.
+                <div className="token-art-free" data-art-scale={token.artScale} style={{ width: span * tokenLook.fill * token.artScale, height: span * tokenLook.fill * token.artScale, transform: `translate(-50%, -50%)${token.facing != null ? ` rotate(${token.facing}deg)` : ""}` }}>
+                  {token.video ? <video src={token.art} autoPlay loop muted playsInline /> : <img src={token.art} alt="" draggable={false} />}
+                </div>
+              ) : null}
               {token.effects ? <TokenFx fx={token.effects.fx as FxKey[]} span={span} mode={fxMode} /> : null}
               {token.effects && fxMode !== "off" ? <EffectBadges badges={token.effects.badges.map((badge) => ({ ...badge, tone: badge.tone as "good" | "bad" | "neutral" }))} span={span} show={token.effectsShow} /> : null}
               {token.facing != null && tokenLook.facing ? (

@@ -1268,6 +1268,8 @@ const TOOLS = [
       senses: string("Its own senses line, over its character's: Darkvision 60 ft, Blindsight 10 ft, Tremorsense 30 ft, Truesight 120 ft, Devil's Sight (\"\": the record's)"),
       noSight: { type: "boolean", description: "true: it gives its owner no sight on a line-of-sight scene (a mount, a statue the player moves); false: it sees again" },
       sightAngle: number("Its sight as a cone this many degrees wide (10-360) centred on its facing; 360: all round"),
+      artScale: { type: ["number", "null"], description: "Its picture's scale (0.2-4; 1 or null: fills its disc): larger draws it over the ring, unclipped (animated top-down tokens: about 2 to 2.5)" },
+      forRecord: { type: "boolean", description: "With artScale: every token of its record at that scale too (the record's tokenScale)" },
     }, ["id"]),
     run(args, ctx) {
       const { map, seat } = needTable(ctx);

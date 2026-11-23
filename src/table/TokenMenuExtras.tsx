@@ -2,7 +2,7 @@ import { useState } from "react";
 import { parseSenses } from "../../shared/map/geometry.mjs";
 import type { MapToken } from "../session/useSession";
 
-type Patch = { name?: string; unidentified?: string; senses?: string; elevation?: number; noSight?: boolean; sightAngle?: number };
+type Patch = { name?: string; unidentified?: string; senses?: string; elevation?: number; noSight?: boolean; sightAngle?: number; artScale?: number | null; forRecord?: boolean };
 
 // A text field that sends its value on Enter or when it loses focus (never
 // mid-word in a Chinese, Japanese or Korean input method).
@@ -67,6 +67,19 @@ export function TokenMenuExtras({ token, gm, recordSenses, units, update, undo }
         <button type="button" role="menuitem" data-action="undo-move" title="Its last move back (Ctrl+Z)" onClick={undo}>
           Undo move
         </button>
+      ) : null}
+      {gm && token.art ? (
+        // Its picture's scale (an animated top-down token's figure fills its square at 2 to 2.5): this token, or
+        // every token of its creature or character.
+        <label className="token-menu-row" title="How large its picture is drawn: 1 fills the disc; larger draws it over the ring, unclipped (animated top-down tokens: about 2 to 2.5)">
+          Art scale
+          <input type="number" min={0.2} max={4} step={0.1} value={token.artScale ?? 1} onChange={(event) => update({ artScale: Number(event.target.value) || 1 })} style={{ width: "4.5rem" }} aria-label="Art scale" data-field="token-art-scale" />
+          {token.recordId ? (
+            <button type="button" data-action="art-scale-all" title="Every token of this creature or character at this scale (now and placed later)" onClick={() => update({ artScale: token.artScale ?? 1, forRecord: true })}>
+              For all
+            </button>
+          ) : null}
+        </label>
       ) : null}
       {gm || token.mine ? (
         <label className="token-menu-row">

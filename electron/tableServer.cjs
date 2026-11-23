@@ -535,6 +535,28 @@ const WEB_TYPES = {
 };
 
 // A file streamed to a seat; one that vanished or failed halfway ends that answer only.
+// A picture or a video answered whole, or by the byte range the browser asks for (a looping animated token or map
+// seeks back to its start). source: { bytes } in memory or { path, size } on disk.
+function sendMedia(req, res, source, mime, cache) {
+  const size = source.bytes ? source.bytes.length : source.size;
+  const range = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range ?? ""));
+  if (range && (range[1] || range[2])) {
+    const start = range[1] ? Number(range[1]) : Math.max(0, size - Number(range[2]));
+    const end = range[1] && range[2] ? Math.min(size - 1, Number(range[2])) : size - 1;
+    if (start >= size || start > end) {
+      res.writeHead(416, { "Content-Range": `bytes */${size}` });
+      res.end();
+      return;
+    }
+    res.writeHead(206, { "Content-Type": mime, "Content-Range": `bytes ${start}-${end}/${size}`, "Content-Length": end - start + 1, "Accept-Ranges": "bytes", "Cache-Control": cache, "X-Content-Type-Options": "nosniff" });
+    if (source.bytes) res.end(source.bytes.subarray(start, end + 1));
+    else streamFile(source.path, res, { start, end });
+    return;
+  }
+  res.writeHead(200, { "Content-Type": mime, "Content-Length": size, "Accept-Ranges": "bytes", "Cache-Control": cache, "X-Content-Type-Options": "nosniff" });
+  if (source.bytes) res.end(source.bytes);
+  else streamFile(source.path, res);
+}
 function streamFile(file, res, range) {
   const stream = fs.createReadStream(file, range);
   stream.on("error", () => res.destroy());
@@ -1035,6 +1057,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       sendMaps();
     },
     hasArt: (id) => tokenArt.has(id),
+    isVideoArt: (id) => String(tokenArt.get(id)?.mime ?? "").startsWith("video/"),
     hasPicture: (id) => Boolean(art && art.has(id)),
     artFor: (data) => artForCharacter(data),
     hasTile: (id) => Boolean(tiles && tiles.has(id)),
@@ -1079,6 +1102,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       sendMaps();
     },
     hasArt: (id) => tokenArt.has(id),
+    isVideoArt: (id) => String(tokenArt.get(id)?.mime ?? "").startsWith("video/"),
     hasPicture: (id) => Boolean(art && art.has(id)),
     artFor: (data) => artForCharacter(data),
     hasTile: (id) => Boolean(tiles && tiles.has(id)),
@@ -2248,8 +2272,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
           res.end();
           return;
         }
-        res.writeHead(200, { "Content-Type": found.mime, "Content-Length": stat.size, "Cache-Control": "private, max-age=3600", "X-Content-Type-Options": "nosniff" });
-        streamFile(found.path, res);
+        sendMedia(req, res, { path: found.path, size: stat.size }, found.mime, "private, max-age=3600");
       });
       return;
     }
@@ -2427,8 +2450,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
             res.end();
             return;
           }
-          res.writeHead(200, { "Content-Type": file.mime, "Content-Length": bytes.length, "Cache-Control": "private, max-age=300" });
-          res.end(bytes);
+          sendMedia(req, res, { bytes }, file.mime, "private, max-age=300");
           return;
         }
       }
@@ -2445,8 +2467,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         res.end();
         return;
       }
-      res.writeHead(200, { "Content-Type": picture.mime, "Content-Length": picture.bytes.length, "Cache-Control": "private, max-age=3600" });
-      res.end(picture.bytes);
+      sendMedia(req, res, { bytes: picture.bytes }, picture.mime, "private, max-age=3600");
       return;
     }
     if (req.method === "GET" && url.pathname === "/table/token") {
@@ -2458,8 +2479,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         res.end();
         return;
       }
-      res.writeHead(200, { "Content-Type": art.mime, "Content-Length": art.bytes.length, "Cache-Control": "private, max-age=3600" });
-      res.end(art.bytes);
+      sendMedia(req, res, { bytes: art.bytes }, art.mime, "private, max-age=3600");
       return;
     }
     if (req.method === "GET" && serveWeb(url, res, webRoot)) return;
@@ -5057,7 +5077,8 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       tokenArt.clear();
       for (const item of Array.isArray(list) ? list.slice(0, 400) : []) {
         if (!item || typeof item.id !== "string" || !item.bytes || item.bytes.length === 0 || item.bytes.length > 8 * 1024 * 1024) continue;
-        const mime = typeof item.mime === "string" && item.mime.startsWith("image/") ? item.mime : "application/octet-stream";
+        // A picture, or an animated token (a .webm with its transparency).
+        const mime = typeof item.mime === "string" && (item.mime.startsWith("image/") || item.mime === "video/webm") ? item.mime : "application/octet-stream";
         tokenArt.set(item.id.slice(0, 80), { bytes: Buffer.from(item.bytes), mime });
       }
       sendMaps();

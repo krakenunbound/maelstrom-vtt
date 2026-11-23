@@ -36,6 +36,8 @@ export type MapToken = {
   health: TokenHealth | null;
   art?: string;
   video?: boolean;
+  // Its picture's scale (an animated top-down token drawn larger, over its ring); none: it fills its disc.
+  artScale?: number;
   light: { name: string; bright: number; dim: number; color: string } | null;
   vision: number | null;
   seesFt: number;
