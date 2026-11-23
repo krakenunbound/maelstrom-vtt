@@ -1,0 +1,81 @@
+{
+  "format": "maelstrom-game",
+  "version": 1,
+  "id": "becmi",
+  "name": "D&D BECMI",
+  "blurb": "Dungeons & Dragons as the boxed sets play it (Basic, Expert, Companion, Master, Immortals): descending Armor Class and THAC0, race as class, the five saving throws, d6 initiative by side, morale, turning the undead, thief skills, levels to 36. Played from the GM's own books.",
+  "abilities": [
+    { "key": "strength", "label": "Strength", "short": "STR" },
+    { "key": "intelligence", "label": "Intelligence", "short": "INT" },
+    { "key": "wisdom", "label": "Wisdom", "short": "WIS" },
+    { "key": "dexterity", "label": "Dexterity", "short": "DEX" },
+    { "key": "constitution", "label": "Constitution", "short": "CON" },
+    { "key": "charisma", "label": "Charisma", "short": "CHA" }
+  ],
+  "abilityDice": "3d6",
+  "abilitySwap": false,
+  "abilityModifiers": [
+    { "from": 3, "to": 3, "mod": -3 },
+    { "from": 4, "to": 5, "mod": -2 },
+    { "from": 6, "to": 8, "mod": -1 },
+    { "from": 9, "to": 12, "mod": 0 },
+    { "from": 13, "to": 15, "mod": 1 },
+    { "from": 16, "to": 17, "mod": 2 },
+    { "from": 18, "to": 18, "mod": 3 }
+  ],
+  "abilityCheck": { "die": "1d20", "atMost": true },
+  "saves": [
+    { "key": "death", "label": "Death Ray or Poison" },
+    { "key": "wands", "label": "Magic Wands" },
+    { "key": "paralysis", "label": "Paralysis or Turn to Stone" },
+    { "key": "breath", "label": "Dragon Breath" },
+    { "key": "spells", "label": "Rods, Staves or Spells", "ability": "wisdom" }
+  ],
+  "saveDie": "1d20",
+  "armorClass": { "descending": true, "unarmored": 9, "ability": "dexterity" },
+  "attack": { "by": "thac0", "melee": "strength", "missile": "dexterity", "damage": "strength", "naturalHit": 20, "naturalMiss": 1, "minimumDamage": 1 },
+  "initiative": { "die": "1d6", "by": "side", "order": "high" },
+  "morale": { "die": "2d6", "atMost": true },
+  "hitPoints": { "ability": "constitution", "abilityTo": 9, "deadAt": 0, "minimumPerDie": 1 },
+  "skills": {
+    "die": "1d100",
+    "atMost": true,
+    "names": { "openlocks": "Open Locks", "findtraps": "Find Traps", "removetraps": "Remove Traps", "climb": "Climb Walls", "movesilently": "Move Silently", "hide": "Hide in Shadows", "pickpockets": "Pick Pockets", "hearnoise": "Hear Noise" }
+  },
+  "turning": {
+    "die": "2d6",
+    "affected": "2d6",
+    "duration": "",
+    "undead": [
+      { "key": "skeleton", "names": ["Skeleton"] },
+      { "key": "zombie", "names": ["Zombie"] },
+      { "key": "ghoul", "names": ["Ghoul"] },
+      { "key": "wight", "names": ["Wight"] },
+      { "key": "wraith", "names": ["Wraith"] },
+      { "key": "mummy", "names": ["Mummy"] },
+      { "key": "spectre", "names": ["Spectre"] },
+      { "key": "vampire", "names": ["Vampire"] },
+      { "key": "phantom", "names": ["Phantom"] },
+      { "key": "haunt", "names": ["Haunt"] },
+      { "key": "spirit", "names": ["Spirit"] },
+      { "key": "nightshade", "names": ["Nightshade"] },
+      { "key": "lich", "names": ["Lich"] },
+      { "key": "special", "names": [] }
+    ]
+  },
+  "coins": [
+    { "key": "PP", "name": "Platinum", "value": 500 },
+    { "key": "GP", "name": "Gold", "value": 100 },
+    { "key": "EP", "name": "Electrum", "value": 50 },
+    { "key": "SP", "name": "Silver", "value": 10 },
+    { "key": "CP", "name": "Copper", "value": 1 }
+  ],
+  "startingGold": "3d6*10",
+  "encumbrance": { "unit": "cn", "coinsPer": 1 },
+  "alignments": ["Lawful", "Neutral", "Chaotic"],
+  "maxLevel": 36,
+  "classType": "class",
+  "saveAs": { "F": "Fighter", "C": "Cleric", "MU": "Magic-User", "T": "Thief", "D": "Dwarf", "E": "Elf", "H": "Halfling", "NM": "Normal Man" },
+  "tables": { "monsterAttack": "Monster Attack Table", "normalMan": "Normal Man" },
+  "calendar": "gregorian"
+}

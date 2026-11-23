@@ -95,7 +95,8 @@ export function WizardPartView({ part, functions }: { part: WizardPart; function
     }
     case "text": {
       const value = String(get(part.into) ?? "");
-      const list = part.options ? listOf(at(wizard.chosen(part.options.record)?.data, part.options.list)) : [];
+      // The choices: fixed ones (an alignment), or a list on a chosen record (a background's names).
+      const list = part.options ? (part.options.values ?? listOf(at(wizard.chosen(part.options.record ?? "")?.data, part.options.list ?? ""))) : [];
       return (
         <label className="cc-inline">
           {part.label}

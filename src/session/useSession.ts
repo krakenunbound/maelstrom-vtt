@@ -5,6 +5,7 @@ import { dicePacks } from "../dice/dicePacks";
 import type { MapScene } from "../table/MapView";
 import { sound, type Soundscape } from "../sound/soundEngine";
 import { rulesetFor } from "../../shared/rulesets/registry.mjs";
+import { registerPackGame } from "../../shared/packgame/register.mjs";
 import { diceStore, rolling, throwIntent } from "../dice/diceStore";
 import { rulerStore } from "../table/Ruler";
 import { exploredStore } from "../table/explored";
@@ -708,6 +709,15 @@ export function useSession() {
             sound.setSource((id) => `${originRef.current}/sound/file?token=${assetRef.current}&id=${encodeURIComponent(id)}`);
             // The GM's dice packs (Documents/Kraken VTT/Dice): more sets for this seat to choose from.
             void dicePacks.connect(originRef.current, assetRef.current);
+            // The games the GM's packs define (shared/packgame), registered before the campaign's game is set: a
+            // campaign of one finds its manifest.
+            for (const game of Array.isArray(msg.games) ? msg.games : []) {
+              try {
+                registerPackGame(game);
+              } catch {
+                /* a definition this seat cannot read: its game falls back */
+              }
+            }
             // The campaign's game, by its name (a string, or none).
             const campaignGame = msg.ruleset;
             setRuleset(typeof campaignGame === "string" ? campaignGame : "");

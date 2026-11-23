@@ -14,6 +14,8 @@ contextBridge.exposeInMainWorld("kraken", {
   touchCampaign: (input) => ipcRenderer.invoke("touch-campaign", input),
   setCampaignRuleset: (input) => ipcRenderer.invoke("campaign-ruleset", input),
   rulesetLogos: () => ipcRenderer.invoke("ruleset-logos"),
+  // The games the GM's packs define (shared/packgame): their game.json, read.
+  packGames: () => ipcRenderer.invoke("pack-games"),
   studioUrl: () => ipcRenderer.invoke("studio-url"),
   studioOpenImage: (input) => ipcRenderer.invoke("studio-open-image", input),
   studioSettings: (input) => ipcRenderer.invoke("studio-settings", input),

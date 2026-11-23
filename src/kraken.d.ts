@@ -80,6 +80,7 @@ export type KrakenApi = {
   touchCampaign: (input: { id: string; port: number; gmName?: string }) => Promise<KrakenCampaign | null>;
   setCampaignRuleset: (input: { id: string; ruleset: string }) => Promise<KrakenCampaign>;
   rulesetLogos?: () => Promise<{ folder: string; logos: Record<string, string> }>;
+  packGames?: () => Promise<Record<string, unknown>[]>;
   studioUrl?: () => Promise<{ url: string }>;
   updater?: {
     state: () => Promise<UpdaterState>;

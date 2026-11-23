@@ -107,7 +107,8 @@ Fantasy Grounds modules and their history, [kraken-pack-format.md](kraken-pack-f
   checklist" in kpack-format.md. Every page becomes a book page; creatures,
   items, spells and tables become records the game's ruleset reads. The old D&D
   boxed sets (Basic, Expert, Companion, Master, Immortals) and their adventures:
-  [becmi-packs.md](becmi-packs.md).
+  [becmi-packs.md](becmi-packs.md). A game Maelstrom has no code for is taught
+  by its rules book's `game.json`: [pack-games.md](pack-games.md).
 - **Check it**: `npm run kpack:check <pack>` (the format), then make it active
   in a campaign of its game and open it in Books: every chapter reads, every
   link opens, every map opens on its room (a page's map link opens the map at

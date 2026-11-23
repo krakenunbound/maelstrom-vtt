@@ -1708,6 +1708,14 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   // read from the module itself (the Books window), as FG reads them, never
   // copied into the campaign (they made it tens of MB, sent to every player).
   const GM_SEAT = { role: "dm", name: "GM" };
+  // The games registered from packs (their definitions), for the welcome.
+  function packGamesNow() {
+    try {
+      return require("../shared/rulesets/registry.mjs").packGames();
+    } catch {
+      return [];
+    }
+  }
   const RULES_TYPES = new Set(["siegepackage", "siegepower", "siegegame", "item", "itemtemplate", "npc", "vehicle", "spell", "pregencharsheet", "cairntable", "fateskill", "fatestunt", "ironmove", "ironasset", "ironoracle", "irondelve", "playbook", "crewtype", "forgedtable", ...require("./dnd5e.cjs").TYPES_5E]);
   // Kinds the rules came to use after a book's records were first loaded (the Item Forge's templates): read once
   // more for a book loaded before, if it has none of them yet (once a run; added to its records, the rest kept).
@@ -2854,6 +2862,8 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         send(ws, {
           type: "ok",
           ruleset,
+          // The games the GM's packs define (shared/packgame): a seat makes their manifests from these.
+          games: packGamesNow(),
           you: { id: client.id, name: client.name, role: client.role, assetToken: client.assetToken, ...(client.accountToken ? { accountToken: client.accountToken } : {}), account: Boolean(accounts?.has(client.name)) },
           players: playerList(),
           map: hiddenFor(client) ? emptyView() : map.viewFor(seatOf(client), client.assetToken),
@@ -3270,6 +3280,19 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
             .buildMgt2(agentHandle, msg.spec ?? {}, owner, client.role === "dm" ? seatOf(client) : { role: "dm", name: client.name })
             .then(({ record, problems }) => {
               addChat({ id: client.id, from: client.name, text: `Created ${record.name}: ${record.data.upp}${record.data.careers?.length ? `, ${record.data.careers.map((career) => `${career.name} (${career.terms} term${career.terms === 1 ? "" : "s"})`).join(", ")}` : ""}.`, at: Date.now() });
+              answer({ ok: true, id: record.id, problems });
+            })
+            .catch((error) => answer({ ok: false, error: error instanceof Error ? error.message : "Could not build that character." }));
+          return;
+        }
+        if (require("./packGame.cjs").isPgRuleset(ruleset)) {
+          // A character of a game defined by its books (shared/packgame) from its wizard's spec.
+          const owner = client.role === "dm" ? text(msg.owner, "").slice(0, 24) : client.name;
+          const game = require("./packGame.cjs").gameNamed(ruleset);
+          require("./packGame.cjs")
+            .buildPg(agentHandle, game, msg.spec ?? {}, owner, client.role === "dm" ? seatOf(client) : { role: "dm", name: client.name })
+            .then(({ record, problems }) => {
+              addChat({ id: client.id, from: client.name, text: `Created ${record.name}: ${record.data.className} ${record.data.level}.`, at: Date.now() });
               answer({ ok: true, id: record.id, problems });
             })
             .catch((error) => answer({ ok: false, error: error instanceof Error ? error.message : "Could not build that character." }));

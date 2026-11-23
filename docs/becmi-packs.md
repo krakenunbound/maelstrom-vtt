@@ -8,10 +8,6 @@ Mystara...). Read [kpack-format.md](kpack-format.md) first: it says what a
 pack is, how pages, story entries, maps and tables are written, and how to
 make and check a pack. This page adds only what is BECMI's own.
 
-> **Status (2026-11-23):** the D&D BECMI game is being built. Packs made to
-> this page now are read by it as it lands; until then a `D&D BECMI` pack shows
-> in Worldbuilding campaigns, enough to read and proof its pages.
-
 BECMI is its own game in Maelstrom, **D&D BECMI**, played the old way:
 descending Armor Class, attack rolls against a to-hit number, race as class,
 the five saving throws, group initiative on a d6, coins for encumbrance,
@@ -31,6 +27,22 @@ are never committed or shared.
 | `group` | `Boxed Sets` for the five sets; the series for modules (`B series`, `X series`, `CM series`, `M series`, `IM series`); `Gazetteers`; `Mystara` |
 | `order` | The TSR code: `1011B`, `1012B`, `1013`, `1021`, `1017`; a module's code (`B1`, `X1`) |
 | `name` | The book's title as printed (`Set 1: Basic Rules`). Never change it once other packs link to it. |
+
+### The game itself: game.json (Set 1 only)
+
+Maelstrom has no BECMI code: the Set 1 pack teaches it the game, as a
+Fantasy Grounds ruleset teaches CoreRPG ([pack-games.md](pack-games.md)).
+Copy [games/becmi.game.json](games/becmi.game.json) into the Set 1 pack's
+folder as `game.json`, next to `kraken-pack.json` and `records.json`;
+`npm run kpack:make` puts it in the zip. Check its numbers against the book
+(the ability modifiers, the five saves' names, the undead kinds of the
+turning table, the coins) and correct the copy if the book says otherwise.
+Only Set 1 carries it; the other sets and every adventure say
+`"ruleset": "D&D BECMI"` and add their records.
+
+Once Set 1 (with its game.json) is in `Documents/Kraken VTT/Packs/D&D BECMI/`,
+**Folders > Refresh** (or a restart) and **D&D BECMI** is on the campaign
+screen.
 
 A boxed set's books (Players Manual, Dungeon Masters Rulebook) go in one pack
 for the set, a chapter per book. An adventure inside a set (Set 1's solo
@@ -211,8 +223,9 @@ The game itself reads two tables by name, so make them exactly:
 - **`Monster Attack Table`**: rows by hit dice (`fromrange`/`torange` over
   the book's columns: up to 1, 1+ to 2, 2+ to 3 and so on), one result each:
   the roll needed to hit AC 0 (the THAC0 the monster has at those hit dice).
-- **`Normal Man`**: the saves and to-hit of a Normal Man, one row: results
-  `death`, `wands`, `paralysis`, `breath`, `spells`, `thac0`.
+- **`Normal Man`**: the saves and to-hit of a Normal Man, a row a value,
+  each row's result `key: number`: `death: 14`, `wands: 15`, `paralysis: 16`,
+  `breath: 17`, `spells: 18`, `thac0: 20` (the book's numbers).
 
 ### Characters (`type: "pregencharsheet"`)
 

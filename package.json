@@ -57,6 +57,7 @@
     "adnd2e": "node scripts/check-adnd2e.mjs",
     "adnd2e-ui": "node scripts/verify-adnd2e-ui.mjs",
     "bfrpg": "node scripts/check-bfrpg.mjs",
+    "pack-game": "node scripts/check-pack-game.mjs",
     "bfrpg-ui": "node scripts/verify-bfrpg-ui.mjs",
     "dice-hold": "node scripts/verify-dice-hold.mjs",
     "mgt2": "node scripts/check-mgt2.mjs",

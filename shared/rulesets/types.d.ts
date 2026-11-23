@@ -283,7 +283,7 @@ export type WizardPart = (
   // A record of a type, chosen in a select or rolled on a table (pick: the Ref that reads the table's result as one of them).
   | { kind: "choose-record"; fromType: string; into: Path; aria: string; placeholder: string; resets?: Path[]; roll?: WizardRoll & { table: string; pick: Ref } }
   // A text: chosen from a list on a chosen record, or typed.
-  | { kind: "text"; into: Path; label: string; aria: string; placeholder: string; options?: { record: Path; list: Path }; free?: { aria: string; placeholder: string } }
+  | { kind: "text"; into: Path; label: string; aria: string; placeholder: string; options?: { record?: Path; list?: Path; values?: string[] }; free?: { aria: string; placeholder: string } }
   // The tables on a chosen record (a background's), each rolled on its own button; into: { [index]: roll }.
   | { kind: "record-tables"; record: Path; path: Path; into: Path; formula: string; hook: string; label: string; done: string; button: string; className?: string; attr?: string }
   // One roll: a number, or (table) the text of a roll table's row.
@@ -439,6 +439,8 @@ export interface RulesetManifest {
   rollKinds?: string[];
   // Initiative: who acts first ("low": the lowest, 2E; else the highest) and the die a side's roll uses (the tracker's sides option).
   initiativeOrder?: "low" | "high";
+  // A game defined by its books (shared/packgame): the definition its rules, sheet and wizard were made from.
+  packGame?: import("../packgame/definition.mjs").PackGame;
   initiativeDie?: number;
   // Manual dice (each person's "Type in my own dice"): the die a check, save or attack from the sheet or the tracker
   // throws, asked for before the roll ("1d20"; advantage asks for two). None: those rolls are the host's.

@@ -283,6 +283,12 @@ const TOOLS = [
         const { record, problems } = await require("../mgt2.cjs").buildMgt2(agent, args.spec, args.owner ?? "", agent.seat);
         return out({ created: true, id: record.id, upp: record.data.upp, age: record.data.age, physical: record.data.hp.total, armour: record.data.ac.total, initiative: record.data.initiative.total, skills: Object.fromEntries(Object.entries(record.data.skills).map(([key, row]) => [row.name ?? key, row.level])), attacks: Object.values(record.data.attacks).map((attack) => `${attack.name} ${attack.bonus >= 0 ? "+" : ""}${attack.bonus} ${attack.damage}`), problems });
       }
+      if (require("../packGame.cjs").isPgRuleset(agent.ruleset?.())) {
+        // A game defined by its books (shared/packgame): spec { name, class, abilities, gold, buy, alignment, hpRoll }.
+        const packGame = require("../packGame.cjs");
+        const { record, problems } = await packGame.buildPg(agent, packGame.gameNamed(agent.ruleset?.()), args.spec, args.owner ?? "", agent.seat);
+        return out({ created: true, id: record.id, class: record.data.className, level: record.data.level, hp: record.data.hp.total, ac: record.data.ac.total, thac0: record.data.thac0, saves: Object.fromEntries(Object.entries(record.data.saves).map(([key, save]) => [key, save.total])), gear: Object.values(record.data.inventorylist ?? {}).map((item) => item.name), problems });
+      }
       if (require("../bfrpg.cjs").isBfRuleset(agent.ruleset?.())) {
         const { record, problems } = await require("../bfrpg.cjs").buildBf(agent, args.spec, args.owner ?? "", agent.seat);
         return out({ created: true, id: record.id, race: record.data.race, class: record.data.className, hp: record.data.hp.total, ac: record.data.ac.total, ab: record.data.ab, saves: Object.fromEntries(Object.entries(record.data.saves).map(([key, save]) => [key, save.total])), gold: record.data.coins?.["id-00002"]?.amount, gear: Object.values(record.data.inventorylist ?? {}).map((item) => item.name), spellbook: record.data.spellbook, problems });

@@ -9,6 +9,7 @@ const cairn = require("./cairn.cjs");
 const ironsworn = require("./ironsworn.cjs");
 const forged = require("./forged.cjs");
 const bfrpg = require("./bfrpg.cjs");
+const packGame = require("./packGame.cjs");
 const fate = require("./fate.cjs");
 
 // Host side of the SIEGE engine (shared/siege, ES modules shared with the
@@ -38,6 +39,8 @@ async function siegeCheck(table, record, { attribute, cl = 0, bonus = 0, addLeve
   // A 3.5E character: its check, save (fortitude, reflex, will) or skill against a DC.
   // An AD&D 2E character: a save (d20 at or above its number), an ability check (d20 at or under the score) or a thief skill (d100).
   // A Basic Fantasy character: a save (d20 at or above), the ability roll (d20 + bonus at or above the level's target), a thief ability (d100) or loyalty (2d6).
+  // A game defined by its books (packGame.cjs): its saves, ability checks, skills and loyalty, by its definition.
+  if (packGame.isPg(record)) return packGame.checkPg(table, record, { kind: kind ?? (/save/i.test(String(label ?? "")) ? "save" : "check"), attribute, skill, bonus, label: kind ? label : undefined }, from);
   if (bfrpg.isBf(record)) return bfrpg.checkBf(table, record, { kind: kind ?? (/save/i.test(String(label ?? "")) ? "save" : "check"), attribute, skill, bonus, label: kind ? label : undefined }, from);
   if (adnd2e.is2e(record)) return adnd2e.check2e(table, record, { kind: kind ?? (/save/i.test(String(label ?? "")) ? "save" : "check"), attribute, skill, bonus, label: kind ? label : undefined }, from);
   if (dnd35.is35(record)) return dnd35.check35(table, record, { kind: kind ?? (/save/i.test(String(label ?? "")) ? "save" : "check"), attribute, skill, dc: dc ?? cl, bonus, label: kind ? label : undefined }, from);
@@ -88,6 +91,7 @@ async function levelUp(table, record, packageKey, from, choices = {}) {
   if (ironsworn.isIronsworn(record)) throw new Error("Ironsworn has no levels: spend experience on assets (Advance).");
   if (forged.isForged(record)) throw new Error("Forged in the Dark has no levels: a full xp track gives an advance (a special ability or an action dot) on the sheet.");
   if (cairn.isCairn(record)) throw new Error("Cairn has no levels: a character grows from what happens to them (Scars, Growth, Downtime).");
+  if (packGame.isPg(record)) return packGame.levelUpPg(table, record, from);
   if (bfrpg.isBf(record)) return bfrpg.levelUpBf(table, record, from);
   if (fate.isFate(record)) throw new Error("Fate has no levels: a character grows at milestones (minor, significant, major: the sheet's Milestones).");
   if (astra.isAstra(record)) throw new Error("Apeira Astra has no levels: spend experience on a skill or a characteristic (Improve).");
@@ -222,6 +226,7 @@ async function editCharacter(table, record, changesIn, seat) {
   if (ironsworn.isIronsworn(record)) return ironsworn.editIronsworn(table, record, changes, seat);
   if (forged.isForged(record)) return forged.editForged(table, record, changes, seat);
   if (cairn.isCairn(record)) return cairn.editCairn(table, record, changes, seat);
+  if (packGame.isPg(record)) return packGame.editPg(table, record, changes, seat);
   if (bfrpg.isBf(record)) return bfrpg.editBf(table, record, changes, seat);
   if (fate.isFate(record)) return fate.editFate(table, record, changes, seat);
   if (astra.isAstra(record)) return astra.editAstra(table, record, changes, seat);
@@ -312,6 +317,29 @@ async function exportCharacter(record, format = "kraken") {
 async function dropOnCharacter(table, record, source, from) {
   if (!source) throw new Error("Nothing to drop.");
   const who = from || record.name;
+  if (packGame.isPg(record)) {
+    // A game defined by its books: an item is carried (a weapon or armor ready), a spell goes into the spellbook (an
+    // arcane caster's) or the prepared list.
+    const game = packGame.gameOf(record);
+    const rules = await packGame.rulesPg();
+    const data = structuredClone(record.data);
+    let summary;
+    if (source.type === "spell") {
+      const key = data.spellcasting?.kind === "arcane" ? "spellbook" : "prepared";
+      data[key] = [...new Set([...(Array.isArray(data[key]) ? data[key] : []), source.name])];
+      summary = `${record.name} ${key === "spellbook" ? "writes" : "prepares"} ${source.name}.`;
+    } else if (source.type === "item") {
+      const list = (data.inventorylist = data.inventorylist ?? {});
+      let next = Object.keys(list).length + 1;
+      while (list[`id-${String(next).padStart(5, "0")}`]) next += 1;
+      const { fgPath: _path, ...copy } = source.data ?? {};
+      list[`id-${String(next).padStart(5, "0")}`] = { ...copy, name: source.name, count: 1, carried: rules.isWeapon(copy) || rules.isArmor(copy) || rules.isShield(copy) ? 2 : 1 };
+      summary = `${record.name} gets ${source.name}.`;
+    } else throw new Error(`A ${game?.name ?? "character"} sheet takes items and spells.`);
+    const updated = table.records.update(record.id, { data: rules.derive(data, packGame.libOf(table, game)) }, table.seat, { replace: true });
+    table.say(summary, who, record.visibility === "gm");
+    return { record: updated, added: source.type, summary };
+  }
   if (fate.isFate(record)) {
     // A Fate sheet takes a stunt (from the books' lists); anything else is written into its extras.
     if (source.type === "fatestunt") {

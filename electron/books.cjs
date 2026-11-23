@@ -53,10 +53,20 @@ const FG_RULESETS = {
 };
 const ANY = new Set(["", "any", "corerpg"]);
 const PLAYED = new Set(Object.entries(FG_RULESETS).flatMap(([name, fg]) => (name === "Worldbuilding" ? [] : [name, ...fg])).map((name) => name.toLowerCase()));
+// A game defined by a pack (shared/packgame) is played: its books are its own, not Worldbuilding's.
+function playedName(name) {
+  const lower = String(name ?? "").toLowerCase();
+  if (PLAYED.has(lower)) return true;
+  try {
+    return require("../shared/rulesets/registry.mjs").packGames().some((game) => game.name.toLowerCase() === lower);
+  } catch {
+    return false;
+  }
+}
 function fitsRuleset(info, ruleset) {
   // A Kraken pack says which Kraken ruleset it is for.
   // (A pack made before Kraken played its game names the game as FG did: "2E".)
-  if (info?.kraken) return info.kraken === "Any" || info.kraken === ruleset || (FG_RULESETS[ruleset] ?? []).some((name) => name.toLowerCase() === info.kraken.toLowerCase()) || (ruleset === "Worldbuilding" && !PLAYED.has(info.kraken.toLowerCase()) && !PLAYED.has(String(info.ruleset ?? "").toLowerCase()));
+  if (info?.kraken) return info.kraken === "Any" || info.kraken === ruleset || (FG_RULESETS[ruleset] ?? []).some((name) => name.toLowerCase() === info.kraken.toLowerCase()) || (ruleset === "Worldbuilding" && !playedName(info.kraken) && !playedName(info.ruleset));
   if (ruleset === "Worldbuilding") {
     const theirs = String(info.ruleset ?? "").toLowerCase();
     return ANY.has(theirs) || !PLAYED.has(theirs);
@@ -179,9 +189,21 @@ function coverAmong(pictures) {
   return list.find((name) => /(^|[\/_ -])(thumbnail|cover|title|front)[^\/]*$/i.test(name)) ?? list[0] ?? "";
 }
 
+// A pack's game.json (a game defined by its books), read whole; none, or one that does not parse: nothing.
+function gameIn(file) {
+  try {
+    const raw = packs.readEntries(file, ["game.json"])["game.json"];
+    if (!raw) return {};
+    const game = JSON.parse(strFromU8(raw));
+    return game && typeof game === "object" && typeof game.name === "string" ? { game } : {};
+  } catch {
+    return {};
+  }
+}
+
 // What a module is, from its definition.xml (and whether it has a book); a
 // Kraken pack, from its own description.
-const DESCRIBED = 6;
+const DESCRIBED = 7;
 function describe(file) {
   if (packs.isPack(file)) {
     const manifest = packs.readManifest(file);
@@ -206,6 +228,8 @@ function describe(file) {
       ...(typeof manifest.parent === "string" ? { parent: manifest.parent } : {}),
       // The world's calendar it brings (shared/calendars.mjs settingCalendar).
       calendar: typeof manifest.calendar === "string" ? manifest.calendar : "",
+      // The game it defines (docs/pack-games.md): a rules book that teaches Maelstrom a game carries a game.json.
+      ...gameIn(file),
       // Whether the players may read it, when the pack says (exported from a campaign).
       ...(typeof manifest.forPlayers === "boolean" ? { players: manifest.forPlayers } : {}),
       pack: true,

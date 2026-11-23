@@ -22,7 +22,7 @@ const TYPES = new Set([
   "siegegame", "siegepackage", "siegepower", "ironasset", "ironmove", "ironoracle", "irondelve", "fateskill", "fatestunt", "playbook", "crewtype", "forgedtable", "cairntable",
 ]);
 
-function check(file) {
+async function check(file) {
   const errors = [];
   const warnings = [];
   let files;
@@ -43,7 +43,16 @@ function check(file) {
   if (!(Number(m.version) >= 2 && Number(m.version) <= 3)) errors.push("version must be 2 or 3 (3 is current)");
   if (!String(m.name ?? "").trim()) errors.push("name is missing (other books link to it by this name)");
   if (!String(m.title ?? "").trim()) warnings.push("title is missing (the lists show name instead)");
-  if (!RULESETS.includes(m.ruleset)) warnings.push(`ruleset "${m.ruleset}" is not one of Maelstrom's games (${RULESETS.join(", ")}): the pack shows in no campaign`);
+  // A rules book that teaches Maelstrom its game (docs/pack-games.md): its game.json read, its name the pack's ruleset.
+  if (files["game.json"]) {
+    try {
+      const { readGame } = await import("../shared/packgame/definition.mjs");
+      const game = readGame(JSON.parse(strFromU8(files["game.json"])));
+      if (game.name !== m.ruleset) errors.push(`game.json defines "${game.name}" but the pack's ruleset is "${m.ruleset}"`);
+    } catch (error) {
+      errors.push(`game.json: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  } else if (!RULESETS.includes(m.ruleset)) warnings.push(`ruleset "${m.ruleset}" is not one of Maelstrom's own games (${RULESETS.join(", ")}): the pack shows in its campaigns once a pack's game.json defines "${m.ruleset}" (docs/pack-games.md), else in Worldbuilding's`);
   if (m.calendar !== undefined && !CALENDARS.includes(m.calendar)) errors.push(`calendar must be one of ${CALENDARS.join(", ")}`);
   if (Number(m.version) >= 3) {
     if (!KIND_IDS.includes(m.kind)) errors.push(`kind must be one of ${KIND_IDS.join(", ")}`);
@@ -115,7 +124,7 @@ if (!files.length) {
 }
 let failed = false;
 for (const file of files) {
-  const { errors, warnings, filed, records = 0, media = 0 } = check(file);
+  const { errors, warnings, filed, records = 0, media = 0 } = await check(file);
   const size = (() => {
     try {
       return `${Math.round(statSync(file).size / 1024 / 1024)} MB`;

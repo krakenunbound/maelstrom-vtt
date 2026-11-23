@@ -84,5 +84,10 @@ export const WIZARD_FUNCTIONS: WizardFunctions = {
   },
   builds: {
     "cairn.build": cairnBuild,
+    // A game defined by its books (shared/packgame): the scores, the class chosen, the money and the cart, who they are.
+    "packgame.build": (spec: Record<string, unknown>) =>
+      spec.abilities && spec.class
+        ? { name: String(spec.name ?? ""), class: String(spec.class), abilities: spec.abilities, gold: spec.gold ?? 0, buy: Object.entries((spec.buy ?? {}) as Record<string, number>), alignment: String(spec.alignment ?? "") }
+        : null,
   },
 };

@@ -45,7 +45,6 @@ function rememberGame(game: RecentGame) {
 }
 
 // The rulesets a campaign can be made with: every manifest's names, each with its blurb (shared/rulesets).
-const RULESETS = campaignRulesets();
 
 const RELATIVE = typeof Intl !== "undefined" && "RelativeTimeFormat" in Intl ? new Intl.RelativeTimeFormat(undefined, { numeric: "auto" }) : null;
 
@@ -228,6 +227,25 @@ export function SetupScreen({
   const [network, setNetwork] = useState<KrakenNetwork>(EMPTY_NET);
   const [query, setQuery] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // The games a campaign can be made with: the built-in ones, and those the GM's packs define (shared/packgame), read
+  // from the host once the screen opens.
+  const [RULESETS, setRulesets] = useState(campaignRulesets);
+  useEffect(() => {
+    void window.kraken
+      ?.packGames?.()
+      .then(async (games) => {
+        const { registerPackGame } = await import("../../shared/packgame/register.mjs");
+        for (const game of games) {
+          try {
+            registerPackGame(game);
+          } catch {
+            /* a definition the host read but this side cannot: left out */
+          }
+        }
+        setRulesets(campaignRulesets());
+      })
+      .catch(() => undefined);
+  }, []);
   const [ruleset, setRuleset] = useState(RULESETS[0].name);
   // The rulesets: found by a part of the name or blurb once there are many;
   // each with the GM's own picture for it, if they keep one.

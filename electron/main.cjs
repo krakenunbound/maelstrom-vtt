@@ -251,6 +251,7 @@ for (const name of [
   "touch-campaign",
   "campaign-ruleset",
   "ruleset-logos",
+  "pack-games",
   "studio-url",
   "studio-open-image",
   "studio-settings",

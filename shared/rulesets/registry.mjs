@@ -96,6 +96,25 @@ for (const manifest of MANIFESTS) {
   for (const [name, variant] of Object.entries(manifest.variants ?? {})) if (variant.id) BY_ID.set(variant.id, withVariant(manifest, name));
 }
 
+// A game defined by its books (shared/packgame): registered when the host reads the packs, and on every seat from
+// the host's welcome. Its manifest joins the others; registering it again (the pack read again) replaces it.
+/** @param {RulesetManifest} manifest */
+export function registerGame(manifest) {
+  const at = MANIFESTS.findIndex((item) => item.id === manifest.id);
+  if (at >= 0) {
+    for (const name of MANIFESTS[at].names) BY_NAME.delete(name);
+    MANIFESTS.splice(at, 1, manifest);
+  } else MANIFESTS.push(manifest);
+  for (const name of manifest.names) {
+    BY_NAME.set(name, manifest);
+    if (!CAMPAIGN_RULESETS.includes(name)) CAMPAIGN_RULESETS.splice(Math.max(0, CAMPAIGN_RULESETS.indexOf("Worldbuilding")), 0, name);
+  }
+  BY_ID.set(manifest.id, manifest);
+  return manifest;
+}
+// The games registered from packs (their definitions, which a seat makes its manifests from).
+export const packGames = () => MANIFESTS.filter((manifest) => manifest.packGame).map((manifest) => /** @type {NonNullable<RulesetManifest["packGame"]>} */ (manifest.packGame));
+
 // A campaign's game by its name, or null for a name with no manifest.
 /** @param {string | undefined | null} name @returns {RulesetManifest | null} */
 export const rulesetNamed = (name) => BY_NAME.get(String(name ?? "")) ?? null;

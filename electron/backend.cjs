@@ -125,6 +125,23 @@ function books() {
   return bookShelf;
 }
 
+// Games defined by their books (shared/packgame, docs/pack-games.md): every pack with a game.json teaches Maelstrom
+// its game, registered here (the campaign screen offers it, a table of it plays it). A definition that does not read
+// is left out, with its reason in the log. Returns the definitions read.
+function packGames() {
+  const found = [];
+  for (const info of books().list()) {
+    if (!info.game) continue;
+    try {
+      const manifest = require("../shared/packgame/register.mjs").registerPackGame(info.game);
+      found.push({ ...manifest.packGame, book: info.name });
+    } catch (error) {
+      console.error(`${info.name}: its game.json was not read: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+  return found;
+}
+
 // Kraken packs made from the GM's FG modules, one at a time in a worker
 // thread: the books of a ruleset in Kraken's own files, to take to any
 // computer. packsView: each FG module (of a ruleset, or all) and its pack.
@@ -837,6 +854,8 @@ const calls = {
   "touch-campaign": (input) => campaigns.touch(campaignFile(), input),
   "campaign-ruleset": (input) => setCampaignRuleset(input),
   "ruleset-logos": () => rulesetLogos(),
+  // The games the GM's packs define (the campaign screen lists them with the built-in ones).
+  "pack-games": () => packGames(),
   "studio-url": () => studioUrl(),
   "studio-open-image": (input) => studioOpenImage(input ?? {}),
   "studio-settings": (input) => (input ? setStudioSettings(input) : { ...studioSettings(), found: Object.fromEntries([...studioSettings().dungeondraftFolders, ...studioSettings().packFolders].map((folder) => [folder, fs.existsSync(folder)])) }),
@@ -853,6 +872,8 @@ const calls = {
     if (typeof remembered === "string" && !(saved.options && "gmIcon" in saved.options)) saved.options = { ...(saved.options ?? {}), gmIcon: remembered };
     const dataFolder = fgDataFolder();
     const ruleset = campaigns.read(campaignFile()).find((item) => item.id === campaignId)?.ruleset ?? "";
+    // The games the packs define, known before the table opens (a campaign of one plays it).
+    packGames();
     // The Session Log's archive: each sitting's chat in the campaign's folder (chat-logs/<session>.json).
     const logs = campaignId ? path.join(campaigns.folder(campaignFile(), campaignId), "chat-logs") : path.join(USER_DATA, "chat-logs");
     const archive = {

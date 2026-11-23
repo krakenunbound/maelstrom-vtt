@@ -69,6 +69,14 @@ const full = {
   made: new Date().toISOString(),
   from: manifest.from ?? { kind: "kpack-make" },
 };
+// A rules book that teaches Maelstrom its game (docs/pack-games.md): its game.json, read to be sure it is one.
+if (existsSync(path.join(folder, "game.json"))) {
+  const raw = JSON.parse(readFileSync(path.join(folder, "game.json"), "utf8"));
+  const { readGame } = await import("../shared/packgame/definition.mjs");
+  const game = readGame(raw);
+  if (game.name !== full.ruleset) throw new Error(`game.json defines "${game.name}" but the pack's ruleset is "${full.ruleset}": make them the same.`);
+  files["game.json"] = strToU8(JSON.stringify(raw, null, 1));
+}
 files["kraken-pack.json"] = strToU8(JSON.stringify(full, null, 1));
 files["records.json"] = strToU8(JSON.stringify(records));
 

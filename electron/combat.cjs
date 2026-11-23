@@ -105,6 +105,11 @@ const raReady = import(pathToFileURL(path.join(__dirname, "..", "shared", "astra
 // damage; armour's protection off every hit, less the weapon's AP). Damage
 // comes off Endurance, then Strength, then Dexterity: with Endurance and one
 // more at 0 Unconscious, with all three Dead. An animal's Hits: dead at 0.
+// Games defined by their books (shared/packgame/rules.mjs), when the campaign's game is one a pack defines.
+let rpg = null;
+const rpgReady = import(pathToFileURL(path.join(__dirname, "..", "shared", "packgame", "rules.mjs")).href).then((module) => {
+  rpg = module;
+});
 let rm = null;
 const rmReady = import(pathToFileURL(path.join(__dirname, "..", "shared", "mgt2", "rules.mjs")).href).then((module) => {
   rm = module;
@@ -457,6 +462,24 @@ function createCombat({ saved, table, onChange = () => undefined }) {
   const d35 = () => table().ruleset?.() === "D&D 3.5E";
   const d2e = () => table().ruleset?.() === "AD&D 2E";
   const dbf = () => table().ruleset?.() === "Basic Fantasy";
+  // A game defined by its books (packGame.cjs): its definition, or null.
+  const pgGame = () => require("./packGame.cjs").gameNamed(table().ruleset?.());
+  const pg = () => Boolean(pgGame());
+  // The old-school tracker (Basic Fantasy's attacks, damage, saves, morale) for either game: Basic Fantasy's rules, or
+  // the generic ones read with the campaign's books (a pack game's classes, monsters and tables).
+  const oldReady = () => Promise.all([rbfReady, rpgReady]);
+  const ob = () => {
+    const game = pgGame();
+    if (!game) return rbf;
+    const lib = require("./packGame.cjs").libOf(table(), game);
+    return {
+      derive: (data) => rpg.derive(data, lib),
+      npcStats: (data) => rpg.npcStats(data, lib),
+      saveKey: (key) => rpg.saveKey(game, key),
+      SAVE_NAMES: Object.fromEntries(game.saves.map((row) => [row.key, row.label])),
+      savesFor: () => game.normalMan?.saves ?? {},
+    };
+  };
   // A game that acts lowest initiative first (its manifest's initiativeOrder: 2E): the order and effect counts read it turned over.
   const lowFirst = () => registry?.rulesetFor(table().ruleset?.() ?? "").initiativeOrder === "low";
   const rank = (value) => (lowFirst() ? -value : value);
@@ -649,6 +672,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
   // destroyed ones die. undeadIds: the undead to turn (else the turner's
   // targets, else every undead foe in the fight). forced (tests): { roll, count, level }.
   async function turnUndead(turnerId, recordId, undeadIds, seat, forced) {
+    if (pg()) return turnUndeadPg(turnerId, recordId, undeadIds, seat, forced);
     if (dbf()) return turnUndeadBf(turnerId, recordId, undeadIds, seat, forced);
     await r2eReady;
     if (!d2e()) throw new Error("Turning undead is AD&D 2E's (and Basic Fantasy's).");
@@ -780,6 +804,8 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     if (d2e()) return record(entry)?.type === "character" ? { dead: -10, dying: 0 } : { dead: 0, dying: 0 };
     // Basic Fantasy: at 0 hit points, dead (characters too: the book's rule; its optional ones are the GM's).
     if (dbf()) return { dead: 0, dying: 0 };
+    // A game defined by its books: dead at its definition's number (0 for the old games).
+    if (pg()) return { dead: pgGame().hitPoints.deadAt, dying: pgGame().hitPoints.deadAt };
     if (!five()) return cachedThresholds;
     if (record(entry)?.type !== "character") return { dead: 0, dying: 0 };
     const { hp } = vitals(entry);
@@ -1186,8 +1212,8 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       // A ship: its hull, 0 to its hull points.
       if (delta < 0 && before.wounds > before.hp) wounds = before.hp + delta;
       wounds = Math.max(0, Math.min(before.hp, wounds));
-    } else if (dbf()) {
-      // Basic Fantasy: hit points stop at 0 (dead); healing cannot raise the dead (heal says so).
+    } else if (dbf() || pg()) {
+      // Basic Fantasy (and the old games defined by their books): hit points stop at 0 (dead); healing cannot raise the dead.
       wounds = Math.max(0, Math.min(before.hp, wounds));
     } else if (mgtOn()) {
       // Traveller: no damage past the body's total (all three at 0).
@@ -2006,26 +2032,26 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       const linked = table().records.get(who.recordId);
       if (!linked || linked.type !== "character") throw new Error("No such character.");
       if (seat.role !== "dm" && linked.owner !== seat.name) throw new Error("That is not your character.");
-      const data = rbf.derive(linked.data);
+      const data = ob().derive(linked.data);
       const attack = data.attacks?.[key] ?? Object.values(data.attacks ?? {}).find((item) => item.item === key || item.name.toLowerCase() === String(key).toLowerCase());
       if (!attack) throw new Error("No such weapon: ready one on the sheet's Inventory.");
-      const swing = { name: attack.name, bonus: attack.bonus, damage: attack.damage, type: attack.type === "missile" ? "ranged" : "melee" };
+      const swing = { name: attack.name, bonus: attack.bonus, damage: attack.damage, type: attack.type === "missile" ? "ranged" : "melee", ...(attack.thac0 !== undefined ? { thac0: attack.thac0 } : {}) };
       return { actor: linked.name, name: attack.name, type: swing.type, swing, swings: [swing], damage: attack.damage, entry: state.entries.find((entry) => entry.recordId === linked.id) ?? null, record: linked };
     }
     mustGM(seat);
     const entry = find(who.entryId);
-    const stats = rbf.npcStats(record(entry)?.data ?? {});
+    const stats = ob().npcStats(record(entry)?.data ?? {});
     const attacks = record(entry) ? stats.attacks : [{ name: "Attack", bonus: num(entry.ab, 1), damage: "1d6" }];
     const attack = attacks[Number(key)] ?? attacks.find((item) => item.name.toLowerCase() === String(key).toLowerCase());
     if (!attack) throw new Error("No such attack.");
-    const swingOf = (item) => ({ name: item.name, bonus: item.bonus, damage: item.damage, type: "melee", npc: true });
+    const swingOf = (item) => ({ name: item.name, bonus: item.bonus, damage: item.damage, type: "melee", npc: true, ...(item.thac0 !== undefined ? { thac0: item.thac0 } : {}) });
     return { actor: entry.name, name: attack.name, type: "melee", swing: swingOf(attack), swings: attacks.filter((item) => item.damage).map(swingOf), damage: attack.damage, entry };
   }
   // One roll per target (a full round: each of a monster's attacks at the
   // first target): d20 + bonus + ATK effects at or above the target's AC +
   // its AC effects; a natural 20 hits, a natural 1 misses.
   async function attackBf(plan, from, { full = false } = {}) {
-    await rbfReady;
+    await oldReady();
     const source = plan.entry;
     mustAct(source);
     const kind = SHORT_TYPE[plan.type] ? ` (${SHORT_TYPE[plan.type]})` : "";
@@ -2047,17 +2073,21 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     }
     const rounds = full ? swingsFor.map((swing) => ({ swing, target: targets[0] })) : targets.map((target) => ({ swing: plan.swing, target }));
     for (const [index, { swing, target }] of rounds.entries()) {
-      const ac = vitals(target).ac + effectBonus(target, "AC");
+      // A game defined by its books: descending AC (an AC effect lowers it), the roll needed THAC0 - AC; its naturals.
+      const game = pgGame();
+      const ac = vitals(target).ac + (game?.armorClass.descending ? -1 : 1) * effectBonus(target, "AC");
+      const need = game ? rpg.hitNumber(game, { thac0: num(swing.thac0, 20) }, ac) : ac;
+      const [autoHit, autoMiss] = game ? [game.attack.naturalHit, game.attack.naturalMiss] : [20, 1];
       const rolled = table().act(formulaFor(swing, target), "attack");
       const die = natural(rolled);
-      const hit = die === 20 || (die !== 1 && rolled.total >= ac);
-      const verdict = die === 20 ? "AUTOMATIC HIT" : die === 1 ? "AUTOMATIC MISS" : hit ? "HIT" : "MISS";
-      table().postRoll(rolled, `[ATTACK]${kind} ${swing.name}${full && rounds.length > 1 ? ` #${index + 1}` : ""} [AC ${ac}] [${verdict} ${rolled.total} vs ${ac}] -> [at ${target.name}]`, from, Boolean(target.hidden), { result: hit ? "HIT" : "MISS", by: plan.actor, against: ac, target: target.name });
+      const hit = die === autoHit || (die !== autoMiss && rolled.total >= need);
+      const verdict = die === autoHit ? "AUTOMATIC HIT" : die === autoMiss ? "AUTOMATIC MISS" : hit ? "HIT" : "MISS";
+      table().postRoll(rolled, `[ATTACK]${kind} ${swing.name}${full && rounds.length > 1 ? ` #${index + 1}` : ""} [AC ${ac}]${game && game.attack.by === "thac0" ? ` [THAC0 ${num(swing.thac0, 20)}: NEEDS ${need}]` : ""} [${verdict} ${rolled.total} vs ${need}] -> [at ${target.name}]`, from, Boolean(target.hidden), { result: hit ? "HIT" : "MISS", by: plan.actor, against: need, target: target.name });
       if (source) {
         const before = source.hitOn[target.id];
         source.hitOn[target.id] = [...(Array.isArray(before) ? before : []), hit ? { name: swing.name, damage: swing.damage } : "miss"];
       }
-      results.push({ target: target.name, total: rolled.total, ac, hit, natural: die });
+      results.push({ target: target.name, total: rolled.total, ac, need, hit, natural: die });
     }
     changed();
     return results;
@@ -2065,7 +2095,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
   // Damage after an attack: each hit its own roll (+ DMG effects), at least
   // 1. With no attack since the last damage, it lands once on every target.
   async function damageBf(plan, from, opts) {
-    await rbfReady;
+    await oldReady();
     mustAct(plan.entry);
     const kind = SHORT_TYPE[plan.type] ? ` (${SHORT_TYPE[plan.type]})` : "";
     const hitOn = plan.entry?.hitOn ?? null;
@@ -2102,15 +2132,16 @@ function createCombat({ saved, table, onChange = () => undefined }) {
   // number (a character's sheet; a monster's by its "save as"); a natural 1
   // fails and a natural 20 saves.
   async function saveBf(entry, statIn, modIn, from, castName) {
-    await rbfReady;
-    const save = rbf.saveKey(statIn);
+    await oldReady();
+    const save = ob().saveKey(statIn);
     const linked = record(entry);
-    const target = linked?.type === "character" ? num(rbf.derive(linked.data).saves[save].total, 20) : linked ? num(rbf.npcStats(linked.data).saves[save], 20) : rbf.savesFor("fighter", 1)[save];
+    const target = linked?.type === "character" ? num(ob().derive(linked.data).saves[save].total, 20) : linked ? num(ob().npcStats(linked.data).saves[save], 20) : num(ob().savesFor("fighter", 1)[save], 20);
     const modifier = Math.round(num(modIn, 0)) + effectBonus(entry, "SAVE");
     const rolled = table().act(`1d20${modifier ? signedNum(modifier) : ""}${effectDice(entry, "SAVE")}`, castName ? "none" : "save");
     const die = natural(rolled);
-    const success = die === 20 || (die !== 1 && rolled.total >= target);
-    const name = rbf.SAVE_NAMES[save];
+    const [pass, fail] = pg() ? [pgGame().save.naturalPass, pgGame().save.naturalFail] : [20, 1];
+    const success = die === pass || (die !== fail && rolled.total >= target);
+    const name = ob().SAVE_NAMES[save];
     table().postRoll(rolled, `[SAVE] ${castName ? `${castName} (${name})` : `vs. ${name}`} [NEEDS ${target}] [${success ? "SUCCESS" : "FAILURE"} ${rolled.total} vs ${target}]${die === 1 || die === 20 ? ` [NATURAL ${die}]` : ""}`, from ?? entry.name, Boolean(entry.hidden), { result: success ? "SAVED" : "FAILED", by: entry.name });
     return { name: entry.name, success, total: rolled.total, target, save };
   }
@@ -2118,16 +2149,16 @@ function createCombat({ saved, table, onChange = () => undefined }) {
   // nerve (an effect the GM sees). A score of 12 never fails. A character's
   // (a retainer's) is its Loyalty. bonus: the GM's adjustment (at most +-2).
   async function morale(entryId, bonus, seat) {
-    await rbfReady;
+    await oldReady();
     mustGM(seat);
-    if (!dbf()) throw new Error("Morale checks are Basic Fantasy's.");
+    if (!dbf() && !pg()) throw new Error("Morale checks are Basic Fantasy's.");
     const entry = find(entryId);
     const linked = record(entry);
-    const base = linked?.type === "character" ? num(rbf.derive(linked.data).loyalty, 7) : linked ? rbf.npcStats(linked.data).morale : 7;
+    const base = linked?.type === "character" ? num(ob().derive(linked.data).loyalty, 7) : linked ? ob().npcStats(linked.data).morale : 7;
     if (!base) throw new Error(`${entry.name} has no morale score.`);
     const score = base >= 12 ? 12 : Math.max(2, Math.min(12, base + Math.max(-2, Math.min(2, Math.round(num(bonus, 0))))));
-    const rolled = table().dice.roll("2d6");
-    const stands = score >= 12 || rolled.total <= score;
+    const rolled = table().dice.roll(pg() ? pgGame().morale.die : "2d6");
+    const stands = score >= 12 || (pg() && !pgGame().morale.atMost ? rolled.total >= score : rolled.total <= score);
     table().postRoll(rolled, `[MORALE] ${entry.name} [MORALE ${score}] [${stands ? "STANDS" : "BREAKS"} ${rolled.total} vs ${score}]`, "Combat", Boolean(entry.hidden), { result: stands ? "SUCCESS" : "FAILURE", by: entry.name, against: score });
     if (!stands) putEffect(entry, "Morale broken (flees or surrenders)", 0, false);
     changed();
@@ -2200,6 +2231,65 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     table().say(`[TURN UNDEAD] ${turner.name}, a level ${level} Cleric: d20 = ${rolled.total}, 2d6 = ${startPool} hit dice.\n${lines.join("\n")}${failed ? `\n${turner.name} may not turn undead again for one turn.` : ""}`, "Combat", false);
     changed();
     return { level, roll: rolled.total, hitDice: startPool, affected, results: lines };
+  }
+
+  // Turning the undead in a game defined by its books: the turner's class row at its level (from the books) against each
+  // undead's kind; one roll (the game's die) for all; its affected dice of hit dice, the weakest first (at least one
+  // creature when the roll works). A number: that or more turns; T: turned; D: destroyed. forced (tests): { roll, count }.
+  async function turnUndeadPg(turnerId, recordId, undeadIds, seat, forced) {
+    await rpgReady;
+    const game = pgGame();
+    const turner = recordId ? state.entries.find((entry) => entry.recordId === String(recordId)) : find(turnerId);
+    if (!turner) throw new Error("The turner is not in the fight.");
+    const linked = record(turner);
+    if (seat.role !== "dm" && linked?.owner !== seat.name) throw new Error("Turn undead with your own character.");
+    const data = linked?.type === "character" ? ob().derive(linked.data) : null;
+    if (!data?.turning) throw new Error(`${turner.name} cannot turn undead.`);
+    mustAct(turner);
+    const alive = (entry) => health(entry).status !== "Dead";
+    const kindOf = (entry) => rpg.undeadKind(game, record(entry)?.data ?? {}, entry.name);
+    const hdOf = (entry) => Math.max(0.5, rpg.hitDiceOf(record(entry)?.data?.hd).level);
+    const named = Array.isArray(undeadIds) && undeadIds.length ? undeadIds.map((id) => state.entries.find((entry) => entry.id === String(id))).filter(Boolean) : null;
+    const picked = named ?? (targetsOf(turner).length ? targetsOf(turner) : state.entries.filter((entry) => entry.faction === "foe"));
+    const undead = picked.filter((entry) => alive(entry) && kindOf(entry)).sort((a, b) => hdOf(a) - hdOf(b));
+    if (undead.length === 0) throw new Error("No undead to turn: target them first.");
+    const rolled = forced?.roll ? { total: Number(forced.roll) } : table().roll(game.turning.die, `[TURN UNDEAD] ${turner.name} (${data.className} ${data.level})`, linked?.name ?? "Combat", false, { by: turner.name });
+    let pool = Number(forced?.count) || table().dice.roll(game.turning.affected).total;
+    const startPool = pool;
+    const { options: opts } = await options();
+    const lines = [];
+    let affected = 0;
+    for (const entry of undead) {
+      const kind = kindOf(entry);
+      const result = rpg.turnAgainst(data.turning, kind);
+      if (!result.can) {
+        lines.push(`${entry.name}: beyond ${turner.name}'s power`);
+        continue;
+      }
+      if (!result.auto && rolled.total < result.need) {
+        lines.push(`${entry.name}: unaffected (needs ${result.need})`);
+        continue;
+      }
+      const hd = hdOf(entry);
+      if (affected > 0 && hd > pool) {
+        lines.push(`${entry.name}: not reached (${pool} hit dice left)`);
+        continue;
+      }
+      pool -= hd;
+      affected += 1;
+      if (result.auto === "destroyed") {
+        const now = vitals(entry);
+        await applyWounds(entry, Math.max(1, now.hp - now.wounds), `[TURN UNDEAD] ${turner.name} destroys ${entry.name}`, opts);
+        lines.push(`${entry.name}: DESTROYED`);
+        continue;
+      }
+      const rounds = game.turning.duration ? table().dice.roll(game.turning.duration).total : 0;
+      putEffect(entry, `Turned (flees ${turner.name})`, rounds);
+      lines.push(`${entry.name}: TURNED${rounds ? ` for ${rounds} rounds` : ""}${result.need ? ` (needed ${result.need})` : ""}`);
+    }
+    table().say(`[TURN UNDEAD] ${turner.name}, ${data.className} ${data.level}: ${game.turning.die} = ${rolled.total}, ${game.turning.affected} = ${startPool} hit dice.\n${lines.join("\n")}`, "Combat", false);
+    changed();
+    return { level: data.level, roll: rolled.total, hitDice: startPool, affected, results: lines };
   }
 
   // --- D&D 5E -----------------------------------------------------------------
@@ -2286,7 +2376,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     return downStatus(entry) || FROZEN.some((name) => hasCondition(entry, name));
   }
   function mustAct(entry) {
-    if (entry && dbf()) {
+    if (entry && (dbf() || pg())) {
       if (health(entry).status === "Dead") throw new Error(`${entry.name} is dead and cannot act.`);
       const why = ["paralyzed", "petrified", "stunned", "unconscious", "helpless", "held", "asleep", "turned", "surprised"].find((name) => hasCondition(entry, name));
       if (why) throw new Error(`${entry.name} is ${why} and cannot act.`);
@@ -2943,7 +3033,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     if (isCharacter && level > 0 && data.spellcasting) {
       const rows = Array.isArray(data.spellcasting) ? data.spellcasting : [data.spellcasting];
       // 3.5E counts from level 0 (cantrips); 2E's rows and Basic Fantasy's perday from 1st level.
-      const index = Array.isArray(data.spellcasting) || dbf() ? level - 1 : level;
+      const index = Array.isArray(data.spellcasting) || dbf() || pg() ? level - 1 : level;
       const row = rows.find((item) => num(item?.perday?.[index], 0) > num(item?.used?.[index], 0));
       if (!row) throw new Error(`${caster.name} has no level ${level} spell left today.`);
       const used = [...(row.used ?? [])];
@@ -3166,6 +3256,9 @@ function createCombat({ saved, table, onChange = () => undefined }) {
             // Basic Fantasy: a Cleric turns undead at its level; a monster's morale (the GM's).
             ...(dbf() && rbf && record(entry)?.type === "character" && num(rbf.derive(record(entry).data).turn, 0) > 0 ? { turns: num(rbf.derive(record(entry).data).turn, 0) } : {}),
             ...(dbf() && rbf && seat.role === "dm" && record(entry)?.type === "npc" ? { morale: rbf.npcStats(record(entry).data).morale } : {}),
+            // A game defined by its books: the same, from its classes' turning rows and its monsters' lines.
+            ...(pg() && rpg && record(entry)?.type === "character" && num(ob().derive(record(entry).data).turn, 0) > 0 ? { turns: num(ob().derive(record(entry).data).turn, 0), className: ob().derive(record(entry).data).className } : {}),
+            ...(pg() && rpg && seat.role === "dm" && record(entry)?.type === "npc" ? { morale: ob().npcStats(record(entry).data).morale } : {}),
             // Fate: stress boxes, consequences, a hit to absorb, taken out or conceded.
             ...(fateOn() ? { fate: fc.view(entry, seat) } : {}),
             attacks:
@@ -3175,6 +3268,8 @@ function createCombat({ saved, table, onChange = () => undefined }) {
                 ? rc.npcStats(record(entry).data).attacks.map((attack) => ({ key: attack.key, name: attack.name, bonus: 0, damage: `${attack.damage}${attack.blast ? " blast" : ""}${attack.ignoresarmor ? " ignores armor" : ""}` }))
                 : dbf() && seat.role === "dm" && record(entry)?.type === "npc" && rbf
                 ? rbf.npcStats(record(entry).data).attacks.map((attack, index) => ({ key: String(index), name: attack.name, bonus: attack.bonus, damage: attack.damage }))
+                : pg() && seat.role === "dm" && record(entry)?.type === "npc" && rpg
+                ? ob().npcStats(record(entry).data).attacks.map((attack, index) => ({ key: String(index), name: attack.name, bonus: attack.bonus, damage: attack.damage }))
                 : mgtOn() && seat.role === "dm" && record(entry)?.type === "npc" && rm
                 ? rm.npcStats(record(entry).data).attacks.map((attack, index) => ({ key: String(index), name: attack.name, bonus: attack.bonus, damage: `${attack.damage}${attack.ap ? ` AP ${attack.ap}` : ""}` }))
                 : d2e() && seat.role === "dm" && record(entry)?.type === "npc" && r2e
@@ -3217,16 +3312,16 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       for (let index = 0; index < count; index += 1) {
         let hp = Math.max(0, Math.round(num(input.hp, 0)));
         // Basic Fantasy: a monster's hit dice rolled for its hit points (d8 each; "1d4 HP" as written), at least 1.
-        if (dbf() && source && source.type === "npc" && !hp) {
-          await rbfReady;
-          const dice = rbf.npcStats(source.data).dice;
+        if ((dbf() || pg()) && source && source.type === "npc" && !hp) {
+          await oldReady();
+          const dice = ob().npcStats(source.data).dice;
           try {
             hp = Math.max(1, /d/.test(dice) ? table().dice.roll(dice).total : num(dice, 1));
           } catch {
-            hp = rbf.npcStats(source.data).hp;
+            hp = ob().npcStats(source.data).hp;
           }
         }
-        const npc5 = fateOn() && source && source.type !== "character" ? fc.setup(source) : dbf() && source && source.type !== "character" ? (await rbfReady, rbf.npcStats(source.data)) : d2e() && source && source.type !== "character" ? (await r2eReady, r2e.npcStats(source.data)) : d35() && source && source.type !== "character" ? (await r35Ready, r35.npcStats(source.data)) : astraOn() && source && source.type !== "character" ? (await raReady, ra.npcStats(source.data)) : mgtOn() && source && source.type !== "character" ? (await rmReady, rm.npcStats(source.data)) : cairnOn() && source && source.type !== "character" ? (await rcReady, rc.npcStats(source.data)) : five() && source && source.type !== "character" ? (await r5Ready, r5.npcStats(source.data)) : null;
+        const npc5 = fateOn() && source && source.type !== "character" ? fc.setup(source) : pg() && source && source.type !== "character" ? (await oldReady(), ob().npcStats(source.data)) : dbf() && source && source.type !== "character" ? (await rbfReady, rbf.npcStats(source.data)) : d2e() && source && source.type !== "character" ? (await r2eReady, r2e.npcStats(source.data)) : d35() && source && source.type !== "character" ? (await r35Ready, r35.npcStats(source.data)) : astraOn() && source && source.type !== "character" ? (await raReady, ra.npcStats(source.data)) : mgtOn() && source && source.type !== "character" ? (await rmReady, rm.npcStats(source.data)) : cairnOn() && source && source.type !== "character" ? (await rcReady, rc.npcStats(source.data)) : five() && source && source.type !== "character" ? (await r5Ready, r5.npcStats(source.data)) : null;
         if (npc5 && !hp) hp = npc5.hp;
         // FG's "NPC hit points" option (HRNH): listed (each game's own rule, the default), roll (the
         // hit dice rolled every time), max (the most they can be). Only where the record names its dice.
@@ -3260,7 +3355,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
           tokenId: input.tokenId ?? null,
           name: base,
           faction: input.faction ?? (source?.type === "character" ? "friend" : "foe"),
-          init: num(input.init, npc5 ? npc5.init : five() || twoSix() || d35() || d2e() || dbf() ? 0 : num(source?.data?.initiative?.misc, 0)),
+          init: num(input.init, npc5 ? npc5.init : five() || twoSix() || d35() || d2e() || dbf() || pg() ? 0 : num(source?.data?.initiative?.misc, 0)),
           hp,
           ac: num(input.ac, source?.type === "starship" ? num(source.data?.armour, 0) : npc5 ? npc5.ac : num(source?.data?.ac?.total, twoSix() ? 0 : 10)),
           hidden: Boolean(input.hidden),
@@ -3443,13 +3538,14 @@ function createCombat({ saved, table, onChange = () => undefined }) {
         changed();
         return;
       }
-      if (dbf()) {
+      if (dbf() || pg()) {
         // Basic Fantasy: d6 + the Dexterity bonus (+1 a Halfling), the highest first; a monster's own bonus (0).
-        await rbfReady;
+        // A game defined by its books: its die and the ability it names.
+        await oldReady();
         for (const entry of pick) {
           const linked = record(entry);
-          const bonus = linked?.type === "character" ? num(rbf.derive(linked.data).initiative.total, 0) : entry.init;
-          const roll = table().roll(`1d6${bonus ? signedNum(bonus) : ""}`, `[INIT] ${entry.name}`, seat.role === "dm" ? "Combat" : seat.name, entry.hidden);
+          const bonus = linked?.type === "character" ? num(ob().derive(linked.data).initiative.total, 0) : entry.init;
+          const roll = table().roll(`${pg() ? pgGame().initiative.die : "1d6"}${bonus ? signedNum(bonus) : ""}`, `[INIT] ${entry.name}`, seat.role === "dm" ? "Combat" : seat.name, entry.hidden);
           entry.initresult = roll.total;
         }
         changed();
@@ -3827,7 +3923,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     // under its score (bonus: the GM's adjustment). Cairn: the side's WIL saves
     // now (id: that creature alone; faction: everyone of it still standing).
     async morale(idOrFaction, bonus, seat) {
-      if (dbf()) return morale(String(idOrFaction), Number(bonus) || 0, seat);
+      if (dbf() || pg()) return morale(String(idOrFaction), Number(bonus) || 0, seat);
       mustGM(seat);
       if (!cairnOn()) throw new Error("Morale is Basic Fantasy's and Cairn's.");
       await rcReady;
@@ -3952,7 +4048,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       if (value <= 0) throw new Error("How much healing?");
       const { hp, wounds } = vitals(entry);
       const current = hp - wounds;
-      const { dead, dying } = five() || d35() || d2e() || dbf() ? thresholdsFor(entry) : thresholds(opts);
+      const { dead, dying } = five() || d35() || d2e() || dbf() || pg() ? thresholdsFor(entry) : thresholds(opts);
       if (twoSix()) {
         if (health(entry).status === "Dead") {
           table().say("Healing cannot restore the dead.", "Combat", true);
@@ -4064,7 +4160,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       if (five()) return attack5e(plan, from);
       if (d35()) return attack35(plan, from, attackOptions);
       if (d2e()) return attack2e(plan, from, attackOptions);
-      if (dbf()) return attackBf(plan, from, attackOptions);
+      if (dbf() || pg()) return attackBf(plan, from, attackOptions);
       if (plan.item && plan.record) {
         const fired = fireAmmunition(plan.record, plan.item, opts);
         if (!fired.ok) return [{ refused: `no ${plan.item.ammotype} left` }];
@@ -4113,7 +4209,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       if (five()) return damage5e(plan, from, opts);
       if (d35()) return damage35(plan, from, opts);
       if (d2e()) return damage2e(plan, from, opts);
-      if (dbf()) return damageBf(plan, from, opts);
+      if (dbf() || pg()) return damageBf(plan, from, opts);
       const bonus = plan.damageBonus + effectBonus(plan.entry, "DMG");
       let formula = `${plan.damage.replace(/\s+/g, "")}${bonus ? `${bonus > 0 ? "+" : ""}${bonus}` : ""}`;
       const kind = SHORT_TYPE[plan.type] ? ` (${SHORT_TYPE[plan.type]})` : "";
@@ -4152,7 +4248,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       if (five()) return weapon5e(who, weaponKey, seat);
       if (d35()) return weapon35(who, weaponKey, seat);
       if (d2e()) return weapon2e(who, weaponKey, seat);
-      if (dbf()) return weaponBf(who, weaponKey, seat);
+      if (dbf() || pg()) return weaponBf(who, weaponKey, seat);
       if (who.recordId) {
         const record = table().records.get(who.recordId);
         if (!record || record.type !== "character") throw new Error("No such character.");
@@ -4248,7 +4344,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       if (twoSix()) return saveAstra(find(entryId), stat, cl, from);
       if (d35()) return save35(find(entryId), stat, cl, from, castName);
       if (d2e()) return save2e(find(entryId), stat, cl, from, castName);
-      if (dbf()) return saveBf(find(entryId), stat, cl, from, castName);
+      if (dbf() || pg()) return saveBf(find(entryId), stat, cl, from, castName);
       if (five()) {
         const saved = await save5e(find(entryId), stat, cl, from, castName, { advantage: ["advantage", "disadvantage"].includes(advantage) ? advantage : "" });
         spendApplied(find(entryId), true);

@@ -207,6 +207,15 @@ async function giveItem(table, member, item, each, engine, game) {
     table.records.update(member.id, { data: astra.derive(data) }, table.seat, { replace: true });
     return true;
   }
+  if (require("./packGame.cjs").isPg({ data: current })) {
+    // A game defined by its books: the item into the pack (carried), the sheet worked out again with the books.
+    const packGame = require("./packGame.cjs");
+    const rules = await packGame.rulesPg();
+    const list = (data.inventorylist = data.inventorylist ?? {});
+    list[engine.nextId(list)] = { ...source, count: each, carried: 1 };
+    table.records.update(member.id, { data: rules.derive(data, packGame.libOf(table, packGame.gameOf({ data: current }))) }, table.seat, { replace: true });
+    return true;
+  }
   if (five) {
     // A 5E character: the item into the pack (carried), the sheet worked out again.
     const list = (data.inventorylist = data.inventorylist ?? {});
