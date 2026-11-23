@@ -25,6 +25,18 @@ function withArt(data, spec, art) {
   const out = { ...data };
   const race = out.race ?? out.species ?? spec?.race ?? spec?.species;
   const cls = spec?.class ?? spec?.cls ?? "";
+  // The character art library first: a portrait and its own token, by race, class and gender, at random among
+  // those that fit (shared/characters/art.mjs); a picture the wizard chose keeps its partner.
+  const portraits = art("portrait") ?? [];
+  const tokens = art("token") ?? [];
+  const chosenPortrait = typeof spec?.portrait === "string" ? portraits.find((item) => item.id === spec.portrait) : null;
+  const chosenToken = typeof spec?.token === "string" ? tokens.find((item) => item.id === spec.token) : null;
+  if (!chosenPortrait && !chosenToken && !(typeof out.portrait === "string" && out.portrait) && !(typeof out.token === "string" && out.token)) {
+    const pair = require("../shared/characters/art.mjs").pickPair(portraits, { race, cls, gender: out.gender ?? spec?.gender });
+    if (pair) return { ...out, portrait: pair.portrait, token: pair.token };
+  } else if (chosenPortrait?.pair && !chosenToken && !spec?.token) {
+    return { ...out, portrait: chosenPortrait.id, token: chosenPortrait.pair };
+  }
   for (const kind of ["portrait", "token"]) {
     const items = art(kind) ?? [];
     const chosen = typeof spec?.[kind] === "string" ? items.find((item) => item.id === spec[kind]) : null;

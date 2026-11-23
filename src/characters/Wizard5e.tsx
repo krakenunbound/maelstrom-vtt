@@ -998,7 +998,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
                   {busy ? "Saving…" : "Save"}
                 </button>
               </div>
-              <ArtChoice session={session} race={speciesName} cls={className} value={art} onChange={setArt} />
+              <ArtChoice session={session} race={speciesName} cls={className} gender={details.gender ?? ""} value={art} onChange={setArt} />
               {problem ? <p className="ccw-warn">{problem}</p> : null}
             </div>
             <Plate>DETAILS</Plate>

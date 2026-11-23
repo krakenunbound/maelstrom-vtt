@@ -273,6 +273,12 @@ function accounts() {
 }
 // Kraken's own portraits and tokens (a race and class set, round tokens made
 // from them), in the assets folder beside the GM's FG collection; by race.
+// The character art library shipped with the app (portrait and token pairs by race, class and gender;
+// docs/character-art.md): beside the app's resources when installed, games/characters when run from the repository.
+function characterArtDir() {
+  const installed = process.resourcesPath ? path.join(process.resourcesPath, "characters") : "";
+  return installed && fs.existsSync(path.join(installed, "manifest.json")) ? installed : path.join(APP_DIR, "games", "characters");
+}
 function krakenArtRoots() {
   const assets = path.join(USER_DATA, "assets");
   return [
@@ -899,7 +905,7 @@ const calls = {
     // The players' own portraits and tokens (each from their computer), kept with the campaign, by player.
     const playerArt = campaignId ? path.join(campaigns.folder(campaignFile(), campaignId), "player-art") : path.join(USER_DATA, "player-art");
     const playerRoots = ["portrait", "token"].map((kind) => ({ dir: path.join(playerArt, `${kind}s`), kind, group: "Players", prefix: `players/${kind}s/` }));
-    const next = createTableServer({ saved, archive, ruleset, onChange: markDirty, playerArt: { folder: (kind) => path.join(playerArt, `${kind}s`) }, art: createArtLibrary({ base: dataFolder, roots: [...playerRoots, ...defaultRoots(dataFolder), ...krakenArtRoots()] }), decals: decals(), wallpapers: wallpapers(), gmIcons: gmIcons(), towers: towers(), dicePacks: dicePacks(), tiles: tiles(), sounds: sounds(), books: books(), accounts: accounts(), prefs: prefs(), studioPicture: (sceneId) => studioPicture(sceneId), ownMaps: { folder: () => campaignMapsFolder() } });
+    const next = createTableServer({ saved, archive, ruleset, onChange: markDirty, playerArt: { folder: (kind) => path.join(playerArt, `${kind}s`) }, art: createArtLibrary({ base: dataFolder, roots: [...playerRoots, ...defaultRoots(dataFolder), ...krakenArtRoots()], characters: { dir: characterArtDir(), ruleset } }), decals: decals(), wallpapers: wallpapers(), gmIcons: gmIcons(), towers: towers(), dicePacks: dicePacks(), tiles: tiles(), sounds: sounds(), books: books(), accounts: accounts(), prefs: prefs(), studioPicture: (sceneId) => studioPicture(sceneId), ownMaps: { folder: () => campaignMapsFolder() } });
     try {
       const info = await next.listen({ port: wanted, password });
       table = next;

@@ -502,7 +502,7 @@ export function Wizard2e({ session, onDone }: { session: Session; onDone: (id: s
           <Plate>Pregenerated Character</Plate>
           <div className="ccw-panel ccw-details">
             <p className="hint">The character comes as the book made it: scores, hit points, gear, proficiencies. Change anything on the sheet.</p>
-            <ArtChoice session={session} race={race} cls={cls} value={art} onChange={setArt} />
+            <ArtChoice session={session} race={race} cls={cls} gender={bio.gender ?? ""} value={art} onChange={setArt} />
             <label>
               Name <input value={name} onChange={(event) => setName(event.target.value)} aria-label="Character name" placeholder="as the book has it" />
             </label>
@@ -1134,7 +1134,7 @@ export function Wizard2e({ session, onDone }: { session: Session; onDone: (id: s
                 </div>
                 <Plate>Details</Plate>
                 <div className="ccw-panel ccw-details">
-                  <ArtChoice session={session} race={race} cls={cls} value={art} onChange={setArt} />
+                  <ArtChoice session={session} race={race} cls={cls} gender={bio.gender ?? ""} value={art} onChange={setArt} />
                   <label>
                     Name <input value={name} onChange={(event) => setName(event.target.value)} aria-label="Character name" />
                   </label>

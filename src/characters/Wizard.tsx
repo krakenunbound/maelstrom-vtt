@@ -1188,7 +1188,7 @@ export function Wizard({ session, onDone }: { session: Session; onDone: (id: str
             </div>
             <Plate>Details</Plate>
             <div className="ccw-panel ccw-details">
-              <ArtChoice session={session} race={raceName ?? ""} cls={className ?? ""} value={art} onChange={setArt} />
+              <ArtChoice session={session} race={raceName ?? ""} cls={className ?? ""} gender={details.gender ?? ""} value={art} onChange={setArt} />
               <label>
                 Name <input value={details.name ?? ""} onChange={(event) => setDetails({ ...details, name: event.target.value })} aria-label="Character name" />
               </label>

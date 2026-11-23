@@ -3,7 +3,10 @@ import { Icon } from "../ui/icons";
 import type { Session } from "../session/useSession";
 import { GM } from "../ui/gmTitle";
 
-export type ArtItem = { id: string; kind: "portrait" | "token"; group: string; name: string; video: boolean };
+import { genderOf, pickPair } from "../../shared/characters/art.mjs";
+
+// A picture of the character art library carries its race, class, gender and its partner's id (pair).
+export type ArtItem = { id: string; kind: "portrait" | "token"; group: string; name: string; video: boolean; race?: string; cls?: string; gender?: string; pair?: string };
 
 // A picture from the GM's art library: an image, or a looping video portrait.
 // still: a small picture (the top bar, lists, the tracker) shows a video
@@ -218,9 +221,22 @@ export function defaultArt(items: ArtItem[], race: string, cls: string) {
 // The wizard's portrait and token, chosen before the character is made: the
 // race and class's own shown at once, either changed from the collection.
 // value: what was chosen ({} for the defaults); onChange gives the ids.
-export function ArtChoice({ session, race, cls, value, onChange }: { session: Session; race: string; cls: string; value: { portrait?: string; token?: string }; onChange: (next: { portrait?: string; token?: string }) => void }) {
+// With the character art library (shared/characters/art.mjs): a portrait and its own token for the race, class and
+// gender, at random among those that fit, chosen again when one of them changes (a gender rolled again) until the
+// player picks one by hand; the pair shown is the pair sent (onChange), so the host makes what the wizard showed.
+export function ArtChoice({ session, race, cls, gender = "", value, onChange }: { session: Session; race: string; cls: string; gender?: string; value: { portrait?: string; token?: string }; onChange: (next: { portrait?: string; token?: string }) => void }) {
   const [lists, setLists] = useState<{ portrait: ArtItem[]; token: ArtItem[] }>({ portrait: [], token: [] });
   const [picking, setPicking] = useState<"portrait" | "token" | null>(null);
+  const byHand = useRef(false);
+  const shownPortrait = useRef<string | undefined>(undefined);
+  const sex = genderOf(gender);
+  useEffect(() => {
+    if (byHand.current || !lists.portrait.length || !race.trim()) return;
+    const pair = pickPair(lists.portrait, { race, cls, gender: sex }, { avoid: shownPortrait.current });
+    if (pair && pair.portrait !== value.portrait) onChange(pair);
+    // value is read, not watched: a pick is made when the race, class, gender or the lists change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [race, cls, sex, lists]);
   useEffect(() => {
     let live = true;
     Promise.all([session.artList("portrait"), session.artList("token")])
@@ -234,6 +250,7 @@ export function ArtChoice({ session, race, cls, value, onChange }: { session: Se
     portrait: value.portrait ?? defaultArt(lists.portrait, race, cls)?.id,
     token: value.token ?? defaultArt(lists.token, race, cls)?.id,
   };
+  shownPortrait.current = shown.portrait;
   return (
     <div className="art-choice" data-art-choice>
       {(["portrait", "token"] as const).map((kind) => (
@@ -251,6 +268,7 @@ export function ArtChoice({ session, race, cls, value, onChange }: { session: Se
           current={shown[picking]}
           race={race}
           onPick={(id) => {
+            byHand.current = Boolean(id);
             onChange({ ...value, [picking]: id ?? undefined });
             setPicking(null);
           }}
