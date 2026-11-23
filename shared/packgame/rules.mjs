@@ -94,6 +94,19 @@ const fixedHp = (cls, level) => num(/[+](\s*\d+)\s*$/.exec(String(levelValue(cls
 // The prime requisite's experience bonus, in percent: the row for the highest score it reaches.
 /** @param {any} cls @param {any} data */
 export function xpBonusOf(cls, data) {
+  // Two prime requisites (BECMI's Elf, Halfling): a list of rules, each its minimum scores, all of them or any one,
+  // and its bonus; the best that holds. [{ "all": { "strength": 13, "intelligence": 16 }, "bonus": 10 }]
+  if (Array.isArray(cls?.xpbonus)) {
+    const scoreOf = (/** @type {string} */ key) => num(data?.abilities?.[slug(key)]?.score, 0);
+    let best = 0;
+    for (const rule of cls.xpbonus) {
+      const all = Object.entries(rule?.all ?? {});
+      const any = Object.entries(rule?.any ?? {});
+      const holds = all.every(([key, min]) => scoreOf(key) >= num(min, 99)) && (!any.length || any.some(([key, min]) => scoreOf(key) >= num(min, 99)));
+      if ((all.length || any.length) && holds) best = Math.max(best, num(rule.bonus, 0));
+    }
+    return best;
+  }
   const prime = slug(cls?.primerequisite);
   const score = num(data?.abilities?.[prime]?.score, 0);
   let bonus = 0;
@@ -117,6 +130,9 @@ export const isArmor = (item) => /armou?r/i.test(`${item?.type ?? ""} ${item?.su
 const magicOf = (item) => num(item?.bonus, 0) || num(/\+(\d+)\s*$/.exec(String(item?.name ?? ""))?.[1], 0);
 /** @param {any} item */
 const isMissile = (item) => Boolean(item?.missile) || Boolean(String(item?.range ?? "").trim()) && !/thrown/i.test(String(item?.properties ?? ""));
+// A weapon with a range that is not a launcher (a dagger, a hand axe, a spear): used in melee, and thrown.
+/** @param {any} item */
+const isThrown = (item) => !item?.missile && Boolean(String(item?.range ?? "").trim()) && !/bow|sling|blowgun/i.test(String(item?.name ?? ""));
 // A price in the game's smallest coin: "10 gp" by the game's coins.
 /** @param {PackGame} game @param {unknown} cost */
 export function priceOf(game, cost) {
@@ -201,10 +217,13 @@ export function derive(input, lib) {
     if (num(item.carried, 1) !== 2 || !isWeapon(item)) continue;
     const magic = magicOf(item);
     const dice = String(item.damage).replace(/\s+/g, "").split(/[/,]/)[0];
-    const missile = isMissile(item);
+    const thrown = isThrown(item);
+    const missile = isMissile(item) && !thrown;
     const bonus = (missile ? data.attack.missile : data.attack.melee) + magic;
     const plus = (missile ? 0 : mod(game.attack.damage)) + magic;
-    attacks[id] = { name: String(item.name), item: id, type: missile ? "missile" : "melee", bonus, thac0, damage: `${dice}${plus ? signed(plus) : ""}`, ...(item.range ? { range: String(item.range) } : {}) };
+    attacks[id] = { name: String(item.name), item: id, type: missile ? "missile" : "melee", bonus, thac0, damage: `${dice}${plus ? signed(plus) : ""}`, ...(item.range && missile ? { range: String(item.range) } : {}) };
+    // Thrown: a missile attack of its own (the missile ability to hit, no damage bonus but its magic).
+    if (thrown) attacks[`${id}-thrown`] = { name: `${item.name} (thrown)`, item: id, type: "missile", bonus: data.attack.missile + magic, thac0, damage: `${dice}${magic ? signed(magic) : ""}`, range: String(item.range) };
   }
   data.attacks = attacks;
   // A Thief's skills (or any class whose rows give them), by the game's names.
@@ -214,10 +233,20 @@ export function derive(input, lib) {
     for (const [key, base] of Object.entries(skillRow)) {
       const skill = (skills[key] = { ...(skills[key] ?? {}) });
       skill.name = game.skills.names[slug(key)] ?? key;
-      skill.base = typeof base === "number" ? base : num(String(base).replace(/%/g, ""), 0);
+      // A chance in six as printed ("1-2": Hear Noise), rolled on a d6 at or under its top; else a percentage.
+      const inSix = typeof base === "string" ? /^\s*1\s*-\s*([1-5])\s*$/.exec(base) : null;
+      skill.base = inSix ? Number(inSix[1]) : typeof base === "number" ? base : num(String(base).replace(/%/g, ""), 0);
       skill.text = typeof base === "string" && /-|d\d/.test(base) ? base : "";
       skill.misc = Math.round(num(skill.misc, 0));
-      skill.total = Math.min(99, Math.max(1, skill.base + skill.misc));
+      if (inSix) {
+        skill.die = "1d6";
+        skill.total = Math.min(5, Math.max(1, skill.base + skill.misc));
+        skill.shown = `1-${skill.total}`;
+      } else {
+        delete skill.die;
+        skill.total = Math.min(99, Math.max(1, skill.base + skill.misc));
+        skill.shown = `${skill.total}%`;
+      }
     }
   } else delete data.thiefskills;
   // Turning the undead: the class's row at the level.
@@ -273,6 +302,7 @@ export function testOf(data, kind, key, game) {
   if (kind === "skill") {
     const row = data.thiefskills?.[key];
     if (!row) throw new Error("No such skill.");
+    if (row.die) return { die: row.die, target: num(row.total, 0), high: false, label: row.name };
     return { die: game.skills?.die ?? "1d100", target: num(row.total, 0), high: !(game.skills?.atMost ?? true), label: row.name };
   }
   if (kind === "morale") return { die: game.morale.die, target: num(data.loyalty, 7), high: !game.morale.atMost, label: "Loyalty (morale)" };
@@ -336,7 +366,9 @@ export function savesAs(lib, text, hdLevel) {
       }
     }
     const saves = Object.fromEntries(game.saves.map(({ key }) => [key, num(results[key] ?? game.normalMan?.saves?.[key], 20)]));
-    return { cls: "Normal Man", level: 0, saves };
+    // Its to-hit too (the table's "thac0: 20" row, else the definition's).
+    const thac0 = num(results.thac0 ?? game.normalMan?.thac0, NaN);
+    return { cls: "Normal Man", level: 0, saves, ...(Number.isFinite(thac0) ? { thac0 } : {}) };
   }
   const cls = classOf(lib, className);
   const saves = levelValue(cls, level, "saves") ?? {};
@@ -351,7 +383,7 @@ export function npcStats(data = {}, lib) {
   const hp = num(data.hp, 0) || (avg ? Math.max(1, Math.floor((Number(avg[1]) * (Number(avg[2]) + 1)) / 2) + num(avg[3], 0)) : 1);
   const saves = savesAs(lib, data.saveas ?? data.saveAs, hd.level);
   // A Normal Man attacks as one (the books' Normal Man numbers), else by its hit dice.
-  const thac0 = num(data.thac0, NaN) || (saves.cls === "Normal Man" && lib.game.normalMan ? lib.game.normalMan.thac0 : monsterThac0(lib, hd));
+  const thac0 = num(data.thac0, NaN) || (saves.cls === "Normal Man" && "thac0" in saves && Number.isFinite(saves.thac0) ? saves.thac0 : monsterThac0(lib, hd));
   const attacks = monsterAttacks(data.attacks, data.damage, 0);
   return {
     ac,
@@ -486,6 +518,61 @@ export function buildFromSpec(spec, lib) {
     lib,
   );
   return { name, data, problems, spent, left: purse - spent };
+}
+// A book's sample character (a pregencharsheet: class, level, the six scores, hp, ac, xp, equipment lines, coins)
+// as the book made it. Each equipment line is matched to the books' items by name ("Chain mail & shield": Chain Mail
+// Armor and Shield; "2 large sacks": 2 Large Sack); a line no item has stays as a plain carried thing, and is said.
+/** @param {any} pregen @param {Lib} lib */
+export function fromPregen(pregen, lib) {
+  const game = lib.game;
+  const src = pregen?.data ?? pregen ?? {};
+  const problems = [];
+  const names = new Map((lib.items ?? []).map((item) => [String(item.name).toLowerCase(), String(item.name)]));
+  const findItem = (/** @type {string} */ words) => {
+    const base = words.toLowerCase().replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
+    for (const name of [base, `${base} armor`, base.replace(/s$/, ""), base.replace(/es$/, ""), `${base.replace(/s$/, "")} armor`]) if (names.has(name)) return names.get(name);
+    return null;
+  };
+  /** @type {[string, number][]} */
+  const buy = [];
+  /** @type {string[]} */
+  const plain = [];
+  for (const line of Array.isArray(src.equipment) ? src.equipment : String(src.equipment ?? "").split(/[,;\n]/)) {
+    const text = String(line ?? "").trim();
+    if (!text) continue;
+    // The whole line an item ("12 Iron Spikes and Small Hammer"), else its parts joined by & or "and".
+    const whole = findItem(text);
+    const parts = whole ? [text] : text.split(/\s*(?:&|\band\b)\s*/i).filter(Boolean);
+    const found = parts.map((part) => {
+      if (whole) return { count: 1, name: whole };
+      const counted = /^(\d+)\s+(.+)$/.exec(part);
+      return { count: counted ? Number(counted[1]) : 1, name: findItem(counted ? counted[2] : part) };
+    });
+    if (found.every((item) => item.name)) for (const item of found) buy.push([/** @type {string} */ (item.name), item.count]);
+    else plain.push(text);
+  }
+  const cls = classOf(lib, src.class ?? src.className);
+  if (!cls) problems.push(`${src.class ?? "Its class"} is not in the active books.`);
+  const abilities = Object.fromEntries(game.abilities.map(({ key }) => [key, num(src[key] ?? src.abilities?.[key]?.score ?? src.abilities?.[key], 10)]));
+  const hpWanted = num(src.hp, 0);
+  const conMod = game.hitPoints.ability ? abilityMod(game, num(abilities[game.hitPoints.ability], 10)) : 0;
+  const built = buildFromSpec({ name: src.name ?? pregen?.name, class: cls?.name, abilities, hpRoll: hpWanted ? hpWanted - conMod : undefined, gold: 1e7, buy, alignment: src.alignment }, lib);
+  problems.push(...built.problems.filter((text) => !/money|for sale|price/i.test(text)));
+  const data = built.data;
+  // What no item is: carried as it is written.
+  let next = Object.keys(data.inventorylist ?? {}).length + 1;
+  for (const text of plain) data.inventorylist[`id-${String(next++).padStart(5, "0")}`] = { name: text, type: "Gear", count: 1, carried: 1 };
+  if (plain.length) problems.push(`Not in the books' items, carried as written: ${plain.join("; ")}.`);
+  // The coins it has (its own, not the shop's change).
+  const coinsIn = src.coins && typeof src.coins === "object" ? src.coins : {};
+  data.coins = Object.fromEntries(game.coins.map((coin, index) => [`id-${String(index + 1).padStart(5, "0")}`, { name: coin.key, amount: Math.max(0, Math.round(num(coinsIn[coin.key] ?? coinsIn[coin.key.toLowerCase()], 0))) }]));
+  data.level = Math.max(1, Math.round(num(src.level, 1)));
+  data.exp = Math.max(0, num(src.xp ?? src.exp, 0));
+  if (hpWanted && data.hp) data.hp.rolls = [Math.max(1, hpWanted - conMod)];
+  if (Array.isArray(src.spells)) data.spellbook = src.spells.map(String);
+  const out = derive(data, lib);
+  if (src.ac !== undefined && num(out.ac?.total, NaN) !== num(src.ac, NaN)) problems.push(`The book gives AC ${src.ac}; its gear makes ${out.ac?.total}.`);
+  return { name: built.name, data: out, problems };
 }
 // The hit die a level up rolls (none past the level the ability adds to: the class's fixed gain).
 /** @param {any} data @param {Lib} lib */

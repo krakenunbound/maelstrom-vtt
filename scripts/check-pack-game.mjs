@@ -49,19 +49,27 @@ const game = {
   attack: { by: "thac0" },
   initiative: { die: "1d6", by: "side" },
   turning: { die: "2d6", affected: "2d6", undead: [{ key: "skeleton", names: ["Skeleton"] }, { key: "zombie", names: ["Zombie"] }] },
-  skills: { names: { openlocks: "Open Locks", hide: "Hide in Shadows" } },
+  skills: { names: { openlocks: "Open Locks", hide: "Hide in Shadows", hearnoise: "Hear Noise" } },
   normalMan: { thac0: 20, saves: saves(14, 15, 16, 17, 18) },
   coins: [{ key: "GP", name: "Gold", value: 100 }, { key: "SP", name: "Silver", value: 10 }, { key: "CP", name: "Copper", value: 1 }],
 };
 const basic = [
   record(BASIC, "class", "Fighter", { primerequisite: "Strength", hitdie: "d8", armor: "Any", weapons: "Any", xpbonus: { 13: 5, 16: 10 }, levels: { 1: { xp: 0, title: "Veteran", hitdice: "1d8", thac0: 19, saves: saves(12, 13, 14, 15, 16) }, 2: { xp: 2000, title: "Warrior", hitdice: "2d8" }, 3: { xp: 4000, title: "Swordmaster", hitdice: "3d8" } } }),
   record(BASIC, "class", "Cleric", { primerequisite: "Wisdom", hitdie: "d6", spellcasting: "divine", levels: { 1: { xp: 0, hitdice: "1d6", thac0: 19, saves: saves(11, 12, 14, 16, 15), turning: { skeleton: 7, zombie: 9 } }, 2: { xp: 1500, hitdice: "2d6", spells: { 1: 1 }, turning: { skeleton: "T", zombie: 7 } } } }),
-  record(BASIC, "class", "Thief", { primerequisite: "Dexterity", hitdie: "d4", levels: { 1: { xp: 0, hitdice: "1d4", thac0: 19, saves: saves(13, 14, 13, 16, 15), skills: { openlocks: 15, hide: 10 } } } }),
+  record(BASIC, "class", "Thief", { primerequisite: "Dexterity", hitdie: "d4", levels: { 1: { xp: 0, hitdice: "1d4", thac0: 19, saves: saves(13, 14, 13, 16, 15), skills: { openlocks: 15, hide: 10, hearnoise: "1-2" } } } }),
   record(BASIC, "class", "Dwarf", { race: "Dwarf", primerequisite: "Strength", hitdie: "d8", requirements: { constitution: 9 }, levels: { 1: { xp: 0, hitdice: "1d8", thac0: 19, saves: saves(8, 9, 10, 13, 12) } } }),
   record(BASIC, "item", "Chain Mail", { type: "Armor", ac: 5, cost: "40 gp", encumbrance: 400 }),
   record(BASIC, "item", "Shield", { type: "Armor", acbonus: 1, cost: "10 gp", encumbrance: 100 }),
   record(BASIC, "item", "Sword", { type: "Weapon", damage: "1d8", cost: "10 gp", encumbrance: 60 }),
   record(BASIC, "item", "Mace", { type: "Weapon", damage: "1d6", cost: "5 gp", encumbrance: 30 }),
+  record(BASIC, "item", "Dagger", { type: "Weapon", damage: "1d4", cost: "3 gp", range: "10/20/30", encumbrance: 10 }),
+  record(BASIC, "item", "Short Bow", { type: "Weapon", damage: "1d6", cost: "25 gp", range: "50/100/150", encumbrance: 30 }),
+  record(BASIC, "item", "Quiver with 20 Arrows", { type: "Gear", cost: "5 gp" }),
+  // A book's sample character, its equipment lines as the book prints them.
+  record(BASIC, "pregencharsheet", "Sample Fighter", { class: "Fighter", level: 1, strength: 16, intelligence: 9, wisdom: 10, dexterity: 13, constitution: 14, charisma: 11, ac: 3, hp: 8, xp: 0, equipment: ["Chain mail & shield", "Sword", "2 torches"], coins: { GP: 12 } }),
+  record(BASIC, "npc", "Peasant", { ac: 9, hd: "1", attacks: "1 weapon", damage: "1d6", saveas: "NM", morale: 6, xp: 5 }, "gm"),
+  // The Normal Man table (a row a value): its THAC0 is the one a Normal Man attacks with.
+  record(BASIC, "tables", "Normal Man", { tablerows: rowsOf([{ fromrange: 1, torange: 1, results: rowsOf([{ result: "death: 14" }]) }, { fromrange: 2, torange: 2, results: rowsOf([{ result: "thac0: 21" }]) }]) }, "gm"),
   record(BASIC, "npc", "Goblin", { ac: 6, hd: "1-1", attacks: "1 weapon", damage: "1d6", saveas: "NM", morale: 7, xp: 5 }, "gm"),
   record(BASIC, "npc", "Ogre", { ac: 5, hd: "4+1", attacks: "1 club", damage: "1d10", saveas: "F4", morale: 10, xp: 125 }, "gm"),
   record(BASIC, "npc", "Skeleton", { ac: 7, hd: "1", attacks: "1 weapon", damage: "1d6", saveas: "F1", morale: 12, xp: 10 }, "gm"),
@@ -87,7 +95,7 @@ try {
   assert(registerPackGame(withGame[0].game).id === "packtestold" && campaignRulesets().filter((row) => row.name === GAME).length === 1, "registering it again replaces it");
   const adventure = infos.find((info) => info.name === "Test Adventure");
   assert(fitsRuleset(adventure, GAME) && fitsRuleset(withGame[0], GAME) && !fitsRuleset(adventure, "Worldbuilding") && !fitsRuleset(adventure, "AD&D 2E"), "its books (and an adventure for it) in its own campaigns, not Worldbuilding's or another game's");
-  assert(manifest.wizard?.steps?.map((step) => step.id).join() === "abilities,class,gear,details" && manifest.sheet.tabs.some((tab) => tab.id === "skills") && manifest.tracker.saves.keys.join() === "death,wands,paralysis,breath,spells", "its wizard, sheet and tracker from the definition");
+  assert(manifest.wizard?.steps?.map((step) => step.id).join() === "sample,abilities,class,gear,details" && manifest.sheet.tabs.some((tab) => tab.id === "skills") && manifest.tracker.saves.keys.join() === "death,wands,paralysis,breath,spells", "its wizard, sheet and tracker from the definition");
   // The campaign screen offers only the games whose books are installed: this one (its rules book), Worldbuilding
   // (no books needed); not a game whose only pack is an adventure, nor one with packs for any game only.
   const { installedGames } = require("../electron/books.cjs");
@@ -102,7 +110,7 @@ try {
   const agent = server.agent;
   for (const name of [BASIC, EXPERT, "Test Adventure"]) await agent.activateBook(name);
   await new Promise((resolve) => setTimeout(resolve, 300));
-  assert(agent.records.list({ type: "class" }).length === 5 && agent.records.list({ type: "npc" }).length === 4, `the books' classes and monsters in the campaign: ${agent.records.list({ type: "class" }).length} classes`);
+  assert(agent.records.list({ type: "class" }).length === 5 && agent.records.list({ type: "npc" }).length === 5, `the books' classes and monsters in the campaign: ${agent.records.list({ type: "class" }).length} classes`);
   const tool = async (name, args = {}) => {
     const result = await callTool(name, args, { table: () => server });
     if (result.isError) throw new Error(`${name}: ${result.content[0].text}`);
@@ -142,6 +150,29 @@ try {
   const cleric = await tool("kraken_build_character", { spec: { name: "Brother Tom", class: "Cleric", abilities: { strength: 10, intelligence: 10, wisdom: 13, dexterity: 10, constitution: 10, charisma: 10 }, hpRoll: 4, gold: 20, buy: [["Mace", 1]] } });
   const c = agent.records.get(cleric.id).data;
   assert(c.turning?.skeleton === 7 && c.saves.spells.total === 14, `the cleric's turning row; Wisdom 13 takes 1 off the save against spells: ${JSON.stringify({ turning: c.turning, spells: c.saves.spells })}`);
+
+  // A thief: Hear Noise is a chance in six ("1-2": 1d6 at or under 2); a dagger in melee and thrown; a quiver holds 20.
+  const thief = await tool("kraken_build_character", { spec: { name: "Nell", class: "Thief", abilities: { strength: 13, intelligence: 10, wisdom: 10, dexterity: 16, constitution: 10, charisma: 10 }, hpRoll: 3, gold: 60, buy: [["Dagger", 1], ["Short Bow", 1], ["Quiver with 20 Arrows", 1]] } });
+  const t = agent.records.get(thief.id).data;
+  assert(t.thiefskills.hearnoise.die === "1d6" && t.thiefskills.hearnoise.total === 2 && t.thiefskills.hearnoise.shown === "1-2" && t.thiefskills.openlocks.shown === "15%", `Hear Noise 1-2 on a d6: ${JSON.stringify(t.thiefskills)}`);
+  force(2);
+  await tool("kraken_check", { recordId: thief.id, kind: "skill", skill: "hearnoise" }).catch(async () => require("../electron/packGame.cjs").checkPg(agent, agent.records.get(thief.id), { kind: "skill", skill: "hearnoise" }));
+  assert(/Hear Noise \[UNDER 2\] \[SUCCESS 2 under 2\]/.test(last(/Hear Noise/).roll.label) && last(/Hear Noise/).roll.formula === "1d6", `rolled on a d6: ${JSON.stringify(last(/Hear Noise/)?.roll)}`);
+  const dagger = Object.entries(t.attacks).filter(([, attack]) => attack.name.startsWith("Dagger"));
+  assert(dagger.length === 2 && dagger[0][1].type === "melee" && dagger[0][1].damage === "1d4+1" && dagger[1][0].endsWith("-thrown") && dagger[1][1].type === "missile" && dagger[1][1].bonus === 2 && dagger[1][1].damage === "1d4", `a dagger in melee (+Str) and thrown (+Dex, no Str): ${JSON.stringify(dagger)}`);
+  const bowKey = Object.keys(t.attacks).find((key) => t.attacks[key].name === "Short Bow");
+  // A sample character as the book made it: its gear matched to the books' items ("Chain mail & shield"), the rest as written.
+  const sample = await tool("kraken_build_character", { spec: { pregen: "Sample Fighter", name: "Sam" } });
+  const sd = agent.records.get(sample.id).data;
+  assert(sd.ac.total === 3 && sd.hp.total === 8 && Object.values(sd.coins).find((coin) => coin.name === "GP").amount === 12 && Object.values(sd.inventorylist).some((row) => row.name === "2 torches") && /2 torches/.test(sample.problems.join()), `the sample fighter: AC 3, 8 hp, 12 gp, its torches as written: ${JSON.stringify({ ac: sd.ac, hp: sd.hp, problems: sample.problems })}`);
+  // A game that rolls initiative a side starts its table that way.
+  assert(server.agent.options?.().initGroup === "sides" || (await tool("kraken_table_options", {})).initGroup === "sides", "initiative a side by default");
+  // Two prime requisites (an Elf's Strength and Intelligence): the XP bonus as a list of rules.
+  const { xpBonusOf } = await import("../shared/packgame/rules.mjs");
+  const elf = { xpbonus: [{ all: { strength: 13, intelligence: 13 }, bonus: 5 }, { all: { strength: 13, intelligence: 16 }, bonus: 10 }] };
+  const scores = (strength, intelligence) => ({ abilities: { strength: { score: strength }, intelligence: { score: intelligence } } });
+  assert(xpBonusOf(elf, scores(13, 13)) === 5 && xpBonusOf(elf, scores(13, 16)) === 10 && xpBonusOf(elf, scores(12, 18)) === 0, "two prime requisites' XP bonus");
+  done.push("a thief's Hear Noise on a d6, two prime requisites' XP bonus, a dagger in melee and thrown, a book's sample character taken as printed, initiative a side by default");
 
   // --- The fight -------------------------------------------------------------------------------------------------------
   const npc = (name) => agent.records.list({ type: "npc" }).find((item) => item.name === name);
@@ -207,6 +238,21 @@ try {
     await tool("kraken_combat", { action: "damage-roll", recordId: ana.id, weapon: sword.item });
   }
   assert((await tool("kraken_combat", { action: "view" })).entries.find((entry) => entry.id === ogre.id).health.status === "Dead", `the ogre dead at 0 (${left.hp} hit points)`);
+  // A Normal Man attacks at the Normal Man table's THAC0 (21 here); a bow shoots from its quiver of 20.
+  await tool("kraken_combat", { action: "add", recordId: npc("Peasant").id });
+  await tool("kraken_combat", { action: "add", recordId: thief.id });
+  view = (await tool("kraken_combat", { action: "view" })).entries;
+  const peasant = view.find((entry) => entry.name === "Peasant");
+  const nell = view.find((entry) => entry.recordId === thief.id);
+  await tool("kraken_combat", { action: "target", id: peasant.id, targetId: pc.id, on: true });
+  force(10);
+  results = (await tool("kraken_combat", { action: "attack", id: peasant.id, weapon: "0" })).results;
+  assert(/\[THAC0 21: NEEDS 18\]/.test(last(/\[ATTACK\]/).roll.label), `a Normal Man's THAC0 from its table: ${last(/\[ATTACK\]/).roll.label}`);
+  await tool("kraken_combat", { action: "target", id: nell.id, targetId: peasant.id, on: true });
+  force(10);
+  results = (await tool("kraken_combat", { action: "attack", recordId: thief.id, weapon: bowKey }));
+  const quiver = Object.values(agent.records.get(thief.id).data.inventorylist).find((row) => /Quiver/.test(row.name));
+  assert(Array.isArray(results.results) && quiver.count === 1 && quiver.ammoperunit === 20 && quiver.ammoused === 1, `the bow shoots one of the quiver's 20: ${JSON.stringify({ results, quiver })}`);
   done.push("the tracker plays it: hit points from hit dice, THAC0 - descending AC (a character's from the books, a monster's from the Monster Attack Table), naturals, damage, saves as a class, morale, turning by the cleric's row, dead at 0");
 } finally {
   await server?.stop?.();

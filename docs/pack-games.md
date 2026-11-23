@@ -100,7 +100,11 @@ the five saves, descending AC, THAC0, d6 initiative by side).
   `xpbonus`, `hitdie`, `race` (race as class), `maxlevel`, `spellcasting`
   (`arcane` or `divine`), and `levels`, keyed by level, each with `xp`,
   `title`, `hitdice`, `thac0` (or `attackbonus`), `saves`, `spells` (a day by
-  spell level), `turning`, `skills`. A level that does not give a value uses
+  spell level), `turning`, `skills` (a percentage, or a chance in six as
+  printed, `"1-2"`, rolled on a d6). `xpbonus` is keyed by the prime
+  requisite's score, or a list of rules over two abilities
+  (`[{ "all": { "strength": 13, "intelligence": 16 }, "bonus": 10 }]`, `any`
+  for either one). A level that does not give a value uses
   the nearest level below that does; a later book adds levels to a class by
   writing the class again with only its new levels.
 - **Monsters** (`npc`): `ac`, `hd` (as printed: `"3*"`, `"4+1"`, `"1-1"`,
@@ -118,8 +122,10 @@ the five saves, descending AC, THAC0, d6 initiative by side).
 ## 4. What it gives
 
 - **Campaign screen:** the game, its blurb.
-- **Character wizard:** the abilities rolled, a class from the books, money
-  and the shop, name and alignment. The host rolls the first hit die and holds
+- **Character wizard:** a book's sample character (`pregencharsheet`
+  records: taken as printed, its equipment lines matched to the items by
+  name), or the abilities rolled, a class from the books, money and the
+  shop, name and alignment. The host rolls the first hit die and holds
   the books' rules (a class's minimum scores, the money).
 - **Sheet:**
   - main: the abilities and their checks, Armor Class, hit points, initiative, load and the saves;

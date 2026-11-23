@@ -909,7 +909,15 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     return { book, edited: bookContents.has(book), pages: after.map((page) => ({ id: page.id, name: page.name })) };
   }
   // A table always opens unpaused.
-  let options = savedOptions({ ...(saved.options && typeof saved.options === "object" ? saved.options : {}), paused: false });
+  // A game defined by its books that rolls initiative a side (BECMI) starts the table that way; the GM may change it.
+  const sideInit = (() => {
+    try {
+      return require("./packGame.cjs").gameNamed(ruleset)?.initiative?.bySide ? { initGroup: "sides" } : {};
+    } catch {
+      return {};
+    }
+  })();
+  let options = savedOptions({ ...sideInit, ...(saved.options && typeof saved.options === "object" ? saved.options : {}), paused: false });
   // Who may not sit here (the GM's Ban, kept with the campaign): a name, and the address it came from (never this computer's).
   const bans = (Array.isArray(saved.bans) ? saved.bans : [])
     .filter((ban) => ban && (typeof ban.name === "string" || typeof ban.address === "string"))

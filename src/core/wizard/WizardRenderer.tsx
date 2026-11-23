@@ -86,7 +86,7 @@ export function WizardRenderer({ spec: wizardSpec, session, onDone, functions }:
     const value = at(spec, "into" in part ? part.into : "");
     switch (part.kind) {
       case "choose-record":
-        return Boolean(wizard.chosen(part.into));
+        return Boolean(part.optional || wizard.chosen(part.into));
       case "record-tables": {
         const record = wizard.chosen(part.record);
         return Boolean(record) && tablesOf(record, part.path).every((_, index) => (value as Row | undefined)?.[index]);

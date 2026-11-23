@@ -43,8 +43,11 @@ export const rowsOf = (data) => Object.entries(data?.inventorylist ?? {}).filter
 // Carried: 2 equipped (worn, in hand), 1 carried, 0 not carried (left at camp, on the mule).
 export const carriedOf = (row) => num(row?.carried, 1);
 // "Arrows (20)": a bundle of 20 in one row (the 5E SRD kit, FG's packs).
+// The old books' words too: "Quiver with 20 Arrows", "Case with 30 Quarrels", "Arrows +1 (10 arrows)" (not a weapon
+// that comes with its shot: "Sling with 30 Sling Stones" is the sling).
 export const bundleOf = (row) => {
-  const match = /\((\d+)\)\s*$/.exec(nameOf(row));
+  const name = nameOf(row);
+  const match = /\((\d+)(?:\s+[a-z][a-z\s-]*)?\)\s*$/i.exec(name) ?? (/weapon/i.test(String(row?.type ?? "")) ? null : /\bwith\s+(\d+)\s+[a-z]/i.exec(name));
   return match && Number(match[1]) > 1 ? Number(match[1]) : 1;
 };
 // How many there are: count (1 when blank) times the bundle; C&C's ammunition by the unit
@@ -61,8 +64,10 @@ export function quantity(row) {
 export function unbundle(row) {
   const size = bundleOf(row);
   if (size <= 1 || num(row?.ammoperunit, 0) > 1) return { ...row };
+  // "Quiver with 20 Arrows": the quiver stays one row, its arrows counted as used (C&C's unit).
+  if (!/\(\d+[^)]*\)\s*$/.test(nameOf(row))) return { ...row, ammoperunit: size, ammoused: num(row.ammoused, 0) };
   const weight = num(row.weight, NaN);
-  return { ...row, name: nameOf(row).replace(/\s*\(\d+\)\s*$/, ""), count: Math.max(0, num(row.count, 1)) * size, ...(Number.isFinite(weight) ? { weight: Math.round((weight / size) * 1000) / 1000 } : {}) };
+  return { ...row, name: nameOf(row).replace(/\s*\(\d+(?:\s+[a-z][a-z\s-]*)?\)\s*$/i, ""), count: Math.max(0, num(row.count, 1)) * size, ...(Number.isFinite(weight) ? { weight: Math.round((weight / size) * 1000) / 1000 } : {}) };
 }
 // One fewer: a C&C unit row counts its used ammunition, anything else its count.
 function lessOne(row, by = 1) {

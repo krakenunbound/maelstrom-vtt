@@ -70,7 +70,9 @@ function createBookkeeping(table) {
     // The GM's encumbrance switch, for the games whose rules count the load themselves.
     const data = declOf(record)?.encumbrance?.offFlag && lib.bk ? { ...given, encumbranceoff: switches().encumbrance ? 0 : 1 } : given;
     const engine = await engineFor(manifestOf(record));
-    const derived = engine?.derive ? engine.derive(data) : data;
+    // A game defined by its books derives with them (its classes, items and tables: electron/packGame.cjs).
+    const pg = manifestOf(record)?.packGame ? require("./packGame.cjs") : null;
+    const derived = engine?.derive ? (pg ? engine.derive(data, pg.libOf(table, manifestOf(record).packGame)) : engine.derive(data)) : data;
     return table.records.update(record.id, { data: derived }, table.seat, { replace: true });
   }
   const say = (line, from = "Bookkeeping", secret = false) => table.say(line, from, secret);

@@ -159,10 +159,10 @@ export function manifestOf(game) {
                     path: "thiefskills",
                     hook: "skill",
                     className: "five-skills d2e-skills",
-                    rowTitle: "Level {level|1}: {base|0}%, misc {misc|signed}",
+                    rowTitle: "{name}: {shown} (misc {misc|signed})",
                     field: { path: "misc", kind: "number", label: "{name} misc" },
                     name: "name",
-                    roll: { action: roll("skill", { keyAs: "skill" }), hook: "roll-skill", label: "{total|0}%", aria: "Roll {name}" },
+                    roll: { action: roll("skill", { keyAs: "skill" }), hook: "roll-skill", label: "{shown}", aria: "Roll {name}" },
                     when: { rows: "thiefskills" },
                   },
                   { part: "hint", text: "This class has no skills of its own.", when: { not: { rows: "thiefskills" } } },
@@ -237,11 +237,21 @@ export function manifestOf(game) {
       empty: { type: game.classType, text: `No classes yet: the GM makes the ${game.name} rules book active (Modules).` },
       finish: { title: "Every step done first", build: "packgame.build" },
       steps: [
+        // A book's sample character, taken as the book made it (the steps below are then its own); none: make one.
+        {
+          id: "sample",
+          title: "Sample character (or make your own)",
+          parts: [
+            { kind: "choose-record", fromType: "pregencharsheet", into: "pregen", aria: "Sample character", placeholder: "None: make my own", optional: true },
+            { kind: "hint", text: "Its class, scores, hit points, gear and money as the book gives them. Name it below.", when: { has: "pregen" } },
+          ],
+        },
         {
           id: "abilities",
           title: "Abilities",
           parts: [
             {
+              when: { not: { has: "pregen" } },
               kind: "roll-stats",
               into: "abilities",
               hook: `${game.id}-roll-abilities`,
@@ -257,21 +267,21 @@ export function manifestOf(game) {
           id: "class",
           title: "Class",
           parts: [
-            { kind: "choose-record", fromType: game.classType, into: "class", aria: "Class", placeholder: "Choose a class…" },
-            { kind: "hint", record: "class", text: "Prime requisite: {primerequisite}. Hit die: {hitdie}. Armor: {armor}. Weapons: {weapons}." },
+            { kind: "choose-record", fromType: game.classType, into: "class", aria: "Class", placeholder: "Choose a class…", when: { not: { has: "pregen" } } },
+            { kind: "hint", when: { not: { has: "pregen" } }, record: "class", text: "Prime requisite: {primerequisite}. Hit die: {hitdie}. Armor: {armor}. Weapons: {weapons}." },
           ],
         },
         {
           id: "gear",
           title: "Money and Equipment",
-          parts: [{ kind: "shop", into: "buy", fromType: "item", exclude: { path: "type", values: ["Treasure", "Magic Item", "Service"] }, price: { path: "cost", per: gold.value, unit: gold.key.toLowerCase() }, type: "type", gold: { into: "gold", hook: `${game.id}-roll-gold`, formula: game.startingGold, label: `${gold.name} pieces (${game.startingGold})`, button: `Roll ${game.startingGold} ${gold.key.toLowerCase()}`, done: `{value} ${gold.key.toLowerCase()} rolled` }, search: { aria: "Shop search", placeholder: "Search the equipment" }, limit: 120 }],
+          parts: [{ when: { not: { has: "pregen" } }, kind: "shop", into: "buy", fromType: "item", exclude: { path: "type", values: ["Treasure", "Magic Item", "Service"] }, price: { path: "cost", per: gold.value, unit: gold.key.toLowerCase() }, type: "type", gold: { into: "gold", hook: `${game.id}-roll-gold`, formula: game.startingGold, label: `${gold.name} pieces (${game.startingGold})`, button: `Roll ${game.startingGold} ${gold.key.toLowerCase()}`, done: `{value} ${gold.key.toLowerCase()} rolled` }, search: { aria: "Shop search", placeholder: "Search the equipment" }, limit: 120 }],
         },
         {
           id: "details",
           title: "Name and Alignment",
           parts: [
             { kind: "text", into: "name", label: "Name", aria: "Character name", placeholder: "", free: { aria: "Character name", placeholder: "Name" } },
-            { kind: "text", into: "alignment", label: "Alignment", aria: "Alignment", placeholder: "Choose an alignment…", options: { values: game.alignments } },
+            { when: { not: { has: "pregen" } }, kind: "text", into: "alignment", label: "Alignment", aria: "Alignment", placeholder: "Choose an alignment…", options: { values: game.alignments } },
           ],
         },
       ],

@@ -40,6 +40,16 @@ async function buildPg(table, game, spec, owner, seat) {
   const lib = libOf(table, game);
   if (!lib.classes.length) throw new Error(`No classes in this campaign: make the ${game.name} rules book active (Modules).`);
   // The first hit die, rolled by the host when the wizard did not.
+  // A book's sample character, as the book made it (the wizard's first step, kraken_build_character { pregen }).
+  if (spec?.pregen) {
+    const wanted = String(spec.pregen).toLowerCase();
+    const pregen = table.records.list({ type: "pregencharsheet" }).find((item) => item.id.toLowerCase() === wanted || String(item.name).toLowerCase() === wanted);
+    if (!pregen) throw new Error(`No sample character ${spec.pregen} in the active books.`);
+    const taken = rules.fromPregen({ ...pregen, data: { ...pregen.data, name: String(spec.name ?? "").trim() || pregen.name } }, lib);
+    const data = require("./characterArt.cjs").withArt(taken.data, { ...spec, race: taken.data.race, class: taken.data.className }, table.art);
+    const record = table.records.create({ type: "character", name: taken.name, owner: owner ?? "", visibility: owner ? "owner" : "gm", data }, seat ?? table.seat);
+    return { record, problems: taken.problems };
+  }
   const cls = rules.classOf(lib, spec?.class);
   const hpRoll = Number.isFinite(Number(spec?.hpRoll)) ? Number(spec.hpRoll) : table.roll(`1d${rules.hitDie(cls)}`, `${spec?.name || "New character"}: hit points (${cls?.name ?? "class"})`, owner || "GM")?.total;
   const built = rules.buildFromSpec({ ...(spec ?? {}), hpRoll }, lib);

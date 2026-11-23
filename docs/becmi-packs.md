@@ -118,7 +118,25 @@ by level number across the active packs.
     (Hear Noise as the book writes it: `"1-2"` on a d6, or a percentage).
 - `requirements`: minimum scores (`{ "constitution": 9 }` for a Dwarf).
 - `xpbonus`: the prime requisite's experience adjustment, keyed by the lowest
-  score that earns it, in percent (a penalty is negative).
+  score that earns it, in percent (a penalty is negative). A class with two
+  prime requisites (Elf, Halfling) gives a list of rules instead, each the
+  minimum scores (`all` of them, or `any` one) and its bonus; the best one
+  that holds counts:
+
+  ```json
+  "xpbonus": [
+    { "all": { "strength": 13, "intelligence": 13 }, "bonus": 5 },
+    { "all": { "strength": 13, "intelligence": 16 }, "bonus": 10 }
+  ]
+  ```
+
+  The Halfling: `{ "any": { "strength": 13, "dexterity": 13 }, "bonus": 5 }`
+  and `{ "all": { "strength": 13, "dexterity": 13 }, "bonus": 10 }`. Never
+  leave it empty (`{}`): that is no bonus at all.
+- `maxlevel`: the highest level the class reaches in the whole game (Dwarf
+  12, Elf 10, Halfling 8, the human classes 36), even when this set prints
+  only the first levels. Without it a class stops at the last level any
+  active book gives.
 - `attackranks` (Dwarf, Elf, Halfling past their top level, Companion set):
   `{ "A": { "xp": 660000, "thac0": 10, "saves": { ... } } }`.
 - `abilities`: what the class gains and when (Lance attack, Smash, Parry,
@@ -204,7 +222,16 @@ by level number across the active packs.
 { "name": "Sword +1", "type": "Magic Item", "subtype": "Weapon", "damage": "1d8", "bonus": 1, "text": "<p>...</p>" }
 ```
 
-- `encumbrance` in coins (cn), as the books count it.
+- `encumbrance` in coins (cn), as the books count it, on every item the book
+  weighs (a set that gives no weights, as Set 1, leaves it out: the load then
+  counts coins only).
+- Ammunition sold in a container keeps its count in its name: `Quiver with 20
+  Arrows`, `Case with 30 Quarrels`, `Arrows (20)`; Maelstrom spends one a
+  shot from it. A weapon sold with its shot (`Sling with 30 Sling Stones`)
+  is the weapon only: give the shot as its own item too (`Sling Stones
+  (30)`) when the book sells it apart, or the stones are not counted.
+- A weapon with a `range` that is not a bow, crossbow or sling (dagger, hand
+  axe, spear) is used both in melee and thrown: the sheet gives it both.
 - Armor gives the Armor Class it makes (`ac`); a shield gives `acbonus` (it
   lowers AC by that much).
 - Missile weapons give `range`: `"50/100/150"` (short, medium, long).
@@ -230,8 +257,24 @@ The game itself reads two tables by name, so make them exactly:
 ### Characters (`type: "pregencharsheet"`)
 
 The pregenerated characters some adventures give (the Set 1 solo adventure's
-fighter): `name`, `class`, `level`, `alignment`, the six scores
-(`strength`...`charisma`), `hp`, `ac`, `xp`, their equipment and spells.
+fighter, the sample characters): `name`, `class`, `level`, `alignment`, the
+six scores (`strength`...`charisma`), `hp`, `ac`, `xp`, `equipment`, `spells`
+and `coins` (`{ "GP": 10 }`). The wizard's first step offers them; taken,
+the character is built from the class and the items, and must come out at the
+book's `ac` and `hp`.
+
+`equipment` is a list of lines, **each the exact name of an item record** of
+the books, with a count in front when there is more than one; two items on
+one line joined by `&`:
+
+```json
+"equipment": ["Chain Mail Armor & Shield", "Mace", "Holy Symbol", "Backpack", "Torches, 6", "2 Waterskin or Wineskin", "12 Iron Spikes and Small Hammer", "2 Large Sack", "Flask of Oil", "Iron Rations", "Rope, 50 Feet"]
+```
+
+A line that names no item (`"6 tinder box torches"`, `"Rope (50')"`) is
+carried as written, with no price, weight or use, and the wizard says so.
+Things the book gives that are not sold (a gem, a family heirloom) are fine
+as written.
 
 ## 3. Pages and story
 
@@ -252,3 +295,44 @@ Maelstrom, a **D&D BECMI** campaign: Modules shows the pack; make it active;
 Books reads its pages; the wizard offers its classes; its monsters fight on
 the tracker with their Armor Class, to-hit and saves as the book prints them.
 Compare every page with the PDF.
+
+### What to look at besides the pages
+
+- Build each class in the wizard and compare its sheet with the book: saves,
+  THAC0, hit die, a Thief's skills (Hear Noise `1-2`), spells a day.
+- Take every sample character: each must match the book's Armor Class, hit
+  points and money, and carry no line "as written" that is an item the book
+  sells.
+- An Elf with Strength 13 and Intelligence 16 shows +10% XP; a Halfling with
+  Strength 13 shows +5%.
+- A monster that saves as `NM` attacks at the Normal Man table's THAC0 (20)
+  unless its own record gives `thac0`.
+
+## 5. Set 1: Basic Rules, as made on 2026-11-23
+
+Tested in Maelstrom: the classes, saves, THAC0, the Monster Attack Table,
+the Normal Man table, turning, the Thief's skills, morale and the equipment
+play as the book prints them. To fix in the pack:
+
+1. **Elf and Halfling `xpbonus` is `{}`.** Give the two-prime-requisite
+   rules above (section 2, Classes).
+2. **Dwarf, Elf and Halfling have no `maxlevel`.** Give 12, 10 and 8.
+3. **The sample characters' equipment lines name no item** in many places,
+   so those things are carried as plain words:
+   - Sample Cleric: `6 tinder box torches`, `2 waterskins (full)`, `1 flask oil`, `Rope (50′)`.
+   - Sample Magic-User: `1 waterskin (full)`, `1 Holy water`, `4 flasks oil`, `Small metal mirror`, `1 wineskin (full)`.
+   - Sample Thief: `Wolfsbane`, `3 flasks oil`.
+   - Sample Dwarf: `Small hammer`, `Rope (50′)`, `1 full wineskin`, `12 iron spikes`, `Wolfsbane`.
+   - Sample Elf: `Wolfsbane`, `20 arrows`, `Rope (50′)`.
+   - Sample Halfling: `1 wineskin (full)`, `20 normal arrows`, `4 silver arrows`, `6 torches`, `1 waterskin (full)`.
+   - Solo Adventure Fighter: `2 flasks of oil`, `Tinderbox`, `Rope, 50′`, `Leather backpack`, `Waterskin`, `2 torches` (and `Gem (100 gp)`, fine as written).
+
+   Write them with the item names (`Torches, 6`, `Waterskin or Wineskin`,
+   `Flask of Oil`, `Rope, 50 Feet`, `Wolfsbane, 1 Bunch`, `Holy Water, 1
+   Vial`, `Steel Mirror`, `Tinder Box`, `Quiver with 20 Arrows`,
+   `Silver-Tipped Arrow`, `12 Iron Spikes and Small Hammer`), each with its
+   count. Their Armor Class, hit points and coins are already right.
+4. **`Sling with 30 Sling Stones`** is one weapon item; the stones are not
+   counted as shot. Leave it if the book sells them only together.
+5. **No item has `encumbrance`.** Set 1 gives no weights, so this is right
+   for it; the Expert set's equipment list does, so give them there.

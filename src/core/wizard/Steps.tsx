@@ -63,6 +63,8 @@ export function WizardPartView({ part, functions }: { part: WizardPart; function
       );
     case "choose-record": {
       const options = wizard.recordsOf(part.fromType);
+      // An optional choice the books have nothing for (no sample characters) is not shown.
+      if (part.optional && !options.length) return null;
       const reset = Object.fromEntries((part.resets ?? []).map((path) => [path, undefined]));
       const pick = part.roll ? functions.picks[part.roll.pick] : undefined;
       return (
