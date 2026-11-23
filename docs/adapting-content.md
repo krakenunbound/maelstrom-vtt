@@ -105,7 +105,9 @@ Fantasy Grounds modules and their history, [kraken-pack-format.md](kraken-pack-f
 - **From a PDF or your own notes**: `npm run kpack:make` builds a pack from a
   folder of records and pictures; follow "Converting a PDF: an agent's
   checklist" in kpack-format.md. Every page becomes a book page; creatures,
-  items, spells and tables become records the game's ruleset reads.
+  items, spells and tables become records the game's ruleset reads. The old D&D
+  boxed sets (Basic, Expert, Companion, Master, Immortals) and their adventures:
+  [becmi-packs.md](becmi-packs.md).
 - **Check it**: `npm run kpack:check <pack>` (the format), then make it active
   in a campaign of its game and open it in Books: every chapter reads, every
   link opens, every map opens on its room (a page's map link opens the map at

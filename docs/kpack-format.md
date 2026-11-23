@@ -102,7 +102,7 @@ it, or by its file name without `.kpack`. Name the file after the book.
 | `version` | yes | `3`. A pack in `2` is still read (its filing is worked out); below `2` is made again. A newer number than Maelstrom knows is refused. |
 | `name` | yes | The book's name. Other books link to its records by this name (section 6), so never change it once others link to it. |
 | `title` | yes | What the lists show. |
-| `ruleset` | yes | The game it is for, exactly one of: `AD&D 2E`, `D&D 3.5E`, `D&D 5E`, `Castles & Crusades`, `Traveller`, `Descending Darkness`, `Apeira Astra`, `Cairn`, `Ironsworn`, `Starforged`, `Basic Fantasy`, `Fate Core`, `Fate Accelerated`, `Fate` (both Fate games), `Forged in the Dark`, or `Any` (every game). Anything else shows in no campaign. |
+| `ruleset` | yes | The game it is for, exactly one of: `AD&D 2E`, `D&D 3.5E`, `D&D 5E`, `Castles & Crusades`, `Traveller`, `Descending Darkness`, `Apeira Astra`, `Cairn`, `Ironsworn`, `Starforged`, `Basic Fantasy`, `Fate Core`, `Fate Accelerated`, `Fate` (both Fate games), `Forged in the Dark`, `D&D BECMI` (the old boxed sets: [becmi-packs.md](becmi-packs.md)), or `Any` (every game). Any other game shows only in Worldbuilding campaigns. |
 | `kind` | yes (3) | Where it is filed, one of the seven kinds below. |
 | `group` | no | The line or series inside its kind: `Core Rules`, `Handbooks`, `B series`, `Against the Slave Lords`, `Greyhawk`. Without it the pack sits under its kind's own name. |
 | `order` | no | How it sorts within the group (a string, compared with numbers in it: `B2` before `B10`). Without it: the adventure code in its title, else its title. |
