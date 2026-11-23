@@ -104,6 +104,10 @@ try {
   };
   const force = (...values) => agent.dice.force(values);
   const last = (pattern) => [...agent.chatLog(300)].reverse().find((line) => line.roll && pattern.test(line.roll.label ?? ""));
+  // The old games' starting gold, a whole roll times ten (the wizard's 3d6*10).
+  force(1, 2, 3);
+  const purse = agent.dice.roll("3d6*10");
+  assert(purse.total === 60 && purse.multiplier === 10, `3d6*10: (1+2+3) x 10: ${JSON.stringify(purse)}`);
 
   // Ana, a fighter: Str 16 (+2), Dex 13 (+1), Con 14 (+1); 80 gp: chain mail, a shield, a sword (60 gp).
   const built = await tool("kraken_build_character", { spec: { name: "Ana", class: "Fighter", abilities: { strength: 16, intelligence: 9, wisdom: 10, dexterity: 13, constitution: 14, charisma: 11 }, hpRoll: 6, gold: 80, buy: [["Chain Mail", 1], ["Shield", 1], ["Sword", 1]], alignment: "Lawful" } });

@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **A whole roll times a number:** `3d6*10` (the old games' starting gold) rolls the dice and multiplies the total, in chat, the wizard and the agent's rolls. check-pack-game
 - **Games defined by their books:** a rules pack can teach Maelstrom a game it has no code for. Its `game.json` says how the game plays (abilities, saves, ascending or descending Armor Class, THAC0 or an attack bonus, initiative, morale, skills, turning, coins); the campaign screen offers the game, and a campaign of it sets up its sheet, character wizard, combat tracker and party rolls from it, with the numbers read from the books' records (each class's levels, merged across books; each monster's line; the Monster Attack Table). The first: D&D BECMI, from the GM's own boxed sets (docs/becmi-packs.md, docs/pack-games.md). check-pack-game
 - **Portrait and token pickers read deep collections:** a token pack filed by type and kind (Creatures/Beast/Reptiles, five folders down) showed nothing past the third folder; it is read whole now (still at most 5000 pictures a folder). check-creature-token-sync
 - **A new spellcaster starts with the spells chosen in the wizard prepared:** a Wizard's or Cleric's sheet said "Prepared 0" after the wizard; the spells of a level picked there (the class's prepared count) are ticked. check-legacy-5e-books

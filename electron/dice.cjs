@@ -15,7 +15,7 @@ const crypto = require("crypto");
 //   min, max    4d6min2 (a die below 2 counts as 2), 4d6max5 (above 5 counts as 5)
 //   cf          6d10cf<3 counts the dice that fail (with cs: successes less failures)
 //   ms          1d20ms>=15 (the margin: the total less 15)
-// d% is d100; dF (Fate) is -1, 0 or +1.
+// d% is d100; dF (Fate) is -1, 0 or +1. A whole roll times a number: 3d6*10.
 
 const MAX_DICE = 200;
 const MAX_SIDES = 1000;
@@ -144,7 +144,11 @@ function createDice(state = {}) {
   }
 
   return {
-    roll(formula) {
+    roll(formulaIn) {
+      // A whole roll times a number ("3d6*10": the old games' starting gold): the dice rolled, the total multiplied.
+      const times = /^(.*\S)\s*\*\s*(\d+)\s*$/.exec(String(formulaIn ?? ""));
+      const formula = times ? times[1] : formulaIn;
+      const multiplier = times ? Math.max(1, Math.min(1000, Number(times[2]))) : 1;
       const terms = parse(formula);
       let total = 0;
       const out = terms.map((term) => {
@@ -186,7 +190,7 @@ function createDice(state = {}) {
         total += term.sign * sum;
         return { kind: "dice", sign: term.sign, count: term.count, sides: term.sides, keep: term.keep, rolls, kept, sum, ...(term.fate ? { fate: true } : {}), ...(term.success ? { success: term.success } : {}), ...(term.failure ? { failure: term.failure } : {}), ...(term.margin ? { margin: term.margin } : {}) };
       });
-      return { formula: String(formula).replace(/\s+/g, ""), terms: out, total };
+      return { formula: String(formulaIn).replace(/\s+/g, ""), terms: out, total: total * multiplier, ...(multiplier > 1 ? { multiplier } : {}) };
     },
     // Queue exact results for the next dice, in order (tests and parity runs).
     force(values) {
