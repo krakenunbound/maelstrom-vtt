@@ -41,6 +41,7 @@ try {
   // --- The picker ------------------------------------------------------------------------------------------------------
   assert(genderOf("F") === "Female" && genderOf("woman") === "Female" && genderOf("Male") === "Male" && genderOf("he/him") === "Male" && genderOf("") === "" && genderOf("nonbinary") === "", "genders read");
   assert(servesGame(pairs[0], "D&D BECMI") && !servesGame(pairs[1], "D&D BECMI") && servesGame(pairs[4], "D&D BECMI") && !servesGame(pairs[5], "D&D 5E"), "a pair serves the games its systems map to");
+  assert(servesGame(pairs[4], "D&D BECMI Companion") && !servesGame(pairs[1], "D&D BECMI Expert"), "every BECMI set's game uses the line's art");
   assert(servesGame(pairs[0], "Worldbuilding") && !servesGame(pairs[5], "Worldbuilding"), "a game with no art of its own: the shared art (in_common)");
 
   // --- The art list, by the campaign's game ----------------------------------------------------------------------------

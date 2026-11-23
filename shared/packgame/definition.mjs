@@ -67,6 +67,11 @@ export function readGame(raw) {
   const init = raw.initiative ?? {};
   const morale = raw.morale ?? {};
   const turning = raw.turning ?? null;
+  // The affected dice with n more dice ("2d6" and 1: "3d6").
+  const more = (/** @type {number} */ n) => {
+    const m = /^(\d+)d(\d+)$/i.exec(text(turning?.affected) || "2d6");
+    return m ? `${Number(m[1]) + n}d${m[2]}` : "";
+  };
   const skills = raw.skills ?? null;
   const hp = raw.hitPoints ?? {};
   const coins = list(raw.coins).length ? list(raw.coins).map((/** @type {any} */ row) => ({ key: text(row.key ?? row.name).toUpperCase(), name: text(row.name ?? row.key), value: num(row.value, 0) })).filter((row) => row.key && row.value > 0) : [
@@ -109,7 +114,9 @@ export function readGame(raw) {
       ? { die: text(skills.die) || "1d100", atMost: skills.atMost !== false, names: Object.fromEntries(Object.entries(skills.names ?? {}).map(([key, label]) => [slug(key), text(label) || key])) }
       : null,
     // affectedPlus: the hit dice a "D+" result reaches (BECMI: 3d6 instead of 2d6); else one die more than affected.
-    turning: turning ? { die: text(turning.die) || "2d6", affected: text(turning.affected) || "2d6", affectedPlus: text(turning.affectedPlus) || ((/** @type {RegExpExecArray | null} */ m) => (m ? `${Number(m[1]) + 1}d${m[2]}` : ""))(/^(\d+)d(\d+)$/i.exec(text(turning.affected) || "2d6")), duration: text(turning.duration), undead: list(turning.undead).map((/** @type {any} */ row) => ({ key: slug(row.key ?? row.name), names: list(row.names ?? [row.name ?? row.key]).map(String) })).filter((row) => row.key) } : null,
+    turning: turning ? { die: text(turning.die) || "2d6", affected: text(turning.affected) || "2d6", affectedPlus: text(turning.affectedPlus) || more(1),
+      // The hit dice each destroying mark reaches ("D+": one die more than affected, "D#": two more; or as given).
+      affectedBy: { "D+": text(turning.affectedBy?.["D+"]) || text(turning.affectedPlus) || more(1), "D#": text(turning.affectedBy?.["D#"]) || more(2) }, duration: text(turning.duration), undead: list(turning.undead).map((/** @type {any} */ row) => ({ key: slug(row.key ?? row.name), names: list(row.names ?? [row.name ?? row.key]).map(String) })).filter((row) => row.key) } : null,
     coins,
     startingGold: text(raw.startingGold) || "3d6*10",
     encumbrance: { unit: text(raw.encumbrance?.unit) || "cn", coinsPer: num(raw.encumbrance?.coinsPer, 1) },

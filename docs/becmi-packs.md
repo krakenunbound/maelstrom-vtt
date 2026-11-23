@@ -137,7 +137,9 @@ by level number across the active packs.
     Breath), `spells` (Rods, Staves or Spells);
   - `spells` (spellcasters): spells per day by spell level, `{ "1": 2, "2": 1 }`;
   - `turning` (Clerics): the turn undead row, keyed by undead type, each `7`,
-    `9`, `11` (roll needed on 2d6), `"T"` (turned), `"D"` (destroyed) or `"-"`.
+    `9`, `11` (roll needed on 2d6), `"T"` (turned), `"D"` (destroyed, 2d6 hit
+    dice), `"D+"` (destroyed, 3d6), `"D#"` (destroyed, 4d6) or `"-"`. Write the
+    marks exactly as printed; Maelstrom rolls the hit dice each one reaches.
     Keys: `skeleton`, `zombie`, `ghoul`, `wight`, `wraith`, `mummy`,
     `spectre`, `vampire`, `phantom`, `haunt`, `spirit`, `nightshade`, `lich`,
     `special`;
@@ -166,7 +168,12 @@ by level number across the active packs.
   only the first levels. Without it a class stops at the last level any
   active book gives.
 - `attackranks` (Dwarf, Elf, Halfling past their top level, Companion set):
-  `{ "A": { "xp": 660000, "thac0": 10, "saves": { ... } } }`.
+  `{ "C": { "xp": 660000, "thac0": 13, "saves": { ... } } }`, each rank the
+  experience it starts at, its THAC0 and its five saves. A character at the
+  class's last level with that much experience fights and saves by its
+  highest rank; the sheet's title says it ("Dwarven Lord, attack rank E").
+  A rank's other gains (smash, extra attacks, damage reduction) are its text
+  in the class's `abilities`, for the GM.
 - `abilities`: what the class gains and when (Lance attack, Smash, Parry,
   Multiple attacks; an Elf's detect secret doors; a Halfling's hiding), each
   with the level it comes at and its text.
@@ -407,3 +414,41 @@ Checked and right: the Monster Attack Table and the Normal Man table (spell
 save 17, as this book prints it); hit dice past 9th level (`9d8+10`);
 cleric turning rows to 14th level; the Thief's skills (Pick Pockets 125% at
 14th: the sheet shows at most 99%, the GM rules above it).
+
+## 7. Set 3: Companion Rules, review build of 2026-11-23
+
+Made as its own game, `D&D BECMI Companion` (levels to 25). Tested in
+Maelstrom with only this pack: every class builds and levels to its cap
+(humans 25, Dwarf 12, Elf 10, Halfling 8); attack ranks play (a 12th level
+Dwarf with 1,500,000 XP fights and saves at rank G, THAC0 9); a 25th level
+cleric's `D#` destroys with 4d6 hit dice; the monsters fight, save and check
+morale; all 104 pages open. To fix in the pack:
+
+1. **Scale Mail and Banded Mail have no `cost`**: the shop cannot sell them
+   and a character cannot start in them. Give their prices.
+2. **The Cleric page carries a note for the app** ("Resolve this result
+   manually in the current tracker"). Book text is the book's words only;
+   Maelstrom now plays `D#`, so take the note out.
+3. **One damage for two attacks**: the Basilisk's `attacks` "1 bite/1 gaze"
+   with `damage` "1d10" gives the gaze 1d10 too. Write a damage for each
+   attack in order, a word for one with no dice: `"1d10/petrification"`.
+4. **19 of the Companion's own monsters** are records; the rest of its
+   monster chapter is still page scans. The pack repeats Set 1's 97
+   monsters ("Basic bestiary (inherited)") but none of Expert's (as a game
+   of its own it needs every monster a Companion campaign meets: Expert's
+   dragons, giants and the rest too).
+5. **Green Slime, Sprite and Yellow Mold have no `ac`**: they come onto the
+   tracker at AC 9. Give the book's (Green Slime: "can always be hit", write
+   `9` and say so in its text).
+6. **The three adventures' encounters link nothing**: The Golden Dagger,
+   The Arena of Garald the Blue and The Fall of the Black Eagle have no links
+   to their creatures, battles, treasure or maps. Only the arena's escape
+   guards are a battle.
+7. **94 of the 104 pages are scans only.**
+8. Check against the book: Halfling attack rank A starts at 120,000 XP, the
+   same as 8th level, so a Halfling is never 8th level without a rank.
+
+Checked and right: THAC0 and saves by level to 25 (the rows at 28, 29, 31,
+33 and 34 give the saves past 25 for when Master set levels come), the
+Normal Man and Monster Attack tables, the Dwarf, Elf and Halfling rank
+tables as printed in the pack.

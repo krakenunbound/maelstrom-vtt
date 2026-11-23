@@ -63,6 +63,15 @@ export const classOf = (lib, name) => classesOf(lib).find((cls) => slug(cls.name
 // The highest level the books give the class.
 /** @param {any} cls @param {PackGame} game */
 export const topLevel = (cls, game) => Math.min(game.maxLevel, num(cls?.maxlevel, 0) || Math.max(1, ...Object.keys(cls?.levels ?? {}).map(Number)));
+// A demi-human's attack rank (attackranks: { "C": { xp, thac0, saves } }): at the class's last level, the highest rank
+// whose experience it has; else null.
+/** @param {any} cls @param {number} exp @param {number} level @param {number} top */
+export function attackRankOf(cls, exp, level, top) {
+  const ranks = Object.entries(cls?.attackranks ?? {}).filter(([, row]) => row && typeof row === "object" && Number.isFinite(Number(row.xp)));
+  if (!ranks.length || level < top) return null;
+  const reached = ranks.filter(([, row]) => num(exp, 0) >= Number(row.xp)).sort((a, b) => Number(a[1].xp) - Number(b[1].xp)).at(-1);
+  return reached ? { rank: reached[0], ...reached[1] } : null;
+}
 // A level's row: its own, else the nearest below it that the books give (a table by level ranges).
 /** @param {any} cls @param {number} level */
 export function levelRow(cls, level) {
@@ -194,8 +203,16 @@ export function derive(input, lib) {
   ac.total = ac.armor + down * (ac.shield + ac.dex + ac.misc);
   ac.worn = [armor?.name, shield?.name].filter(Boolean).join(", ");
   ac.descending = game.armorClass.descending;
+  // Attack ranks (BECMI's demi-humans past their top level, Companion set): the highest rank whose experience the
+  // character has, at the class's last level; its to-hit and saves replace the level's.
+  const rank = attackRankOf(cls, data.exp, level, top);
+  if (rank) {
+    data.attackrank = rank.rank;
+    // Shown with the title on the sheet: "Dwarven Lord, attack rank C".
+    data.leveltitle = `${data.leveltitle ? `${data.leveltitle}, ` : ""}attack rank ${rank.rank}`;
+  } else delete data.attackrank;
   // To hit: THAC0 from the class's row (the roll needed to hit AC 0), or an attack bonus.
-  const thac0 = num(levelValue(cls, level, "thac0"), 20);
+  const thac0 = num(rank?.thac0 ?? levelValue(cls, level, "thac0"), 20);
   data.thac0 = thac0;
   data.ab = game.attack.by === "bonus" ? num(levelValue(cls, level, "attackbonus") ?? levelValue(cls, level, "ab"), 0) : 0;
   data.attack = { melee: data.ab + mod(game.attack.melee), missile: data.ab + mod(game.attack.missile) };
@@ -203,7 +220,7 @@ export function derive(input, lib) {
   data.initiative = { misc: Math.round(num(data.initiative?.misc, 0)), total: 0 };
   data.initiative.total = mod(game.initiative.ability) + data.initiative.misc;
   // Saving throws: the class's numbers at the level; an ability's modifier where the game says (Wisdom against spells).
-  const baseSaves = levelValue(cls, level, "saves") ?? {};
+  const baseSaves = rank?.saves ?? levelValue(cls, level, "saves") ?? {};
   const saves = (data.saves = { ...(data.saves ?? {}) });
   for (const { key, ability } of game.saves) {
     const save = (saves[key] = { ...(saves[key] ?? {}) });
@@ -423,8 +440,8 @@ export function turnAgainst(turning, kind) {
   if (!value || value === "-" || value === "NO") return { can: false };
   if (value === "T") return { can: true, auto: "turned" };
   if (value === "D") return { can: true, auto: "destroyed" };
-  // "D+": destroyed, and the turn reaches more hit dice (the definition's affectedPlus: BECMI's 3d6).
-  if (value === "D+") return { can: true, auto: "destroyed", plus: true };
+  // "D+", "D#": destroyed, and the turn reaches more hit dice (the definition's affectedBy: BECMI's 3d6 and 4d6).
+  if (value === "D+" || value === "D#") return { can: true, auto: "destroyed", plus: true, mark: value };
   const need = num(value, NaN);
   return Number.isFinite(need) ? { can: true, need } : { can: false };
 }

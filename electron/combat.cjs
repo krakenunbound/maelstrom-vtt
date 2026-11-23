@@ -2255,8 +2255,11 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     if (undead.length === 0) throw new Error("No undead to turn: target them first.");
     const rolled = forced?.roll ? { total: Number(forced.roll) } : table().roll(game.turning.die, `[TURN UNDEAD] ${turner.name} (${data.className} ${data.level})`, linked?.name ?? "Combat", false, { by: turner.name });
     // A "D+" against any of them: the turn reaches more hit dice (BECMI: 3d6 instead of 2d6).
-    const plus = Boolean(game.turning.affectedPlus) && undead.some((entry) => rpg.turnAgainst(data.turning, kindOf(entry)).plus);
-    const affectedDie = plus ? game.turning.affectedPlus : game.turning.affected;
+    // The strongest mark against any of them: D# (BECMI 4d6) over D+ (3d6) over the usual dice.
+    const marks = undead.map((entry) => rpg.turnAgainst(data.turning, kindOf(entry)).mark).filter(Boolean);
+    const mark = marks.includes("D#") ? "D#" : marks.includes("D+") ? "D+" : "";
+    const plus = Boolean(mark && game.turning.affectedBy?.[mark]);
+    const affectedDie = plus ? game.turning.affectedBy[mark] : game.turning.affected;
     let pool = Number(forced?.count) || table().dice.roll(affectedDie).total;
     const startPool = pool;
     const { options: opts } = await options();
@@ -2290,7 +2293,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       putEffect(entry, `Turned (flees ${turner.name})`, rounds);
       lines.push(`${entry.name}: TURNED${rounds ? ` for ${rounds} rounds` : ""}${result.need ? ` (needed ${result.need})` : ""}`);
     }
-    table().say(`[TURN UNDEAD] ${turner.name}, ${data.className} ${data.level}: ${game.turning.die} = ${rolled.total}, ${affectedDie}${plus ? " (D+)" : ""} = ${startPool} hit dice.\n${lines.join("\n")}`, "Combat", false);
+    table().say(`[TURN UNDEAD] ${turner.name}, ${data.className} ${data.level}: ${game.turning.die} = ${rolled.total}, ${affectedDie}${plus ? ` (${mark})` : ""} = ${startPool} hit dice.\n${lines.join("\n")}`, "Combat", false);
     changed();
     return { level: data.level, roll: rolled.total, hitDice: startPool, affected, results: lines };
   }

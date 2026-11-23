@@ -22,7 +22,8 @@ export const COMMON = "in_common";
 // Whether a pair (its folder's ruleset and the systems it serves) belongs in a campaign of this game.
 /** @param {{ ruleset: string, rulesets?: string[] }} pair @param {string} game */
 export function servesGame(pair, game) {
-  const names = ART_RULESETS[game];
+  // Each BECMI set played as its own game ("D&D BECMI Expert", "D&D BECMI Companion"...) uses the line's art.
+  const names = ART_RULESETS[game] ?? (/^D&D BECMI\b/.test(String(game)) ? ART_RULESETS["D&D BECMI"] : undefined);
   if (!names) return pair.ruleset === COMMON;
   return (pair.rulesets ?? []).some((name) => names.includes(name)) || names.includes(pair.ruleset);
 }

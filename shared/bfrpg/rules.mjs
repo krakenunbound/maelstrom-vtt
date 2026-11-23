@@ -314,7 +314,8 @@ export function monsterAttacks(attacksText, damageText, bonus = 0) {
   }
   // Damage: what is in brackets is an alternative ("2d4 (1d6 or by weapon)"); a "+ 2d6 hug" is an attack of its own.
   const damage = String(damageText ?? "").replace(/[–—]/g, "-").replace(/\([^)]*\)/g, " ").split(/\s+or\s+/i)[0];
-  const raw = damage.split(/[/,]|\+(?=\s*\d+d\d)/).map((segment) => ({ dice: (segment.match(DICE) ?? [])[0]?.replace(/\s+/g, "") ?? "", words: segment.toLowerCase() }));
+  // A fixed amount ("1/1d4": a camel's bite does 1) is damage too.
+  const raw = damage.split(/[/,]|\+(?=\s*\d+d\d)/).map((segment) => ({ dice: (segment.match(DICE) ?? [])[0]?.replace(/\s+/g, "") ?? /^\s*(\d+)\s*$/.exec(segment)?.[1] ?? "", words: segment.toLowerCase() }));
   const segments = raw.filter((segment) => segment.dice);
   const flat = groups.flatMap((group) => Array.from({ length: group.count }, () => group.name));
   const out = [];

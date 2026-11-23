@@ -85,7 +85,7 @@ the five saves, descending AC, THAC0, d6 initiative by side).
 | `morale` | A monster's morale and a retainer's loyalty: the die, at or under. |
 | `hitPoints` | The ability added to each hit die, up to which level; after it, the class's fixed gain (its levels' `hitdice`, `"9d8+2"`); dead at `deadAt`. |
 | `skills` | A class's percentage skills (a Thief's): the die and the names of the keys its levels give. |
-| `turning` | Turning the undead: the die, the hit dice affected, the hit dice a `D+` result reaches (`affectedPlus`; default one die more than `affected`), how long the turned flee (dice of rounds; empty: the GM ends it), and the undead kinds (each the words in a monster's name that make it that kind). A cleric's levels give the row (`turning`): a number to roll, `T` turned, `D` destroyed, `D+` destroyed with `affectedPlus` hit dice, `-` none. |
+| `turning` | Turning the undead: the die, the hit dice affected, the hit dice a `D+` and a `D#` result reach (`affectedBy: { "D+": "3d6", "D#": "4d6" }`; default one and two dice more than `affected`; `affectedPlus` is the older name for `D+`), how long the turned flee (dice of rounds; empty: the GM ends it), and the undead kinds (each the words in a monster's name that make it that kind). A cleric's levels give the row (`turning`): a number to roll, `T` turned, `D` destroyed, `D+` destroyed with `affectedPlus` hit dice, `-` none. |
 | `coins` | The coins, each its worth in the smallest. |
 | `startingGold` | The wizard's money roll, in gold. |
 | `encumbrance` | The unit things weigh in (the books' `encumbrance` on items) and how many coins make one. |
@@ -109,6 +109,9 @@ the five saves, descending AC, THAC0, d6 initiative by side).
   writing the class again with only its new levels. A field one book leaves
   empty (`{}`, `[]`, `""`) is filled from another book's; when both give a
   value, the first active book's is kept.
+- **Attack ranks** (a class's `attackranks`, keyed by rank: `xp`, `thac0`,
+  `saves`): at the class's last level, the highest rank whose experience the
+  character has replaces the level's to-hit and saves.
 - **Monsters** (`npc`): `ac`, `hd` (as printed: `"3*"`, `"4+1"`, `"1-1"`,
   `"1/2"`), `thac0` (else the Monster Attack Table by hit dice), `attacks` and
   `damage` (`"2 claws/1 bite"`, `"1d4/1d4/1d8"`), `saveas`, `morale`, `xp`,

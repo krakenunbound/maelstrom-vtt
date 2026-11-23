@@ -307,6 +307,22 @@ being read; warnings are worth fixing.
 - **The same item in several books of one game**: the shop lists it once per
   book. Write each item in the book that first sells it; a later book
   writes it again only to change it.
+- **Notes for the app inside the book's text** ("resolve this manually in
+  the tracker"): book text is the book's words. Put what the app cannot do
+  in the hand-over report, not in a page; when the app learns it, the page
+  is already right.
+- **One damage for several attacks** ("1 bite/1 gaze" with "1d10"): every
+  attack gets it. Write a damage for each attack in order, a word for one
+  with no dice ("1d10/petrification"); "2 claws/1 bite" may give "1d4/1d8"
+  (the claws share theirs).
+- **Things a shop sells without a `cost`**: they cannot be bought. Every
+  item the book prices has its `cost` in the game's coins.
+- **Monsters with no `ac`**: they fight at the game's unarmored AC. Give the
+  printed one; when the book says something else ("always hit"), give the
+  nearest number and say it in the text.
+- **Story records with no links**: an adventure's `encounter` links its
+  creatures, battles, treasure and maps (`linklist`), or the GM cannot open
+  them from the story.
 
 Only convert books the GM owns, for the GM's own use. A book's content is its
 publisher's: packs made from licensed books are never committed to the

@@ -178,6 +178,15 @@ try {
   assert(Array.isArray(merged.xpbonus) && merged.maxlevel === 10 && Object.keys(merged.levels).join() === "1,4", `a later book fills what the first left empty: ${JSON.stringify(merged)}`);
   // "D+": destroyed, and the turn reaches the definition's affectedPlus (one die more than affected by default).
   assert(turnAgainst({ skeleton: "D+" }, "skeleton").plus === true && rulesetNamed(GAME).packGame.turning.affectedPlus === "3d6", "D+ reaches 3d6 hit dice");
+  // "D#": destroyed, 4d6 hit dice (two dice more than affected).
+  assert(turnAgainst({ skeleton: "D#" }, "skeleton").mark === "D#" && rulesetNamed(GAME).packGame.turning.affectedBy["D#"] === "4d6", "D# reaches 4d6 hit dice");
+  // Attack ranks: a demi-human at its last level with the experience of a rank fights and saves by the rank.
+  const { attackRankOf } = await import("../shared/packgame/rules.mjs");
+  const dwarfRanks = { attackranks: { C: { xp: 660000, thac0: 13, saves: saves(2, 3, 4, 4, 3) }, D: { xp: 800000, thac0: 12, saves: saves(2, 3, 4, 4, 3) } } };
+  assert(attackRankOf(dwarfRanks, 700000, 12, 12)?.rank === "C" && attackRankOf(dwarfRanks, 900000, 12, 12)?.thac0 === 12 && attackRankOf(dwarfRanks, 900000, 11, 12) === null && attackRankOf(dwarfRanks, 600000, 12, 12) === null, "attack ranks by experience, at the last level only");
+  // A fixed damage ("1/1d4": a camel's bite does 1).
+  const { monsterAttacks } = await import("../shared/bfrpg/rules.mjs");
+  assert(monsterAttacks("1 bite/1 hoof", "1/1d4").map((attack) => attack.damage).join() === "1,1d4", "a fixed damage");
   done.push("a thief's Hear Noise on a d6, two prime requisites' XP bonus, a dagger in melee and thrown, a book's sample character taken as printed, initiative a side by default");
 
   // --- The fight -------------------------------------------------------------------------------------------------------
