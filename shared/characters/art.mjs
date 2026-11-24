@@ -132,20 +132,66 @@ export function creatureRace(races, name) {
   const race = known ?? (alias ? CREATURE_WORDS[alias].race : "");
   if (!race) return null;
   const role = ROLE_WORDS.find(([pattern]) => pattern.test(name))?.[1] ?? (alias && !known ? CREATURE_WORDS[alias].cls : undefined) ?? [];
-  return { race, classes: role };
+  // byWord: only a class or a title said it (a "Lord", a "Cleric"), not a race: its record's kind may say better.
+  return { race, classes: role, ...(known ? {} : { byWord: true }) };
 }
-// A creature's portrait and its own token: of its race (its role's class when there is one), the same one each
-// time for the same seed (its record's id), or null when the library has none of its kind.
-/** @param {any[]} items @param {string} name @param {string} seed */
-export function creaturePair(items, name, seed) {
+// What a creature's record says it is, beyond its name: its description's kind words ("9-HD nosferatu": a vampire;
+// "Turn Undead holds the creature": undead), its class (its "Save As" code C5, MU5, or "Cleric 5" in its text), its
+// gender (a title, Lady or Lord; its text's he or she). The words its kind shows a token by ("Zombie").
+const KIND_WORDS = [
+  [/\b(nosferatu|vampire)\b/i, { race: "Vampire" }],
+  [/\bdrow\b/i, { race: "Drow" }],
+  [/\b(lightning zombie|zombie)\b/i, { token: "Zombie" }],
+  [/\bskeleton\b/i, { token: "Skeleton" }],
+  [/\bghoul\b/i, { token: "Ghoul" }],
+  [/\bwight\b/i, { token: "Wight" }],
+  [/\bmummy\b/i, { token: "Mummy" }],
+  [/\b(demon|tanar'?ri)\b/i, { token: "Demon" }],
+  [/\bdevil\b/i, { token: "Devil" }],
+  // Turned or held by Turn Undead: undead, a zombie's look unless it says more.
+  [/\bturn undead\b/i, { token: "Zombie" }],
+];
+const SAVE_CLASSES = { C: ["Cleric"], MU: ["Magic-User", "Wizard"], M: ["Magic-User", "Wizard"], F: ["Fighter"], T: ["Thief", "Rogue"], D: ["Fighter"], E: ["Fighter", "Wizard"], H: ["Fighter"], DR: ["Druid"], MY: ["Monk"] };
+/** @param {{ name?: string, data?: any } | string} who */
+export function creatureProfile(who) {
+  const name = typeof who === "string" ? who : String(who?.name ?? "");
+  const data = typeof who === "string" ? {} : (who?.data ?? {});
+  const text = String(data.text ?? data.description ?? "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+  const kind = KIND_WORDS.find(([pattern]) => pattern.test(name))?.[1] ?? KIND_WORDS.find(([pattern]) => pattern.test(text))?.[1] ?? null;
+  const code = /^\s*([A-Z]+)\s*\d/.exec(String(data.saveas ?? data.saveAs ?? "").toUpperCase())?.[1] ?? "";
+  const textClass = /\b(cleric|magic-user|wizard|fighter|thief|druid)\s+\d+/i.exec(text)?.[1]?.toLowerCase() ?? "";
+  const classes = textClass ? (textClass === "magic-user" || textClass === "wizard" ? ["Magic-User", "Wizard"] : [textClass[0].toUpperCase() + textClass.slice(1)]) : (SAVE_CLASSES[code] ?? []);
+  // A class from its save or text means a person (a human unless something says otherwise); a plain monster's
+  // "Save As F2" does not, so only when its name or text names the class or its save is a caster's.
+  const person = Boolean(textClass) || ["C", "MU", "M", "T", "DR"].includes(code);
+  const titled = /\b(lady|queen|princess|duchess|baroness|countess|mistress|priestess|sister|mother|madam|witch)\b/i.test(name) ? "Female" : /\b(lord|king|prince|duke|baron|count|sir|master|brother|father)\b/i.test(name) ? "Male" : "";
+  const she = (text.match(/\b(she|her|hers|herself)\b/gi) ?? []).length;
+  const he = (text.match(/\b(he|him|his|himself)\b/gi) ?? []).length;
+  const gender = titled || (she > he ? "Female" : he > she ? "Male" : "");
+  return { name, text, kind, classes, person, gender };
+}
+// A creature's portrait and its own token: of its race (its name's, else its record's kind or a person's: human),
+// its class (its role's, its save's), its gender when known; the same one each time for the same seed (its
+// record's id), or null when the library has none of its kind. who: a record ({ name, data }) or a name.
+/** @param {any[]} items @param {{ name?: string, data?: any } | string} who @param {string} seed */
+export function creaturePair(items, who, seed) {
   const portraits = items.filter((item) => item.kind === "portrait" && item.pair && item.race && !item.unlike);
-  const found = creatureRace([...new Set(portraits.map((item) => item.race))], name);
-  if (!found) return null;
-  const ofRace = portraits.filter((item) => same(item.race, found.race));
-  const ofRole = ofRace.filter((item) => found.classes.some((cls) => same(item.cls, cls)));
-  const choices = (ofRole.length ? ofRole : ofRace).sort((a, b) => a.id.localeCompare(b.id));
+  const profile = creatureProfile(who);
+  const fromName = creatureRace([...new Set(portraits.map((item) => item.race))], profile.name);
+  // A race its name gives wins; a class or title in its name ("Lord", "Cleric") does not beat its record's kind.
+  const named = fromName && !fromName.byWord ? fromName : null;
+  // A kind its record shows that is not a race (a zombie): its token, not a face.
+  if (!named && profile.kind?.token) return null;
+  const race = named?.race ?? profile.kind?.race ?? fromName?.race ?? (profile.person ? "Human" : "");
+  if (!race) return null;
+  const classes = profile.classes.length ? profile.classes : (fromName?.classes ?? []);
+  const ofRace = portraits.filter((item) => same(item.race, race));
+  const ofGender = profile.gender ? ofRace.filter((item) => item.gender === profile.gender) : ofRace;
+  const pool = ofGender.length ? ofGender : ofRace;
+  const ofRole = pool.filter((item) => classes.some((cls) => same(item.cls, cls)));
+  const choices = (ofRole.length ? ofRole : pool).sort((a, b) => a.id.localeCompare(b.id));
   if (!choices.length) return null;
-  const portrait = choices[hashOf(String(seed || name)) % choices.length];
+  const portrait = choices[hashOf(String(seed || profile.name)) % choices.length];
   return { portrait: portrait.id, token: portrait.pair };
 }
 
@@ -157,14 +203,18 @@ const squash = (/** @type {string} */ text) => text.toLowerCase().replace(/\([^)
 // A token of the creature's own kind from a token library (any picture whose file names it): the name exactly
 // ("Owl Bear" is "Owlbear"), else one whose name holds every word of it ("Fire Beetle": "Giant Fire Beetle");
 // the same one for the same seed. items: the art list's tokens that are not the character art's.
-/** @param {any[]} items @param {string} name @param {string} seed */
-export function creatureToken(items, name, seed) {
+/** @param {any[]} items @param {string} name @param {string} seed @param {"token" | "portrait"} [kind] */
+export function creatureToken(items, name, seed, kind = "token") {
   const wanted = squash(name);
   const words = String(name ?? "").toLowerCase().replace(/\([^)]*\)/g, " ").split(/[^a-z]+/).filter((word) => word.length > 2);
   if (!wanted || !words.length) return null;
   // Never a placeholder (Fantasy Grounds' "tokens/placeholders/id-00373-Shrieker.png" is a card saying TOKEN); the
   // app's own token folders (kraken/: Forgotten Adventures) first, a campaign's folders only when they have none.
-  const usable = items.filter((item) => item.kind === "token" && !item.pair && !item.video && !/placeholder/i.test(String(item.id)) && !/^id[-_ ]\d{3,}/i.test(String(item.name)));
+  const usable = items.filter((item) => item.kind === kind && !item.pair && !item.video && !/placeholder/i.test(String(item.id)) && !/^id[-_ ]\d{3,}/i.test(String(item.name)));
+  // Its own picture first: one named for it exactly, its parentheses too ("Sprackle (Lesser)").
+  const whole = (/** @type {string} */ text) => text.toLowerCase().replace(/[^a-z()]+/g, "");
+  const madeFor = usable.filter((item) => whole(String(item.name).replace(/[_ ](portrait|token)$/i, "")) === whole(String(name)));
+  if (madeFor.length) return madeFor.sort((a, b) => a.id.localeCompare(b.id))[hashOf(String(seed || name)) % madeFor.length].id;
   const last = words.at(-1) ?? "";
   const matching = (/** @type {any[]} */ tokens) => {
     const exact = tokens.filter((item) => squash(tokenCreature(item.name)) === wanted);
@@ -178,6 +228,9 @@ export function creatureToken(items, name, seed) {
     return tokens.filter((item) => tokenCreature(item.name) === last);
   };
   const own = matching(usable.filter((item) => String(item.id).startsWith("kraken/")));
-  const choices = (own.length ? own : matching(usable)).sort((a, b) => a.id.localeCompare(b.id));
+  const found = own.length ? own : matching(usable);
+  // The plainest of them (a "Zombie" before a "Zombie Kobold"): the fewest words in its name.
+  const fewest = Math.min(...found.map((item) => tokenCreature(item.name).split(" ").length));
+  const choices = found.filter((item) => tokenCreature(item.name).split(" ").length === fewest).sort((a, b) => a.id.localeCompare(b.id));
   return choices.length ? choices[hashOf(String(seed || name)) % choices.length].id : null;
 }

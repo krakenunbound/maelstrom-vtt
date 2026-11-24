@@ -83,6 +83,32 @@ its window:
 The book's own picture always wins; the GM can still give any creature
 another.
 
+### What a creature's record tells
+
+The name is only the start. The picker reads the creature's whole record:
+
+- **Its kind**, from its name, else from its description: "nosferatu" or
+  "vampire" is a Vampire; "zombie", "skeleton", "ghoul", "wight", "mummy",
+  "demon", "devil", or being held by Turn Undead, takes that kind's token.
+  A class or title in the name ("Lord", "Cleric") never beats what the
+  record says (Lord Kazakk, whom Turn Undead holds, is undead).
+- **Its class**, from its Save As code (`C5` cleric, `MU5` magic-user, `T`
+  thief, `F` fighter) or "Cleric 5" in its text; a caster's save or a class
+  in its text makes it a person, a human unless something says otherwise.
+- **Its gender**, from a title (Lady, Queen, Lord, King) or its text's
+  pronouns ("He carries a sword").
+
+### Art made for one creature
+
+A creature the libraries have nothing for (a book's own monster, a named
+villain) can have its own portrait and token: put them in the art folders
+named after it, `%APPDATA%\kraken-vttssets\portraits\Creatures\<Name>_Portrait.webp`
+and `tokens\Creatures\<Name>_Token.webp` (the full name, parentheses too:
+`Sprackle (Lesser)`). Maelstrom uses them before anything else.
+`games/tools/creature_art.mjs <list.json>` makes them with the local ComfyUI
+(a portrait, then a round token with a ring). They stay on this computer:
+a book's creatures are its publisher's.
+
 ## 3c. Pictures that do not fit
 
 `review.json` lists portraits that do not look like their race (a goblin

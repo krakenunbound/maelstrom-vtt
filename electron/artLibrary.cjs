@@ -146,8 +146,10 @@ function createArtLibrary({ base, roots, characters = null }) {
     has: (id) => scan().has(String(id)),
     // A creature's portrait and its token from the character art (any system's), by the race its name shows; the
     // same for the same seed (its record's id). null: none of its kind.
-    creature(name, seed, kind = "token") {
-      const key = `${name}|${seed}`;
+    creature(who, seed, kind = "token") {
+      // who: the creature's record ({ name, data }: its text, save and kind are read too) or its name.
+      const name = typeof who === "string" ? who : String(who?.name ?? "");
+      const key = `${name}|${seed}|${typeof who === "string" ? "" : `${String(who?.data?.saveas ?? "")}|${String(who?.data?.text ?? "").length}`}`;
       const index = scan();
       if (creatures.index !== index) creatures.index = index, creatures.picks.clear();
       if (!creatures.picks.has(key)) {
@@ -155,9 +157,20 @@ function createArtLibrary({ base, roots, characters = null }) {
         const portraits = [...index.values()].filter((item) => item.kind === "portrait" && item.pair);
         // Its kind's face from the character art (a goblin's); else a token of its name from the GM's token
         // folders (Forgotten Adventures' Dire Wolf), as its portrait too.
-        const pair = portraits.length ? shared.creaturePair(portraits, name, seed) : null;
-        const token = pair ? null : shared.creatureToken([...index.values()], name, seed);
-        creatures.picks.set(key, pair ?? (token ? { portrait: token, token } : null));
+        const pair = portraits.length ? shared.creaturePair(portraits, who, seed) : null;
+        // Its kind's token (a zombie lord's: Zombie), else one of its own name.
+        const kindToken = shared.creatureProfile(who).kind?.token;
+        const all = [...index.values()];
+        // A picture made for it by name (its portrait and token in the art folders) comes before anything else.
+        const ownToken = shared.creatureToken(all.filter((item) => !item.pair), name, seed, "token");
+        const ownPortrait = shared.creatureToken(all.filter((item) => !item.pair), name, seed, "portrait");
+        const exactly = (id) => id && shared.tokenCreature(String(index.get(id)?.name ?? "")).replace(/[^a-z()]+/g, "").replace(/(portrait|token)$/, "") === name.toLowerCase().replace(/[^a-z()]+/g, "");
+        if (exactly(ownToken) || exactly(ownPortrait)) {
+          creatures.picks.set(key, { portrait: exactly(ownPortrait) ? ownPortrait : ownToken, token: exactly(ownToken) ? ownToken : ownPortrait });
+        } else {
+          const token = pair ? null : (kindToken ? shared.creatureToken(all, kindToken, seed) : null) ?? shared.creatureToken(all, name, seed);
+          creatures.picks.set(key, pair ?? (token ? { portrait: token, token } : null));
+        }
       }
       const pair = creatures.picks.get(key);
       return pair ? pair[kind === "portrait" ? "portrait" : "token"] : null;

@@ -1068,7 +1068,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     isVideoArt: (id) => String(tokenArt.get(id)?.mime ?? "").startsWith("video/"),
     hasPicture: (id) => Boolean(art && art.has(id)),
     artFor: (data) => artForCharacter(data),
-    creatureArtFor: (record) => (art?.creature ? art.creature(record.name, record.id, "token") : null),
+    creatureArtFor: (record) => (art?.creature ? art.creature(record, record.id, "token") : null),
     hasTile: (id) => Boolean(tiles && tiles.has(id)),
     // An NPC token's health and the active turn come from the tracker.
     combatFor: (tokenId) => {
@@ -1114,7 +1114,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     isVideoArt: (id) => String(tokenArt.get(id)?.mime ?? "").startsWith("video/"),
     hasPicture: (id) => Boolean(art && art.has(id)),
     artFor: (data) => artForCharacter(data),
-    creatureArtFor: (record) => (art?.creature ? art.creature(record.name, record.id, "token") : null),
+    creatureArtFor: (record) => (art?.creature ? art.creature(record, record.id, "token") : null),
     hasTile: (id) => Boolean(tiles && tiles.has(id)),
     combatFor: () => null,
     activeRecord: () => null,
@@ -2467,7 +2467,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       // A creature with no picture of its own (nor its book's): one of its kind from the character art, its
       // portrait or its token as asked (a goblin's face for a goblin; the same one each time).
       if (allowed && record.type !== "character" && record.type !== "party" && !(record.data?.token || record.data?.picture || record.data?.portrait) && art?.creature) {
-        const face = art.creature(record.name, record.id, kind === "picture" ? "portrait" : "token");
+        const face = art.creature(record, record.id, kind === "picture" ? "portrait" : "token");
         const file = face ? art.file(face) : null;
         if (file) {
           let bytes;

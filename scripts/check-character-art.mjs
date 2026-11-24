@@ -98,6 +98,18 @@ try {
   // Never a placeholder card (FG's "placeholders/id-00373-Shrieker"); the app's own token folders before a campaign's.
   const mixed = [{ id: "campaigns/WoW/tokens/placeholders/id-00373-Shrieker.png", kind: "token", name: "id-00373-Shrieker" }, { id: "campaigns/WoW/tokens/Shrieker.png", kind: "token", name: "Shrieker" }, { id: "kraken/tokens/FA/Shrieker_A1_Medium_Plant_01.webp", kind: "token", name: "Shrieker_A1_Medium_Plant_01" }];
   assert(creatureToken(mixed, "Shrieker (Room 3, 1)", "s") === mixed[2].id && creatureToken(mixed.slice(0, 2), "Shrieker", "s") === mixed[1].id && creatureToken(mixed.slice(0, 1), "Shrieker", "s") === null, "no placeholder; the app's own tokens first");
+  // What a creature's record says (its text, its save, a title): a nosferatu lady is a female vampire; a lord whom
+  // Turn Undead holds is undead (a zombie's token), a man by his text's "he"; "Cleric 5" a human cleric.
+  const { creatureProfile } = await import("../shared/characters/art.mjs");
+  const lillith = creatureProfile({ name: "Lady Lillith (Lillian Corran)", data: { saveas: "C9", text: "<p>9-HD nosferatu and cleric 9. Immune to normal non-silver weapons.</p>" } });
+  const kazakk = creatureProfile({ name: "Lord Kazakk", data: { saveas: "F4", text: "<p>A successful Turn Undead holds the creature at bay. He carries a normal sword +1.</p>" } });
+  const cleric = creatureProfile({ name: "Cleric of Balthac", data: { saveas: "C5", text: "<p>Cleric 5. Cure light wounds, bless.</p>" } });
+  assert(lillith.kind?.race === "Vampire" && lillith.gender === "Female" && lillith.classes.includes("Cleric"), `a nosferatu lady: ${JSON.stringify(lillith)}`);
+  assert(kazakk.kind?.token === "Zombie" && kazakk.gender === "Male", `an undead lord: ${JSON.stringify(kazakk)}`);
+  assert(cleric.person && cleric.classes.includes("Cleric") && !cleric.kind, `a cleric: ${JSON.stringify(cleric)}`);
+  // Art made for a creature by its name (its own portrait and token in the art folders) comes first, parentheses too.
+  const madeFor = [{ id: "kraken/tokens/Creatures/Sprackle (Lesser)_Token.webp", kind: "token", name: "Sprackle (Lesser)_Token" }, { id: "kraken/tokens/Creatures/Sprackle (Greater)_Token.webp", kind: "token", name: "Sprackle (Greater)_Token" }];
+  assert(creatureToken(madeFor, "Sprackle (Greater)", "a") === madeFor[1].id && creatureToken(madeFor, "Sprackle (Lesser)", "a") === madeFor[0].id, "its own picture by its full name");
   done.push("a creature with no picture takes one of its kind: a portrait and its token from the character art by the race its name shows (any system's, the same each time), else a token of its name from the GM's token folders; never a picture flagged as not looking like its race");
 
   // --- The shipped library ---------------------------------------------------------------------------------------------
