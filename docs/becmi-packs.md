@@ -660,3 +660,43 @@ To fix in the pack:
 Still to do (Codex's review notes): aerial combat (ship against ship, hull
 points, maneuvering) is played by the GM from the book; the two ungridded
 pictures are views, not battle maps.
+
+## 13. The B and X adventures, installed and checked on 2026-11-24
+
+Codex's second batch (27 packs; 24 installed in `Documents/Kraken VTT/Packs`):
+
+- **D&D BECMI** (on Set 1): B1-9 In Search of Adventure, B2, B3 (Orange
+  Cover), B4, B5, B6 and The Goblin's Lair.
+- **D&D BECMI Expert** (on Set 2): X1, X2, X3, X4, X5, X7, X8, X9, X10, X11
+  and X13.
+- **Sets 3, 4 and 5**, Champions of Mystara and Wrath of the Immortals.
+- **B3 (D&D 3rd Edition)** in D&D 3.5E.
+
+The checks, run with each pack's rules pack:
+
+- Codex's 18 adventure checks pass.
+- A sweep through Maelstrom's own loaders is clean. Every creature's AC,
+  THAC0 and saves resolve, every page and story entry opens with no dead
+  link, every battle loads all its creatures with hit points and tokens,
+  and every parcel goes to the party.
+- `kpack-check` passes on all 24.
+
+Every one of the 3,078 creature records has a picture and a token:
+
+| Source | Records |
+|---|---|
+| Painted (581 new kinds; 38 repainted after review, 18 of those with Flux Turbo) | 1,761 |
+| The Monster Manual art | 255 |
+| Fantasy character faces | 750 |
+| The same art again, found by the name's kind | 312 |
+
+Backups of every changed pack are in `Packs/.art-fill-backup`.
+
+Still in the packs:
+
+- Set 1's own sample characters carry five lines that are not in the books'
+  items, so they are carried as written: "6 tinder box torches", "Small
+  metal mirror", "Small hammer", "12 iron spikes", "4 silver arrows",
+  "Leather backpack", "2 torches" and "Gem (100 gp)".
+- The six older 3.5e B-series packs each have a dead link on "Starting the
+  Adventure". These are not part of this batch.

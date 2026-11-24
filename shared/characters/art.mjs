@@ -239,13 +239,15 @@ export function creatureToken(items, name, seed, kind = "token") {
       const art = tokenCreature(item.name);
       const base = art.split(/[^a-z]+/).filter(Boolean);
       if (!base.length || !words.every((word) => base.includes(word) || base.includes(word.replace(/s$/, "")))) return false;
-      // Never another creature that only carries the name's words: a book's sample with class levels is of the
-      // name's kind (before its comma or level: "Celestial Charger, 7th-Level Cleric" is no "Cleric 5"), and
-      // the picture adds no template ("Zombie, Human Commoner", "Half-Black Dragon ... Human Fighter").
+      // Never another creature that only carries the name's words: a book's picture is of the name's kind (before
+      // its comma or level: "Celestial Charger, 7th-Level Cleric" is no "Cleric 5"), and the picture adds no template ("Zombie, Human Commoner", "Half-Black Dragon ... Human Fighter").
       const said = new Set([...words, ...String(name).toLowerCase().split(/[^a-z]+/)]);
       const level = /\b\d+(?:st|nd|rd|th)\s+level\b/;
       const kind = art.split(/,/)[0].split(level)[0].split(/[^a-z]+/).filter(Boolean);
-      if (level.test(art) && !kind.some((word) => said.has(word) || said.has(`${word}s`))) return false;
+      const ofKind = kind.some((word) => said.has(word) || said.has(`${word}s`));
+      if (level.test(art) && !ofKind) return false;
+      // A person's role after a book's comma is only the creature's variety ("Giant Ant, Soldier"): a Soldier is a person.
+      if (art.includes(",") && !ofKind && words.every((word) => ROLE_WORDS.some(([pattern]) => pattern.test(word)))) return false;
       return !base.some((word) => TEMPLATES.has(word) && !said.has(word));
     });
     if (near.length || words.length < 2) return near;
