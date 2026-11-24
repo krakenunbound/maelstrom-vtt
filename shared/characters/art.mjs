@@ -229,14 +229,21 @@ export function creatureToken(items, name, seed, kind = "token") {
       return base.length && words.every((word) => base.includes(word) || base.includes(word.replace(/s$/, "")));
     });
     if (near.length || words.length < 2) return near;
-    // Last: the name's last word alone ("Normal Bat": a Bat).
-    return tokens.filter((item) => tokenCreature(item.name) === last);
+    // Last: a book's kind before its comma ("Boar, Wild": a Boar), else the name's last word ("Normal Bat": a Bat).
+    const head = /,/.test(String(name)) ? squash(String(name).split(",")[0]) : "";
+    const byHead = head ? tokens.filter((item) => squash(tokenCreature(item.name)) === head) : [];
+    return byHead.length ? byHead : tokens.filter((item) => tokenCreature(item.name) === last);
   };
   const own = matching(usable.filter((item) => String(item.id).startsWith("kraken/")));
   const found = own.length ? own : matching(usable);
-  // The plainest of them (a "Zombie" before a "Zombie Kobold"): the fewest words in its name.
-  const count = (/** @type {any} */ item) => tokenCreature(item.name).split(/[^a-z]+/).filter(Boolean).length;
-  const fewest = Math.min(...found.map(count));
-  const choices = found.filter((item) => count(item) === fewest).sort((a, b) => a.id.localeCompare(b.id));
+  // Its words in brackets choose among them ("Elemental (Fire, 12 HD)" a fire one, "Dragon, Red (Young)" a young
+  // one; a hatchling is a wyrmling), then the plainest (a "Zombie" before a "Zombie Kobold"): the fewest words.
+  const noted = [...String(name ?? "").toLowerCase().matchAll(/\(([^)]*)\)/g)].flatMap((match) => match[1].split(/[^a-z]+/)).filter((word) => word.length > 2).map((word) => (word === "hatchling" ? "wyrmling" : word));
+  const wordsOf = (/** @type {any} */ item) => tokenCreature(item.name).split(/[^a-z]+/).filter(Boolean);
+  const told = (/** @type {any} */ item) => noted.filter((word) => wordsOf(item).includes(word)).length;
+  const most = Math.max(0, ...found.map(told));
+  const count = (/** @type {any} */ item) => wordsOf(item).length;
+  const fewest = Math.min(...found.filter((item) => told(item) === most).map(count));
+  const choices = found.filter((item) => told(item) === most && count(item) === fewest).sort((a, b) => a.id.localeCompare(b.id));
   return choices.length ? choices[hashOf(String(seed || name)) % choices.length].id : null;
 }

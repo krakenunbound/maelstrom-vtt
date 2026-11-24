@@ -114,6 +114,8 @@ try {
   assert(["a", "b", "c", "d"].every((seed) => creatureToken(both, "Hill Giant", seed) === both[1].id), "the GM's own picture of a name before a shipped one");
   // A book's names with commas (games/creatures: "Red Dragon, Adult") are found by their words, the plainest first.
   const book = ["Red Dragon, Adult", "Skeleton, Young Adult Red Dragon", "Red Dragon, Mature adult", "Ooze, Gelatinous Cube"].map((name) => ({ id: `creatures/tokens/${name}_Token.webp`, kind: "token", name: `${name}_Token` }));
+  const kinds = ["Fire Elemental, Medium", "Earth Elemental, Greater", "Red Dragon, Young", "Red Dragon, Old", "Boar"].map((name) => ({ id: `creatures/tokens/${name}_Token.webp`, kind: "token", name: `${name}_Token` }));
+  assert(["a", "b", "c"].every((seed) => creatureToken(kinds, "Elemental (Fire, 12 HD)", seed) === kinds[0].id && creatureToken(kinds, "Dragon, Red (10 HD, Young)", seed) === kinds[2].id) && creatureToken(kinds, "Boar, Wild", "a") === kinds[4].id, "its words in brackets choose (a fire elemental, a young dragon); a book's kind before its comma");
   assert(creatureToken(book, "Adult Red Dragon", "a") === book[0].id && creatureToken(book, "Gelatinous Cube", "a") === book[3].id, `a book's comma names: ${creatureToken(book, "Adult Red Dragon", "a")}`);
   // Its portrait comes with the token (the same name, _Portrait).
   {
