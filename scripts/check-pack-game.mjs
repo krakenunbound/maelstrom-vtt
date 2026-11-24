@@ -65,8 +65,13 @@ const basic = [
   record(BASIC, "item", "Dagger", { type: "Weapon", damage: "1d4", cost: "3 gp", range: "10/20/30", encumbrance: 10 }),
   record(BASIC, "item", "Short Bow", { type: "Weapon", damage: "1d6", cost: "25 gp", range: "50/100/150", encumbrance: 30 }),
   record(BASIC, "item", "Quiver with 20 Arrows", { type: "Gear", cost: "5 gp" }),
+  record(BASIC, "item", "Flask of Oil", { type: "Gear", cost: "2 gp" }),
+  record(BASIC, "item", "Rope, 50 Feet", { type: "Gear", cost: "1 gp" }),
+  record(BASIC, "item", "Waterskin or Wineskin", { type: "Gear", cost: "1 gp" }),
+  record(BASIC, "item", "Tinder Box", { type: "Gear", cost: "3 gp" }),
+  record(BASIC, "item", "Torches, 6", { type: "Gear", cost: "1 gp" }),
   // A book's sample character, its equipment lines as the book prints them.
-  record(BASIC, "pregencharsheet", "Sample Fighter", { class: "Fighter", level: 1, strength: 16, intelligence: 9, wisdom: 10, dexterity: 13, constitution: 14, charisma: 11, ac: 3, hp: 8, xp: 0, equipment: ["Chain mail & shield", "Sword", "2 torches"], coins: { GP: 12 } }),
+  record(BASIC, "pregencharsheet", "Sample Fighter", { class: "Fighter", level: 1, strength: 16, intelligence: 9, wisdom: 10, dexterity: 13, constitution: 14, charisma: 11, ac: 3, hp: 8, xp: 0, equipment: ["Chain mail & shield", "Sword", "2 torches", "1 flask oil", "Rope (50′)", "2 waterskins (full)", "Tinderbox", "20 arrows", "6 torches"], coins: { GP: 12 } }),
   record(BASIC, "npc", "Kobold Chief", { ac: 6, hd: "2", attacks: "1 weapon", damage: "1d6", saveas: "F2", morale: 8, hp: 9 }, "gm"),
   record(BASIC, "npc", "Peasant", { ac: 9, hd: "1", attacks: "1 weapon", damage: "1d6", saveas: "NM", morale: 6, xp: 5 }, "gm"),
   // The Normal Man table (a row a value): its THAC0 is the one a Normal Man attacks with.
@@ -171,6 +176,12 @@ try {
   const sample = await tool("kraken_build_character", { spec: { pregen: "Sample Fighter", name: "Sam" } });
   const sd = agent.records.get(sample.id).data;
   assert(sd.ac.total === 3 && sd.hp.total === 8 && Object.values(sd.coins).find((coin) => coin.name === "GP").amount === 12 && Object.values(sd.inventorylist).some((row) => row.name === "2 torches") && /2 torches/.test(sample.problems.join()), `the sample fighter: AC 3, 8 hp, 12 gp, its torches as written: ${JSON.stringify({ ac: sd.ac, hp: sd.hp, problems: sample.problems })}`);
+  // The book's own words for what it sells: "1 flask oil" is its Flask of Oil, "Rope (50′)" its Rope, 50 Feet, "2 waterskins
+  // (full)" two of its Waterskin or Wineskin, "Tinderbox" its Tinder Box, "20 arrows" its Quiver with 20 Arrows, "6 torches"
+  // its Torches, 6; "2 torches" is no bundle of six, so carried as written.
+  const gear = Object.values(sd.inventorylist).map((row) => `${row.count ?? 1} ${row.name}`);
+  for (const want of ["1 Flask of Oil", "1 Rope, 50 Feet", "2 Waterskin or Wineskin", "1 Tinder Box", "1 Quiver with 20 Arrows", "1 Torches, 6", "1 2 torches"]) assert(gear.includes(want), `the sample's gear by the book's own words, ${want}: ${JSON.stringify(gear)} ${sample.problems.join(" ")}`);
+  assert(!/flask oil|Rope \(|waterskins|Tinderbox|20 arrows|6 torches/.test(sample.problems.join()), `only the 2 torches as written: ${sample.problems.join(" ")}`);
   // A game that rolls initiative a side starts its table that way.
   assert(server.agent.options?.().initGroup === "sides" || (await tool("kraken_table_options", {})).initGroup === "sides", "initiative a side by default");
   // Two prime requisites (an Elf's Strength and Intelligence): the XP bonus as a list of rules.

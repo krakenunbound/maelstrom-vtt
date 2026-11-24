@@ -323,8 +323,16 @@ one line joined by `&`:
 "equipment": ["Chain Mail Armor & Shield", "Mace", "Holy Symbol", "Backpack", "Torches, 6", "2 Waterskin or Wineskin", "12 Iron Spikes and Small Hammer", "2 Large Sack", "Flask of Oil", "Iron Rations", "Rope, 50 Feet"]
 ```
 
-A line that names no item (`"6 tinder box torches"`, `"Rope (50')"`) is
-carried as written, with no price, weight or use, and the wizard says so.
+Maelstrom also reads a line in the book's own words (since 2026-11-24):
+the words in any order, plurals, "of", "(full)", a length or a measure
+ignored, each side of an "or" its own: `1 flask oil` is `Flask of Oil`,
+`Rope (50′)` is `Rope, 50 Feet`, `2 waterskins (full)` two `Waterskin or
+Wineskin`, `Tinderbox` a `Tinder Box`, `20 arrows` a `Quiver with 20
+Arrows`. An item sold as a bundle (`Torches, 6`) is taken only for that
+many (`6 torches`; `2 torches` stays as written). A line that still names no
+item (`"6 tinder box torches"`, two things on one line; `Small metal mirror`
+for `Steel Mirror`) is carried as written, with no price, weight or use, and
+the wizard says so.
 Things the book gives that are not sold (a gem, a family heirloom) are fine
 as written.
 
@@ -379,7 +387,11 @@ play as the book prints them. To fix in the pack:
    - Sample Halfling: `1 wineskin (full)`, `20 normal arrows`, `4 silver arrows`, `6 torches`, `1 waterskin (full)`.
    - Solo Adventure Fighter: `2 flasks of oil`, `Tinderbox`, `Rope, 50′`, `Leather backpack`, `Waterskin`, `2 torches` (and `Gem (100 gp)`, fine as written).
 
-   Write them with the item names (`Torches, 6`, `Waterskin or Wineskin`,
+   Since 2026-11-24 Maelstrom reads most of these in the book's words
+   (section 2, Characters); still carried as written: `6 tinder box torches`,
+   `Small metal mirror`, `Small hammer` and `12 iron spikes` apart,
+   `4 silver arrows`, `Leather backpack`, `2 torches`. For those, or to be
+   exact, write them with the item names (`Torches, 6`, `Waterskin or Wineskin`,
    `Flask of Oil`, `Rope, 50 Feet`, `Wolfsbane, 1 Bunch`, `Holy Water, 1
    Vial`, `Steel Mirror`, `Tinder Box`, `Quiver with 20 Arrows`,
    `Silver-Tipped Arrow`, `12 Iron Spikes and Small Hammer`), each with its

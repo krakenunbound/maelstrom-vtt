@@ -581,6 +581,41 @@ export function fromPregen(pregen, lib) {
   const src = pregen?.data ?? pregen ?? {};
   const problems = [];
   const names = new Map((lib.items ?? []).map((item) => [String(item.name).toLowerCase(), String(item.name)]));
+  // An item by its words, as a book writes the same thing ("1 flask oil" is "Flask of Oil", "Rope (50′)" is "Rope,
+  // 50 Feet", "2 waterskins (full)" a "Waterskin or Wineskin", "Tinderbox" a "Tinder Box"): the words without order,
+  // plurals, measures and filler; each side of an "or" its own. An item sold as a bundle ("Torches, 6") is taken
+  // only for that many.
+  const FILLER = new Set(["of", "a", "an", "the", "full", "normal", "feet", "foot", "ft", "vial", "quart", "bunch", "pint"]);
+  const one = (/** @type {string} */ word) => word.replace(/(ch|sh|x)es$/, "$1").replace(/ies$/, "y").replace(/([^s])s$/, "$1");
+  const wordList = (/** @type {string} */ text) =>
+    text
+      .toLowerCase()
+      .replace(/\([^)]*\)/g, " ")
+      .split(/[^a-z+]+/)
+      .filter((word) => word && !FILLER.has(word))
+      .map(one);
+  const wordsOf = (/** @type {string} */ text) => wordList(text).sort().join(" ");
+  // Written as one word or two ("Tinderbox", "Tinder Box").
+  const joinedOf = (/** @type {string} */ text) => wordList(text).join("");
+  /** @type {Map<string, { name: string, bundle: number }>} */
+  const byWords = new Map();
+  const add = (/** @type {string} */ key, /** @type {{ name: string, bundle: number }} */ hit) => key && !byWords.has(key) && byWords.set(key, hit);
+  for (const item of lib.items ?? []) {
+    const name = String(item.name);
+    const bundle = Number(/,\s*(\d+)$/.exec(name)?.[1] ?? 1);
+    for (const side of name.split(/\s+or\s+/i)) {
+      add(wordsOf(side), { name, bundle });
+      add(joinedOf(side), { name, bundle });
+    }
+    // "Quiver with 20 Arrows" is what "20 arrows" are.
+    const held = /^.+?\s+with\s+(\d+)\s+(.+)$/i.exec(name);
+    if (held) add(wordsOf(held[2]), { name, bundle: Number(held[1]) });
+  }
+  const byTheWords = (/** @type {string} */ words, count = 1) => {
+    const hit = byWords.get(wordsOf(words)) ?? byWords.get(joinedOf(words));
+    if (!hit || (hit.bundle > 1 && count !== hit.bundle)) return null;
+    return hit;
+  };
   const findItem = (/** @type {string} */ words) => {
     const base = words.toLowerCase().replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
     for (const name of [base, `${base} armor`, base.replace(/s$/, ""), base.replace(/es$/, ""), `${base.replace(/s$/, "")} armor`]) if (names.has(name)) return names.get(name);
@@ -599,7 +634,11 @@ export function fromPregen(pregen, lib) {
     const found = parts.map((part) => {
       if (whole) return { count: 1, name: whole };
       const counted = /^(\d+)\s+(.+)$/.exec(part);
-      return { count: counted ? Number(counted[1]) : 1, name: findItem(counted ? counted[2] : part) };
+      const count = counted ? Number(counted[1]) : 1;
+      const named = findItem(counted ? counted[2] : part);
+      if (named) return { count, name: named };
+      const hit = byTheWords(counted ? counted[2] : part, count);
+      return hit ? { count: hit.bundle > 1 ? 1 : count, name: hit.name } : { count, name: null };
     });
     if (found.every((item) => item.name)) for (const item of found) buy.push([/** @type {string} */ (item.name), item.count]);
     else plain.push(text);

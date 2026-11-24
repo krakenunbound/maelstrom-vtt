@@ -134,7 +134,9 @@ the five saves, descending AC, THAC0, d6 initiative by side).
 - **Campaign screen:** the game, its blurb.
 - **Character wizard:** a book's sample character (`pregencharsheet`
   records: taken as printed, its equipment lines matched to the items by
-  name), or the abilities rolled, a class from the books, money and the
+  name, or by its words in the book's own wording: "1 flask oil" is
+  "Flask of Oil", "Rope (50′)" is "Rope, 50 Feet", "20 arrows" a "Quiver
+  with 20 Arrows"; a bundle such as "Torches, 6" only for that many), or the abilities rolled, a class from the books, money and the
   shop, name and alignment. The host rolls the first hit die and holds
   the books' rules (a class's minimum scores, the money).
 - **Sheet:**
