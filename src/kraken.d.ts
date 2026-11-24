@@ -28,10 +28,14 @@ export type KrakenHostInfo = {
   // The router's port opened by itself (UPnP or NAT-PMP), when asked; the invite links.
   upnp?: KrakenUpnp | null;
   invite?: KrakenInvite | null;
+  // The table on maelstromvtt.com's Find a game list, when the GM listed it.
+  listed?: KrakenListing | null;
 };
+// listed: the site has it; reachable: the site could open the table's port (only those are shown to players).
+export type KrakenListing = { id: string; listed: boolean; pending?: boolean; reachable?: boolean; address?: string; error?: string };
 export type KrakenUpnp = { ok: boolean; method: string; external?: string; error?: string };
 // Links that seat a player: the table's password in the #fragment (never sent to the server).
-export type KrakenInvite = { internet: string; lan: string[]; local: string; upnp?: KrakenUpnp | null };
+export type KrakenInvite = { internet: string; lan: string[]; local: string; upnp?: KrakenUpnp | null; listed?: KrakenListing | null };
 
 export type KrakenAssistantProvider = { id: string; name: string; placeholder: string; env: string; hasKey: boolean; keyFrom: string | null };
 export type KrakenAssistantStatus = { busy: boolean; provider: string; model: string; base: string; log: never[]; hasKey: boolean; keyFrom: string | null; providers: KrakenAssistantProvider[] };
@@ -94,8 +98,9 @@ export type KrakenApi = {
   studioOpenImage?: (input: { sceneId: string; name: string; picture: Uint8Array }) => Promise<{ url: string }>;
   onStudioSaved?: (handler: (event: { sceneId: string; picture: boolean }) => void) => () => void;
   copy: (text: string) => Promise<boolean | void>;
-  startHost: (options: { port: number; password: string; lan: boolean; cloud: boolean; upnp?: boolean; campaignId?: string }) => Promise<KrakenHostInfo>;
+  startHost: (options: { port: number; password: string; lan: boolean; cloud: boolean; upnp?: boolean; listed?: boolean; gmName?: string; campaignId?: string }) => Promise<KrakenHostInfo>;
   invite?: () => Promise<KrakenInvite | null>;
+  launchLink?: () => Promise<{ address: string; port: number } | null>;
   manageCampaign?: (input: { action: "rename" | "duplicate" | "export" | "delete" | "backups" | "backup" | "restore" | "folder"; id: string; name?: string; backup?: string }) => Promise<unknown>;
   openLogs?: () => Promise<unknown>;
   stopHost: () => Promise<void>;
@@ -134,7 +139,7 @@ export type StudioSettings = { dungeondraftFolders: string[]; packFolders: strin
 export type UpdaterState = { status: "idle" | "off" | "checking" | "current" | "available" | "downloading" | "ready" | "installing" | "error"; current: string; version?: string; notes?: string; percent?: number; error?: string | null; reason?: string };
 
 export type KrakenAgentCommand =
-  | { kind: "host"; campaignId: string; port: number; password: string; internet?: boolean; upnp?: boolean }
+  | { kind: "host"; campaignId: string; port: number; password: string; internet?: boolean; upnp?: boolean; listed?: boolean }
   | { kind: "leave" }
   | { kind: "open-adventure"; name: string; bytes: Uint8Array }
   | { kind: "scenes"; adventure?: string; scene?: string }

@@ -127,3 +127,72 @@ h3 { font-size: 1.05rem; margin: 0 0 0.4rem; color: var(--gold); }
   .lede { margin-left: auto; margin-right: auto; }
   .actions { justify-content: center; }
 }
+
+/* Find a game (find/): the player's games and joining by address beside the games hosted now. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.find { max-width: 1400px; margin: 0 auto; padding: clamp(28px, 5vw, 56px) clamp(16px, 4vw, 40px) 56px; }
+.find h1 { font-size: clamp(2rem, 5vw, 3rem); margin: 0 0 0.5rem; color: var(--gold-2); }
+.find .lede { margin-bottom: 1.8rem; }
+.find h2 { font-size: 1.15rem; text-align: left; margin: 0 0 0.8rem; }
+.find-grid { display: grid; grid-template-columns: minmax(280px, 2fr) 3fr; gap: 20px; align-items: start; }
+.find-panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; min-width: 0; }
+.find-panel h2 + .hint { margin-top: 0; }
+.hint { color: var(--muted); font-size: 0.88rem; }
+.find .field { display: grid; gap: 4px; font-size: 0.85rem; color: var(--muted); }
+.find input { font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-height: 40px; width: 100%; }
+.find input:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+.lan-form { display: grid; grid-template-columns: 1fr 110px; gap: 10px; margin-top: 4px; }
+.lan-form .field:nth-of-type(3), .lan-form .join-buttons, .lan-form .hint { grid-column: 1 / -1; }
+.join-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.find button.btn { cursor: pointer; font: inherit; font-weight: 600; }
+.find .btn.small { padding: 7px 16px; font-size: 0.9rem; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; filter: none; }
+
+.history { list-style: none; margin: 0 0 1.6rem; padding: 0; display: grid; gap: 6px; }
+.history li { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); }
+.history .what { display: grid; flex: 1; min-width: 0; }
+.history .what strong, .history .what small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.history .what small { color: var(--muted); }
+.dot { width: 12px; height: 12px; border-radius: 50%; flex: none; background: #5b6270; }
+.dot.on { background: #3fcf6b; box-shadow: 0 0 8px rgba(63, 207, 107, 0.6); }
+.dot.off { background: #d9534f; }
+.dot.unreachable { background: #e6b422; }
+.lock { display: inline-flex; color: var(--gold); }
+.icon-button { display: inline-grid; place-items: center; min-width: 36px; min-height: 36px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
+.icon-button:hover { color: var(--text); border-color: var(--gold); }
+
+.list-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+.list-bar .search { flex: 1; }
+.table-wrap { overflow: auto; max-block-size: min(640px, 70vh); border: 1px solid var(--line); border-radius: 10px; }
+#games { width: 100%; min-inline-size: 560px; border-collapse: separate; border-spacing: 0; font-size: 0.92rem; }
+#games caption { text-align: left; padding: 10px 12px; font: 700 1.05rem var(--display); color: var(--gold); }
+#games thead { position: sticky; inset-block-start: 0; z-index: 1; background: var(--panel-2); }
+#games th { text-align: left; font-weight: 600; color: var(--gold); padding: 8px 12px; border-bottom: 1px solid var(--line); }
+#games th:has(> button) { padding: 0; }
+#games th button { width: 100%; min-height: 36px; padding: 8px 12px; text-align: left; font: inherit; color: inherit; background: none; border: 0; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+#games th button::after { content: ""; width: 0.6em; height: 0.6em; opacity: 0.35; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-2px, -2px); }
+#games th[aria-sort="ascending"] button::after { opacity: 1; transform: rotate(-135deg) translate(-2px, -2px); }
+#games th[aria-sort="descending"] button::after { opacity: 1; }
+#games td { padding: 6px 12px; border-bottom: 1px solid rgba(227, 189, 120, 0.08); max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#games tbody tr:hover { background: rgba(233, 199, 136, 0.05); }
+#games .lock-col { width: 32px; padding-right: 0; }
+#games .num { text-align: right; }
+.list-empty { padding: 16px 12px; margin: 0; }
+.list-count { color: var(--muted); font-size: 0.85rem; margin: 8px 2px 0; }
+
+.join-dialog { border: 1px solid var(--line); border-radius: 12px; background: var(--panel); color: var(--text); width: min(440px, calc(100vw - 32px)); padding: 20px; }
+.join-dialog::backdrop { background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(3px); }
+.join-dialog h2 { margin: 0 0 4px; text-align: left; font-size: 1.3rem; }
+.join-dialog form { display: grid; gap: 10px; }
+.join-dialog .field { display: grid; gap: 4px; font-size: 0.85rem; color: var(--muted); }
+.join-dialog input { font: inherit; color: var(--text); background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; min-height: 40px; }
+.join-dialog #join-error { color: #ff8f8a; margin: 0; }
+.join-dialog #join-error:empty { display: none; }
+.join-dialog button.btn { cursor: pointer; font: inherit; font-weight: 600; }
+
+@media (max-width: 900px) {
+  .find-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 760px) {
+  .top nav a.keep { display: inline; }
+}

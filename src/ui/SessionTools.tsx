@@ -254,6 +254,16 @@ export function InviteCard({ session }: { session: Session }) {
           {info.upnp.ok ? `Your router opened port ${info.port} for the table (${info.upnp.method}); it closes again when you stop.` : info.upnp.error}
         </p>
       ) : null}
+      {info.listed ? (
+        <p className="upnp-line hint" data-listed={info.listed.listed ? (info.listed.reachable ? "shown" : "unreachable") : "failed"}>
+          <Icon name={info.listed.listed && info.listed.reachable ? "check" : "warning"} size={14} />
+          {!info.listed.listed
+            ? `Not on the Find a game list: ${info.listed.error ?? "the site did not answer"}`
+            : info.listed.reachable
+              ? "On maelstromvtt.com's Find a game list; it comes off when you stop."
+              : `Listed, but maelstromvtt.com could not reach port ${info.port}, so players will not see it yet. Open the port on your router (or turn on UPnP there); the site checks again every 3 minutes.`}
+        </p>
+      ) : null}
       {links.length > 1 ? (
         <div className="invite-row" role="radiogroup" aria-label="Which link">
           {links.map((item, index) => (

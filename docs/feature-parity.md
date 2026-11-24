@@ -197,7 +197,7 @@ Kraken already at or ahead: accounts with lockout, pop-outs and remembered windo
 | # | Gap | Kraken today | Best solution | Priority |
 |---|---|---|---|---|
 | S1 | Automatic reconnect | onclose resets to the join screen (useSession.ts:619) | retry with backoff, "Reconnecting..." banner, reuse the account token; 30-60 s grace on the host before "away" | Done (alpha.91), High |
-| S2 | Internet hosting without router setup, invite links | addresses + forwarded port | UPnP/NAT-PMP option, invite link with password in the URL fragment, copy + QR | Done (alpha.91), High |
+| S2 | Internet hosting without router setup, invite links | addresses + forwarded port | UPnP/NAT-PMP option, invite link with password in the URL fragment, copy + QR; Find a game on maelstromvtt.com (listed games, players' history, maelstrom:// links), docs/find-a-game.md | Done (alpha.91; Find a game unreleased), High |
 | S3 | Per-player sharing and permissions | visibility gm/owner/all; pictures to all only | {default, users:{name:level}}; "Share with..." menu; drop a window on a portrait to share with that player; showImage/map-share to chosen players | Partly: no per-player levels, and a shared map still goes to everyone; High |
 | S4 | Pause the game | none | GM button and /pause: players' veil, host refuses moves/rolls | Done (alpha.91), High |
 | S5 | Players-window controls | /kick only, no ban | right-click Kick, Ban (kept per campaign), Ring bell, Share, View as; /afk and idle dim | Done (alpha.91), Medium-High |

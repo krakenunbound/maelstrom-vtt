@@ -16,7 +16,7 @@ import { Icon } from "../ui/icons";
 import { ReleaseNotes } from "./ReleaseNotes";
 import { GM } from "../ui/gmTitle";
 
-type HostInput = { name: string; port: number; password: string; lan: boolean; cloud: boolean; upnp?: boolean; campaignId: string };
+type HostInput = { name: string; port: number; password: string; lan: boolean; cloud: boolean; upnp?: boolean; listed?: boolean; campaignId: string };
 // accountPassword: the player's own password (their account at that table).
 type JoinInput = { name: string; address: string; port: number; password: string; accountPassword?: string };
 
@@ -25,6 +25,7 @@ const EMPTY_NET: KrakenNetwork = { v4: [], v6: [], externalV4: "", externalV6: "
 // The games this screen has joined, newest first, for a quick way back in.
 type RecentGame = { name: string; address: string; port: number; password: string; at: number };
 const RECENT_KEY = "kraken-recent-games";
+const LIST_KEY = "kraken-list-game";
 function recentGames(): RecentGame[] {
   try {
     const list = JSON.parse(window.localStorage.getItem(RECENT_KEY) ?? "[]");
@@ -223,6 +224,18 @@ export function SetupScreen({
   const [theme, setTheme] = useState(randomTheme);
   const [recent, setRecent] = useState<RecentGame[]>(() => recentGames());
   const [joinFill, setJoinFill] = useState<RecentGame | null>(null);
+  // Started by a maelstrom://join link (Find a game on maelstromvtt.com): Join a Game, filled in.
+  useEffect(() => {
+    void window.kraken
+      ?.launchLink?.()
+      .then((link) => {
+        if (!link) return;
+        const known = recentGames().find((game) => game.address === link.address && game.port === link.port);
+        setJoinFill({ name: known?.name ?? "Player", address: link.address, port: link.port, password: "", at: 0 });
+        setMode("join");
+      })
+      .catch(() => undefined);
+  }, []);
   const [rows, setRows] = useState<KrakenCampaign[]>([]);
   const [network, setNetwork] = useState<KrakenNetwork>(EMPTY_NET);
   const [query, setQuery] = useState("");
@@ -275,6 +288,22 @@ export function SetupScreen({
   const [cloudOn, setCloudOn] = useState(false);
   // Internet play: the router asked to open the port by itself (UPnP / NAT-PMP).
   const [upnpOn, setUpnpOn] = useState(true);
+  // On maelstromvtt.com's Find a game list: off until the GM ticks it, then remembered on this computer.
+  const [listOn, setListOn] = useState(() => {
+    try {
+      return localStorage.getItem(LIST_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const chooseList = (on: boolean) => {
+    setListOn(on);
+    try {
+      localStorage.setItem(LIST_KEY, on ? "1" : "0");
+    } catch {
+      /* chosen for now only */
+    }
+  };
   // An invite link's table password (its #pw= fragment: never sent to the server), taken out of the address bar.
   const [invitePassword] = useState(() => {
     if (!inBrowser) return "";
@@ -393,7 +422,7 @@ export function SetupScreen({
     } catch {
       /* The table can still start if the date stamp fails. */
     }
-    await onHost({ name, port, password, lan: lanOn, cloud: cloudOn, upnp: cloudOn && upnpOn, campaignId: campaign.id });
+    await onHost({ name, port, password, lan: lanOn, cloud: cloudOn, upnp: cloudOn && upnpOn, listed: cloudOn && listOn, campaignId: campaign.id });
   }
 
   // Joining; a game joined is kept for a quick way back.
@@ -734,6 +763,11 @@ export function SetupScreen({
                   {cloudOn ? (
                     <label className="upnp-toggle hint">
                       <input type="checkbox" name="upnp" data-action="upnp" checked={upnpOn} onChange={(event) => setUpnpOn(event.target.checked)} /> Open the port on my router by itself (UPnP), and close it when I stop
+                    </label>
+                  ) : null}
+                  {cloudOn ? (
+                    <label className="upnp-toggle hint">
+                      <input type="checkbox" name="listed" data-action="list-game" checked={listOn} onChange={(event) => chooseList(event.target.checked)} /> List this game on maelstromvtt.com, so players can find it (taken off when I stop)
                     </label>
                   ) : null}
                 </div>

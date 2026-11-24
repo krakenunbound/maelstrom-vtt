@@ -26,3 +26,6 @@ games/packs/
 
 # The built wiki (scripts/build-wiki.mjs)
 /site/
+
+# wrangler dev: the website's local database and build files
+website/.wrangler/

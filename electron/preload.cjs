@@ -43,6 +43,8 @@ contextBridge.exposeInMainWorld("kraken", {
   startHost: (options) => ipcRenderer.invoke("start-host", options),
   stopHost: () => ipcRenderer.invoke("stop-host"),
   invite: () => ipcRenderer.invoke("invite"),
+  // The maelstrom://join link that started this copy, once.
+  launchLink: () => ipcRenderer.invoke("launch-link"),
   // The start screen's campaign menu (rename, duplicate, export, delete, backups, restore, folder); Settings > Open logs.
   manageCampaign: (input) => ipcRenderer.invoke("campaign-manage", input),
   openLogs: () => ipcRenderer.invoke("open-logs"),

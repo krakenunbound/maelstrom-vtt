@@ -23,6 +23,7 @@ const { fgDataFolder } = require("./importers/fgModule.cjs");
 const packs = require("./packs.cjs");
 const campaigns = require("./campaigns.cjs");
 const { openPort } = require("./portMapping.cjs");
+const lobby = require("./lobby.cjs");
 const { startAgentServer } = require("./agent/mcpServer.cjs");
 const assistantModule = require("./assistant.cjs");
 
@@ -473,6 +474,10 @@ async function stopTable() {
   if (current) await current.stop();
   closeCampaign();
   invite = null;
+  // Off the Find a game list at once.
+  const listed = listing;
+  listing = null;
+  if (listed) await listed.stop().catch(() => undefined);
   // The port opened on the router is closed again.
   const mapping = portMapping;
   portMapping = null;
@@ -482,6 +487,8 @@ async function stopTable() {
 // which a browser never sends to the server; the join page reads it).
 let portMapping = null;
 let invite = null;
+// The table's listing on maelstromvtt.com's Find a game list (lobby.cjs), when the GM ticked it.
+let listing = null;
 function inviteFor({ port, password, lan, internet }) {
   const link = (host) => `http://${host}:${port}/${password ? `#pw=${encodeURIComponent(password)}` : ""}`;
   return { internet: internet ? link(internet) : "", lan: lan.map(link), local: link("127.0.0.1") };
@@ -938,7 +945,17 @@ const calls = {
       }
       const externalV4 = net.externalV4 || upnp?.external || "";
       invite = inviteFor({ port: info.port, password, lan: options?.lan ? info.addresses : [], internet: options?.cloud ? externalV4 : "" });
-      return { ...info, v6: net.v6, externalV4, externalV6: net.externalV6, upnp, invite };
+      // Find a game: internet tables only; its first check-in is waited for (briefly), never needed to play.
+      let listed = null;
+      if (options?.listed && options?.cloud) {
+        const campaignName = campaigns.read(campaignFile()).find((item) => item.id === campaignId)?.name ?? "";
+        const gm = String(options?.gmName ?? "").trim() || "GM";
+        const { id, key } = lobby.identity(preferences, savePreference, campaignId);
+        listing = lobby.startListing({ id, key, listing: () => ({ gm, campaign: campaignName, ruleset, locked: Boolean(password), players: next.playerCount(), port: info.port, version: VERSION }) });
+        const first = listing;
+        listed = await Promise.race([first.ready, new Promise((resolve) => setTimeout(() => resolve(first.status()), 8000))]);
+      }
+      return { ...info, v6: net.v6, externalV4, externalV6: net.externalV6, upnp, invite, listed };
     } catch (error) {
       await next.stop().catch(() => undefined);
       closeCampaign();
@@ -947,7 +964,7 @@ const calls = {
   },
   "stop-host": () => stopTable(),
   // The invite links of the table being hosted (and whether the router opened its port).
-  invite: () => (table && invite ? { ...invite, upnp: portMapping ? { ok: true, method: portMapping.method } : null } : null),
+  invite: () => (table && invite ? { ...invite, upnp: portMapping ? { ok: true, method: portMapping.method } : null, listed: listing ? listing.status() : null } : null),
   "campaign-view": (id) => {
     const current = requireHosted(id);
     return { view: current.state.view ?? null, hasBundle: Boolean(campaigns.readBundle(campaignFile(), id)) };

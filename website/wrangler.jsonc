@@ -1,8 +1,13 @@
-// maelstromvtt.com: a static site on Cloudflare Workers. Deploy with `npx wrangler deploy` from this folder.
+// maelstromvtt.com: the static site (public/) and the Find a game list (src/worker.js, its D1 database
+// maelstrom-lobby, made from schema.sql). Deploy with `npx wrangler deploy` from this folder.
 {
   "name": "maelstromvtt-web",
   "compatibility_date": "2026-08-20",
-  "assets": { "directory": "./public" },
+  "main": "./src/worker.js",
+  "assets": { "directory": "./public", "binding": "ASSETS", "run_worker_first": ["/api/*", "/find", "/find/*"] },
+  "d1_databases": [{ "binding": "LOBBY", "database_name": "maelstrom-lobby", "database_id": "f1d02428-ef12-47ee-ac56-4ada1e5fbb0a" }],
+  // Listings not seen for 60 days are deleted once a day.
+  "triggers": { "crons": ["17 4 * * *"] },
   "routes": [
     { "pattern": "maelstromvtt.com", "custom_domain": true },
     { "pattern": "www.maelstromvtt.com", "custom_domain": true }

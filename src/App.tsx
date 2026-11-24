@@ -213,9 +213,9 @@ export function App() {
         if (current.connected) current.leave(true);
         // The GM plays under the name kept with the campaign.
         const touched = await kraken.touchCampaign({ id: command.campaignId, port: command.port }).catch(() => null);
-        // internet: players anywhere (and upnp: the router's port opened by itself).
-        const internet = Boolean(command.internet || command.upnp);
-        const failed = await current.host({ name: touched?.gmName || "DM", port: command.port, password: command.password, lan: true, cloud: internet, upnp: Boolean(command.upnp), campaignId: command.campaignId });
+        // internet: players anywhere (upnp: the router's port opened by itself; listed: on the Find a game list).
+        const internet = Boolean(command.internet || command.upnp || command.listed);
+        const failed = await current.host({ name: touched?.gmName || "DM", port: command.port, password: command.password, lan: true, cloud: internet, upnp: Boolean(command.upnp), listed: Boolean(command.listed), campaignId: command.campaignId });
         if (failed) throw new Error(failed);
         const invite = await kraken.invite?.().catch(() => null);
         return { hosting: true, campaignId: command.campaignId, port: command.port, ...(invite ? { invite: invite.internet || invite.lan[0] || invite.local, invites: invite } : {}) };

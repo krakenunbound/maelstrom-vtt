@@ -5105,6 +5105,8 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   void bookkeeping().start();
 
   return {
+    // The players at the table now (the Find a game list shows it).
+    playerCount: () => [...clients.values()].filter((item) => item.joined && item.role === "player").length,
     listen({ port, password: nextPassword }) {
       password = String(nextPassword ?? "").trim();
       hostToken = crypto.randomBytes(24).toString("hex");

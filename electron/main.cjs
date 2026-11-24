@@ -283,6 +283,16 @@ for (const name of [
   ipcMain.handle(name, (_event, ...args) => call(name, ...args));
 
 // True when the text is on the clipboard afterwards.
+// maelstrom:// links open Join a Game (launchLink.cjs). The installer registers the link type; a packaged copy
+// registers it again for the copy that runs. No single-instance lock: a GM and a player copy may run side by side,
+// so a link opens a copy of its own.
+if (app.isPackaged) app.setAsDefaultProtocolClient("maelstrom");
+let launchLink = require("./launchLink.cjs").parseLaunchLink(process.argv);
+ipcMain.handle("launch-link", () => {
+  const link = launchLink;
+  launchLink = null;
+  return link;
+});
 ipcMain.handle("copy", (_event, text) => {
   const value = String(text ?? "").slice(0, 200);
   clipboard.writeText(value);
