@@ -55,6 +55,7 @@ the Rust tests.
 | c91e02f4, f18a3751, 80bc18ca, 7a2b2dd9 | Creatures get faces: an NPC with no picture takes one of its kind, from its whole record (kind, class, gender); named by class or title alone, a human of that kind. | §21, [character-art.md](character-art.md) §3b |
 | 235d0342, 1d9193b6 | The GM's 3.5e Monster Manual art (595 creatures, `games/creatures`) serves every game, found by the name's words. | §24 |
 | 4bcf8bfe, adb31732, 584443a0 | Art by the whole name: the GM's own art beats shipped art; brackets choose; a book's kind before its comma; short names; never a template or another kind's sample; a class in the name chooses the face's class. | 24§3 |
+| 2241460f | A person's role after a book's comma is only the creature's variety: a Soldier is no Giant Ant, Soldier. | [becmi-packs.md](becmi-packs.md) 13, check-character-art |
 
 ### Find a game
 

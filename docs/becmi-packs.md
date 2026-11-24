@@ -674,7 +674,7 @@ Codex's second batch (27 packs; 24 installed in `Documents/Kraken VTT/Packs`):
 
 The checks, run with each pack's rules pack:
 
-- Codex's 18 adventure checks pass.
+- Codex's 18 adventure checks pass (run before the art was written).
 - A sweep through Maelstrom's own loaders is clean. Every creature's AC,
   THAC0 and saves resolve, every page and story entry opens with no dead
   link, every battle loads all its creatures with hit points and tokens,
@@ -694,7 +694,7 @@ Backups of every changed pack are in `Packs/.art-fill-backup`.
 
 Still in the packs:
 
-- Set 1's own sample characters carry five lines that are not in the books'
+- Set 1's own sample characters carry gear lines that are not in the books'
   items, so they are carried as written: "6 tinder box torches", "Small
   metal mirror", "Small hammer", "12 iron spikes", "4 silver arrows",
   "Leather backpack", "2 torches" and "Gem (100 gp)".
