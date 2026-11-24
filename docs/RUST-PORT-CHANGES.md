@@ -74,7 +74,7 @@ per campaign, so a campaign stays the same game in players' histories.
 
 | Commit | Change | Detail |
 |---|---|---|
-| (this commit) | Ready check after a break: /readycheck, /rc, the party sheet's button, the player's I'm back banner, `kraken_ready_check`. | 24§2b |
+| fbdd00ad | Ready check after a break: /readycheck, /rc, the party sheet's button, the player's I'm back banner, `kraken_ready_check`. | 24§2b |
 
 ### Docs only (nothing to port)
 
