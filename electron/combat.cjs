@@ -3227,7 +3227,8 @@ function createCombat({ saved, table, onChange = () => undefined }) {
           // detailed the hit points, status the words (a bar too where the token option shows one), off nothing.
           const tracker = String((entry.faction === "friend" ? opts.ctHealthPc : opts.ctHealthNpc) ?? (entry.faction === "friend" ? "detailed" : "status"));
           const tokenShows = String((record(entry)?.type === "character" ? opts.healthPc : opts.healthNpc) ?? "dot");
-          const shows = seat.role === "dm" || tracker === "detailed" ? "numbers" : tracker === "off" ? "off" : /^bar/.test(tokenShows) ? tokenShows : "dot";
+          // Hidden by either option is hidden: off wins over the tracker's detailed.
+          const shows = seat.role === "dm" ? "numbers" : tracker === "off" || tokenShows === "off" ? "off" : tracker === "detailed" || tokenShows === "numbers" ? "numbers" : /^bar/.test(tokenShows) ? tokenShows : "dot";
           const status = shows === "off" ? { status: "", percent: 0, color: "" } : health(entry);
           const numbers = shows === "numbers";
           const bar = !numbers && /^bar/.test(shows) && hp > 0 ? Math.max(0, Math.min(1, (hp - wounds) / hp)) : undefined;

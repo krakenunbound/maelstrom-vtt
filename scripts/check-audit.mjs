@@ -136,7 +136,9 @@ try {
   force(1, 1);
   hit = await damage();
   assert(hit.crit && last(/^\[DAMAGE\]/).roll.formula === "2d4+2" && (await wounds(s1.id)) === 4 && (await wounds(s2.id)) === 0, `a critical doubles only its own target's dice: ${JSON.stringify(hit)}`);
-  // With no attack since, damage lands on every target (FG's Damage button).
+  // With no attack since, damage lands on every target (FG's Damage button). (The miss took Bone Sentinel 2 off the
+  // targets: FG's Remove on miss, by default for an attack on several targets. It is targeted again.)
+  await tool("kraken_combat", { action: "target", id: ilse.id, targetId: s2.id, on: true });
   force(2);
   hit = await damage();
   assert(!hit.crit && (await wounds(s1.id)) === 8 && (await wounds(s2.id)) === 4, `damage with no attack before it lands on all targets: ${JSON.stringify(hit)}`);
