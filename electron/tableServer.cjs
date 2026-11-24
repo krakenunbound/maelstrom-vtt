@@ -506,6 +506,7 @@ function savedChat(value) {
       ...(line.self ? { self: true } : {}),
       ...(typeof line.mood === "string" ? { mood: line.mood.slice(0, 24) } : {}),
       ...(line.vote && typeof line.vote === "object" ? { vote: line.vote } : {}),
+      ...(line.ready && typeof line.ready === "object" ? { ready: line.ready } : {}),
       ...(line.secret ? { secret: true } : {}),
       // A link on the line (a record, a picture, a page), a shared record's text, the speaker's record, a prompt to roll.
       ...(line.link && typeof line.link === "object" ? { link: line.link } : {}),
@@ -3809,6 +3810,19 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         castVote(String(msg.id ?? ""), msg.choice, client.name);
         return;
       }
+      // A ready check: the GM asks who is back at the table (after a break); each player answers I'm back.
+      if (msg.type === "ready-check") {
+        if (client.role === "dm") startReadyCheck(client);
+        return;
+      }
+      if (msg.type === "ready-back") {
+        if (client.role === "player") answerReady(String(msg.id ?? ""), client.name);
+        return;
+      }
+      if (msg.type === "ready-end") {
+        if (client.role === "dm") endReadyCheck();
+        return;
+      }
       // The GM's Folders window's Refresh, from a browser seat (the app's own window asks its backend directly).
       if (msg.type === "content-refresh") {
         if (client.role !== "dm") return;
@@ -4709,6 +4723,18 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     promptRoll: (promptId, memberId, seat = { role: "dm", name: "GM" }) => promptRoll(String(promptId ?? ""), String(memberId ?? ""), seat),
     prompts: () => chat.filter((line) => line.prompt).map((line) => line.prompt),
     votes: () => chat.filter((line) => line.vote).map((line) => line.vote),
+    // The ready check: start one (every player at the table is asked), answer for a player (as their I'm back), end it, or read it.
+    readyCheck: (action = "status", player = "") => {
+      if (action === "start") return startReadyCheck({ id: "agent", name: "GM" });
+      if (action === "back") {
+        const ready = openReady();
+        if (!ready) throw new Error("There is no ready check open.");
+        if (!ready.waiting.some((item) => sameName(item, player))) throw new Error(`${player || "That player"} is not waiting in the ready check (waiting: ${ready.waiting.join(", ") || "nobody"}).`);
+        return answerReady(ready.id, player);
+      }
+      if (action === "end") return endReadyCheck() ?? { open: false };
+      return openReady() ?? [...chat].reverse().find((line) => line.ready)?.ready ?? null;
+    },
     save: () => onChange("save"),
     // The GM's Folders window's Refresh: the art read again, every seat's book shelf and lists sent again,
     // while the table stays up (no one is sent away).
@@ -5053,6 +5079,39 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     const id = crypto.randomBytes(6).toString("hex");
     addChat({ id: client?.id ?? "agent", from: client?.name ?? "Agent", text: question, at: Date.now(), vote: { id, question, yes: [], no: [] } });
     return id;
+  }
+  // A ready check: every player at the table now is waiting until they answer I'm back. One at a time: a new
+  // one ends the last. It ends by itself when everyone is back, or when the GM ends it.
+  const openReady = () => chat.find((line) => line.ready?.open)?.ready ?? null;
+  function startReadyCheck(client) {
+    endReadyCheck(true);
+    const waiting = [...new Set([...clients.values()].filter((item) => item.joined && item.role === "player").map((item) => String(item.name).slice(0, 24)))];
+    const ready = { id: crypto.randomBytes(6).toString("hex"), waiting, back: [], open: waiting.length > 0 };
+    addChat({ id: client?.id ?? "agent", from: client?.name ?? "GM", text: waiting.length ? "Ready check: are you back at the table?" : "Ready check: no players are at the table.", at: Date.now(), ready });
+    onChange("table");
+    return ready;
+  }
+  function answerReady(id, name) {
+    const ready = openReady();
+    if (!ready || ready.id !== id) return null;
+    const who = ready.waiting.find((item) => sameName(item, name));
+    if (!who) return ready;
+    ready.waiting = ready.waiting.filter((item) => item !== who);
+    ready.back.push(who);
+    if (!ready.waiting.length) ready.open = false;
+    broadcast({ type: "ready", ready });
+    if (!ready.open) addChat({ id: "table", from: "Maelstrom", text: "Ready check: everyone is back.", at: Date.now() });
+    onChange("table");
+    return ready;
+  }
+  function endReadyCheck(quiet = false) {
+    const ready = openReady();
+    if (!ready) return null;
+    ready.open = false;
+    broadcast({ type: "ready", ready });
+    if (!quiet) addChat({ id: "table", from: "Maelstrom", text: ready.waiting.length ? `Ready check ended. Not back: ${ready.waiting.join(", ")}.` : "Ready check ended.", at: Date.now() });
+    onChange("table");
+    return ready;
   }
   function castVote(id, choice, name) {
     const line = chat.find((item) => item.vote?.id === id);

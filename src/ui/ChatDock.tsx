@@ -219,7 +219,7 @@ const TAGGED: [RegExp, string, string][] = [
 function iconOf(line: ChatLine): { icon: string; tone: string } | null {
   const said = line.roll?.label || line.text || "";
   for (const [pattern, icon, tone] of TAGGED) if (pattern.test(said)) return { icon, tone };
-  if (line.vote) return { icon: "vote", tone: "vote" };
+  if (line.vote || line.ready) return { icon: "vote", tone: "vote" };
   if (line.to) return { icon: "whisper", tone: "whisper" };
   if (line.kind === "emote" || line.kind === "action") return { icon: "emote", tone: "emote" };
   if (line.kind === "mood") return { icon: "mood", tone: "emote" };
@@ -336,6 +336,22 @@ function Line({ line, gmIcon, session }: { line: ChatLine; gmIcon: string; sessi
       {line.link ? <ChatLinkChip link={line.link} session={session} /> : null}
       {line.share ? <SharedRecord share={line.share} session={session} /> : null}
       {line.prompt ? <PromptCard line={line} session={session} /> : null}
+      {line.ready ? (
+        <span className="chat-vote chat-ready" data-ready={line.ready.open ? "open" : "closed"}>
+          {line.ready.open && line.ready.waiting.includes(me) && session.role !== "dm" ? (
+            <button type="button" data-action="ready-back" onClick={() => session.tableCommand({ type: "ready-back", id: line.ready!.id })}>
+              I'm back
+            </button>
+          ) : null}
+          {line.ready.open && session.role === "dm" ? (
+            <button type="button" data-action="ready-end" onClick={() => session.tableCommand({ type: "ready-end" })}>
+              End
+            </button>
+          ) : null}
+          {line.ready.back.length ? <small data-ready-back>Back: {line.ready.back.join(", ")}</small> : null}
+          {line.ready.waiting.length ? <small data-ready-waiting>{line.ready.open ? "Waiting for" : "Not back"}: {line.ready.waiting.join(", ")}</small> : null}
+        </span>
+      ) : null}
       {line.vote ? (
         <span className="chat-vote">
           <button type="button" className={myVote === "yes" ? "on" : ""} onClick={() => session.tableCommand({ type: "vote-cast", id: line.vote!.id, choice: "yes" })}>

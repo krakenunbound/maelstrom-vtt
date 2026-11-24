@@ -152,7 +152,7 @@ may follow FG, icons and art are Maelstrom's own.
 
 ## Dice, chat and combat flow
 
-Kraken already at or ahead: seeded host dice engine, 3D dice, tray with right-click roll N, custom dice and dice packs, dice tower, whispers and reply, emote/OOC/mood/story/vote, speak as, roll cards and drag a damage/heal line onto a creature, drag chat into notes, initiative (all/NPCs/own), sort/turns/rounds/undo, hide NPCs, turn chime and banner, add from list/map/encounter/party, damage/heal on rows, death markers, 5E death saves, XP awards.
+Kraken already at or ahead: seeded host dice engine, 3D dice, tray with right-click roll N, custom dice and dice packs, dice tower, whispers and reply, emote/OOC/mood/story/vote, ready check after a break (/readycheck, /rc, the party sheet), speak as, roll cards and drag a damage/heal line onto a creature, drag chat into notes, initiative (all/NPCs/own), sort/turns/rounds/undo, hide NPCs, turn chime and banner, add from list/map/encounter/party, damage/heal on rows, death markers, 5E death saves, XP awards.
 
 | # | Gap | Kraken today | Best solution | Priority |
 |---|---|---|---|---|

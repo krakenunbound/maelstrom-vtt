@@ -249,6 +249,14 @@ export const COMMANDS: Command[] = [
     },
   },
   {
+    names: ["readycheck", "rc"],
+    args: "<end>",
+    help: "After a break: ask who is back at the table; /rc end to end it",
+    group: "GM",
+    gm: true,
+    run: (rest, context) => context.session.tableCommand({ type: /^end$/i.test(rest.trim()) ? "ready-end" : "ready-check" }),
+  },
+  {
     names: ["kick"],
     args: "[player]",
     help: "Send a player away from the table",

@@ -70,6 +70,12 @@ over IPv4, close by `POST /api/lobby/close`, and read `GET /api/lobby/games`,
 `/status` and `/join`. It also has to keep one key per computer and one id
 per campaign, so a campaign stays the same game in players' histories.
 
+### The table
+
+| Commit | Change | Detail |
+|---|---|---|
+| (this commit) | Ready check after a break: /readycheck, /rc, the party sheet's button, the player's I'm back banner, `kraken_ready_check`. | 24§2b |
+
 ### Docs only (nothing to port)
 
 `53924f1b`, `7d92b3b1`, `9e234745`, and the docs parts of the commits above.

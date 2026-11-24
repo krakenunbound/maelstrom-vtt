@@ -318,6 +318,15 @@ export function PartySheet({ session, compact = false }: { session: Session; com
           </ul>
           {gm ? (
             <div className="party-controls">
+              <button
+                type="button"
+                data-action="party-ready-check"
+                title="After a break: ask the players at the table if they are back; chat shows who is and who is not"
+                disabled={!session.players.some((seat) => seat.role === "player" && !seat.lost)}
+                onClick={() => session.tableCommand({ type: "ready-check" })}
+              >
+                Ready check
+              </button>
               {/* Who is here tonight: every character of a player at the table joins, and the GM's own (no player holds
                   them); one whose player is not here leaves. */}
               <button

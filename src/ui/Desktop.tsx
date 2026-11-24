@@ -798,6 +798,7 @@ export function Desktop({
         <ClocksStrip session={session} />
         {gm ? <UndoToast session={session} /> : null}
         <TableToast session={session} mapOpen={Boolean(scene)} />
+        <ReadyBanner session={session} />
         <ActionToasts session={session} />
         <CombatList session={session} />
 
@@ -1021,6 +1022,23 @@ function useReopenWindows(session: Session, manager: ReturnType<typeof useWindow
       /* not kept */
     }
   }, [manager.windows, key]);
+}
+
+// A ready check the GM called: until this player answers I'm back, a banner at the top of their screen (chat may be closed
+// or scrolled while they were away).
+function ReadyBanner({ session }: { session: Session }) {
+  if (session.role === "dm") return null;
+  const me = session.players.find((seat) => seat.id === session.selfId)?.name ?? "";
+  const ready = [...session.chat].reverse().find((line) => line.ready)?.ready;
+  if (!me || !ready?.open || !ready.waiting.includes(me)) return null;
+  return (
+    <div className="ready-banner" role="alert" data-ready-banner>
+      <span>The GM asks: are you back at the table?</span>
+      <button type="button" className="play-button" data-action="ready-back" onClick={() => session.tableCommand({ type: "ready-back", id: ready.id })}>
+        I'm back
+      </button>
+    </div>
+  );
 }
 
 function TableToast({ session, mapOpen }: { session: Session; mapOpen: boolean }) {

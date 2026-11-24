@@ -1094,6 +1094,15 @@ const TOOLS = [
     },
   },
   {
+    name: "kraken_ready_check",
+    description: "The ready check (chat's /readycheck or /rc, the party sheet's Ready check): after a break, ask who is back at the table. start: every player at the table now is waiting until they press I'm back (one check at a time; a new one ends the last); it ends by itself when everyone is back. back: answer for a player, as their I'm back. end: end it now (chat says who is not back). status (default): the open check, else the last one: waiting, back, open.",
+    inputSchema: object({ action: string("start, back, end or status"), player: string("The player's name (back)") }),
+    run(args, ctx) {
+      const agent = needTable(ctx);
+      return out({ readyCheck: agent.readyCheck(args.action || "status", args.player || "") });
+    },
+  },
+  {
     name: "kraken_vote",
     description: "FG's /vote: ask the table a yes-or-no question (everyone answers in chat and sees the count), or with no question, read the votes so far.",
     inputSchema: object({ question: string("The question") }),

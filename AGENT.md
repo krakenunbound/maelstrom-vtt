@@ -144,7 +144,7 @@ doesn't get it (it could reach the tools withheld from the assistant).
 | The tracker's options (Settings > Combat: initiative by kind, skip turns, NPC numbering; Tokens: creatures' health also in the tracker, numbers), a row's Delay and Act now | `kraken_table_options` initGroup, skipDead, npcNumbering, healthNpc; `kraken_combat` delay, act-now |
 | Chat commands: `/w` whispers, `/me` `/action` `/ooc` `/mood`, the GM's `/story` and `/id` | `kraken_chat_send` (`kind`, `to`, `as`, `mood`) |
 | `/gmroll`, `/blindroll` | `kraken_roll` with `secret` |
-| `/kick` (and the Players window's Kick, Ban), `/vote`, `/save` | `kraken_kick` (ban), `kraken_vote`, `kraken_save` |
+| `/kick` (and the Players window's Kick, Ban), `/vote`, `/readycheck` or `/rc` (and the party sheet's Ready check), `/save` | `kraken_kick` (ban), `kraken_vote`, `kraken_ready_check`, `kraken_save` |
 | **Sound** | |
 | The Sound window: one-shots and effects for the table, ambience loops, music, the chat's sound triggers, a scene's own sound | `kraken_sound` (list, play, stop, ambience, music, scene, triggers, scape) |
 | GM-only roll (the GM's dice tower) | `kraken_roll` with `secret` |

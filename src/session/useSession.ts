@@ -206,6 +206,8 @@ export type DamageCard = { kind: "damage" | "heal"; type: string; name: string; 
 // kind: what the line is (FG's chat commands): said, an emote, an action, out of character, the GM's story, a mood.
 export type ChatKind = "say" | "emote" | "action" | "ooc" | "story" | "mood" | "readaloud";
 export type ChatVote = { id: string; question: string; yes: string[]; no: string[] };
+// A ready check (the GM's /readycheck): the players still away (waiting), those who answered I'm back, and whether it is open.
+export type ChatReady = { id: string; waiting: string[]; back: string[]; open: boolean };
 export type ChatLine = {
   id: string;
   from: string;
@@ -225,6 +227,7 @@ export type ChatLine = {
   garbled?: boolean;
   understood?: string[];
   vote?: ChatVote;
+  ready?: ChatReady;
   // Shown on this screen only (/help, /info): never sent.
   local?: boolean;
   // Read aloud: where the words are from (a page, a story).
@@ -821,6 +824,10 @@ export function useSession() {
           if (msg.type === "prompt" && msg.prompt && typeof msg.prompt === "object") {
             const prompt = msg.prompt as ChatPrompt;
             setChat((current) => current.map((line) => (line.prompt?.id === prompt.id ? { ...line, prompt } : line)));
+          }
+          if (msg.type === "ready" && msg.ready && typeof msg.ready === "object") {
+            const ready = msg.ready as ChatReady;
+            setChat((current) => current.map((line) => (line.ready?.id === ready.id ? { ...line, ready } : line)));
           }
           if (msg.type === "vote" && typeof msg.id === "string") {
             const id = msg.id;
