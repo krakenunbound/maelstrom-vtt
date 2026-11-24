@@ -108,6 +108,14 @@ const CREATURE_WORDS = {
 };
 // A creature's role from its name: the classes to prefer for its face.
 const ROLE_WORDS = [
+  // A class its name says ("Human Fighter", "Ranger 5 (Gnoll)").
+  [/\bfighters?\b/i, ["Fighter", "Warrior"]],
+  [/\brangers?\b/i, ["Ranger"]],
+  [/\bpaladins?\b/i, ["Paladin", "Fighter"]],
+  [/\bbarbarians?\b/i, ["Barbarian", "Fighter"]],
+  [/\bbards?\b/i, ["Bard"]],
+  [/\bmonks?\b/i, ["Monk"]],
+  [/\bdruids?\b/i, ["Druid"]],
   [/\b(chief|chieftain|king|queen|captain|leader|warrior|guard|sentry|bodyguard|soldier|champion|lord)\b/i, ["Fighter", "Warrior", "Barbarian"]],
   [/\b(shaman|priest|cleric|witch ?doctor)\b/i, ["Cleric", "Druid", "Shaman"]],
   [/\b(wizard|mage|sorcerer|magic-user|caster)\b/i, ["Wizard", "Magic-User", "Sorcerer"]],
@@ -200,6 +208,8 @@ export function creaturePair(items, who, seed) {
 // "Owlbear_A1_Large_Scale130_Monstrosity_01" is "owlbear" (the words before the variant code).
 /** @param {string} name */
 export const tokenCreature = (name) => String(name ?? "").replace(/[_ ](portrait|token)$/i, "").replace(/[_-]+/g, " ").replace(/\s+[A-Z]\d+\b.*$/, "").replace(/\s+\d+$/, "").trim().toLowerCase();
+// Words that make a creature another kind of thing (a zombie human is no human).
+const TEMPLATES = new Set(["half", "skeleton", "zombie", "celestial", "fiendish", "lycanthrope", "vampire", "ghost", "lich", "mummy"]);
 const squash = (/** @type {string} */ text) => text.toLowerCase().replace(/\([^)]*\)/g, " ").replace(/[^a-z]+/g, "");
 // A token of the creature's own kind from a token library (any picture whose file names it): the name exactly
 // ("Owl Bear" is "Owlbear"), else one whose name holds every word of it ("Fire Beetle": "Giant Fire Beetle");
@@ -208,7 +218,7 @@ const squash = (/** @type {string} */ text) => text.toLowerCase().replace(/\([^)
 export function creatureToken(items, name, seed, kind = "token") {
   const wanted = squash(name);
   const words = String(name ?? "").toLowerCase().replace(/\([^)]*\)/g, " ").split(/[^a-z]+/).filter((word) => word.length > 2);
-  if (!wanted || !words.length) return null;
+  if (!wanted) return null;
   // Never a placeholder (Fantasy Grounds' "tokens/placeholders/id-00373-Shrieker.png" is a card saying TOKEN); the
   // app's own token folders (kraken/: Forgotten Adventures) first, a campaign's folders only when they have none.
   const usable = items.filter((item) => item.kind === kind && !item.pair && !item.video && !/placeholder/i.test(String(item.id)) && !/^id[-_ ]\d{3,}/i.test(String(item.name)));
@@ -222,11 +232,21 @@ export function creatureToken(items, name, seed, kind = "token") {
   const last = words.at(-1) ?? "";
   const matching = (/** @type {any[]} */ tokens) => {
     const exact = tokens.filter((item) => squash(tokenCreature(item.name)) === wanted);
-    if (exact.length) return exact;
+    // A short name ("Ox") has no words to search by: only its exact name.
+    if (exact.length || !words.length) return exact;
     const near = tokens.filter((item) => {
       // Its words without punctuation (a book's "Red Dragon, Adult").
-      const base = tokenCreature(item.name).split(/[^a-z]+/).filter(Boolean);
-      return base.length && words.every((word) => base.includes(word) || base.includes(word.replace(/s$/, "")));
+      const art = tokenCreature(item.name);
+      const base = art.split(/[^a-z]+/).filter(Boolean);
+      if (!base.length || !words.every((word) => base.includes(word) || base.includes(word.replace(/s$/, "")))) return false;
+      // Never another creature that only carries the name's words: a book's sample with class levels is of the
+      // name's kind (before its comma or level: "Celestial Charger, 7th-Level Cleric" is no "Cleric 5"), and
+      // the picture adds no template ("Zombie, Human Commoner", "Half-Black Dragon ... Human Fighter").
+      const said = new Set([...words, ...String(name).toLowerCase().split(/[^a-z]+/)]);
+      const level = /\b\d+(?:st|nd|rd|th)\s+level\b/;
+      const kind = art.split(/,/)[0].split(level)[0].split(/[^a-z]+/).filter(Boolean);
+      if (level.test(art) && !kind.some((word) => said.has(word) || said.has(`${word}s`))) return false;
+      return !base.some((word) => TEMPLATES.has(word) && !said.has(word));
     });
     if (near.length || words.length < 2) return near;
     // Last: a book's kind before its comma ("Boar, Wild": a Boar), else the name's last word ("Normal Bat": a Bat).

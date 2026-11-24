@@ -83,7 +83,14 @@ its window:
   GM's own AI-made art, free to use in every game). Found by its name's
   words, a book's commas too ("Adult Red Dragon" is "Red Dragon, Adult"; a
   Giant Bat is a Bat, "giant" before another word being only its size), the
-  plainest name first, its portrait with its token. It comes before a face
+  plainest name first, its portrait with its token; words in brackets choose
+  among them ("Elemental (Fire, 12 HD)" a fire one, a hatchling a wyrmling).
+  Never another creature that only carries the name's words: a book's sample
+  with class levels must be of the name's kind ("Celestial Charger, 7th-Level
+  Cleric" is no "Cleric 5"), and a template ("Zombie, Human Commoner",
+  "Half-Black Dragon ... Human Fighter") never stands for a plain one. A
+  class in the name ("Human Fighter", "Gnoll Ranger") chooses the face's
+  class. A short name ("Ox") finds only art named for it. It comes before a face
   its record's words suggest (a Giant Bat whose text speaks of vampire bats
   is still a bat). `scripts/import-creature-art.mjs <module.mod>` brings in
   another book's (an FG module whose creatures each have a picture and a
