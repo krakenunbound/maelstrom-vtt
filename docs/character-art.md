@@ -76,7 +76,9 @@ its window:
   fighter, a shaman a cleric), from any system's art (a goblin looks like a
   goblin in any game). Each creature keeps the same face (chosen by its
   record), and a room of goblins gets different ones.
-- **The shipped creature art first** (`games/creatures`: a portrait and its
+- **The shipped creature art next**, for a creature with no art of its own
+  (art made for it by its name, in the GM's art folders, always comes first)
+  (`games/creatures`: a portrait and its
   token for each of the 595 creatures of the GM's 3.5e Monster Manual, the
   GM's own AI-made art, free to use in every game). Found by its name's
   words, a book's commas too ("Adult Red Dragon" is "Red Dragon, Adult"; a

@@ -110,6 +110,8 @@ try {
   // Art made for a creature by its name (its own portrait and token in the art folders) comes first, parentheses too.
   const madeFor = [{ id: "kraken/tokens/Creatures/Sprackle (Lesser)_Token.webp", kind: "token", name: "Sprackle (Lesser)_Token" }, { id: "kraken/tokens/Creatures/Sprackle (Greater)_Token.webp", kind: "token", name: "Sprackle (Greater)_Token" }];
   assert(creatureToken(madeFor, "Sprackle (Greater)", "a") === madeFor[1].id && creatureToken(madeFor, "Sprackle (Lesser)", "a") === madeFor[0].id, "its own picture by its full name");
+  const both = [{ id: "creatures/tokens/Hill Giant_Token.webp", kind: "token", name: "Hill Giant_Token" }, { id: "kraken/tokens/Creatures/Hill Giant_Token.webp", kind: "token", name: "Hill Giant_Token" }];
+  assert(["a", "b", "c", "d"].every((seed) => creatureToken(both, "Hill Giant", seed) === both[1].id), "the GM's own picture of a name before a shipped one");
   // A book's names with commas (games/creatures: "Red Dragon, Adult") are found by their words, the plainest first.
   const book = ["Red Dragon, Adult", "Skeleton, Young Adult Red Dragon", "Red Dragon, Mature adult", "Ooze, Gelatinous Cube"].map((name) => ({ id: `creatures/tokens/${name}_Token.webp`, kind: "token", name: `${name}_Token` }));
   assert(creatureToken(book, "Adult Red Dragon", "a") === book[0].id && creatureToken(book, "Gelatinous Cube", "a") === book[3].id, `a book's comma names: ${creatureToken(book, "Adult Red Dragon", "a")}`);

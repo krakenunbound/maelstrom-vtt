@@ -215,7 +215,10 @@ export function creatureToken(items, name, seed, kind = "token") {
   // Its own picture first: one named for it exactly, its parentheses too ("Sprackle (Lesser)").
   const whole = (/** @type {string} */ text) => text.toLowerCase().replace(/[^a-z()]+/g, "");
   const madeFor = usable.filter((item) => whole(String(item.name).replace(/[_ ](portrait|token)$/i, "")) === whole(String(name)));
-  if (madeFor.length) return madeFor.sort((a, b) => a.id.localeCompare(b.id))[hashOf(String(seed || name)) % madeFor.length].id;
+  // The GM's own art folders (kraken/: art made for it) before any shipped picture of the same name.
+  const mine = madeFor.filter((item) => String(item.id).startsWith("kraken/"));
+  const named = mine.length ? mine : madeFor;
+  if (named.length) return named.sort((a, b) => a.id.localeCompare(b.id))[hashOf(String(seed || name)) % named.length].id;
   const last = words.at(-1) ?? "";
   const matching = (/** @type {any[]} */ tokens) => {
     const exact = tokens.filter((item) => squash(tokenCreature(item.name)) === wanted);
