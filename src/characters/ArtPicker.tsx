@@ -6,7 +6,7 @@ import { GM } from "../ui/gmTitle";
 import { genderOf, pickPair } from "../../shared/characters/art.mjs";
 
 // A picture of the character art library carries its race, class, gender and its partner's id (pair).
-export type ArtItem = { id: string; kind: "portrait" | "token"; group: string; name: string; video: boolean; race?: string; cls?: string; gender?: string; pair?: string };
+export type ArtItem = { id: string; kind: "portrait" | "token"; group: string; name: string; video: boolean; race?: string; cls?: string; gender?: string; pair?: string; unlike?: boolean };
 
 // A picture from the GM's art library: an image, or a looping video portrait.
 // still: a small picture (the top bar, lists, the tracker) shows a video

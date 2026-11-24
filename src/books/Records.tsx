@@ -640,7 +640,8 @@ export function RecordWindow({ session, id, record: given, book }: { session: Se
   if (typeof data.text === "string" && data.text.trim()) texts.unshift(["description", data.text]);
   // A creature's portrait, an item's or a vehicle's picture (each from its own book).
   const pictured = npc || record.type === "item" || record.type === "itemtemplate" || record.type === "vehicle";
-  const portrait = pictured && (data.picture || data.token) ? session.recordArtUrl(record.id, "portrait") : "";
+  // A creature with none of its own may have one of its kind from the character art (the host's; hidden if none).
+  const portrait = pictured && (data.picture || data.token || npc) ? session.recordArtUrl(record.id, "portrait") : "";
   // The picture's file in its book ("mm/images/Goblin.webp@B2 ..."), to open full size and share.
   const pictureRef = String(data.picture || data.token || "");
   const pictureBook = pictureRef.split("@")[1]?.trim() || record.source || "";

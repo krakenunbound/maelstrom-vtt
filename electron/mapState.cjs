@@ -621,7 +621,7 @@ const MAX_WALLS_STUDIO = 20000;
 
 // Weather Map Studio can hold (krakenBridge.cjs TO_STUDIO_FX); any other kind stays as the table had it.
 const STUDIO_WEATHER = new Set(["rain", "snow", "blizzard", "fog", "clouds", "water"]);
-function createMapState({ saved, records, onChange = () => undefined, hasArt = () => false, isVideoArt = () => false, hasPicture = () => false, artFor = () => null, hasTile = () => true, combatFor = () => null, activeRecord = () => null, sharedWith = null, colorOf = playerColor, tableOptions = () => ({}), onRegion = () => undefined, onTracker = () => false, onFaction = () => undefined, onHidden = () => undefined }) {
+function createMapState({ saved, records, onChange = () => undefined, hasArt = () => false, isVideoArt = () => false, hasPicture = () => false, artFor = () => null, creatureArtFor = () => null, hasTile = () => true, combatFor = () => null, activeRecord = () => null, sharedWith = null, colorOf = playerColor, tableOptions = () => ({}), onRegion = () => undefined, onTracker = () => false, onFaction = () => undefined, onHidden = () => undefined }) {
   // One master per map: a second state (the GM's private image window) works on
   // the very same walls, lights, tokens, paint and effects as the table's.
   const state = sharedWith ? sharedWith.rawState() : savedMap(saved);
@@ -1218,6 +1218,10 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       // An NPC's own token picture, from its module (an animated one plays).
       out.art = `/table/record-art?token=${assetToken}&record=${encodeURIComponent(token.recordId)}`;
       out.video = /\.webm(@|$)/i.test(String(data?.token || data?.picture || ""));
+    } else if (token.recordId && records.get(token.recordId) && records.get(token.recordId).type !== "character") {
+      // A creature with no picture of its own: one of its kind from the character art (a goblin's face for a goblin).
+      const face = creatureArtFor(records.get(token.recordId));
+      if (face) out.art = `/art/file?token=${assetToken}&id=${encodeURIComponent(face)}`;
     }
     return out;
   }

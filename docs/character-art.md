@@ -64,6 +64,42 @@ picked by hand brings its own token. A character that already has pictures
 keeps them. With no fitting pair, the older pictures (Maelstrom's own, the
 GM's folders) are used as before.
 
+## 3b. Creatures
+
+A creature (an NPC, a monster of a book or adventure) with no picture of its
+own, nor one from its book, gets one of its kind, on the map, the tracker and
+its window:
+
+- **A face from the character art**, by the race its name shows ("Goblin
+  Sentry": a goblin; "Hobgoblin" before "Goblin"; a Gnoll is a Kholo, a
+  Bandit a human thief), the class its role suggests (a chief or sentry a
+  fighter, a shaman a cleric), from any system's art (a goblin looks like a
+  goblin in any game). Each creature keeps the same face (chosen by its
+  record), and a room of goblins gets different ones.
+- **Else a token of its name from the token folders** (Forgotten Adventures'
+  Dire Wolf, Owlbear, Giant Fire Beetle), the app's own folders before a
+  campaign's, never a placeholder card.
+
+The book's own picture always wins; the GM can still give any creature
+another.
+
+## 3c. Pictures that do not fit
+
+`review.json` lists portraits that do not look like their race (a goblin
+drawn as a human with pointed ears), checked on contact sheets of every
+portrait of a race. Automatic picks (new characters, creatures) never use
+them; the pickers still offer them. To take pictures out for good, delete
+both files of the pair (`_Portrait.webp` and `_Token.webp`), then:
+
+```powershell
+node scripts/import-character-art.mjs --prune
+```
+
+The pairs leave `manifest.json` and `review.json` and are remembered
+(`removed`), so a later import does not bring them back. Maelstrom also skips
+a pair whose files are gone, and every seat's map gets its tokens again when
+the pictures change.
+
 ## 4. Adding art
 
 New pairs are made in a separate working folder with its own `manifest.csv`

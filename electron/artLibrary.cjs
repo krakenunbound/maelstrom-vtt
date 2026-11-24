@@ -41,12 +41,22 @@ function characterItems(characters) {
     return [];
   }
   const { servesGame } = require("../shared/characters/art.mjs");
+  // Portraits that do not look like their race (review.json): never picked by themselves, still offered.
+  let unlike = {};
+  try {
+    unlike = JSON.parse(fs.readFileSync(path.join(characters.dir, "review.json"), "utf8"))?.notLikeRace ?? {};
+  } catch {
+    unlike = {};
+  }
   const out = [];
   for (const pair of Array.isArray(manifest?.pairs) ? manifest.pairs : []) {
-    if (characters.ruleset !== undefined && !servesGame(pair, characters.ruleset)) continue;
+    // Every pair is kept (a creature's face may come from any system's art); the pickers list only the game's.
+    const serves = characters.ruleset === undefined || servesGame(pair, characters.ruleset);
+    // A pair whose pictures were deleted (the GM taking out ones that do not fit) is left out.
+    if (!fs.existsSync(path.join(characters.dir, ...String(pair.portrait).split("/")))) continue;
     const ids = { portrait: `characters/${pair.portrait}`, token: `characters/${pair.token}` };
     for (const kind of KINDS) {
-      out.push({ id: ids[kind], kind, group: `Characters · ${pair.race}`, name: `${pair.race} ${pair.cls}, ${pair.gender} (${String(pair.name).replace(/_/g, " ")})`, video: false, file: path.join(characters.dir, ...pair[kind].split("/")), mime: "image/webp", race: pair.race, cls: pair.cls, gender: pair.gender, pair: ids[kind === "portrait" ? "token" : "portrait"] });
+      out.push({ id: ids[kind], kind, group: `Characters · ${pair.race}`, name: `${pair.race} ${pair.cls}, ${pair.gender} (${String(pair.name).replace(/_/g, " ")})`, video: false, file: path.join(characters.dir, ...pair[kind].split("/")), mime: "image/webp", race: pair.race, cls: pair.cls, gender: pair.gender, pair: ids[kind === "portrait" ? "token" : "portrait"], serves, ...(unlike[pair.portrait] ? { unlike: true } : {}) });
     }
   }
   return out;
@@ -59,6 +69,10 @@ function createArtLibrary({ base, roots, characters = null }) {
   const root = path.resolve(base);
   let index = null;
   let indexedAt = 0;
+  let indexSignature = "";
+  const listeners = new Set();
+  // Creatures' picks, for the index they were made from (the map asks for them often).
+  const creatures = { index: null, picks: new Map() };
 
   function walk(dir, depth, out) {
     let entries;
@@ -92,29 +106,62 @@ function createArtLibrary({ base, roots, characters = null }) {
       }
     }
     for (const item of characterItems(characters)) if (!items.has(item.id)) items.set(item.id, item);
+    // What it holds changed (pictures added or deleted): those that show its pictures are told (the map's tokens).
+    const signature = `${items.size}:${[...items.keys()].join("|").length}`;
+    const changed = index && signature !== indexSignature;
+    indexSignature = signature;
     index = items;
     indexedAt = Date.now();
+    if (changed) for (const listener of listeners) setImmediate(listener);
     return index;
   }
 
   return {
     // Refresh (the GM's Folders window): read the folder again at the next look.
     forget() {
-      index = null;
+      indexedAt = 0;
     },
     // What the pickers show, newest scan at most 30 seconds old.
     list(kind) {
       return [...scan().values()]
-        .filter((item) => !kind || item.kind === kind)
-        .map(({ id, kind: itemKind, group, name, video, race, cls, gender, pair }) => ({ id, kind: itemKind, group, name, video, ...(pair ? { race, cls, gender, pair } : {}) }))
+        .filter((item) => (!kind || item.kind === kind) && item.serves !== false)
+        .map(({ id, kind: itemKind, group, name, video, race, cls, gender, pair, unlike }) => ({ id, kind: itemKind, group, name, video, ...(pair ? { race, cls, gender, pair } : {}), ...(unlike ? { unlike: true } : {}) }))
         .sort((a, b) => a.group.localeCompare(b.group) || a.name.localeCompare(b.name));
     },
-    // Only files the scan found are served: an id is never a free path.
+    // Only files the scan found are served: an id is never a free path. One deleted since: read again at once.
     file(id) {
       const item = scan().get(String(id));
+      if (item && !fs.existsSync(item.file)) {
+        indexedAt = 0;
+        scan();
+        return null;
+      }
       return item ? { path: item.file, mime: item.mime } : null;
     },
+    // Told when what it holds changes (a rescan finds pictures added or deleted).
+    onChanged(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
     has: (id) => scan().has(String(id)),
+    // A creature's portrait and its token from the character art (any system's), by the race its name shows; the
+    // same for the same seed (its record's id). null: none of its kind.
+    creature(name, seed, kind = "token") {
+      const key = `${name}|${seed}`;
+      const index = scan();
+      if (creatures.index !== index) creatures.index = index, creatures.picks.clear();
+      if (!creatures.picks.has(key)) {
+        const shared = require("../shared/characters/art.mjs");
+        const portraits = [...index.values()].filter((item) => item.kind === "portrait" && item.pair);
+        // Its kind's face from the character art (a goblin's); else a token of its name from the GM's token
+        // folders (Forgotten Adventures' Dire Wolf), as its portrait too.
+        const pair = portraits.length ? shared.creaturePair(portraits, name, seed) : null;
+        const token = pair ? null : shared.creatureToken([...index.values()], name, seed);
+        creatures.picks.set(key, pair ?? (token ? { portrait: token, token } : null));
+      }
+      const pair = creatures.picks.get(key);
+      return pair ? pair[kind === "portrait" ? "portrait" : "token"] : null;
+    },
     // The id of a file in a root (a picture just added), read again first.
     idOf(file) {
       index = null;

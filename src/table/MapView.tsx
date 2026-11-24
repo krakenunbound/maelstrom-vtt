@@ -2585,7 +2585,21 @@ function MapViewInner({
                 {token.art && token.artScale ? null : token.art && token.video ? (
                   <video src={token.art} autoPlay loop muted playsInline style={token.facing != null ? { transform: `rotate(${token.facing}deg)` } : undefined} />
                 ) : token.art ? (
-                  <img src={token.art} alt="" draggable={false} style={token.facing != null ? { transform: `rotate(${token.facing}deg)` } : undefined} />
+                  <>
+                    {/* A picture that will not load (deleted since): the token's letters, never a broken image. */}
+                    <img
+                      key={token.art}
+                      src={token.art}
+                      alt=""
+                      draggable={false}
+                      style={token.facing != null ? { transform: `rotate(${token.facing}deg)` } : undefined}
+                      onError={(event) => {
+                        event.currentTarget.style.display = "none";
+                        event.currentTarget.nextElementSibling?.removeAttribute("hidden");
+                      }}
+                    />
+                    <span hidden>{initials(token.name)}</span>
+                  </>
                 ) : (
                   <span>{initials(token.name)}</span>
                 )}

@@ -1068,6 +1068,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     isVideoArt: (id) => String(tokenArt.get(id)?.mime ?? "").startsWith("video/"),
     hasPicture: (id) => Boolean(art && art.has(id)),
     artFor: (data) => artForCharacter(data),
+    creatureArtFor: (record) => (art?.creature ? art.creature(record.name, record.id, "token") : null),
     hasTile: (id) => Boolean(tiles && tiles.has(id)),
     // An NPC token's health and the active turn come from the tracker.
     combatFor: (tokenId) => {
@@ -1113,6 +1114,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     isVideoArt: (id) => String(tokenArt.get(id)?.mime ?? "").startsWith("video/"),
     hasPicture: (id) => Boolean(art && art.has(id)),
     artFor: (data) => artForCharacter(data),
+    creatureArtFor: (record) => (art?.creature ? art.creature(record.name, record.id, "token") : null),
     hasTile: (id) => Boolean(tiles && tiles.has(id)),
     combatFor: () => null,
     activeRecord: () => null,
@@ -2460,6 +2462,24 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
           }
           sendMedia(req, res, { bytes }, file.mime, "private, max-age=300");
           return;
+        }
+      }
+      // A creature with no picture of its own (nor its book's): one of its kind from the character art, its
+      // portrait or its token as asked (a goblin's face for a goblin; the same one each time).
+      if (allowed && record.type !== "character" && record.type !== "party" && !(record.data?.token || record.data?.picture || record.data?.portrait) && art?.creature) {
+        const face = art.creature(record.name, record.id, kind === "picture" ? "portrait" : "token");
+        const file = face ? art.file(face) : null;
+        if (file) {
+          let bytes;
+          try {
+            bytes = fs.readFileSync(file.path);
+          } catch {
+            bytes = null;
+          }
+          if (bytes) {
+            sendMedia(req, res, { bytes }, file.mime, "private, max-age=300");
+            return;
+          }
         }
       }
       // A player's own record (a note, their character) may show a picture from
@@ -4447,6 +4467,9 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     });
   });
 
+  // The art library's pictures changed (some deleted, some added): every seat gets the map's tokens again, so none
+  // keeps showing a picture that is gone (a creature's face is picked again).
+  art?.onChanged?.(() => sendMaps());
   // The Library reads a book by its id, name or title from the shelf's own file.
   if (books) {
     const bookNamed = (given) => {

@@ -5,6 +5,9 @@
 // skipped, so it runs again for each new batch. Files are written to a temporary name and renamed when whole.
 //   node scripts/import-character-art.mjs <source folder> [--verify] [--jobs 3]
 //   --verify: only check games/characters (every file decodes at its size, tokens transparent at the corner).
+//   node scripts/import-character-art.mjs --prune
+//   --prune: pairs whose pictures were deleted from games/characters (the GM taking out ones that do not fit) leave
+//   the manifest and review.json, and are remembered (manifest "removed") so a later import does not bring them back.
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
@@ -19,6 +22,7 @@ const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEST = path.join(ROOT, "games", "characters");
 const args = process.argv.slice(2);
 const verifyOnly = args.includes("--verify");
+const pruneOnly = args.includes("--prune");
 const jobs = Math.max(1, Math.min(8, Number(args[args.indexOf("--jobs") + 1]) || 3));
 const source = args.find((arg) => !arg.startsWith("--") && arg !== String(jobs));
 
@@ -93,6 +97,23 @@ async function verify() {
   return { pairs: manifest.pairs.length, files: checked, bad };
 }
 
+if (pruneOnly) {
+  const manifest = readManifest();
+  const gone = manifest.pairs.filter((pair) => !fs.existsSync(path.join(DEST, pair.portrait)) || !fs.existsSync(path.join(DEST, pair.token)));
+  for (const pair of gone) for (const rel of [pair.portrait, pair.token]) fs.rmSync(path.join(DEST, rel), { force: true });
+  const removed = [...new Set([...(manifest.removed ?? []), ...gone.map((pair) => pair.portrait)])].sort();
+  const pairs = manifest.pairs.filter((pair) => !gone.includes(pair));
+  fs.writeFileSync(`${manifestFile}.part`, JSON.stringify({ ...manifest, pairs, removed }));
+  fs.renameSync(`${manifestFile}.part`, manifestFile);
+  const reviewFile = path.join(DEST, "review.json");
+  if (fs.existsSync(reviewFile)) {
+    const review = JSON.parse(fs.readFileSync(reviewFile, "utf8"));
+    for (const pair of gone) delete review.notLikeRace?.[pair.portrait];
+    fs.writeFileSync(reviewFile, JSON.stringify(review, null, 1));
+  }
+  console.log(JSON.stringify({ removed: gone.length, pairs: pairs.length, rememberedRemoved: removed.length }));
+  process.exit(0);
+}
 if (verifyOnly) {
   const result = await verify();
   console.log(JSON.stringify({ verified: result.files, pairs: result.pairs, bad: result.bad.length, firstBad: result.bad.slice(0, 20) }));
@@ -106,6 +127,8 @@ if (!source || !fs.existsSync(path.join(source, "manifest.csv"))) {
 const rows = csvRows(fs.readFileSync(path.join(source, "manifest.csv"), "utf8"));
 const manifest = readManifest();
 const have = new Map(manifest.pairs.map((pair) => [pair.portrait, pair]));
+// Pairs the GM deleted (--prune): never brought back.
+const removedBefore = new Set(manifest.removed ?? []);
 const listed = new Set();
 const todo = [];
 const missing = [];
@@ -113,6 +136,7 @@ for (const row of rows) {
   const portrait = row.Portrait.replace(/\\/g, "/");
   const token = row.Token.replace(/\\/g, "/");
   listed.add(portrait.toLowerCase()).add(token.toLowerCase());
+  if (removedBefore.has(webpOf(portrait))) continue;
   if (!fs.existsSync(path.join(source, portrait)) || !fs.existsSync(path.join(source, token))) {
     if (!have.has(webpOf(portrait))) missing.push(portrait);
     continue;
@@ -148,7 +172,7 @@ const started = Date.now();
 const save = () => {
   const pairs = [...have.values()].sort((a, b) => a.portrait.localeCompare(b.portrait));
   fs.mkdirSync(DEST, { recursive: true });
-  fs.writeFileSync(`${manifestFile}.part`, JSON.stringify({ format: "maelstrom-character-art", version: 1, pairs }));
+  fs.writeFileSync(`${manifestFile}.part`, JSON.stringify({ format: "maelstrom-character-art", version: 1, pairs, ...(removedBefore.size ? { removed: [...removedBefore].sort() } : {}) }));
   fs.renameSync(`${manifestFile}.part`, manifestFile);
 };
 await pool(todo, async ({ pair, from }) => {

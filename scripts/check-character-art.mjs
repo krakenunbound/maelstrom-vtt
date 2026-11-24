@@ -77,6 +77,29 @@ try {
   assert(kept.portrait === "players/portraits/mine.png" && kept.token === "players/tokens/mine.png", "its own pictures kept");
   done.push("the art list offers the pairs that serve the campaign's game (the shared ones for a game with none), each knowing its pair; a new character gets a portrait and its own token by race, class and gender, at random among those that fit, the nearest when none, another face when the gender is rolled again; one chosen by hand keeps its token");
 
+  // --- Creatures with no picture of their own ---------------------------------------------------------------------------
+  const { creaturePair, creatureToken, creatureRace } = await import("../shared/characters/art.mjs");
+  const all = createArtLibrary({ base: folder, roots: [], characters: { dir: folder, ruleset: "Forged in the Dark" } });
+  assert(all.list("portrait").length === 1 && all.creature("Dwarf Fighter", "x") !== null, `the pickers list the game's art; a creature may take any system's: ${all.list("portrait").length} ${all.creature("Dwarf Fighter", "x")}`);
+  assert(creatureRace(["Goblin", "Hobgoblin"], "Hobgoblin Captain")?.race === "Hobgoblin" && creatureRace(["Goblin"], "Goblin Sentry (Room 2, 1)")?.classes.includes("Fighter") && creatureRace(["Kholo"], "Gnoll")?.race === "Kholo" && creatureRace(["Human"], "Bandit")?.race === "Human" && creatureRace(["Human"], "Carrion Crawler") === null, "a creature's race and role from its name");
+  const dwarves = library("D&D 5E").list("portrait");
+  const a = creaturePair(dwarves, "Dwarf Guard (Gate, 1)", "npc-1");
+  assert(a && a.token === dwarves.find((item) => item.id === a.portrait).pair && JSON.stringify(creaturePair(dwarves, "Dwarf Guard (Gate, 1)", "npc-1")) === JSON.stringify(a), "a creature's pair, the same each time");
+  const tokens = [{ id: "t/Dire_Wolf_A1_Large_Beast_01.webp", kind: "token", name: "Dire_Wolf_A1_Large_Beast_01" }, { id: "t/Giant_Fire_Beetle_A1_Small_Beast_01.webp", kind: "token", name: "Giant_Fire_Beetle_A1_Small_Beast_01" }, { id: "t/Owlbear_A1_Large_Scale130_Monstrosity_01.webp", kind: "token", name: "Owlbear_A1_Large_Scale130_Monstrosity_01" }, { id: "t/Bat_A1_Tiny_Beast_01.webp", kind: "token", name: "Bat_A1_Tiny_Beast_01" }];
+  assert(creatureToken(tokens, "Dire Wolf (Room 13, 1)", "s") === tokens[0].id && creatureToken(tokens, "Fire Beetle", "s") === tokens[1].id && creatureToken(tokens, "Owl Bear", "s") === tokens[2].id && creatureToken(tokens, "Normal Bat", "s") === tokens[3].id && creatureToken(tokens, "Rock Python", "s") === null, "a beast's token by its name from a token folder");
+  // A portrait that does not look like its race (review.json) is never picked by itself; the pickers still offer it.
+  fs.writeFileSync(path.join(folder, "review.json"), JSON.stringify({ notLikeRace: { [pairs[1].portrait]: { why: "looks human" } } }));
+  const reviewed = createArtLibrary({ base: folder, roots: [], characters: { dir: folder, ruleset: "D&D 5E" } });
+  const flaggedId = `characters/${pairs[1].portrait}`;
+  const picked = new Set(Array.from({ length: 40 }, (_, i) => reviewed.creature("Dwarf Fighter", `seed-${i}`, "portrait")));
+  const viaWizard = new Set(Array.from({ length: 40 }, () => withArt({ race: "Dwarf", gender: "Male" }, { class: "Fighter" }, (kind) => reviewed.list(kind)).portrait));
+  assert(!picked.has(flaggedId) && !viaWizard.has(flaggedId) && reviewed.list("portrait").some((item) => item.id === flaggedId && item.unlike), "a picture flagged in review.json is never picked, still offered");
+  fs.rmSync(path.join(folder, "review.json"));
+  // Never a placeholder card (FG's "placeholders/id-00373-Shrieker"); the app's own token folders before a campaign's.
+  const mixed = [{ id: "campaigns/WoW/tokens/placeholders/id-00373-Shrieker.png", kind: "token", name: "id-00373-Shrieker" }, { id: "campaigns/WoW/tokens/Shrieker.png", kind: "token", name: "Shrieker" }, { id: "kraken/tokens/FA/Shrieker_A1_Medium_Plant_01.webp", kind: "token", name: "Shrieker_A1_Medium_Plant_01" }];
+  assert(creatureToken(mixed, "Shrieker (Room 3, 1)", "s") === mixed[2].id && creatureToken(mixed.slice(0, 2), "Shrieker", "s") === mixed[1].id && creatureToken(mixed.slice(0, 1), "Shrieker", "s") === null, "no placeholder; the app's own tokens first");
+  done.push("a creature with no picture takes one of its kind: a portrait and its token from the character art by the race its name shows (any system's, the same each time), else a token of its name from the GM's token folders; never a picture flagged as not looking like its race");
+
   // --- The shipped library ---------------------------------------------------------------------------------------------
   const shipped = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "games", "characters", "manifest.json");
   if (fs.existsSync(shipped)) {
