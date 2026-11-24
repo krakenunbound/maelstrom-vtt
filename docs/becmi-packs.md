@@ -483,3 +483,40 @@ in the pack:
    5/4/3/2/1 here and 3/3/3/3/2 in Set 2. One of the two is misread.
 5. The monsters are 193: Set 1's 97, Expert's 60, the Companion's 23 and 13
    of the Master set's own; the rest of its bestiary is still page scans.
+
+## 9. Set 5: Immortals Rules, review build of 2026-11-23
+
+Made as its own game, `D&D BECMI Immortals`, with one class, `Immortal`,
+whose 31 levels are the ranks (Initiate to Full Hierarch 5th level). Tested
+in Maelstrom: the Immortal builds and climbs all 31 rows (hit points from
+the table, 75 to 1,000; THAC0 8 to -2; the four Immortal saves); Orcus,
+the demons, the tonals and the rest fight and save as their `I` ranks; all
+100 pages open. Maelstrom now: takes ability scores up to the game's
+modifier table (100); lets the wizard **type** the scores instead of rolling
+them (`"abilityEntry": "typed"` in game.json); leaves out the money and shop
+step when the books sell nothing; rolls no hit die when hit points are the
+class's table from 1st level; reads a creature's own `saves`; and uses a
+creature's printed `hp` on the tracker (it rolled the hit dice before, in
+every set). To fix in the pack:
+
+1. **Add `"abilityEntry": "typed"` to game.json.** Without it the wizard
+   rolls 3d6 for an Immortal; with it the player types each score (0 to
+   100), as the mortal's scores carried over and raised.
+2. **The Croaking Demon's bite is `4-18`**, a range, not dice. Write the
+   dice that give it (`2d8+2`).
+3. **The Nipper saves as `F1`**, but this game has no Fighter, so it saves
+   at 20. Give it its own `saves` (`{ "physical": 12, ... }`, the book's
+   numbers), which Maelstrom now reads.
+4. **Attacks with no dice** (Baak's power, Orcus's tail, Demogorgon's tail
+   and tentacles, the Elemaster's fists): fine where the book gives an
+   effect only; write the dice where it gives them.
+5. **The class row's own numbers** (`immortalHitDice`, `antiMagic`) are
+   kept but not shown or used; the sheet does not show Anti-Magic yet.
+6. **91 of the 100 pages are scans only**; 19 creatures are records, the
+   rest of the bestiary is still scans.
+7. game.json still carries the mortal defaults it does not use (coins and
+   `3d6*10` starting gold); harmless, as the books sell nothing.
+
+The character art library's Immortals pairs (race `Immortal`, the five
+Spheres as classes) go to an Immortal at random by gender; the wizard has no
+Sphere choice yet.

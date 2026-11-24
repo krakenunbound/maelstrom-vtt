@@ -320,6 +320,14 @@ being read; warnings are worth fixing.
 - **Monsters with no `ac`**: they fight at the game's unarmored AC. Give the
   printed one; when the book says something else ("always hit"), give the
   nearest number and say it in the text.
+- **Ranges where the rules want dice** ("4-18" for a bite): write the dice
+  that give the range (`2d8+2`).
+- **A creature that saves as a class the game does not have** (a standalone
+  set without a Fighter): give it its own `saves`.
+- **The wizard's defaults left for a game that does not use them** (rolled
+  scores for an Immortal, a shop with nothing to sell): say how the game
+  makes a character in its definition (`abilityEntry`), and leave out what
+  it does not have.
 - **Story records with no links**: an adventure's `encounter` links its
   creatures, battles, treasure and maps (`linklist`), or the GM cannot open
   them from the story.

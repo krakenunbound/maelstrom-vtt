@@ -67,6 +67,7 @@ const basic = [
   record(BASIC, "item", "Quiver with 20 Arrows", { type: "Gear", cost: "5 gp" }),
   // A book's sample character, its equipment lines as the book prints them.
   record(BASIC, "pregencharsheet", "Sample Fighter", { class: "Fighter", level: 1, strength: 16, intelligence: 9, wisdom: 10, dexterity: 13, constitution: 14, charisma: 11, ac: 3, hp: 8, xp: 0, equipment: ["Chain mail & shield", "Sword", "2 torches"], coins: { GP: 12 } }),
+  record(BASIC, "npc", "Kobold Chief", { ac: 6, hd: "2", attacks: "1 weapon", damage: "1d6", saveas: "F2", morale: 8, hp: 9 }, "gm"),
   record(BASIC, "npc", "Peasant", { ac: 9, hd: "1", attacks: "1 weapon", damage: "1d6", saveas: "NM", morale: 6, xp: 5 }, "gm"),
   // The Normal Man table (a row a value): its THAC0 is the one a Normal Man attacks with.
   record(BASIC, "tables", "Normal Man", { tablerows: rowsOf([{ fromrange: 1, torange: 1, results: rowsOf([{ result: "death: 14" }]) }, { fromrange: 2, torange: 2, results: rowsOf([{ result: "thac0: 21" }]) }]) }, "gm"),
@@ -110,7 +111,7 @@ try {
   const agent = server.agent;
   for (const name of [BASIC, EXPERT, "Test Adventure"]) await agent.activateBook(name);
   await new Promise((resolve) => setTimeout(resolve, 300));
-  assert(agent.records.list({ type: "class" }).length === 5 && agent.records.list({ type: "npc" }).length === 5, `the books' classes and monsters in the campaign: ${agent.records.list({ type: "class" }).length} classes`);
+  assert(agent.records.list({ type: "class" }).length === 5 && agent.records.list({ type: "npc" }).length === 6, `the books' classes and monsters in the campaign: ${agent.records.list({ type: "class" }).length} classes`);
   const tool = async (name, args = {}) => {
     const result = await callTool(name, args, { table: () => server });
     if (result.isError) throw new Error(`${name}: ${result.content[0].text}`);
@@ -194,6 +195,17 @@ try {
   // A monster's THAC0 of 0 is its THAC0; an attack "by weapon" rolls the game's weapon damage.
   const huge = pgNpc({ hd: "22", thac0: 0, attacks: "1 weapon", damage: "by weapon" }, { game: rulesetNamed(GAME).packGame, tables: [] });
   assert(huge.thac0 === 0 && huge.attacks[0].damage === "1d6", `THAC0 0, by weapon 1d6: ${JSON.stringify(huge)}`);
+  // A creature's own saves (its save-as class not in the game).
+  const nipper = pgNpc({ hd: "1", saveas: "F1", saves: { death: 12 }, attacks: "1 swarm", damage: "1" }, { game: rulesetNamed(GAME).packGame, classes: [], tables: [] });
+  assert(nipper.saves.death === 12, `a creature's own saves: ${JSON.stringify(nipper.saves)}`);
+  // An Immortal's game: scores typed, to the modifier table's top (100), not rolled to 18.
+  const { readGame } = await import("../shared/packgame/definition.mjs");
+  const { manifestOf } = await import("../shared/packgame/manifest.mjs");
+  const { buildFromSpec } = await import("../shared/packgame/rules.mjs");
+  const immortal = readGame({ format: "maelstrom-game", version: 1, id: "testimm", name: "Test Immortals", abilityEntry: "typed", abilityModifiers: [{ from: 0, to: 18, mod: 0 }, { from: 19, to: 100, mod: 10 }] });
+  const god = buildFromSpec({ name: "God", class: "Immortal", abilities: { strength: 60, charisma: 100 }, hpRoll: 1 }, { game: immortal, classes: [{ name: "Immortal", data: { levels: { 1: { xp: 0, hitdice: "0d8+75" } } } }], items: [], tables: [] });
+  assert(immortal.abilityMax === 100 && god.data.abilities.strength.score === 60 && god.data.abilities.charisma.score === 100 && god.data.abilities.strength.bonus === 10, `typed scores to 100: ${JSON.stringify(god.data.abilities)}`);
+  assert(manifestOf(immortal).wizard.steps.find((step) => step.id === "abilities").parts[0].typed?.max === 100, "the wizard types an Immortal's scores");
   done.push("a thief's Hear Noise on a d6, two prime requisites' XP bonus, a dagger in melee and thrown, a book's sample character taken as printed, initiative a side by default");
 
   // --- The fight -------------------------------------------------------------------------------------------------------
@@ -260,6 +272,9 @@ try {
     await tool("kraken_combat", { action: "damage-roll", recordId: ana.id, weapon: sword.item });
   }
   assert((await tool("kraken_combat", { action: "view" })).entries.find((entry) => entry.id === ogre.id).health.status === "Dead", `the ogre dead at 0 (${left.hp} hit points)`);
+  // A creature's printed hit points (9), not its hit dice rolled.
+  await tool("kraken_combat", { action: "add", recordId: npc("Kobold Chief").id });
+  assert((await tool("kraken_combat", { action: "view" })).entries.find((entry) => entry.name === "Kobold Chief")?.hp === 9, "a creature's printed hit points");
   // A Normal Man attacks at the Normal Man table's THAC0 (21 here); a bow shoots from its quiver of 20.
   await tool("kraken_combat", { action: "add", recordId: npc("Peasant").id });
   await tool("kraken_combat", { action: "add", recordId: thief.id });

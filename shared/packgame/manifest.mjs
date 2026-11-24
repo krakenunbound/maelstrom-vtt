@@ -257,6 +257,7 @@ export function manifestOf(game) {
             {
               when: { not: { has: "pregen" } },
               kind: "roll-stats",
+              ...(game.abilityEntry === "typed" ? { typed: { min: 0, max: game.abilityMax } } : {}),
               into: "abilities",
               hook: `${game.id}-roll-abilities`,
               formula: game.abilityDice,

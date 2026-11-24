@@ -3318,6 +3318,9 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       for (let index = 0; index < count; index += 1) {
         let hp = Math.max(0, Math.round(num(input.hp, 0)));
         // Basic Fantasy: a monster's hit dice rolled for its hit points (d8 each; "1d4 HP" as written), at least 1.
+        // A game defined by its books: a creature's printed hit points (Orcus's 620, an adventure's kobold's 4) when
+        // the record gives them, else its hit dice rolled.
+        if (pg() && source && source.type === "npc" && !hp && num(source.data?.hp, 0) > 0) hp = Math.round(num(source.data.hp, 0));
         if ((dbf() || pg()) && source && source.type === "npc" && !hp) {
           await oldReady();
           const dice = ob().npcStats(source.data).dice;

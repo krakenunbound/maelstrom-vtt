@@ -199,7 +199,7 @@ export function derive(input, lib) {
   const abilities = (data.abilities = { ...(data.abilities ?? {}) });
   for (const { key } of game.abilities) {
     const ability = (abilities[key] = { ...(abilities[key] ?? {}) });
-    ability.score = Math.max(1, Math.min(25, Math.round(num(ability.score, 10))));
+    ability.score = Math.max(0, Math.min(Math.max(25, game.abilityMax), Math.round(num(ability.score, 10))));
     ability.bonus = abilityMod(game, ability.score);
   }
   const mod = (/** @type {string} */ key) => modOf(data, game, key);
@@ -441,7 +441,8 @@ export function npcStats(data = {}, lib) {
     thac0,
     ab: 0,
     attacks: (attacks.length ? attacks : [{ name: "Attack", bonus: 0, damage: "1d6" }]).map((/** @type {any} */ attack) => ({ ...attack, thac0 })),
-    saves: saves.saves,
+    // Saves the record gives itself (a creature whose save-as class the game does not have), else its save-as class's.
+    saves: data.saves && typeof data.saves === "object" ? { ...saves.saves, ...Object.fromEntries(Object.entries(data.saves).filter(([, value]) => Number.isFinite(Number(value))).map(([key, value]) => [key, Number(value)])) } : saves.saves,
     savesas: saves.cls ? `${saves.cls}${saves.level ? ` ${saves.level}` : ""}` : "",
     morale: num(/(\d+)/.exec(String(data.morale ?? ""))?.[1], 0),
     xp: num(String(data.xp ?? "").replace(/,/g, ""), 0),
@@ -485,7 +486,9 @@ export function buildFromSpec(spec, lib) {
   const name = String(spec?.name ?? "").trim().slice(0, 80) || "Adventurer";
   const cls = classOf(lib, spec?.class ?? spec?.className) ?? classesOf(lib)[0] ?? null;
   if (!cls) problems.push("No classes: make the game's rules book active (Modules).");
-  const abilities = Object.fromEntries(game.abilities.map(({ key }) => [key, { score: Math.max(3, Math.min(18, Math.round(num(spec?.abilities?.[key], 10)))) }]));
+  // Rolled scores 3 to 18; typed ones (an Immortal's) 0 to the game's highest.
+  const typed = game.abilityEntry === "typed";
+  const abilities = Object.fromEntries(game.abilities.map(({ key }) => [key, { score: Math.max(typed ? 0 : 3, Math.min(typed ? game.abilityMax : 18, Math.round(num(spec?.abilities?.[key], 10)))) }]));
   const scores = Object.fromEntries(game.abilities.map(({ key }) => [key, abilities[key].score]));
   if (cls) problems.push(...classProblems(cls, scores));
   const die = hitDie(cls);

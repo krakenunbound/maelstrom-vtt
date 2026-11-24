@@ -35,7 +35,7 @@ const scopeOf = (wizard: WizardContext) => ({ data: wizard.spec });
 // The step: its number and title (and the words its condition adds), then its parts.
 // A step with nothing to show (an optional choice the books have nothing for: no sample characters) is left out.
 export function stepShows(step: WizardStep, wizard: WizardContext) {
-  return step.parts.some((part) => holds(part.when, scopeOf(wizard), { gm: false, editable: true }) && !(part.kind === "choose-record" && part.optional && !wizard.recordsOf(part.fromType).length));
+  return step.parts.some((part) => holds(part.when, scopeOf(wizard), { gm: false, editable: true }) && !(part.kind === "choose-record" && part.optional && !wizard.recordsOf(part.fromType).length) && !(part.kind === "shop" && !wizard.recordsOf(part.fromType).length));
 }
 
 export function StepView({ step, number, functions }: { step: WizardStep; number: number; functions: WizardFunctions }) {
@@ -209,6 +209,30 @@ function RollStats({ part }: { part: Extract<WizardPart, { kind: "roll-stats" }>
   const [swapped, setSwapped] = useState(false);
   const [swapA, setSwapA] = useState(part.swap?.start[0] ?? "");
   const [swapB, setSwapB] = useState(part.swap?.start[1] ?? "");
+  if (part.typed) {
+    const { min, max } = part.typed;
+    return (
+      <div className="cc-inline" data-wizard-typed-scores>
+        {part.stats.map((stat) => (
+          <label key={stat.key} className="cc-box" data-wizard-score={stat.key}>
+            {stat.short}{" "}
+            <input
+              type="number"
+              min={min}
+              max={max}
+              aria-label={stat.label}
+              value={scores?.[stat.key] ?? ""}
+              onChange={(event) => {
+                const n = Math.max(min, Math.min(max, Math.round(Number(event.target.value))));
+                set({ [part.into]: { ...(scores ?? {}), [stat.key]: Number.isFinite(n) ? n : min } });
+              }}
+              style={{ width: "4.5rem" }}
+            />
+          </label>
+        ))}
+      </div>
+    );
+  }
   return (
     <>
       <button

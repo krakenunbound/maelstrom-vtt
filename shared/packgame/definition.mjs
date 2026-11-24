@@ -89,8 +89,12 @@ export function readGame(raw) {
     blurb: text(raw.blurb) || `${name}, played from its own books.`,
     abilities,
     abilityDice: text(raw.abilityDice) || "3d6",
+    // How the wizard gets the scores: rolled (abilityDice, in order) or typed (an Immortal's, carried from the mortal).
+    abilityEntry: raw.abilityEntry === "typed" ? "typed" : "rolled",
     // Whether the player may swap two rolled scores (the book's own rule; not in the old boxed sets).
     abilitySwap: Boolean(raw.abilitySwap),
+    // The highest score (the modifier table's top, at least 18: an Immortal's 100).
+    abilityMax: Math.max(18, num(raw.abilityMax, 0), ...list(raw.abilityModifiers).map((/** @type {any} */ row) => num(row?.to, 0))),
     abilityModifiers: mods,
     saves,
     save: { die: text(raw.saveDie) || "1d20", naturalFail: num(raw.saveNaturalFail, 1), naturalPass: num(raw.saveNaturalPass, 20) },

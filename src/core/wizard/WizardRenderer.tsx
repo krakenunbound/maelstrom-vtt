@@ -96,8 +96,10 @@ export function WizardRenderer({ spec: wizardSpec, session, onDone, functions }:
       case "roll-table":
         return part.rows.every((row) => (value as Row | undefined)?.[row.key]);
       case "roll-stats":
-        return Boolean(value);
+        return part.typed ? part.stats.every((stat) => Number.isFinite(Number((value as Row | undefined)?.[stat.key]))) : Boolean(value);
       case "shop":
+        // Nothing for sale in the books (an Immortal's game): no money to roll, nothing to buy.
+        if (!(byType.get(part.fromType) ?? []).length) return true;
         return Boolean(num(at(spec, part.gold.into))) && moneyOf(part, wizard, functions, wares[part.into] ?? []).left >= 0;
       default:
         return true;

@@ -76,6 +76,8 @@ the five saves, descending AC, THAC0, d6 initiative by side).
 | `name` | The game's name: the campaign screen's, and every one of its packs' `ruleset`. |
 | `abilities` | The scores, in the sheet's order. |
 | `abilityDice`, `abilitySwap` | How the wizard rolls them (in order), and whether two may be swapped. |
+| `abilityEntry` | `rolled` (default) or `typed`: the wizard asks for each score (an Immortal's, carried over from the mortal), 0 to `abilityMax`. |
+| `abilityMax` | The highest score; default the top of `abilityModifiers` (at least 18). Rolled scores stay 3 to 18. |
 | `abilityModifiers` | The modifier for each range of score. |
 | `abilityCheck` | An ability check: the die, at or under the score (`atMost`) or at or above. |
 | `saves` | The saving throws, in order; `ability`: an ability whose modifier helps that save (Wisdom against spells). |
@@ -117,7 +119,7 @@ the five saves, descending AC, THAC0, d6 initiative by side).
   Inventory tab's select) gives its attack's damage and special.
 - **Monsters** (`npc`): `ac`, `hd` (as printed: `"3*"`, `"4+1"`, `"1-1"`,
   `"1/2"`), `thac0` (0 and below too; else the Monster Attack Table by hit dice), `attacks` and
-  `damage` (`"2 claws/1 bite"`, `"1d4/1d4/1d8"`), `saveas`, `morale`, `xp`,
+  `damage` (`"2 claws/1 bite"`, `"1d4/1d4/1d8"`), `saveas` (or its own `saves`, by the game's save keys, when its class is not in the game), `morale`, `xp`,
   `hp` (fixed, else rolled from the hit dice), `undead` (its turning kind,
   when its name does not say).
 - **Items** (`item`): `type` (`Weapon`, `Armor`, `Gear`...), `cost` (`"10

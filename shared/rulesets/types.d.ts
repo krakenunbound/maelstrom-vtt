@@ -291,7 +291,8 @@ export type WizardPart = (
   // One roll per row, each on its own roll table ("{key}"), on one button; into: { [key]: text }.
   | ({ kind: "roll-table"; into: Path; rows: { key: string; label: string }[]; table: string } & WizardRoll)
   // Scores rolled in order on one button, shown as boxes; two may be swapped once.
-  | ({ kind: "roll-stats"; into: Path; stats: { key: string; label: string; short: string }[]; swap?: { hook: Hook; title: string; aria: [string, string]; start: [string, string]; button: string } } & WizardRoll)
+  // typed: the scores typed, not rolled (an Immortal's, carried from the mortal), each min to max.
+  | ({ kind: "roll-stats"; into: Path; stats: { key: string; label: string; short: string }[]; swap?: { hook: Hook; title: string; aria: [string, string]; start: [string, string]; button: string }; typed?: { min: number; max: number } } & WizardRoll)
   | { kind: "check"; into: Path; label: string; title?: string }
   // Money rolled, then bought with: the records of a type with a price; into: { [name]: count }.
   | { kind: "shop"; into: Path; fromType: string; exclude?: { path: Path; values: string[] }; price: { path: Path; per: number; unit: string }; type?: Path; gold: WizardRoll & { into: Path; bonus?: Ref; bonusText?: string }; search: { aria: string; placeholder: string }; limit: number }
