@@ -204,6 +204,15 @@ Examples of each common type, as Maelstrom's own packs hold them:
   `{ "chapters": { "id-00000": { "name": "...", "order": 0, "subchapters": { "id-00001": { "name": "...", "order": 1, "refpages": { "id-00001": { "name": "...", "order": 1, "keywords": "...", "listlink": { "class": "reference_manualtextwide", "recordname": "reference.refmanualdata.<page>@Pack Name" } } } } } } } }`.
 - **encounter** (a story entry): `{ "name": "...", "text": "<p>...</p>" }`.
 - **battle** (a prepared encounter): `{ "name": "...", "npclist": { "id-00001": { "count": 2, "name": "...", "faction": "foe", "link": { "class": "npc", "recordname": "npc.x@Pack Name" }, "token": "tokens/x.png@Pack Name" } } }`.
+- **npc** (a creature or person): its game's fields, plus `"picture": "images/portraits/goblin.webp"` (its
+  portrait) and `"token": "tokens/goblin.webp"` (its round token), both files in the zip.
+- **item**: its game's fields, plus `"picture": "images/items/sword.webp"`.
+
+  **Every creature, NPC and item has a picture; every living creature also has a token.** The pictures travel
+  in the pack, so another GM who gets it has them too. Maelstrom shows a record's own picture before anything
+  else; without one it falls back to art of its kind (docs/character-art.md), which a GM without that art does
+  not have. Portraits square (1024), tokens round (512, transparent outside the ring), items square, all WebP.
+  Many records may share one file (every goblin of an adventure the same goblin).
 - **treasureparcels**: `{ "name": "...", "coinlist": { "id-00001": { "amount": 32, "description": "SP" } }, "itemlist": { ... } }`.
 - **tables**: `{ "name": "...", "dice": "d20", "resultscols": 1, "labelcol1": "...", "tablerows": { "id-00001": { "fromrange": 1, "torange": 1, "results": { "id-00001": { "result": "..." } } } } }`.
 - **image** (a picture or a map): `{ "image": { "grid": "on", "gridsize": "50,50", "gridoffset": "0,0", "layers": { "layer": [ { "name": "...", "type": "image", "bitmap": "images/maps/keep.webp", "occluders": { "occluder": [ { "id": "0", "points": "x1,y1,x2,y2,..." } ] } } ] } } }`.
@@ -263,6 +272,10 @@ being read; warnings are worth fixing.
 8. **Pictures and maps:** extract them as WebP (maps at full resolution),
    one `image` record each; a map gets its grid size and offset.
 9. **Cover:** the front cover as `images/cover.webp`, named in `cover`.
+9b. **Pictures for every creature, NPC and item** (section 5's npc and item): put each file in the zip and its
+    path in the record's `picture` (and `token` for a living creature). Pictures already made are in the art
+    staging folder with an `index.json` that names, for each record name, its files; use them, and make any
+    that are missing the same way (`games/tools/creature_art.mjs`).
 10. **Make and check:** `npm run kpack:make -- <folder>`; fix every error and
     warning `kpack:check` reports; then open it in Maelstrom (Modules: make it
     active, read it in Books, open its maps) and compare with the PDF.
