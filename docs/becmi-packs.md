@@ -63,9 +63,21 @@ Two ways work; choose before converting, and keep to it for the whole line.
   that the set does not print again: the `Monster Attack Table`, the
   `Normal Man` table, the monsters, the equipment. Its campaigns see only
   that set's books (an Expert campaign cannot open Set 1 or its monsters),
-  and characters do not move between a Basic and an Expert campaign. An
-  adventure belongs to one of the games (its `ruleset`). Use this only when
-  the GM wants each set played on its own.
+  and characters do not move between a Basic and an Expert campaign. Use
+  this only when the GM wants each set played on its own.
+
+**An adventure is never a game of its own**, in either way. It has no
+`game.json`, its `kind` is `adventure`, and its `ruleset` is the game it is
+played in: the set its levels belong to (`D&D BECMI` for a Basic adventure
+such as B1 or The Goblin's Lair; `D&D BECMI Expert` for X1 when the sets are
+separate games). Maelstrom offers a game on the campaign screen only when a
+book of its rules, monsters or setting is installed, never for an adventure
+alone, so an adventure made a game of its own cannot be played at all. It
+carries only what it adds: its keyed areas, battles, treasure, maps, its own
+creatures (named individuals with their printed hit points) and its own
+tables. Never copies of the rules book's classes, equipment, spells or
+standard monsters: in the game's campaigns those are already there, and a
+copy lists every item twice in the shop.
 
 In either way, a later book that writes a class again may leave fields out
 or empty; Maelstrom fills an empty field (`{}`, `[]`, `""`) from the other
@@ -520,3 +532,45 @@ every set). To fix in the pack:
 The character art library's Immortals pairs (race `Immortal`, the five
 Spheres as classes) go to an Immortal at random by gender; the wizard has no
 Sphere choice yet.
+
+## 10. The Goblin's Lair (TSR 1076), review build of 2026-11-23
+
+Made as its own game, `D&D BECMI Goblin's Lair`, with a `game.json` and
+copies of Set 1's 7 classes, 102 items, 34 spells, its two rules tables and
+13 of its monsters. **As made it cannot be played**: Maelstrom registers the
+game but does not offer it on the campaign screen, since an adventure alone
+is not the game's books (section 2, "One game, or one game per set").
+
+Tested instead as it should be, on a copy with `"ruleset": "D&D BECMI"` and
+no `game.json`, beside Set 1, in a D&D BECMI campaign: the adventure is in
+Modules and its lists show 2 maps, 19 battles, 8 parcels, 31 story entries,
+83 creatures and 4 tables; a story entry opens with its map, battle and
+printed-key links; the Palace of Dread map goes on the table with its 5-foot
+grid; the Guard Room battle brings its five sentries and their chief onto
+the tracker at their printed hit points (7, 6, 6, 5, 3 and 12); a character
+fights them, and their morale breaks as the rules say. To fix in the pack:
+
+1. **Make it an adventure of `D&D BECMI`**: `"ruleset": "D&D BECMI"`, no
+   `game.json`, and take out the copies of Set 1's classes, items, spells,
+   the Monster Attack and Normal Man tables and the 13 standard monsters
+   (Bugbear, Carrion Crawler, Dire Wolf, Fire Beetle, Giant Centipede, Giant
+   Rat, Gnome, Goblin, Gray Ooze, Hobgoblin, Normal Bat, Normal Rat, Rock
+   Python). Keep its own named creatures (the sentries, the chief, the King)
+   and its two wandering monster tables. Link a standard monster to Set 1's
+   record (`npc.goblin@Set 1: Basic Rules`).
+2. **The battles place no tokens.** A battle's creatures go on the open map
+   where its rows say (`maplink`: the map's `imageref` and the creature's
+   `imagex`, `imagey` from the picture's centre, as Fantasy Grounds stores
+   them); without them the GM drags each from the tracker. Give each
+   creature its spot from the keyed map.
+3. **The treasure parcels are linked from no story entry.** Link each from
+   its room's encounter (`<link class="treasureparcels" recordname="...">`).
+4. **The maps' grids are not square** (`gridsize` "62.08,63.04" and
+   "60.10,60.79"); Maelstrom uses the first number, so the grid drifts about
+   one square in sixty down the map. Scale the picture so its squares are
+   square, then give one size.
+5. **The maps have no walls or doors**, so the players' line of sight is not
+   blocked. Fine for a first build (the GM adds them in Map Studio);
+   better with the dungeon's walls and doors as `occluders`.
+6. The Red Hand Trail booklet and the handouts are missing from the PDF
+   (Codex's review notes); 67 of the 72 pages are still scans.

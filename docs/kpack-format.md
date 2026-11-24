@@ -300,6 +300,20 @@ being read; warnings are worth fixing.
 - **Pages kept as a scan** (a picture-only page) to transcribe later: count
   them and say so when the pack is handed over; their tables and monsters
   are not records until transcribed.
+- **An adventure made a game of its own** (its own `game.json` and
+  `ruleset`): Maelstrom never offers a game whose only book is an
+  adventure, so it cannot be played. An adventure's `ruleset` is the game
+  it is played in, and it carries no `game.json`.
+- **An adventure carrying copies of the rules book** (its classes, the
+  equipment, the spells, the standard monsters): they show twice in that
+  game's campaigns. An adventure carries only what it adds, and links the
+  rules book's records (`npc.goblin@Set 1: Basic Rules`).
+- **Battles with no map positions**: their creatures are not placed on the
+  map. Give each battle row its `maplink` (the map's `imageref`, `imagex`
+  and `imagey` from the picture's centre).
+- **Treasure parcels no story links**: link each from its room's encounter.
+- **Maps with oblong squares** (`gridsize` "62.08,63.04"): scale the picture
+  so the squares are square and give one size.
 - **One game split into several rulesets** without meaning to: every book of
   one game uses the same `ruleset`, so its campaigns see all of its books.
   A separate ruleset is a separate game whose campaigns see only its own
