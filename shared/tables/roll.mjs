@@ -96,7 +96,10 @@ export function resultsAt(data, total, column = 0) {
     found = total < lowest.from ? lowest : total > highest.to ? highest : undefined;
   }
   if (!found) return null;
-  const cells = rowsOf(found.row.results);
+  // A row's results by column; a pack written by hand may give one column as the row's own "result".
+  /** @type {[string, any][]} */
+  const own = typeof found.row.result === "string" ? [["id-00001", { result: found.row.result, resultlink: found.row.resultlink }]] : [];
+  const cells = found.row.results ? rowsOf(found.row.results) : own;
   const result = (/** @type {[string, any]} */ [, cell], /** @type {number} */ index) => ({
     text: String(cell?.result ?? "").trim(),
     label: String(data[`labelcol${index + 1}`] ?? ""),

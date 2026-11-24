@@ -187,9 +187,15 @@ function packIndex(folder = packFolder()) {
 }
 // The pack of a book's name (or file name) in the packs folder, if there is one.
 // The GM's own packs first, then the ones Kraken ships.
+// A book's name said the long or the short way: "Castles & Crusades Monsters and Treasure" is "C&C Monsters & Treasure".
+const sameBook = (name) => String(name ?? "").toLowerCase().replace(/castles\s*(&|and)\s*crusades/g, "c&c").replace(/\band\b/g, "&").replace(/[^a-z0-9&]+/g, "");
 function packFor(name) {
   const wanted = String(name ?? "").trim();
-  return packIndex().get(wanted) ?? packIndex(BUNDLED).get(wanted) ?? null;
+  const exact = packIndex().get(wanted) ?? packIndex(BUNDLED).get(wanted);
+  if (exact) return exact;
+  const key = sameBook(wanted);
+  for (const index of [packIndex(), packIndex(BUNDLED)]) for (const [known, file] of index) if (sameBook(known) === key) return file;
+  return null;
 }
 // A pack's format version (its manifest's), read once a file.
 function packVersion(file) {

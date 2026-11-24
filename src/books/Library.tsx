@@ -355,7 +355,7 @@ export function StoryWindow({ session, path: opened }: { session: Session; path:
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entry?.name]);
   // Its links, as a book page's: a page (here or in another book), a picture or map, a record (the battle, the treasure).
-  const { openBook, openPicture, openRecord } = useBookWindows();
+  const { openBook, openPicture, openRecord, openItems, openSpells } = useBookWindows();
   const follow = (event: React.MouseEvent) => {
     const link = (event.target as HTMLElement).closest("a.book-link") as HTMLAnchorElement | null;
     if (!link || link.classList.contains("sound")) return;
@@ -365,7 +365,9 @@ export function StoryWindow({ session, path: opened }: { session: Session; path:
       return;
     }
     const target = link.dataset;
-    if (target.page && target.book) openBook(target.book, target.book, target.page);
+    if (target.items) openItems(target.items);
+    else if (target.spells) openSpells(target.spells);
+    else if (target.page && target.book) openBook(target.book, target.book, target.page);
     else if (target.file && target.book) openPicture({ book: target.book, file: target.file, name: target.name || link.textContent || "Picture" }, spotOf(target.at));
     else if (target.record && target.book) openRecord(target.book, target.record, target.name || link.textContent || "Record");
   };

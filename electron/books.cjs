@@ -304,6 +304,14 @@ function aroundOf(spots) {
   return `${Math.round(x)},${Math.round(y)},${Math.round(r)}`;
 }
 // found: an array that takes the maps the text's encounters stand on (the page's map, see page()).
+// FG 5E's equipment table windows, by link class: the Items list's type each shows.
+const EQUIPMENT_TABLES = {
+  reference_armortable: "Armor & Shields",
+  reference_weapontable: "Weapons",
+  reference_adventuringgeartable: "Adventuring Gear",
+  reference_mountsandotheranimalstable: "Mounts & Vehicles",
+  reference_waterbornevehiclestable: "Mounts & Vehicles",
+};
 function toHtml(formatted, resolve, found = null) {
   const root = parse(`<root>${formatted ?? ""}</root>`);
   const maps = new Set(); // an encounter's map, linked once
@@ -339,7 +347,21 @@ function toHtml(formatted, resolve, found = null) {
         }
         // FG's "Sound: Context" (a Syrinscape context) has no use here: left out, not shown as a dead link.
         if (linkClass === "sound_context") continue;
-        const target = resolve(linkClass, recordname);
+        // FG 5E's equipment tables (the Armor Table, Weapons Table...): every item of that kind in the active books,
+        // as the Items list shows them, by type.
+        // FG 5E's spell list by class (reference.spelllists.cleric): the Spells list, that class's.
+        const spellClass = linkClass === "reference_colindex" ? /\.spelllists\.([^.@]+)/.exec(recordname)?.[1] : "";
+        if (spellClass) {
+          out += `<a class="book-link itemlist" data-spells="${escape(spellClass.charAt(0).toUpperCase() + spellClass.slice(1))}">${text}</a>`;
+          continue;
+        }
+        const itemTable = EQUIPMENT_TABLES[linkClass];
+        if (itemTable) {
+          out += `<a class="book-link itemlist" data-items="${escape(itemTable)}">${text}</a>`;
+          continue;
+        }
+        // Not found where it says: the book's own page of that name (a conversion that kept the pages, not the story).
+        const target = resolve(linkClass, recordname) ?? resolve.byTitle?.(text.replace(/<[^>]+>/g, "").replace(/^\s*[A-Za-z ]+:\s+(?=\S)/, "").trim());
         if (target?.page) out += `<a class="book-link" data-book="${escape(target.book)}" data-page="${escape(target.page)}">${text}</a>`;
         else if (target?.file) out += `<a class="book-link picture" data-book="${escape(target.book)}" data-file="${escape(target.file)}" data-name="${escape(target.name)}">${text}</a>`;
         else if (target?.record) {
@@ -535,7 +557,7 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
   // 5E book's races in reference.racedata: reference.racedata.dwarf), found
   // under the container's categories too.
   function findRecord(book, fgPath) {
-    const own = book.records.get(fgPath);
+    const own = book.records.get(fgPath) ?? (/^reference\./.test(fgPath) ? book.records.get(fgPath.replace(/^reference\./, "")) : book.records.get(`reference.${fgPath}`));
     if (own) return own;
     const [inner, moduleName = book.info.name] = String(fgPath).split("@");
     const cut = inner.lastIndexOf(".");
@@ -559,6 +581,15 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
   function resolver(book) {
     return Object.assign((linkClass, recordname) => {
       const [inner, moduleName] = String(recordname).split("@");
+      // "@*" (FG: any module): the first book of the same game that holds it, this one first.
+      if (moduleName === "*") {
+        const candidates = [book.info, ...[...load().values()].filter((info) => info.id !== book.info.id && (info.kraken ?? info.ruleset) === (book.info.kraken ?? book.info.ruleset))];
+        for (const info of candidates) {
+          const found = resolver(info.id === book.info.id ? book : (() => { try { return read(info.id); } catch { return null; } })() ?? book)(linkClass, `${inner}@${info.name}`);
+          if (found && (found.page || found.file || found.record)) return found;
+        }
+        return null;
+      }
       const other = moduleName ? byName(moduleName) : book.info;
       if (!other) return null;
       const page = /^reference\.refmanualdata\.([^.]+)$/.exec(inner);
@@ -586,7 +617,20 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
       const record = target ? findRecord(target, `${inner}@${other.name}`) : null;
       if (!record) return null;
       return { book: other.id, record: record.data.fgPath, name: record.name, ...(linkClass === "battle" ? { map: encounterMap(target, other, record) } : {}) };
-    }, { own: book.info.name });
+    }, {
+      own: book.info.name,
+      // A page of this book by its name.
+      byTitle(title) {
+        const wanted = String(title ?? "").trim().toLowerCase();
+        if (!wanted || !book.records) return null;
+        for (const record of book.records.values()) {
+          if (record.type !== "refpage" || String(record.name ?? "").trim().toLowerCase() !== wanted) continue;
+          const id = /refmanualdata.([^.@]+)/.exec(String(record.data?.fgPath ?? ""))?.[1];
+          if (id) return { book: book.info.id, page: id };
+        }
+        return null;
+      },
+    });
   }
   // The map an encounter's creatures stand on (FG's maplink: the image it places them on), so the
   // page that links the encounter links its map too: { book, file, name, path, spots } or null.

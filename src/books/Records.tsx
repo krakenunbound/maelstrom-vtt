@@ -185,7 +185,19 @@ export { listLabel };
 
 // only: the sidebar's list (one window a list, as FG's); without it, every
 // list with a button for each.
-export function RecordsWindow({ session, onOpen, only }: { session: Session; onOpen: (record: TableRecord) => void; only?: string }) {
+// FG 5E's equipment table windows by link class: the Items list's type each opens on (as electron/books.cjs).
+const EQUIPMENT_TABLES: Record<string, string> = {
+  reference_armortable: "Armor & Shields",
+  reference_weapontable: "Weapons",
+  reference_adventuringgeartable: "Adventuring Gear",
+  reference_mountsandotheranimalstable: "Mounts & Vehicles",
+  reference_waterbornevehiclestable: "Mounts & Vehicles",
+};
+
+export function RecordsWindow({ session, onOpen, only: asked }: { session: Session; onOpen: (record: TableRecord) => void; only?: string }) {
+  // "item|Armor & Shields": a list opened on one of its types (a book's equipment table).
+  // "spell||Cleric": the Spells list for one class.
+  const [only, startType = "", startClass = ""] = asked?.includes("|") ? asked.split("|") : [asked];
   const gm = session.role === "dm";
   const all = useMemo(() => Object.values(session.records).filter((record) => !NOT_LISTED.has(record.type)), [session.records]);
   const counts = useMemo(() => {
@@ -206,19 +218,19 @@ export function RecordsWindow({ session, onOpen, only }: { session: Session; onO
   // FG's list groups: the GM's own categories, kept with the campaign (the table's options), any record in one.
   const [groupWanted, setGroupWanted] = useState("");
   const [newGroup, setNewGroup] = useState("");
-  const [typeWanted, setTypeWanted] = useState("");
+  const [typeWanted, setTypeWanted] = useState(startType);
   const [bookWanted, setBookWanted] = useState("");
   // Spells: by school, and by the class that casts them.
   const [schoolWanted, setSchoolWanted] = useState("");
-  const [classWanted, setClassWanted] = useState("");
+  const [classWanted, setClassWanted] = useState(startClass);
   const [fieldWanted, setFieldWanted] = useState<Record<string, string>>({});
   // Another list: its own types and books, so the filters start again.
   useEffect(() => {
-    setTypeWanted("");
+    setTypeWanted(startType);
     setBookWanted("");
     setSchoolWanted("");
     setFieldWanted({});
-    setClassWanted("");
+    setClassWanted(startClass);
     setGroupBy(null);
   }, [list]);
   const inList = useMemo(() => all.filter((record) => listOf(record) === list).map((record) => ({ record, ...categoryOf(record), book: record.source || "Campaign" })), [all, list]);
@@ -590,12 +602,17 @@ const STATS = ["strength", "dexterity", "constitution", "intelligence", "wisdom"
 // in a row, its actions and traits as lists, its text as FG wrote it.
 export function RecordWindow({ session, id, record: given, book }: { session: Session; id: string; record?: TableRecord; book?: string }) {
   const record = given ?? session.records[id];
-  const { openBook, openPicture, openRecord } = useBookWindows();
+  const { openBook, openPicture, openRecord, openItems, openSpells } = useBookWindows();
   // A book's record, or the campaign's copy of one: its links go where the book's own do (a page, a picture or
   // map, or another record of the book). The copy's book: the module its fgPath names.
   const linkBook = book ?? (record?.source ? String(record.data?.fgPath ?? "").split("@").slice(1).join("@") : "");
   const onLink: OnLink | undefined = linkBook
     ? (linkClass, recordname, words) => {
+        // FG 5E's equipment tables (Armor Table...): the Items list on that type.
+        const itemTable = EQUIPMENT_TABLES[linkClass];
+        if (itemTable) return openItems(itemTable);
+        const spellClass = linkClass === "reference_colindex" ? /\.spelllists\.([^.@]+)/.exec(recordname)?.[1] : "";
+        if (spellClass) return openSpells(spellClass.charAt(0).toUpperCase() + spellClass.slice(1));
         const [inner, moduleName] = recordname.split("@");
         if (book && moduleName && given?.source && moduleName !== given.source && !String(given.id).endsWith(`@${moduleName}`)) return;
         const page = /^reference\.refmanualdata\.([^.]+)$/.exec(inner);

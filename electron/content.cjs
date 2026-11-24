@@ -447,8 +447,8 @@ async function encounterAction(table, args, from = "GM") {
       const mine = npc ? tokens.filter((token) => token.recordId === npc.id) : [];
       const spots = Array.isArray(args.spots?.[key]) ? args.spots[key] : mine.map((token) => ({ x: token.x, y: token.y }));
       const kept = rows(row.maplink).map(([, spot]) => spot).filter((spot) => spot.scene !== scene.id);
-      npclist[key] = { maplink: [...kept, ...spots.slice(0, 20).map((spot) => ({ scene: scene.id, x: Math.round(Number(spot.x) || 0), y: Math.round(Number(spot.y) || 0) }))] };
-      placed += Math.min(20, spots.length);
+      npclist[key] = { maplink: [...kept, ...spots.slice(0, 100).map((spot) => ({ scene: scene.id, x: Math.round(Number(spot.x) || 0), y: Math.round(Number(spot.y) || 0) }))] };
+      placed += Math.min(100, spots.length);
     }
     table.records.update(battle.id, { data: { npclist } }, table.seat);
     return { encounter: battle.name, scene: scene.name, placed };

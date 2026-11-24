@@ -233,6 +233,14 @@ export function useBookWindows() {
     openRecord(book: string, path: string, name: string) {
       windows.open("bookrecord", name || "Record", `${book}|${path}`);
     },
+    // An equipment table (FG 5E's Armor Table...): the Items list, on that type.
+    openItems(type: string) {
+      windows.open("records", type, `item|${type}`);
+    },
+    // A class's spell list (FG 5E's spell list window): the Spells list, that class's.
+    openSpells(cls: string) {
+      windows.open("records", `${cls} Spells`, `spell||${cls}`);
+    },
     openPicture(tab: Tab, at?: MapSpot) {
       // The GM: every picture opens in the image window, its one master (to
       // share, edit and test), wherever it was clicked. A player: the viewer.
@@ -446,7 +454,7 @@ const NO_SOUNDS = { links: {}, blocks: [] };
 
 export function BookWindow({ session, book }: { session: Session; book: string }) {
   const gm = session.role === "dm";
-  const { openBook, openPicture, openRecord } = useBookWindows();
+  const { openBook, openPicture, openRecord, openItems, openSpells } = useBookWindows();
   const actions = usePictureActions(session);
   const menu = useContextMenu();
   const [contents, setContents] = useState<BookContents | null>(null);
@@ -614,6 +622,14 @@ export function BookWindow({ session, book }: { session: Session; book: string }
       return;
     }
     const target = link.dataset;
+    if (target.items) {
+      openItems(target.items);
+      return;
+    }
+    if (target.spells) {
+      openSpells(target.spells);
+      return;
+    }
     if (target.page && target.book === book) {
       goTo(target.page);
       setView("book");

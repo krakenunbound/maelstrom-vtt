@@ -8,6 +8,11 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Your books' links open:** a Fantasy Grounds 5E equipment table (Armor Table, Weapons Table, Adventuring Gear, Mounts) opens the Items list on that type; a class's spell list opens the Spells list for that class; a link to "any book" (FG's `@*`, such as Table: Teleport Mishap) finds the book that has it; a link whose record a conversion left out opens the book's page of the same name.
+- **Big encounters come in whole:** up to 100 of a creature per encounter row (it stopped at 20: 40 gnomes came in as 20).
+- **C&C creatures with printed hit dice get their hit points:** "12" (C&C's d8) and "1 HP" are read, as "9 (d8)" always was.
+- **A book asked for by its long name is found:** an adventure that wants "Castles & Crusades Monsters and Treasure" uses your "C&C Monsters & Treasure", and an encounter made for another copy of a book finds its creatures by name.
+- **Tables written with one result per row roll** (Vault of the Kraken's 13 tables gave nothing).
 - **The start screen names 5E by what is installed:** with only the shipped SRD 5.2.1 books it is "5e SRD" (the SRD's licence covers the rules, not the D&D name); a DM's own 5E books bring back "D&D 5E". The game itself, its campaigns and packs are unchanged.
 - **5E takes a book's pregenerated characters:** the 5E character wizard offers "A ready-made character from your books" (a 5e pack's pregens, such as Vault of the Kraken Pregens), and the character comes as the book made it. `kraken_build_character` takes `{ pregen }` in 5E too.
 - **A new DM's books show up without a restart:** the new-campaign screen asks again which games are installed whenever you come back to Maelstrom's window, so a game's packs copied into Documents/Kraken VTT/Packs appear (and books taken out disappear) at once.

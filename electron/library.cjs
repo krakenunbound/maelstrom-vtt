@@ -72,10 +72,21 @@ function find(moduleName, fgPath) {
 const moduleOf = (fgPath) => String(fgPath).split("@").slice(1).join("@");
 
 // The NPC as a campaign record (made once, kept for the GM).
-function ensureNpc(table, fgPath) {
+// name: the encounter row's, for a link made to another copy of the book (FG's own module numbers its creatures
+// npc.id-00637; a pack of the same book names them npc.cc_mon_worg): the book's creature of that name.
+function ensureNpc(table, fgPath, name = "") {
   const existing = table.records.list({ type: "npc" }).find((record) => record.data?.fgPath === fgPath);
   if (existing) return existing;
-  const source = find(moduleOf(fgPath), fgPath);
+  let source;
+  try {
+    source = find(moduleOf(fgPath), fgPath);
+  } catch (error) {
+    const wanted = String(name ?? "").trim().toLowerCase();
+    source = wanted ? moduleRecords(moduleOf(fgPath)).find((item) => item.type === "npc" && String(item.name).trim().toLowerCase() === wanted) : null;
+    if (!source) throw error;
+    const kept = table.records.list({ type: "npc" }).find((record) => record.data?.fgPath === source.data.fgPath);
+    if (kept) return kept;
+  }
   return table.records.create({ id: source.id, type: "npc", name: source.name, visibility: "gm", data: source.data }, table.seat);
 }
 
@@ -108,9 +119,9 @@ async function addBattle(table, fgPath, { place = true } = {}) {
     const linked = String(row.link?.recordname ?? "").replace(/@\*$/, "");
     if (!linked) continue;
     const npcPath = linked.includes("@") || !ownBook ? linked : `${linked}@${ownBook}`;
-    const record = table.records.get(npcPath)?.type === "npc" ? table.records.get(npcPath) : ensureNpc(table, npcPath);
+    const record = table.records.get(npcPath)?.type === "npc" ? table.records.get(npcPath) : ensureNpc(table, npcPath, row.name);
     const counted = rollCount(table, row.expr || row.count);
-    const count = Math.max(1, Math.min(20, counted || 1));
+    const count = Math.max(1, Math.min(100, counted || 1));
     // Kraken's own spots (a campaign encounter's, by scene), or FG's (by its image).
     const own = rows(row.maplink).filter((spot) => spot.scene && spot.scene === sceneId);
     const spots = own.length ? own : rows(row.maplink).filter((spot) => frame && String(spot.imageref?.recordname ?? "").replace(/\.image@.*$|@.*$/g, "") === frame.image);

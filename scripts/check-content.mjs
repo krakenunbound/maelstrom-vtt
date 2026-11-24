@@ -43,6 +43,7 @@ const fixed = (values) => {
 };
 const weather = { name: "Weather", dice: "d6", tablerows: { a: { fromrange: 1, torange: 2, results: { a: { result: "Rain" } } }, b: { fromrange: 3, torange: 5, results: { a: { result: "Fog for [2d6] hours" } } }, c: { fromrange: 6, torange: 0, results: { a: { result: "Clear" } } } } };
 assert(resultsAt(weather, 6)[0].text === "Clear" && resultsAt(weather, 9)[0].text === "Clear" && resultsAt(weather, -3)[0].text === "Rain", "torange 0 is fromrange; past either end clamps");
+assert(resultsAt({ dice: "d4", tablerows: { a: { fromrange: 1, torange: 2, result: "A rope bridge" }, b: { fromrange: 3, torange: 4, result: "A ferry" } } }, 3)[0].text === "A ferry", "a row's own result (a hand-made pack's one column)");
 assert(tableFormula({ tablerows: { a: { fromrange: 2, torange: 6 }, b: { fromrange: 7, torange: 12 } } }) === "1d11+1", "a die from the rows' span");
 assert(tableFormula({ dice: "d10,d100", tablerows: { a: { fromrange: 1, torange: 100 } } }) === "1d100", "old modules' d10,d100 is a d100");
 let roll = rollTable(weather, { roll: fixed([4, 7]) });

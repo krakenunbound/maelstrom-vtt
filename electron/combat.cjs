@@ -3314,7 +3314,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
         return state.entries.find((entry) => entry.recordId === source.id);
       }
       const added = [];
-      const count = Math.min(20, Math.max(1, Math.round(num(input.count, 1))));
+      const count = Math.min(100, Math.max(1, Math.round(num(input.count, 1))));
       for (let index = 0; index < count; index += 1) {
         let hp = Math.max(0, Math.round(num(input.hp, 0)));
         // Basic Fantasy: a monster's hit dice rolled for its hit points (d8 each; "1d4 HP" as written), at least 1.
@@ -3349,7 +3349,12 @@ function createCombat({ saved, table, onChange = () => undefined }) {
         if (source && source.type !== "character" && !hp) {
           // SiegeCore getNPCHitPoints: the listed total, else the hit dice rolled (at least 1).
           hp = Math.round(num(source.data?.hptotal, 0));
-          const dice = String(source.data?.hd ?? "").trim();
+          // The dice, else the printed hit dice: "9 (d8)" is 9d8, a bare "12" 12d8 (C&C's d8), "1 HP" is 1.
+          const printed = String(source.data?.hdtext ?? "").trim();
+          const fixed = /^(\d+)\s*hp\b/i.exec(printed);
+          if (hp <= 0 && !/\d*d\d+/i.test(String(source.data?.hd ?? "")) && fixed) hp = Number(fixed[1]);
+          const fromText = /^(\d+)\s*\(\s*d(\d+)\s*\)/i.exec(printed) ?? (/^(\d+)$/.test(printed) ? [printed, printed, "8"] : null);
+          const dice = String(source.data?.hd ?? "").trim() || (fromText ? `${fromText[1]}d${fromText[2]}` : "");
           if (hp <= 0 && /\d*d\d+/i.test(dice)) {
             try {
               hp = Math.max(1, table().dice.roll(dice.replace(/\s+/g, "")).total);
