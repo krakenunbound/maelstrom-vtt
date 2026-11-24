@@ -17,8 +17,11 @@ const cache = new Map();
 // The GM's shelf: a book named by its id, its name or its title is read from
 // its own file (a pack, a module whose file name is not its name, a bundled book).
 let resolveBook = (name) => name;
-function useShelf(resolve) {
+// A book's formatted words as HTML with its links resolved (the shelf's, as a page's); none: links shown dead.
+let linkHtml = null;
+function useShelf(resolve, html = null) {
   resolveBook = (name) => resolve(name) ?? name;
+  linkHtml = html;
 }
 function moduleRecords(moduleName) {
   let records = cache.get(moduleName);
@@ -153,7 +156,16 @@ function rollTable(table, fgPath, from = "GM") {
 function storyEntry(fgPath) {
   const record = find(moduleOf(fgPath), fgPath);
   const { toHtml } = require("./books.cjs");
-  const html = typeof record.data.text === "string" ? toHtml(record.data.text, () => null) : "";
+  // Its links (the map, the battle, the printed key, the treasure) resolved as a book page's, so they open.
+  const text = typeof record.data.text === "string" ? record.data.text : "";
+  let html = "";
+  if (text) {
+    try {
+      html = linkHtml ? linkHtml(moduleOf(fgPath), text) : toHtml(text, () => null);
+    } catch {
+      html = toHtml(text, () => null);
+    }
+  }
   // The entries before and after it, in the Story list's order (its arrows step through them).
   const order = list(moduleOf(fgPath), "story");
   const at = order.findIndex((item) => item.path === fgPath);

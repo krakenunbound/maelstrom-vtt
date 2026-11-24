@@ -7,6 +7,7 @@ import { slotDrag } from "../ui/QuickSlots";
 import { useWindows } from "../ui/Windows";
 import { ShareMenu, StoryTemplate, TableImport, useRecordMenu } from "./RecordEditor";
 import { imageWindow } from "../table/imageWindow";
+import { spotOf, useBookWindows } from "./Books";
 
 // FG's Library for the GM's adventures: each kind in its own tab (Maps,
 // Encounters, NPCs, Parcels, Tables), for one adventure or all the active
@@ -353,6 +354,21 @@ export function StoryWindow({ session, path: opened }: { session: Session; path:
     if (entry?.name && path !== opened) windows.open("story", entry.name, opened);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entry?.name]);
+  // Its links, as a book page's: a page (here or in another book), a picture or map, a record (the battle, the treasure).
+  const { openBook, openPicture, openRecord } = useBookWindows();
+  const follow = (event: React.MouseEvent) => {
+    const link = (event.target as HTMLElement).closest("a.book-link") as HTMLAnchorElement | null;
+    if (!link || link.classList.contains("sound")) return;
+    event.preventDefault();
+    if (link.classList.contains("url")) {
+      if (/^https?:\/\//i.test(link.href)) window.open(link.href, "_blank", "noopener,noreferrer");
+      return;
+    }
+    const target = link.dataset;
+    if (target.page && target.book) openBook(target.book, target.book, target.page);
+    else if (target.file && target.book) openPicture({ book: target.book, file: target.file, name: target.name || link.textContent || "Picture" }, spotOf(target.at));
+    else if (target.record && target.book) openRecord(target.book, target.record, target.name || link.textContent || "Record");
+  };
   const step = (to: { path: string } | null | undefined) => {
     if (!to) return;
     setStatus("");
@@ -374,7 +390,7 @@ export function StoryWindow({ session, path: opened }: { session: Session; path:
           {status ? <p className="hint" role="status">{status}</p> : null}
           <h3>{entry.name}</h3>
           {entry.category ? <p className="hint">{entry.category}</p> : null}
-          <div className="book-text" ref={storyText} dangerouslySetInnerHTML={{ __html: entry.html ?? "" }} />
+          <div className="book-text" ref={storyText} onClick={follow} dangerouslySetInnerHTML={{ __html: entry.html ?? "" }} />
           <nav className="book-turn story-turn">
             <button type="button" data-action="story-prev" disabled={!entry.prev} aria-label="Previous entry" onClick={() => step(entry.prev)}>
               ‹ {entry.prev?.name ?? ""}

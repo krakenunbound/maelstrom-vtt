@@ -82,7 +82,12 @@ const pack = (name, manifest, records, extra = {}) =>
   fs.writeFileSync(path.join(folder, `${name}.kpack`), zipSync({ "kraken-pack.json": strToU8(JSON.stringify({ format: FORMAT, version: VERSION, name, title: name, ruleset: GAME, kind: "rules", hasBook: false, ...manifest })), "records.json": strToU8(JSON.stringify(records)), ...extra }));
 pack(BASIC, {}, basic, { "game.json": strToU8(JSON.stringify(game)) });
 pack(EXPERT, {}, expert);
-pack("Test Adventure", { kind: "adventure" }, [record("Test Adventure", "npc", "Zombie", { ac: 8, hd: "2", attacks: "1 claw", damage: "1d8", saveas: "F1", morale: 12 }, "gm")]);
+pack("Test Adventure", { kind: "adventure", hasStory: true }, [
+  record("Test Adventure", "npc", "Zombie", { fgPath: "npc.zombie@Test Adventure", ac: 8, hd: "2", attacks: "1 claw", damage: "1d8", saveas: "F1", morale: 12 }, "gm"),
+  record("Test Adventure", "treasureparcels", "Crypt Hoard", { fgPath: "treasureparcels.crypthoard@Test Adventure", coinlist: { "id-00001": { description: "GP", amount: 50 } }, itemlist: {} }, "gm"),
+  // A keyed room: its links (the creature, the treasure, a Basic book page) open from the Story window.
+  record("Test Adventure", "encounter", "1. Crypt", { fgPath: "encounter.1crypt@Test Adventure", text: '<p>A zombie guards the hoard.</p><linklist><link class="npc" recordname="npc.zombie@Test Adventure">The zombie</link><link class="treasureparcels" recordname="treasureparcels.crypthoard@Test Adventure">Its treasure</link></linklist>' }, "gm"),
+]);
 
 let server;
 try {
@@ -272,6 +277,12 @@ try {
     await tool("kraken_combat", { action: "damage-roll", recordId: ana.id, weapon: sword.item });
   }
   assert((await tool("kraken_combat", { action: "view" })).entries.find((entry) => entry.id === ogre.id).health.status === "Dead", `the ogre dead at 0 (${left.hp} hit points)`);
+  // A story entry's links resolve as a book page's (they were all dead in the Story window).
+  const library = require("../electron/library.cjs");
+  const crypt = library.list("Test Adventure", "story").find((item) => item.name === "1. Crypt");
+  assert(crypt, `the adventure's story: ${JSON.stringify(library.list("Test Adventure", "story"))}`);
+  const entry = library.storyEntry(crypt.path);
+  assert((entry.html.match(/class="book-link record"/g) ?? []).length === 2 && !/book-link dead/.test(entry.html), `a story entry's links resolve: ${entry.html}`);
   // A creature's printed hit points (9), not its hit dice rolled.
   await tool("kraken_combat", { action: "add", recordId: npc("Kobold Chief").id });
   assert((await tool("kraken_combat", { action: "view" })).entries.find((entry) => entry.name === "Kobold Chief")?.hp === 9, "a creature's printed hit points");

@@ -574,3 +574,22 @@ fights them, and their morale breaks as the rules say. To fix in the pack:
    better with the dungeon's walls and doors as `occluders`.
 6. The Red Hand Trail booklet and the handouts are missing from the PDF
    (Codex's review notes); 67 of the 72 pages are still scans.
+
+### The Goblin's Lair rebuilt (D&D BECMI adventure), 2026-11-23
+
+Rebuilt as asked: `"ruleset": "D&D BECMI"`, no `game.json`, no copies of
+Set 1, 18 links into Set 1, battles with map positions, square grids. With
+Set 1 in a D&D BECMI campaign every battle puts its creatures on its map
+(70 tokens, none off the picture), the Story window's links open (fixed in
+Maelstrom: they were all shown as text) and a book's treasure parcel shows
+its items and coins and goes to the party sheet (fixed in Maelstrom: the
+window was empty). To fix in the pack:
+
+1. **The tokens are not in their rooms.** Each battle's creatures are laid
+   out as a block of squares around the room's key number, so large groups
+   stand in solid rock and on walls (rooms 2, 4, 11, 13, 14 and 15 of the
+   Palace of Dread; 2, 3, 6, 8 and 32 of Trouble Below). Put each creature on
+   a floor square inside its room, and check by opening the map in Maelstrom
+   with every battle placed and the tokens shown.
+2. Walls and doors are still to come; 67 pages are still scans; the Red
+   Hand Trail booklet and the handouts are not in the PDF.

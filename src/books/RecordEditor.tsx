@@ -966,9 +966,12 @@ export function ParcelView({ session, record, editable }: { session: Session; re
   const items = Object.entries((record.data.itemlist ?? {}) as Record<string, { name?: string; count?: number; isidentified?: number; nonid_name?: string }>).sort(([a], [b]) => a.localeCompare(b));
   const coins = Object.entries((record.data.coinlist ?? {}) as Record<string, { description?: string; amount?: number }>);
   const characters = useMemo(() => Object.values(session.records).filter((item) => item.type === "character"), [session.records]);
+  // A book's parcel (an adventure's treasure, opened from its story or a page): shown as the book has it, and
+  // handed to the party sheet's parcel as the Library's Parcels list does; it is not the campaign's to change.
+  const fgPath = typeof record.data.fgPath === "string" ? record.data.fgPath : "";
+  const fromBook = !session.records[record.id] && Boolean(fgPath);
   const act = (action: string, more: Record<string, unknown> = {}, done = "") =>
-    session
-      .content("parcel", { action, id: record.id, ...more })
+    (fromBook && action === "party" ? Promise.resolve(session.libraryAction("parcel", { module: fgPath.split("@").slice(1).join("@"), path: fgPath })) : session.content("parcel", { action, id: record.id, ...more }))
       .then(() => setStatus(done))
       .catch((error) => setStatus(error instanceof Error ? error.message : "Could not do that."));
   return (
@@ -1036,6 +1039,8 @@ export function ParcelView({ session, record, editable }: { session: Session; re
         <button type="button" data-action="parcel-party" title="Into the party sheet's parcel, to hand out" onClick={() => void act("party", {}, "On the party sheet's parcel.")}>
           <Icon name="party" size={14} /> To the party sheet
         </button>
+        {fromBook ? null : (
+          <>
         <select aria-label="Give to" value={to} onChange={(event) => setTo(event.target.value)}>
           <option value="">Give to a character…</option>
           {characters.map((character) => (
@@ -1047,6 +1052,8 @@ export function ParcelView({ session, record, editable }: { session: Session; re
         <button type="button" data-action="parcel-character" disabled={!to} title="Its items into that character's gear, its coins into the purse" onClick={() => void act("character", { character: to }, "Given.")}>
           Give
         </button>
+          </>
+        )}
       </div>
       {status ? <p className="hint" role="status">{status}</p> : null}
     </div>
@@ -1090,7 +1097,7 @@ export function QuestView({ session, record, editable }: { session: Session; rec
 }
 
 // The core's kinds, each its own window.
-export const CORE_VIEWS: Record<string, (props: { session: Session; record: TableRecord; editable: boolean }) => ReactNode> = { story: StoryView, battle: EncounterView, treasureparcel: ParcelView, quest: QuestView };
+export const CORE_VIEWS: Record<string, (props: { session: Session; record: TableRecord; editable: boolean }) => ReactNode> = { story: StoryView, battle: EncounterView, treasureparcel: ParcelView, treasureparcels: ParcelView, quest: QuestView };
 
 // A row's right-click menu (FG's: Duplicate, Delete; a book's record, Copy to campaign).
 export function useRecordMenu(session: Session) {

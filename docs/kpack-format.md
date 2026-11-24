@@ -308,6 +308,9 @@ being read; warnings are worth fixing.
   equipment, the spells, the standard monsters): they show twice in that
   game's campaigns. An adventure carries only what it adds, and links the
   rules book's records (`npc.goblin@Set 1: Basic Rules`).
+- **Battle positions laid out as a block around the key number**: the
+  creatures stand in rock and on walls. Put each on a floor square of its
+  room, then open the map with every battle placed and look.
 - **Battles with no map positions**: their creatures are not placed on the
   map. Give each battle row its `maplink` (the map's `imageref`, `imagex`
   and `imagey` from the picture's centre).

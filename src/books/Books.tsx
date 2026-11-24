@@ -27,7 +27,7 @@ import { GM } from "../ui/gmTitle";
 // closed (a shown picture comes back when the GM shows it again).
 type Tab = { book: string; file: string; name: string };
 // A map link's spot (data-at "x,y,r", see electron/books.cjs aroundOf): where the map opens.
-function spotOf(at: string | undefined): MapSpot | undefined {
+export function spotOf(at: string | undefined): MapSpot | undefined {
   const [x, y, r] = String(at ?? "").split(",").map(Number);
   return at && Number.isFinite(x) && Number.isFinite(y) ? { x, y, r: Number.isFinite(r) ? r : 0 } : undefined;
 }

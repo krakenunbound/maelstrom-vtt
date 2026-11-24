@@ -4449,11 +4449,17 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
 
   // The Library reads a book by its id, name or title from the shelf's own file.
   if (books) {
-    require("./library.cjs").useShelf((given) => {
+    const bookNamed = (given) => {
       const wanted = String(given ?? "");
-      const found = books.list().find((info) => info.id === wanted || info.name === wanted || info.title === wanted);
-      return found ? books.file?.(found.id) ?? null : null;
-    });
+      return books.list().find((info) => info.id === wanted || info.name === wanted || info.title === wanted) ?? null;
+    };
+    require("./library.cjs").useShelf(
+      (given) => {
+        const found = bookNamed(given);
+        return found ? books.file?.(found.id) ?? null : null;
+      },
+      books.html ? (given, text) => books.html(bookNamed(given)?.id ?? given, text) : null,
+    );
   }
   let bookTablesCache = { key: null, tables: [] };
   // What agents (the MCP server, the in-app assistant) use. They act as the GM.

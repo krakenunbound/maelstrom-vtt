@@ -891,6 +891,11 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
       }));
     },
     record: bookRecord,
+    // A story entry's formatted words as HTML, its links resolved in its book as a page's are (the Story window).
+    html(id, formatted) {
+      const book = read(id);
+      return toHtml(String(formatted ?? ""), resolver(book), []);
+    },
     // A picture from a book (a page's, or one of its maps).
     picture(id, file) {
       const found = info(id);
