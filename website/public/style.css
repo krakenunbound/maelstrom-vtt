@@ -177,6 +177,7 @@ h3 { font-size: 1.05rem; margin: 0 0 0.4rem; color: var(--gold); }
 #games tbody tr:hover { background: rgba(233, 199, 136, 0.05); }
 #games .lock-col { width: 32px; padding-right: 0; }
 #games .num { text-align: right; }
+#games .join-col { width: 1%; padding-left: 4px; padding-right: 4px; }
 .list-empty { padding: 16px 12px; margin: 0; }
 .list-count { color: var(--muted); font-size: 0.85rem; margin: 8px 2px 0; }
 
@@ -196,3 +197,6 @@ h3 { font-size: 1.05rem; margin: 0 0 0.4rem; color: var(--gold); }
 @media (max-width: 760px) {
   .top nav a.keep { display: inline; }
 }
+
+/* hidden wins over a display set above (a field, the list's rows). */
+[hidden] { display: none !important; }

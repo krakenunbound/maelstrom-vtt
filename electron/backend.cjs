@@ -945,15 +945,14 @@ const calls = {
       }
       const externalV4 = net.externalV4 || upnp?.external || "";
       invite = inviteFor({ port: info.port, password, lan: options?.lan ? info.addresses : [], internet: options?.cloud ? externalV4 : "" });
-      // Find a game: internet tables only; its first check-in is waited for (briefly), never needed to play.
+      // Find a game: internet tables only; never waited for (the invite card reads how it went).
       let listed = null;
       if (options?.listed && options?.cloud) {
         const campaignName = campaigns.read(campaignFile()).find((item) => item.id === campaignId)?.name ?? "";
         const gm = String(options?.gmName ?? "").trim() || "GM";
         const { id, key } = lobby.identity(preferences, savePreference, campaignId);
         listing = lobby.startListing({ id, key, listing: () => ({ gm, campaign: campaignName, ruleset, locked: Boolean(password), players: next.playerCount(), port: info.port, version: VERSION }) });
-        const first = listing;
-        listed = await Promise.race([first.ready, new Promise((resolve) => setTimeout(() => resolve(first.status()), 8000))]);
+        listed = listing.status();
       }
       return { ...info, v6: net.v6, externalV4, externalV6: net.externalV6, upnp, invite, listed };
     } catch (error) {

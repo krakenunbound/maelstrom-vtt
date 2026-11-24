@@ -232,6 +232,19 @@ export function InviteCard({ session }: { session: Session }) {
   const [copied, setCopied] = useState<"" | "copied" | "failed">("");
   const link = links[Math.min(chosen, links.length - 1)];
   const modules = useMemo(() => (link ? qrModules(link.url) : null), [link?.url]);
+  // The Find a game listing as it stands (its check-ins run every 3 minutes), read again while the card is open.
+  const [listed, setListed] = useState(info?.listed ?? null);
+  useEffect(() => {
+    setListed(info?.listed ?? null);
+    if (!info?.listed) return;
+    const timer = window.setInterval(() => {
+      void window.kraken
+        ?.invite?.()
+        .then((now) => now?.listed && setListed(now.listed))
+        .catch(() => undefined);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [info?.listed]);
   if (!info || !link) return null;
   const copy = async () => {
     let ok = false;
@@ -254,12 +267,14 @@ export function InviteCard({ session }: { session: Session }) {
           {info.upnp.ok ? `Your router opened port ${info.port} for the table (${info.upnp.method}); it closes again when you stop.` : info.upnp.error}
         </p>
       ) : null}
-      {info.listed ? (
-        <p className="upnp-line hint" data-listed={info.listed.listed ? (info.listed.reachable ? "shown" : "unreachable") : "failed"}>
-          <Icon name={info.listed.listed && info.listed.reachable ? "check" : "warning"} size={14} />
-          {!info.listed.listed
-            ? `Not on the Find a game list: ${info.listed.error ?? "the site did not answer"}`
-            : info.listed.reachable
+      {listed ? (
+        <p className="upnp-line hint" data-listed={listed.pending ? "pending" : listed.listed ? (listed.reachable ? "shown" : "unreachable") : "failed"}>
+          <Icon name={listed.listed && listed.reachable ? "check" : "warning"} size={14} />
+          {listed.pending
+            ? "Putting the game on maelstromvtt.com's Find a game list…"
+            : !listed.listed
+            ? `Not on the Find a game list: ${listed.error ?? "the site did not answer"}`
+            : listed.reachable
               ? "On maelstromvtt.com's Find a game list; it comes off when you stop."
               : `Listed, but maelstromvtt.com could not reach port ${info.port}, so players will not see it yet. Open the port on your router (or turn on UPnP there); the site checks again every 3 minutes.`}
         </p>

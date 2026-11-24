@@ -61,7 +61,8 @@ A listing not seen for 60 days is deleted (a daily cron).
 address and port filled in (`electron/launchLink.cjs`; the player still
 presses Connect; a link carries no password). The installers register the
 link type (`build.protocols`), and a packaged copy registers it again when it
-runs. A browser asks before opening it. Maelstrom takes no single-instance lock
+runs (not yet tried on an installed copy, nor on the AppImage, which registers
+links only when the desktop integrates it). A browser asks before opening it. Maelstrom takes no single-instance lock
 (a GM and a player copy run side by side), so a link opens a new copy.
 
 ## 5. Running it

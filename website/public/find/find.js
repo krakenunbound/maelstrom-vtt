@@ -73,6 +73,8 @@ function askJoin(game) {
   dialog.querySelector("#join-password-field").hidden = !game.locked;
   dialog.querySelector("#join-error").textContent = "";
   dialog.querySelector("#join-form").reset();
+  // A dialog keeps its last answer: closed with Escape, it must not repeat it.
+  dialog.returnValue = "";
   dialog.showModal();
 }
 dialog.addEventListener("close", async () => {
@@ -86,6 +88,7 @@ dialog.addEventListener("close", async () => {
   } catch (error) {
     joining = game;
     dialog.querySelector("#join-error").textContent = error.message;
+    dialog.returnValue = "";
     dialog.showModal();
   }
 });
@@ -99,11 +102,11 @@ function gameRow(game) {
     "tr",
     {},
     el("td", { className: "lock-col" }, game.locked ? lockIcon() : ""),
+    el("td", { className: "join-col" }, join),
     el("td", { textContent: game.gm }),
     el("td", { textContent: game.campaign }),
     el("td", { textContent: game.ruleset }),
     el("td", { className: "num", textContent: String(game.players) }),
-    el("td", {}, join),
   );
   row.dataset.search = `${game.gm} ${game.campaign} ${game.ruleset}`.toLowerCase();
   return row;
