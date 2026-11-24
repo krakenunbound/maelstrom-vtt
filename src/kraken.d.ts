@@ -33,6 +33,8 @@ export type KrakenHostInfo = {
 };
 // listed: the site has it; reachable: the site could open the table's port (only those are shown to players).
 export type KrakenListing = { id: string; listed: boolean; pending?: boolean; reachable?: boolean; address?: string; error?: string };
+// A game on maelstromvtt.com's Find a game list.
+export type LobbyGame = { id: string; gm: string; campaign: string; ruleset: string; locked: boolean; players: number; version: string };
 export type KrakenUpnp = { ok: boolean; method: string; external?: string; error?: string };
 // Links that seat a player: the table's password in the #fragment (never sent to the server).
 export type KrakenInvite = { internet: string; lan: string[]; local: string; upnp?: KrakenUpnp | null; listed?: KrakenListing | null };
@@ -101,6 +103,10 @@ export type KrakenApi = {
   startHost: (options: { port: number; password: string; lan: boolean; cloud: boolean; upnp?: boolean; listed?: boolean; gmName?: string; campaignId?: string }) => Promise<KrakenHostInfo>;
   invite?: () => Promise<KrakenInvite | null>;
   launchLink?: () => Promise<{ address: string; port: number } | null>;
+  lobbyGames?: () => Promise<{ ok: boolean; error?: string; games?: LobbyGame[] }>;
+  lobbyStatus?: (ids: string[]) => Promise<{ ok: boolean; error?: string; games?: (LobbyGame & { online: boolean; reachable: boolean })[] }>;
+  lobbyJoin?: (id: string) => Promise<{ ok: boolean; error?: string; address?: string; port?: number }>;
+  tableProbe?: (tables: { address: string; port: number }[]) => Promise<boolean[]>;
   manageCampaign?: (input: { action: "rename" | "duplicate" | "export" | "delete" | "backups" | "backup" | "restore" | "folder"; id: string; name?: string; backup?: string }) => Promise<unknown>;
   openLogs?: () => Promise<unknown>;
   stopHost: () => Promise<void>;

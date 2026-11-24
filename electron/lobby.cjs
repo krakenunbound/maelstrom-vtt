@@ -5,9 +5,53 @@
 const crypto = require("crypto");
 const http = require("http");
 const https = require("https");
+const net = require("net");
 
 const EVERY_MS = 3 * 60 * 1000;
 const base = () => process.env.KRAKEN_LOBBY_URL || "https://maelstromvtt.com";
+
+// The list as players see it: the games hosted now, a player's past games' state, a game's address on Join.
+function get(route, timeoutMs = 8000) {
+  return new Promise((resolve) => {
+    let url;
+    try {
+      url = new URL(route, base());
+    } catch {
+      resolve({ ok: false, error: "The list's address is wrong." });
+      return;
+    }
+    const request = (url.protocol === "http:" ? http : https).get(url, { timeout: timeoutMs }, (response) => {
+      let text = "";
+      response.setEncoding("utf8");
+      response.on("data", (chunk) => (text += chunk));
+      response.on("end", () => {
+        let reply = {};
+        try {
+          reply = JSON.parse(text);
+        } catch {
+          /* not the list */
+        }
+        resolve(response.statusCode === 200 ? { ok: true, ...reply } : { ok: false, error: reply.error || `The list answered ${response.statusCode}.` });
+      });
+    });
+    request.on("timeout", () => request.destroy(new Error("The list did not answer in time.")));
+    request.on("error", (error) => resolve({ ok: false, error: error.message || "The list could not be reached." }));
+  });
+}
+
+// Whether a table answers at address:port (a past game joined by address; this computer can look on its own network).
+function probe(address, port, timeoutMs = 2000) {
+  return new Promise((resolve) => {
+    const socket = net.connect({ host: address, port });
+    const done = (open) => {
+      socket.destroy();
+      resolve(open);
+    };
+    socket.setTimeout(timeoutMs, () => done(false));
+    socket.once("connect", () => done(true));
+    socket.once("error", () => done(false));
+  });
+}
 
 function post(route, body, timeoutMs) {
   return new Promise((resolve) => {
@@ -83,4 +127,4 @@ function startListing({ id, key, listing }) {
   };
 }
 
-module.exports = { startListing, identity };
+module.exports = { startListing, identity, get, probe };

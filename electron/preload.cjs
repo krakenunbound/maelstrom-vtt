@@ -45,6 +45,11 @@ contextBridge.exposeInMainWorld("kraken", {
   invite: () => ipcRenderer.invoke("invite"),
   // The maelstrom://join link that started this copy, once.
   launchLink: () => ipcRenderer.invoke("launch-link"),
+  // Join a Game's lists: maelstromvtt.com's Find a game, and whether a past table answers.
+  lobbyGames: () => ipcRenderer.invoke("lobby-games"),
+  lobbyStatus: (ids) => ipcRenderer.invoke("lobby-status", ids),
+  lobbyJoin: (id) => ipcRenderer.invoke("lobby-join", id),
+  tableProbe: (tables) => ipcRenderer.invoke("table-probe", tables),
   // The start screen's campaign menu (rename, duplicate, export, delete, backups, restore, folder); Settings > Open logs.
   manageCampaign: (input) => ipcRenderer.invoke("campaign-manage", input),
   openLogs: () => ipcRenderer.invoke("open-logs"),

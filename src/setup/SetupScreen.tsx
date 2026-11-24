@@ -15,6 +15,8 @@ import "./setup.css";
 import { Icon } from "../ui/icons";
 import { ReleaseNotes } from "./ReleaseNotes";
 import { GM } from "../ui/gmTitle";
+import { OpenGames, PastGames, type PastGame } from "./GameLobby";
+import type { LobbyGame } from "../kraken";
 
 type HostInput = { name: string; port: number; password: string; lan: boolean; cloud: boolean; upnp?: boolean; listed?: boolean; campaignId: string };
 // accountPassword: the player's own password (their account at that table).
@@ -23,7 +25,9 @@ type JoinInput = { name: string; address: string; port: number; password: string
 const EMPTY_NET: KrakenNetwork = { v4: [], v6: [], externalV4: "", externalV6: "" };
 
 // The games this screen has joined, newest first, for a quick way back in.
-type RecentGame = { name: string; address: string; port: number; password: string; at: number };
+// A game joined: by address, or from the Find a game list (lobbyId and its names: its address may change).
+type RecentGame = PastGame;
+const sameRecent = (a: RecentGame, b: RecentGame) => (a.lobbyId || b.lobbyId ? a.lobbyId === b.lobbyId : a.address === b.address && a.port === b.port);
 const RECENT_KEY = "kraken-recent-games";
 const LIST_KEY = "kraken-list-game";
 function recentGames(): RecentGame[] {
@@ -42,7 +46,7 @@ function saveRecentGames(list: RecentGame[]) {
   }
 }
 function rememberGame(game: RecentGame) {
-  saveRecentGames([game, ...recentGames().filter((other) => !(other.address === game.address && other.port === game.port))]);
+  saveRecentGames([game, ...recentGames().filter((other) => !sameRecent(other, game))]);
 }
 
 // The rulesets a campaign can be made with: every manifest's names, each with its blurb (shared/rulesets).
@@ -437,7 +441,11 @@ export function SetupScreen({
         return;
       }
       const { accountPassword: _secret, ...kept } = game;
-      rememberGame({ ...kept, at: Date.now() });
+      // Picked from the Find a game list: kept as that game, found again wherever it is hosted next.
+      const listed = picked.current && picked.current.address === game.address && picked.current.port === game.port ? picked.current.game : null;
+      const earlier = recentGames().find((other) => other.address === game.address && other.port === game.port && other.lobbyId);
+      const meta = listed ? { lobbyId: listed.id, gm: listed.gm, campaign: listed.campaign, ruleset: listed.ruleset } : earlier ? { lobbyId: earlier.lobbyId, gm: earlier.gm, campaign: earlier.campaign, ruleset: earlier.ruleset } : {};
+      rememberGame({ ...kept, ...meta, at: Date.now() });
       setRecent(recentGames());
     } catch {
       /* the error shows */
@@ -455,8 +463,39 @@ export function SetupScreen({
     });
   }
   function forget(game: RecentGame) {
-    saveRecentGames(recentGames().filter((other) => !(other.address === game.address && other.port === game.port)));
+    saveRecentGames(recentGames().filter((other) => !sameRecent(other, game)));
     setRecent(recentGames());
+  }
+  // A game from the Find a game list: its address now, into the form (the player's name kept).
+  const picked = useRef<{ address: string; port: number; game: LobbyGame } | null>(null);
+  const joinForm = useRef<HTMLFormElement>(null);
+  async function addressOf(id: string) {
+    const reply = await window.kraken?.lobbyJoin?.(id);
+    if (!reply?.ok || !reply.address || !reply.port) throw new Error(reply?.error ?? "That game is not being hosted now.");
+    return { address: reply.address, port: reply.port };
+  }
+  async function pickListed(game: LobbyGame) {
+    setLocalError(null);
+    try {
+      const { address, port } = await addressOf(game.id);
+      picked.current = { address, port, game };
+      const name = String(new FormData(joinForm.current ?? undefined).get("name") || "").trim();
+      const known = recentGames().find((other) => other.lobbyId === game.id);
+      setJoinFill({ name: name || known?.name || "Player", address, port, password: known?.password ?? "", at: 0, lobbyId: game.id, gm: game.gm, campaign: game.campaign, ruleset: game.ruleset });
+    } catch (caught) {
+      setLocalError(caught instanceof Error ? caught.message : "That game is not being hosted now.");
+    }
+  }
+  async function joinPast(game: RecentGame) {
+    setLocalError(null);
+    if (!game.lobbyId) return void join(game);
+    try {
+      const { address, port } = await addressOf(game.lobbyId);
+      picked.current = { address, port, game: { id: game.lobbyId, gm: game.gm ?? "", campaign: game.campaign ?? "", ruleset: game.ruleset ?? "", locked: Boolean(game.password), players: 0, version: "" } };
+      void join({ ...game, address, port });
+    } catch (caught) {
+      setLocalError(caught instanceof Error ? caught.message : "That game is not being hosted now.");
+    }
   }
   const recentList = (compact: boolean) =>
     recent.length > 0 ? (
@@ -552,8 +591,9 @@ export function SetupScreen({
           {alertLine}
         </main>
       ) : mode === "join" ? (
-        <main className="join-stage">
-          <form key={joinFill ? `${joinFill.address}:${joinFill.port}` : "new"} className="join-panel glass" data-form="join" onSubmit={submitJoin}>
+        <main className={inBrowser ? "join-stage" : "join-stage lobby"}>
+          {inBrowser ? null : <PastGames games={recent} busy={busy} onJoin={(game) => void joinPast(game)} onEdit={(game) => setJoinFill(game)} onForget={forget} />}
+          <form ref={joinForm} key={joinFill ? `${joinFill.address}:${joinFill.port}` : "new"} className="join-panel glass" data-form="join" onSubmit={submitJoin}>
             <LivingEmblem size={170} />
             <h1>Take your seat</h1>
             {inBrowser ? (
@@ -561,7 +601,15 @@ export function SetupScreen({
                 The table at <span className="secret">{window.location.host}</span> is waiting. Leave the table password blank when the game is public.
               </p>
             ) : (
-              <p className="join-lede">{GM("Use the address and port from your GM. Leave the table password blank when the game is public.")}</p>
+              <p className="join-lede">
+                {joinFill?.campaign ? (
+                  <>
+                    <b>{joinFill.campaign}</b>, hosted by {joinFill.gm}. Its table password if it has one, then take your seat.
+                  </>
+                ) : (
+                  GM("Pick a game hosted now, or use the address and port from your GM. Leave the table password blank when the game is public.")
+                )}
+              </p>
             )}
             {signIn ? (
               // Signed in here before: the token this browser kept is enough.
@@ -619,7 +667,7 @@ export function SetupScreen({
             </button>
             {alertLine}
           </form>
-          {inBrowser ? null : recentList(false)}
+          {inBrowser ? null : <OpenGames busy={busy} onPick={(game) => void pickListed(game)} />}
         </main>
       ) : (
         <main className="campaign-stage">

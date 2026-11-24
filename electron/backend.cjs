@@ -962,6 +962,18 @@ const calls = {
     }
   },
   "stop-host": () => stopTable(),
+  // Join a Game's lists (lobby.cjs): the games hosted now, past games' state, a listed game's address.
+  "lobby-games": () => lobby.get("/api/lobby/games"),
+  "lobby-status": (ids) => lobby.get(`/api/lobby/status?ids=${(Array.isArray(ids) ? ids : []).map((id) => encodeURIComponent(String(id))).join(",")}`),
+  "lobby-join": (id) => lobby.get(`/api/lobby/join?id=${encodeURIComponent(String(id ?? ""))}`),
+  "table-probe": async (tables) =>
+    Promise.all(
+      (Array.isArray(tables) ? tables.slice(0, 20) : []).map((table) => {
+        const port = Number(table?.port);
+        const address = String(table?.address ?? "");
+        return address && Number.isInteger(port) && port > 0 && port < 65536 ? lobby.probe(address, port) : false;
+      }),
+    ),
   // The invite links of the table being hosted (and whether the router opened its port).
   invite: () => (table && invite ? { ...invite, upnp: portMapping ? { ok: true, method: portMapping.method } : null, listed: listing ? listing.status() : null } : null),
   "campaign-view": (id) => {

@@ -55,6 +55,17 @@ A listing not seen for 60 days is deleted (a daily cron).
 - **Join by address:** an address and port (and password), for a LAN game
   or an address the GM gave.
 
+## 3b. In the app: Join a Game
+
+Maelstrom's own Join a Game screen has the same lists beside Take your seat
+(`src/setup/GameLobby.tsx`), read through the app (`lobby-games`,
+`lobby-status`, `lobby-join`): **Your games** on the left (each game joined,
+green when on, red when off; a listed game's state from the site, one joined
+by address asked of the table itself, `table-probe`, so LAN games show too),
+**Games hosted now** on the right (sortable, searchable, a lock on those
+with a password). Picking a game fills the form with its address now; a past
+listed game is found again wherever it is hosted next.
+
 ## 4. maelstrom:// links
 
 `maelstrom://join?address=…&port=…` opens Maelstrom on Join a Game with the
