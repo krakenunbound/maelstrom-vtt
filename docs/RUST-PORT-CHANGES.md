@@ -56,6 +56,8 @@ the Rust tests.
 | 235d0342, 1d9193b6 | The GM's 3.5e Monster Manual art (595 creatures, `games/creatures`) serves every game, found by the name's words. | §24 |
 | 4bcf8bfe, adb31732, 584443a0 | Art by the whole name: the GM's own art beats shipped art; brackets choose; a book's kind before its comma; short names; never a template or another kind's sample; a class in the name chooses the face's class. | 24§3 |
 | 2241460f | A person's role after a book's comma is only the creature's variety: a Soldier is no Giant Ant, Soldier. | [becmi-packs.md](becmi-packs.md) 13, check-character-art |
+| 2f7cf5f1 | A book's sample characters: gear not word for word is the one item it can only be (all its words in one item, else its last word), two items on one line, a kit bought once. | check-pack-game |
+| a9e83f70 | A book's dead link into another book names that book (tooltip); FG's Sound: Context links left out of pages. | check-books |
 
 ### Find a game
 
