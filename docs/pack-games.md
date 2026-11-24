@@ -80,7 +80,7 @@ the five saves, descending AC, THAC0, d6 initiative by side).
 | `abilityCheck` | An ability check: the die, at or under the score (`atMost`) or at or above. |
 | `saves` | The saving throws, in order; `ability`: an ability whose modifier helps that save (Wisdom against spells). |
 | `armorClass` | `descending` (lower is better, armor sets it, a shield and Dexterity lower it) or ascending; unarmored AC. |
-| `attack` | `by`: `thac0` (d20 + bonuses at or above THAC0 minus the target's AC) or `bonus` (d20 + attack bonus at or above the AC); the abilities for melee, missiles and damage; the naturals. |
+| `attack` | `by`: `thac0` (d20 + bonuses at or above THAC0 minus the target's AC) or `bonus` (d20 + attack bonus at or above the AC); the abilities for melee, missiles and damage; the naturals; `weaponDamage` (a monster's attack "by weapon" with no dice: default `1d6`). |
 | `initiative` | The die; `by`: `side` (one roll a side) or `creature`; `order`: `high` or `low` first. |
 | `morale` | A monster's morale and a retainer's loyalty: the die, at or under. |
 | `hitPoints` | The ability added to each hit die, up to which level; after it, the class's fixed gain (its levels' `hitdice`, `"9d8+2"`); dead at `deadAt`. |
@@ -112,8 +112,11 @@ the five saves, descending AC, THAC0, d6 initiative by side).
 - **Attack ranks** (a class's `attackranks`, keyed by rank: `xp`, `thac0`,
   `saves`): at the class's last level, the highest rank whose experience the
   character has replaces the level's to-hit and saves.
+- **Weapon mastery** (an item's `mastery`, keyed `basic` to `grandmaster`,
+  each `damage` and `special`): the character's level with the weapon (the
+  Inventory tab's select) gives its attack's damage and special.
 - **Monsters** (`npc`): `ac`, `hd` (as printed: `"3*"`, `"4+1"`, `"1-1"`,
-  `"1/2"`), `thac0` (else the Monster Attack Table by hit dice), `attacks` and
+  `"1/2"`), `thac0` (0 and below too; else the Monster Attack Table by hit dice), `attacks` and
   `damage` (`"2 claws/1 bite"`, `"1d4/1d4/1d8"`), `saveas`, `morale`, `xp`,
   `hp` (fixed, else rolled from the hit dice), `undead` (its turning kind,
   when its name does not say).

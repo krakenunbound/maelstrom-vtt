@@ -271,7 +271,12 @@ by level number across the active packs.
   lowers AC by that much).
 - Missile weapons give `range`: `"50/100/150"` (short, medium, long).
 - Weapon mastery (Master set): `mastery`, keyed `basic`, `skilled`, `expert`,
-  `master`, `grandmaster`, each `{ "damage": "...", "special": "..." }`.
+  `master`, `grandmaster`, each `{ "damage": "...", "special": "..." }`. The
+  damage as printed: one (`"1d8+4"`), or the primary and secondary targets'
+  (`"P 1d8+8; S 1d8+6"`). The Inventory tab gives such a weapon a mastery
+  select; its attack uses that level's damage (the primary target's) and
+  shows its special. Give every weapon the book's table covers its
+  `mastery`; a weapon without it attacks with its plain `damage`.
 
 ### Tables (`type: "tables"`)
 
@@ -452,3 +457,29 @@ Checked and right: THAC0 and saves by level to 25 (the rows at 28, 29, 31,
 33 and 34 give the saves past 25 for when Master set levels come), the
 Normal Man and Monster Attack tables, the Dwarf, Elf and Halfling rank
 tables as printed in the pack.
+
+## 8. Set 4: Master Rules, review build of 2026-11-23
+
+Made as its own game, `D&D BECMI Master` (levels to 36). It carries the
+fixes asked for in section 7 (armor prices, a damage for each attack, the
+Halfling's 128,000 XP, the inherited Expert monsters). Tested in Maelstrom
+with only this pack: every class builds and levels to its cap (humans 36);
+Suit Armor makes a Fighter AC -1; attack ranks play; a 36th level cleric's
+`D#` destroys with 4d6 hit dice; weapon mastery plays from the sheet (a
+master's Battle Axe: 1d8+8 and Strength, "Delay and stun"); a Huge Gold
+Dragon, a Bone Golem and a Centaur fight; all 104 pages open. Maelstrom now
+reads a THAC0 of 0 (and below), rolls an attack "by weapon" with the game's
+weapon damage (`attack.weaponDamage`, 1d6), and plays weapon mastery. To fix
+in the pack:
+
+1. **The Huge Gold Dragon's text has a note for the app** ("The current
+   tracker treats a literal THAC0 of zero as unset") and its `thac0` was
+   left out. Maelstrom now takes 0: give `"thac0": 0` and take the note out.
+2. **12 of the 25 weapons have `mastery`.** Crossbow, Long Bow, Short Bow,
+   Silver Dagger, Mace, Club, Pole Arm, Sling, War Hammer, Bastard Sword,
+   Bola, Heavy Crossbow and Whip have none, so they cannot be mastered.
+3. **97 of the 104 pages are scans only.**
+4. Check against the book: the Elf's spells a day at 10th level are
+   5/4/3/2/1 here and 3/3/3/3/2 in Set 2. One of the two is misread.
+5. The monsters are 193: Set 1's 97, Expert's 60, the Companion's 23 and 13
+   of the Master set's own; the rest of its bestiary is still page scans.

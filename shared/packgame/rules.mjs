@@ -63,6 +63,29 @@ export const classOf = (lib, name) => classesOf(lib).find((cls) => slug(cls.name
 // The highest level the books give the class.
 /** @param {any} cls @param {PackGame} game */
 export const topLevel = (cls, game) => Math.min(game.maxLevel, num(cls?.maxlevel, 0) || Math.max(1, ...Object.keys(cls?.levels ?? {}).map(Number)));
+// Dice and a bonus as one ("1d8+8" and 2: "1d8+10"; "1d6" and -1: "1d6-1").
+/** @param {string} dice @param {number} plus */
+const withPlus = (dice, plus) => {
+  const m = /^(.*?\d+d\d+)([+-]\d+)?$/i.exec(dice);
+  const total = (m?.[2] ? Number(m[2]) : 0) + plus;
+  return m ? `${m[1]}${total ? signed(total) : ""}` : `${dice}${plus ? signed(plus) : ""}`;
+};
+// The weapon mastery levels, in order (BECMI's Master set).
+export const MASTERY = ["basic", "skilled", "expert", "master", "grandmaster"];
+// A weapon's mastery at the character's level with it (its inventory row's masterylevel; basic when not set):
+// { level, damage (the primary target's), special }, or null for a weapon with no mastery table.
+/** @param {any} item */
+export function masteryOf(item) {
+  const table = item?.mastery;
+  if (!table || typeof table !== "object") return null;
+  const level = MASTERY.includes(String(item.masterylevel ?? "")) ? String(item.masterylevel) : "basic";
+  const row = table[level];
+  if (!row || typeof row !== "object") return null;
+  const text = String(row.damage ?? "").trim();
+  const primary = /^P\s+([^;]+)/i.exec(text)?.[1]?.trim() ?? text;
+  if (!/\d*d\d+|^\d+$/.test(primary)) return null;
+  return { level, damage: primary, special: String(row.special ?? "").trim() };
+}
 // A demi-human's attack rank (attackranks: { "C": { xp, thac0, saves } }): at the class's last level, the highest rank
 // whose experience it has; else null.
 /** @param {any} cls @param {number} exp @param {number} level @param {number} top */
@@ -235,14 +258,17 @@ export function derive(input, lib) {
   for (const [id, item] of items) {
     if (num(item.carried, 1) !== 2 || !isWeapon(item)) continue;
     const magic = magicOf(item);
-    const dice = String(item.damage).replace(/\s+/g, "").split(/[/,]/)[0];
+    // Weapon mastery (BECMI's Master set): the level the character has with it (its row's masterylevel) gives the
+    // damage (against the primary target: "P 1d8+8; S 1d8+6") and its special.
+    const trained = masteryOf(item);
+    const dice = (trained?.damage ?? String(item.damage)).replace(/\s+/g, "").split(/[/,]/)[0];
     const thrown = isThrown(item);
     const missile = isMissile(item) && !thrown;
     const bonus = (missile ? data.attack.missile : data.attack.melee) + magic;
     const plus = (missile ? 0 : mod(game.attack.damage)) + magic;
-    attacks[id] = { name: String(item.name), item: id, type: missile ? "missile" : "melee", bonus, thac0, damage: `${dice}${plus ? signed(plus) : ""}`, ...(item.range && missile ? { range: String(item.range) } : {}) };
+    attacks[id] = { name: String(item.name), item: id, type: missile ? "missile" : "melee", bonus, thac0, damage: withPlus(dice, plus), ...(item.range && missile ? { range: String(item.range) } : {}), ...(trained ? { mastery: trained.level, ...(trained.special ? { special: trained.special } : {}) } : {}) };
     // Thrown: a missile attack of its own (the missile ability to hit, no damage bonus but its magic).
-    if (thrown) attacks[`${id}-thrown`] = { name: `${item.name} (thrown)`, item: id, type: "missile", bonus: data.attack.missile + magic, thac0, damage: `${dice}${magic ? signed(magic) : ""}`, range: String(item.range) };
+    if (thrown) attacks[`${id}-thrown`] = { name: `${item.name} (thrown)`, item: id, type: "missile", bonus: data.attack.missile + magic, thac0, damage: withPlus(dice, magic), range: String(item.range) };
   }
   data.attacks = attacks;
   // A Thief's skills (or any class whose rows give them), by the game's names.
@@ -402,8 +428,11 @@ export function npcStats(data = {}, lib) {
   const hp = num(data.hp, 0) || (avg ? Math.max(1, Math.floor((Number(avg[1]) * (Number(avg[2]) + 1)) / 2) + num(avg[3], 0)) : 1);
   const saves = savesAs(lib, data.saveas ?? data.saveAs, hd.level);
   // A Normal Man attacks as one (the books' Normal Man numbers), else by its hit dice.
-  const thac0 = num(data.thac0, NaN) || (saves.cls === "Normal Man" && "thac0" in saves && Number.isFinite(saves.thac0) ? saves.thac0 : monsterThac0(lib, hd));
-  const attacks = monsterAttacks(data.attacks, data.damage, 0);
+  // A THAC0 the record gives (0 and below too: a huge dragon's), else a Normal Man's, else by hit dice.
+  const own = data.thac0 === null || data.thac0 === undefined || data.thac0 === "" ? NaN : Number(data.thac0);
+  const thac0 = Number.isFinite(own) ? own : saves.cls === "Normal Man" && "thac0" in saves && Number.isFinite(saves.thac0) ? saves.thac0 : monsterThac0(lib, hd);
+  // An attack "by weapon" with no dice of its own rolls the game's weapon damage (BECMI: 1d6).
+  const attacks = monsterAttacks(data.attacks, data.damage, 0).map((/** @type {any} */ attack) => (!attack.damage && /weapon/i.test(`${attack.name} ${data.damage ?? ""}`) ? { ...attack, damage: lib.game.attack.weaponDamage } : attack));
   return {
     ac,
     hd,

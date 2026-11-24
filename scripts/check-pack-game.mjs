@@ -187,6 +187,13 @@ try {
   // A fixed damage ("1/1d4": a camel's bite does 1).
   const { monsterAttacks } = await import("../shared/bfrpg/rules.mjs");
   assert(monsterAttacks("1 bite/1 hoof", "1/1d4").map((attack) => attack.damage).join() === "1,1d4", "a fixed damage");
+  // Weapon mastery: the level's damage against the primary target, and its special.
+  const { masteryOf, npcStats: pgNpc } = await import("../shared/packgame/rules.mjs");
+  const axe = { mastery: { basic: { damage: "1d8", special: "" }, master: { damage: "P 1d8+8; S 1d8+6", special: "Delay and stun" } } };
+  assert(masteryOf({ ...axe, masterylevel: "master" })?.damage === "1d8+8" && masteryOf({ ...axe, masterylevel: "master" }).special === "Delay and stun" && masteryOf(axe)?.damage === "1d8" && masteryOf({ name: "Club" }) === null, "weapon mastery");
+  // A monster's THAC0 of 0 is its THAC0; an attack "by weapon" rolls the game's weapon damage.
+  const huge = pgNpc({ hd: "22", thac0: 0, attacks: "1 weapon", damage: "by weapon" }, { game: rulesetNamed(GAME).packGame, tables: [] });
+  assert(huge.thac0 === 0 && huge.attacks[0].damage === "1d6", `THAC0 0, by weapon 1d6: ${JSON.stringify(huge)}`);
   done.push("a thief's Hear Noise on a d6, two prime requisites' XP bonus, a dagger in melee and thrown, a book's sample character taken as printed, initiative a side by default");
 
   // --- The fight -------------------------------------------------------------------------------------------------------

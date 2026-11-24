@@ -136,7 +136,7 @@ export function manifestOf(game) {
               hook: "attack",
               className: "five-attacks",
               name: { path: "name", bold: true, flat: true },
-              details: [{ text: "{range}", when: { has: "range" } }],
+              details: [{ text: "{range}", when: { has: "range" } }, { text: "{mastery}: {special}", when: { has: "special" } }],
               hideEmpty: true,
               rowActions: [
                 { hook: "attack", label: "{bonus|signed}", title: "One attack roll at each target", action: { ct: "attack", key: "weapon" } },
@@ -206,7 +206,11 @@ export function manifestOf(game) {
               path: "inventorylist",
               hook: "item",
               select: { path: "carried", kind: "select", number: true, label: "{name} carried", title: "Ready (worn or in hand), carried or left behind", options: [{ value: "2", label: "Ready" }, { value: "1", label: "Carried" }, { value: "0", label: "Left behind" }] },
-              fields: [{ path: "count", kind: "number", label: "{name} count", default: 1, zeroIsEmpty: true }],
+              fields: [
+                { path: "count", kind: "number", label: "{name} count", default: 1, zeroIsEmpty: true },
+                // Weapon mastery (a weapon whose record has a mastery table): the character's level with it.
+                { path: "masterylevel", kind: "select", label: "{name} mastery", title: "Weapon mastery: the damage and special at this level", when: { has: "mastery" }, default: "basic", options: ["basic", "skilled", "expert", "master", "grandmaster"].map((value) => ({ value, label: titled(value) })) },
+              ],
               name: { path: "name" },
               head: { select: "Status", fields: ["#"], name: "Item" },
               details: [{ text: "{type}" }, { text: "{damage}" }, { text: "AC {ac}", when: { has: "ac" } }, { text: `AC ${down ? "-" : "+"}{acbonus}`, when: { has: "acbonus" } }, { text: `{encumbrance} ${game.encumbrance.unit}`, when: { has: "encumbrance" } }],
@@ -290,7 +294,7 @@ export function manifestOf(game) {
     edit: {
       text: ["playername", "alignment", "deity", "appearance", "notes", "background", "gender", "age", "height", "weight", "languages"],
       number: [`abilities.(${game.abilities.map((row) => row.key).join("|")}).score`, `saves.(${game.saves.map((row) => row.key).join("|")}).misc`, "thiefskills.%.misc", "hp.(wounds|misc)", "exp", "ac.misc", "initiative.misc", "loyalty", "spellcasting.used.#", "coins.*.amount", "inventorylist.*.(count|carried)"],
-      string: ["inventorylist.*.location"],
+      string: ["inventorylist.*.location", "inventorylist.*.masterylevel"],
       list: ["spellbook", "prepared"],
       remove: ["inventorylist"],
     },

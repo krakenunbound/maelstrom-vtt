@@ -106,6 +106,8 @@ export function readGame(raw) {
       naturalHit: num(attack.naturalHit, 20),
       naturalMiss: num(attack.naturalMiss, 1),
       minimumDamage: num(attack.minimumDamage, 1),
+      // A monster's attack "by weapon" (no dice of its own): this damage (the old games: every weapon 1d6).
+      weaponDamage: text(attack.weaponDamage) || "1d6",
     },
     initiative: { die: text(init.die) || "1d6", bySide: init.by !== "creature", high: init.order !== "low", ability: ability(init.ability, "") },
     morale: { die: text(morale.die) || "2d6", atMost: morale.atMost !== false },
