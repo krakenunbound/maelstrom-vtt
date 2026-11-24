@@ -26,6 +26,19 @@ function library5e(records) {
 
 async function build5e(table, spec, owner, seat) {
   const rules = await rules5e();
+  // A book's pregenerated character (type pregencharsheet: an FG 5E character sheet), taken whole as an import is.
+  if (spec?.pregen) {
+    const wanted = String(spec.pregen).toLowerCase();
+    const sheet = table.records.get(String(spec.pregen)) ?? table.records.list({ type: "pregencharsheet" }).find((item) => String(item.name).toLowerCase() === wanted);
+    if (!sheet || sheet.type !== "pregencharsheet") throw new Error("No such pregenerated character: make its book active (Modules).");
+    const { fromFg5eCharacter } = await import(require("url").pathToFileURL(require("path").join(__dirname, "..", "shared", "dnd5e", "fgcharacter.mjs")).href);
+    const name = String(spec.name ?? "").trim() || sheet.name;
+    // Made by Maelstrom (a pack's own 5E sheet, data.ruleset set) as it is; else an FG 5E sheet, read as an import is.
+    const data = sheet.data?.ruleset && sheet.data?.species !== undefined ? rules.derive({ ...structuredClone(sheet.data), name }) : rules.derive(fromFg5eCharacter({ ...sheet.data, name }, { skillKey: rules.skillKey, spellSlug: rules.spellSlug, rulesetId: D20[table.ruleset?.()] ?? "dnd5e" }));
+    const withArt = require("./characterArt.cjs").withArt(data, spec, table.art);
+    const record = table.records.create({ type: "character", name: withArt.name || sheet.name, owner: owner ?? "", visibility: owner ? "owner" : "gm", data: withArt }, seat ?? table.seat);
+    return { record, problems: [] };
+  }
   const lib = library5e(table.records);
   if (lib.classes.length === 0) throw new Error(table.ruleset?.() === "Descending Darkness" ? "No classes in this campaign: make the Descending Darkness Player's Handbook active (Modules)." : "No 5E classes in this campaign: make a 5E Player's Handbook active (Modules).");
   const built = rules.buildFromSpec(spec ?? {}, lib, D20[table.ruleset?.()] ?? "dnd5e");

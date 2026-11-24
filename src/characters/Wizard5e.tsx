@@ -230,6 +230,10 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
   const [itemFilter, setItemFilter] = useState({ kind: "", name: "" });
   const [name, setName] = useState("");
   const [art, setArt] = useState<{ portrait?: string; token?: string }>({});
+  // A book's pregenerated characters (FG 5E character sheets, type pregencharsheet): one taken whole, no steps.
+  const pregens = useMemo(() => records.filter((record) => record.type === "pregencharsheet" && (record.data as { abilities?: unknown })?.abilities && !/:$/.test(record.name)).sort((a, b) => a.name.localeCompare(b.name)), [records]);
+  const [pregen, setPregen] = useState("");
+  const chosenPregen = pregens.find((record) => record.id === pregen);
   const [busy, setBusy] = useState(false);
   const [problem, setProblem] = useState("");
   const [instructions, setInstructions] = useState(true);
@@ -535,9 +539,24 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
           Character Wizard <small className="hint">New {words.game} character</small>
         </h2>
       }
-      next={{ label: "Next ›", title: `Next: ${(TAB_LABEL as Record<string, string>)[next]}`, disabled: tab === "commit", onClick: () => setTab(next) }}
+      next={{ label: "Next ›", title: `Next: ${(TAB_LABEL as Record<string, string>)[next]}`, disabled: tab === "commit" || Boolean(pregen), onClick: () => setTab(next) }}
       onCancel={() => onDone(null)}
-      tabs={TABS.map((page: Tab) => ({
+      top={
+        pregens.length ? (
+          <label className="wizard-2e-pregen ccw-row">
+            A ready-made character from your books
+            <select value={pregen} onChange={(event) => setPregen(event.target.value)} aria-label="Pregenerated character" data-pregens={pregens.length}>
+              <option value="">None: make my own</option>
+              {pregens.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} ({String((item.data as { race?: string }).race ?? "")}, {item.source})
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null
+      }
+      tabs={pregen ? null : TABS.map((page: Tab) => ({
         id: page,
         label: page === "species" ? words.species : (TAB_LABEL as Record<string, string>)[page],
         ...(page !== "commit" ? { badge: { done: !badge(page), todo: <img src="rulesets/cnc/wizard/alert.webp" alt="!" />, title: alerts[page].join("; ") || (badge(page) ? "Choose" : "Done"), attrs: { "data-alert": badge(page) ? "todo" : "done" } } } : {}),
@@ -545,6 +564,36 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
       page={tab}
       onPage={(id) => setTab(id as Tab)}
     >
+      {chosenPregen ? (
+        <div className="ccw-page">
+          <Plate>Pregenerated Character</Plate>
+          <div className="ccw-panel ccw-details">
+            <p className="hint">The character comes as the book made it: scores, hit points, gear, proficiencies, spells. Change anything on the sheet.</p>
+            <ArtChoice session={session} race={String((chosenPregen.data as { race?: string }).race ?? "")} cls="" gender="" value={art} onChange={setArt} />
+            <label>
+              Name <input value={name} onChange={(event) => setName(event.target.value)} aria-label="Character name" placeholder={chosenPregen.name} />
+            </label>
+            <button
+              type="button"
+              className="play-button ccw-create"
+              data-action="wizard-finish"
+              disabled={busy}
+              onClick={() => {
+                setBusy(true);
+                setProblem("");
+                session
+                  .buildCharacter({ pregen, ...(name.trim() ? { name: name.trim() } : {}), ...art })
+                  .then((id) => onDone(id))
+                  .catch((error: unknown) => setProblem(error instanceof Error ? error.message : String(error)))
+                  .finally(() => setBusy(false));
+              }}
+            >
+              {busy ? "Creating…" : "Create Character"}
+            </button>
+            {problem ? <p className="error">{problem}</p> : null}
+          </div>
+        </div>
+      ) : (
       <div className="ccw-page">
         <section className="ccw-instructions">
           <button type="button" className="ccw-plate" aria-expanded={instructions} onClick={() => setInstructions(!instructions)}>
@@ -1089,6 +1138,7 @@ export function Wizard5e({ session, onDone }: { session: Session; onDone: (id: s
           </>
         ) : null}
       </div>
+      )}
     </RailFrame>
   );
 }

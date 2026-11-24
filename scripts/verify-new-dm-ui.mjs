@@ -19,7 +19,7 @@ const out = process.argv[2];
 mkdirSync(out, { recursive: true });
 const LIB = path.join(process.env.USERPROFILE, "Documents", "Kraken VTT", "Packs");
 const GAMES = [
-  { game: "D&D 5E", folder: "D&D 5E", rules: "DD PHB Deluxe.kpack", adventure: "The Secrets of Skyhorn Lighthouse Fantasy Grounds.kpack" },
+  { game: "D&D 5E", folder: "D&D 5E", rules: "DD PHB Deluxe.kpack", adventure: "Against the Cult of the Reptile God (N1) 5e.kpack" },
   { game: "D&D 3.5E", folder: "D&D 3.5E", rules: "D&D 3.5e Player's Handbook v1.kpack", adventure: "D&D 3.5e B2 The Keep on the Borderlands.kpack" },
   { game: "AD&D 2E", folder: "AD&D 2E", rules: "AD&D 2E Players Handbook.kpack", adventure: "B2 The Keep on the Borderlands (AD&D 2E).kpack" },
   { game: "Castles & Crusades", folder: "Castles & Crusades", rules: "C&C Player's Handbook.kpack", adventure: "B2 The Keep on the Borderlands (C&C).kpack" },
@@ -155,6 +155,18 @@ try {
     } catch (error) {
       note(g, false, `build a Fighter: ${error.message.slice(0, 300)}`);
     }
+    // 6b. A book's pregenerated character, taken as the book made it.
+    const pregens = await tool("kraken_records_list", { type: "pregencharsheet" }).catch(() => null);
+    const pregenList = Array.isArray(pregens) ? pregens : (pregens?.records ?? []);
+    if (pregenList.length) {
+      try {
+        const taken = await tool("kraken_build_character", { spec: { pregen: pregenList[0].id } });
+        const sheet = await tool("kraken_records_list", { type: "character", name: pregenList[0].name }).catch(() => null);
+        note(g, Boolean(taken.id), `pregenerated ${pregenList[0].name} taken (${pregenList.length} in the books)${taken.hp ? `: hp ${taken.hp}, AC ${taken.ac}` : ""}`);
+      } catch (error) {
+        note(g, false, `take pregen ${pregenList[0].name}: ${error.message.slice(0, 200)}`);
+      }
+    }
     // 7. The adventure plays: a story entry, a battle on the tracker, a map.
     if (adventure) {
       const lib = async (kind) => (await tool("kraken_library", { action: "list", module: adventure.id, kind }).catch((error) => ({ error: error.message })));
@@ -195,6 +207,65 @@ try {
     await wait(500);
     tiles = await offered();
     note(g, !tiles?.includes(g) || g === "D&D 5E" || g === "Descending Darkness", `gone from the new-campaign screen once its books are out (5E and Descending Darkness ship books, so stay): ${!tiles?.includes(g) ? "yes" : "no (still offered)"}`);
+  }
+  // The games Maelstrom ships (open licences, and the GM's own two): every book active, each adventure played.
+  const SHIPPED = ["D&D 5E", "Basic Fantasy", "Cairn", "Fate Core", "Fate Accelerated", "Forged in the Dark", "Ironsworn", "Starforged", "Apeira Astra", "Descending Darkness"].filter((g) => !process.argv[3] || process.argv[3].split(",").includes(g) || process.argv[3] === "shipped");
+  for (const g of process.argv[3] && !process.argv[3].includes("shipped") && !SHIPPED.length ? [] : SHIPPED) {
+    const tag = `ship-${g.replace(/[^A-Za-z0-9]+/g, "")}`;
+    try {
+      const campaign = await tool("kraken_campaign_create", { name: `Shipped ${g}`, ruleset: g });
+      await tool("kraken_host", { campaignId: campaign.id, port: 47471, password: "pw" });
+      await page.waitForSelector("text=Hosting", { timeout: 30000 });
+      const shelfOut = await tool("kraken_books", { action: "list" });
+      const shelf = Array.isArray(shelfOut) ? shelfOut : [];
+      note(g, shelf.length > 0, `shipped books on the shelf: ${shelf.map((b) => `${b.title}${b.adventure ? "*" : ""}`).join(", ")}`);
+      for (const book of shelf) await tool("kraken_books", { action: "activate", book: book.id }).catch((error) => note(g, false, `activate ${book.title}: ${error.message}`));
+      for (const book of shelf.filter((b) => !b.adventure)) {
+        const contents = await tool("kraken_books", { action: "contents", book: book.id }).catch((error) => ({ error: error.message }));
+        const pages = (contents.chapters ?? []).flatMap((c) => (c.sections ?? []).flatMap((s) => s.pages ?? []));
+        let dead = 0;
+        for (const item of pages.slice(0, 400)) {
+          const pg = await tool("kraken_books", { action: "page", book: book.id, page: item.id }).catch(() => null);
+          dead += (pg?.blocks ?? []).filter((b) => /book-link dead/.test(`${b.html ?? ""}${b.html2 ?? ""}`)).length;
+        }
+        note(g, !contents.error && pages.length > 0 && dead === 0, `${book.title}: ${contents.error ?? `${pages.length} pages, ${dead} dead links`}`);
+      }
+      for (const adventure of shelf.filter((b) => b.adventure)) {
+        const lib = async (kind) => { const r = await tool("kraken_library", { action: "list", module: adventure.id, kind }).catch((error) => ({ error: error.message })); return Array.isArray(r) ? r : r; };
+        const stories = await lib("story");
+        const battles = await lib("battle");
+        const maps = await lib("map");
+        const parcels = await lib("parcel");
+        let loaded = 0, want = 0, bad = [];
+        for (const battle of Array.isArray(battles) ? battles : []) {
+          const before = (await tool("kraken_combat", {})).entries?.length ?? 0;
+          const r = await tool("kraken_library", { action: "battle", module: adventure.id, path: battle.path, place: false }).catch((error) => ({ error: error.message }));
+          const after = (await tool("kraken_combat", {})).entries ?? [];
+          if (r.error) bad.push(`${battle.name}: ${r.error}`);
+          loaded += after.length - before;
+          want += 1;
+        }
+        let storyBad = 0;
+        for (const story of Array.isArray(stories) ? stories : []) {
+          const t = await tool("kraken_library", { action: "story", module: adventure.id, path: story.path }).catch(() => null);
+          if (!t || /book-link dead/.test(t.html ?? "")) storyBad++;
+        }
+        let mapOk = 0;
+        for (const map of Array.isArray(maps) ? maps.slice(0, 3) : []) {
+          const opened = await tool("kraken_open_fg_module", { module: adventure.id, maps: [map.name] }).catch((error) => ({ error: error.message }));
+          if (!opened.error) mapOk++; else bad.push(`map ${map.name}: ${opened.error}`);
+        }
+        await wait(1500);
+        await shot(`${tag}-${adventure.title.replace(/[^A-Za-z0-9]+/g, "")}`);
+        note(g, !stories.error && !battles.error && bad.length === 0 && storyBad === 0, `adventure ${adventure.title}: ${Array.isArray(stories) ? stories.length : stories.error} story entries (${storyBad} bad), ${Array.isArray(battles) ? battles.length : battles.error} battles (${loaded} creatures on the tracker), ${Array.isArray(maps) ? maps.length : maps.error} maps (${mapOk} opened), ${Array.isArray(parcels) ? parcels.length : 0} parcels${bad.length ? ` | ${bad.slice(0, 4).join("; ")}` : ""}`);
+      }
+    } catch (error) {
+      note(g, false, `shipped game: ${error.message.slice(0, 300)}`);
+    }
+    await page.click('.menubar button:has-text("Leave")').catch(() => {});
+    await wait(400);
+    if (await page.$("dialog.ask-dialog[open]")) await page.click('dialog.ask-dialog [data-ask-answer="ok"]');
+    await page.waitForSelector("text=My Campaigns", { timeout: 15000 }).catch(() => {});
   }
   // A pack dropped straight into Packs, not in its game's folder (a new DM's likely first try).
   copyFileSync(path.join(LIB, "AD&D 2E", "AD&D 2E Players Handbook.kpack"), path.join(packs, "AD&D 2E Players Handbook.kpack"));

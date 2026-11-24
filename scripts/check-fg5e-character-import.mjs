@@ -57,6 +57,18 @@ try {
   const attackOf = (name) => Object.values(data.attacks ?? {}).find((attack) => attack.name === name)?.bonus;
   assert(attackOf("Longsword") === 1 && attackOf("Greataxe") === -1 && attackOf("Club") === -1, `weapon proficiency: ${JSON.stringify({ longsword: attackOf("Longsword"), greataxe: attackOf("Greataxe"), club: attackOf("Club") })}`);
   done.push("weapon proficiency: the list's own weapons, FG's tick on a weapon");
+  // A book's pregenerated character (type pregencharsheet): an FG 5E sheet, or one Maelstrom made, taken whole.
+  const { convertXml } = require("../electron/importers/fgModule.cjs");
+  const sheet = convertXml(xml).root?.character ?? convertXml(xml).character;
+  const fgPregen = server.agent.records.create({ type: "pregencharsheet", name: "Maelis Testtide", visibility: "all", data: sheet }, server.agent.seat);
+  const ownPregen = server.agent.records.create({ type: "pregencharsheet", name: "Made Here", visibility: "all", data: { ...data, name: "Made Here" } }, server.agent.seat);
+  const takeFg = JSON.parse((await callTool("kraken_build_character", { spec: { pregen: fgPregen.id } }, { table: () => server })).content[0].text);
+  const takeOwn = JSON.parse((await callTool("kraken_build_character", { spec: { pregen: "made here", name: "Renamed" } }, { table: () => server })).content[0].text);
+  const fromFg = server.agent.records.get(takeFg.id).data;
+  const fromOwn = server.agent.records.get(takeOwn.id);
+  assert(fromFg.packages["id-00001"].name === "Sorcerer" && fromFg.hp.total === 8 && fromFg.ac.total === 13, `an FG 5E pregen taken whole: ${JSON.stringify({ hp: fromFg.hp, ac: fromFg.ac })}`);
+  assert(fromOwn.name === "Renamed" && fromOwn.data.ac.total === 13 && fromOwn.data.packages["id-00001"].name === "Sorcerer", `a Maelstrom-made pregen, found by name and renamed: ${fromOwn.name}`);
+  done.push("a book's pregenerated character (FG's sheet or Maelstrom's) taken whole");
 } finally {
   await server.stop?.();
 }
