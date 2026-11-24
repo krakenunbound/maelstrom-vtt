@@ -308,9 +308,13 @@ being read; warnings are worth fixing.
   equipment, the spells, the standard monsters): they show twice in that
   game's campaigns. An adventure carries only what it adds, and links the
   rules book's records (`npc.goblin@Set 1: Basic Rules`).
-- **Battle positions laid out as a block around the key number**: the
-  creatures stand in rock and on walls. Put each on a floor square of its
-  room, then open the map with every battle placed and look.
+- **Battle positions from a PDF**: a PDF gives no coordinates, so give each
+  battle row a `maplink` at about its room (near the key number is enough).
+  For a pack whose `kraken-pack.json` says `"from": { "kind": "pdf" }`,
+  Maelstrom reads the map's picture, finds its floor squares (lighter than
+  the rock, inside their grid lines) and puts each creature on the nearest
+  free floor square of that room. Packs made from a VTT keep their exact
+  spots. The map needs its grid (`gridsize`, `gridoffset`) right.
 - **Battles with no map positions**: their creatures are not placed on the
   map. Give each battle row its `maplink` (the map's `imageref`, `imagex`
   and `imagey` from the picture's centre).

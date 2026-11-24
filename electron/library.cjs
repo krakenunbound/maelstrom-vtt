@@ -100,6 +100,8 @@ async function addBattle(table, fgPath, { place = true } = {}) {
   const frame = table.map.frame();
   const sceneId = (table.map.scene?.() ?? table.scene?.())?.id ?? null;
   const added = [];
+  // The tokens, placed once every creature is known (a PDF's battle is moved onto the map's floor first).
+  const pending = [];
   // A creature linked with no book (FG's "npc.lizardfolk", or "@*") is the encounter's own book's.
   const ownBook = moduleOf(battle.data?.fgPath ?? (typeof fgPath === "string" ? fgPath : ""));
   for (const row of rows(battle.data.npclist)) {
@@ -123,11 +125,33 @@ async function addBattle(table, fgPath, { place = true } = {}) {
       const x = own.length ? Number(spot.x) : frame.width / 2 + Number(spot.imagex) - Number(frame.base?.x ?? 0);
       const y = own.length ? Number(spot.y) : frame.height / 2 + Number(spot.imagey) + Number(frame.base?.y ?? 0);
       const unknown = String(row.unidentified ?? "").trim() || (Number(record.data?.isidentified) === 0 && record.data?.nonid_name ? String(record.data.nonid_name) : "");
-      const token = table.map.place({ recordId: record.id, name: entry.name, x, y, hidden: true, ...(unknown ? { unidentified: unknown } : {}), faction: row.faction === "friend" ? "friend" : row.faction === "neutral" ? "neutral" : "foe", allowSecond: true }, table.seat);
-      // Hidden on the map is hidden in the tracker too (and from the turn card): the eye reveals both together.
-      table.combat.update(entry.id, { tokenId: token.id, hidden: true }, table.seat);
+      pending.push({ entry, record, x, y, unknown, faction: row.faction === "friend" ? "friend" : row.faction === "neutral" ? "neutral" : "foe", fromBook: !own.length });
     });
     added.push(...list.map((entry) => entry.name));
+  }
+  // A battle of a book converted from a PDF says only about where its room is: its creatures go on the nearest free
+  // floor squares of that room (read from the map's picture), not on rock or walls. A VTT's exact spots stay.
+  const bookSpots = pending.filter((item) => item.fromBook);
+  if (bookSpots.length && frame && table.bookFromPdf?.(frame.module)) {
+    try {
+      const grid = table.map.scene?.()?.grid ?? null;
+      const bytes = table.bookPictureOf?.(frame.module, frame.image);
+      if (grid && bytes) {
+        const plan = require("./floorPlan.cjs");
+        const floor = await plan.floorSquares(`${frame.module}|${frame.image}`, bytes, { size: grid.size, offsetX: grid.offsetX ?? 0, offsetY: grid.offsetY ?? 0 });
+        const size = Number(grid.size);
+        const taken = new Set((table.map.tokens?.() ?? []).map((token) => `${Math.floor((token.x - (((grid.offsetX ?? 0) % size) + size) % size) / size)},${Math.floor((token.y - (((grid.offsetY ?? 0) % size) + size) % size) / size)}`));
+        const moved = plan.placeOnFloor(bookSpots.map((item) => ({ x: item.x, y: item.y })), floor, { size, offsetX: grid.offsetX ?? 0, offsetY: grid.offsetY ?? 0 }, taken);
+        bookSpots.forEach((item, index) => Object.assign(item, { x: moved[index].x, y: moved[index].y }));
+      }
+    } catch {
+      /* the spots as the book gives them */
+    }
+  }
+  for (const { entry, record, x, y, unknown, faction } of pending) {
+    const token = table.map.place({ recordId: record.id, name: entry.name, x, y, hidden: true, ...(unknown ? { unidentified: unknown } : {}), faction, allowSecond: true }, table.seat);
+    // Hidden on the map is hidden in the tracker too (and from the turn card): the eye reveals both together.
+    table.combat.update(entry.id, { tokenId: token.id, hidden: true }, table.seat);
   }
   table.say(`[ENCOUNTER] ${battle.name}: ${added.join(", ")}${frame || !battle.source ? "" :" (no map open: tokens not placed)"}.`, "Combat", true);
   return { encounter: battle.name, added };

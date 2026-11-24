@@ -283,6 +283,14 @@ try {
   assert(crypt, `the adventure's story: ${JSON.stringify(library.list("Test Adventure", "story"))}`);
   const entry = library.storyEntry(crypt.path);
   assert((entry.html.match(/class="book-link record"/g) ?? []).length === 2 && !/book-link dead/.test(entry.html), `a story entry's links resolve: ${entry.html}`);
+  // A PDF's battle: its creatures go on the nearest free floor squares of their room, never onto rock (a 3 by 2 room
+  // at columns 2-4, rows 2-3; the spots a block around its key, some on rock).
+  const { placeOnFloor } = require("../electron/floorPlan.cjs");
+  const floorSet = new Set(["2,2", "3,2", "4,2", "2,3", "3,3", "4,3", "9,9"]);
+  const gridOf = { size: 50, offsetX: 0, offsetY: 0 };
+  const placed = placeOnFloor([{ x: 75, y: 75 }, { x: 125, y: 75 }, { x: 175, y: 75 }, { x: 75, y: 125 }], floorSet, gridOf, new Set(["3,2"]));
+  const squares = placed.map((spot) => `${Math.floor(spot.x / 50)},${Math.floor(spot.y / 50)}`);
+  assert(squares.every((square) => floorSet.has(square) && square !== "3,2" && square !== "9,9") && new Set(squares).size === 4, `on the room's free floor: ${squares}`);
   // A creature's printed hit points (9), not its hit dice rolled.
   await tool("kraken_combat", { action: "add", recordId: npc("Kobold Chief").id });
   assert((await tool("kraken_combat", { action: "view" })).entries.find((entry) => entry.name === "Kobold Chief")?.hp === 9, "a creature's printed hit points");

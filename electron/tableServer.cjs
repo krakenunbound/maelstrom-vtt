@@ -4591,6 +4591,17 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     moduleSet,
     // A book written to the shelf (a module exported from the campaign): every seat's shelf again.
     booksChanged: () => shelfChanged(),
+    // A book made from a PDF (its battles' spots are rough: electron/floorPlan.cjs places them on the floor).
+    bookFromPdf: (name) => Boolean(books?.list().find((info) => info.id === name || info.name === name || info.title === name)?.fromPdf),
+    // A map record's picture bytes from its book (image.palace: its layer's bitmap), for reading its floor.
+    bookPictureOf: (name, imagePath) => {
+      const info = books?.list().find((item) => item.id === name || item.name === name || item.title === name);
+      if (!info) return null;
+      const record = require("./library.cjs").find(info.name, `${imagePath}@${info.name}`);
+      const layers = record?.data?.image?.layers?.layer;
+      const bitmap = (Array.isArray(layers) ? layers : [layers]).find((layer) => layer?.bitmap)?.bitmap;
+      return bitmap ? books.picture(info.id, String(bitmap))?.bytes ?? null : null;
+    },
     // A campaign image (Campaign > Images: the GM's own picture, or a book's made a map) as a module export takes it:
     // its picture (the one Map Studio painted, if any), size, and the walls, doors, lights and grid kept for it.
     mapForExport(record) {

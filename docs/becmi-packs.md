@@ -585,11 +585,10 @@ Maelstrom: they were all shown as text) and a book's treasure parcel shows
 its items and coins and goes to the party sheet (fixed in Maelstrom: the
 window was empty). To fix in the pack:
 
-1. **The tokens are not in their rooms.** Each battle's creatures are laid
-   out as a block of squares around the room's key number, so large groups
-   stand in solid rock and on walls (rooms 2, 4, 11, 13, 14 and 15 of the
-   Palace of Dread; 2, 3, 6, 8 and 32 of Trouble Below). Put each creature on
-   a floor square inside its room, and check by opening the map in Maelstrom
-   with every battle placed and the tokens shown.
+1. **The tokens were not in their rooms** (laid out as a block around each
+   key number, some on rock). Fixed in Maelstrom instead: a PDF's spots are
+   only about where a room is, so Maelstrom now puts each creature on the
+   nearest free floor square of that room, read from the map's picture. All
+   70 now stand on floor. Nothing to change in the pack.
 2. Walls and doors are still to come; 67 pages are still scans; the Red
    Hand Trail booklet and the handouts are not in the PDF.

@@ -203,7 +203,7 @@ function gameIn(file) {
 
 // What a module is, from its definition.xml (and whether it has a book); a
 // Kraken pack, from its own description.
-const DESCRIBED = 7;
+const DESCRIBED = 8;
 function describe(file) {
   if (packs.isPack(file)) {
     const manifest = packs.readManifest(file);
@@ -230,6 +230,8 @@ function describe(file) {
       calendar: typeof manifest.calendar === "string" ? manifest.calendar : "",
       // The game it defines (docs/pack-games.md): a rules book that teaches Maelstrom a game carries a game.json.
       ...gameIn(file),
+      // Made from a PDF (its battles' spots are about where a room is, not exact): placed onto the map's floor.
+      ...(manifest.from?.kind === "pdf" ? { fromPdf: true } : {}),
       // Whether the players may read it, when the pack says (exported from a campaign).
       ...(typeof manifest.forPlayers === "boolean" ? { players: manifest.forPlayers } : {}),
       pack: true,
