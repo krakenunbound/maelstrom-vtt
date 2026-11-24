@@ -135,6 +135,8 @@ assert(text.includes('data-page="inn"') && text.includes('data-file="images/keep
 {
   const inn = books.page("Test Keep", "inn").blocks.map((block) => block.html ?? "").join("");
   assert(inn.includes('class="book-link record"') && inn.includes('data-record="npc.guard@Test Keep"') && /book-link dead" data-kind="npc">nobody/.test(inn), `a record link, and a dead one: ${inn}`);
+  // A link into a book not on the shelf says which book it needs; FG's "Sound: Context" is left out.
+  assert(/book-link dead" data-kind="referencemanualpage" title="In Lost Atlas: make that book active to open it" data-needs-book="Lost Atlas">Threshold/.test(inn) && !/Sound: Context/.test(inn), `a link into another book names it; no Sound: Context: ${inn}`);
   assert(inn.includes('<a class="book-link url" href="https://example.com/keep" target="_blank" rel="noopener noreferrer">') && !inn.includes("javascript:"), `a web link opens in the browser, never a script: ${inn}`);
   // A record kept inside another (a 5E book's races in reference.racedata).
   const dwarf = books.record("Test Keep", "reference.racedata.dwarf@Test Keep");

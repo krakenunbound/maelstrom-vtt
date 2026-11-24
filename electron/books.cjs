@@ -337,10 +337,8 @@ function toHtml(formatted, resolve, found = null) {
           else out += `<span class="book-link dead" data-kind="url">${text}</span>`;
           continue;
         }
-        if (linkClass === "sound_context") {
-          out += `<span class="book-link dead sound-context">${text}</span>`;
-          continue;
-        }
+        // FG's "Sound: Context" (a Syrinscape context) has no use here: left out, not shown as a dead link.
+        if (linkClass === "sound_context") continue;
         const target = resolve(linkClass, recordname);
         if (target?.page) out += `<a class="book-link" data-book="${escape(target.book)}" data-page="${escape(target.page)}">${text}</a>`;
         else if (target?.file) out += `<a class="book-link picture" data-book="${escape(target.book)}" data-file="${escape(target.file)}" data-name="${escape(target.name)}">${text}</a>`;
@@ -355,7 +353,12 @@ function toHtml(formatted, resolve, found = null) {
             out += `<a class="book-link picture encounter-map" data-book="${escape(map.book)}" data-file="${escape(map.file)}" data-name="${escape(map.name)}"${at ? ` data-at="${at}"` : ""}><b>Map: </b>${escape(map.name)}</a>`;
           }
         }
-        else out += `<span class="book-link dead" data-kind="${escape(linkClass)}">${text}</span>`;
+        else {
+          // A link into another book ("...@Mystara - The Known World") opens once that book is active: say so.
+          const other = /@(.+)$/.exec(recordname)?.[1]?.trim();
+          const why = other && other !== resolve.own ? ` title="In ${escape(other)}: make that book active to open it" data-needs-book="${escape(other)}"` : "";
+          out += `<span class="book-link dead" data-kind="${escape(linkClass)}"${why}>${text}</span>`;
+        }
         continue;
       }
       const html = TAGS[tag];
@@ -554,7 +557,7 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
   }
   // A link's target: a page of this book or another, or a picture.
   function resolver(book) {
-    return (linkClass, recordname) => {
+    return Object.assign((linkClass, recordname) => {
       const [inner, moduleName] = String(recordname).split("@");
       const other = moduleName ? byName(moduleName) : book.info;
       if (!other) return null;
@@ -583,7 +586,7 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
       const record = target ? findRecord(target, `${inner}@${other.name}`) : null;
       if (!record) return null;
       return { book: other.id, record: record.data.fgPath, name: record.name, ...(linkClass === "battle" ? { map: encounterMap(target, other, record) } : {}) };
-    };
+    }, { own: book.info.name });
   }
   // The map an encounter's creatures stand on (FG's maplink: the image it places them on), so the
   // page that links the encounter links its map too: { book, file, name, path, spots } or null.
