@@ -151,6 +151,8 @@ assert(text.includes('data-page="inn"') && text.includes('data-file="images/keep
   const fits = (ruleset) => list.filter((item) => fitsRuleset(item, ruleset)).map((item) => item.id).sort().join();
   assert(fits("Worldbuilding") === "Not A Book", `Worldbuilding: only any game's (${fits("Worldbuilding")})`);
   assert(fitsRuleset({ ruleset: "PFRPG" }, "Worldbuilding") && fitsRuleset({ kraken: "PFRPG", ruleset: "PFRPG" }, "Worldbuilding") && !fitsRuleset({ ruleset: "PFRPG" }, "D&D 5E") && !fitsRuleset({ kraken: "D&D 3.5E", ruleset: "3.5E" }, "Worldbuilding"), "a game Kraken has no rules for (Pathfinder) is read in Worldbuilding, not elsewhere; a played game's book is not");
+  // "DD" is Descending Darkness (the GM's playtest packs say so): on its shelf, not Worldbuilding's.
+  assert(fitsRuleset({ ruleset: "DD", kraken: "DD" }, "Descending Darkness") && !fitsRuleset({ ruleset: "DD", kraken: "DD" }, "Worldbuilding"), "a DD pack is Descending Darkness's");
   // AD&D 2E is played now: its books (FG's "2E", a pack made before as "2E" or now as "AD&D 2E") are on its shelf, not Worldbuilding's.
   assert(fitsRuleset({ ruleset: "2E" }, "AD&D 2E") && fitsRuleset({ kraken: "2E", ruleset: "2E" }, "AD&D 2E") && fitsRuleset({ kraken: "AD&D 2E", ruleset: "2E" }, "AD&D 2E") && !fitsRuleset({ kraken: "2E", ruleset: "2E" }, "Worldbuilding") && !fitsRuleset({ ruleset: "2E" }, "D&D 3.5E"), "AD&D 2E's books are on the AD&D 2E shelf");
   assert(fits("D&D 5E") === "Not A Book,Test Handbook,Test Keep", `5E: its own and any game's (${fits("D&D 5E")})`);

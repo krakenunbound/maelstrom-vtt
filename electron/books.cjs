@@ -34,7 +34,7 @@ const FG_RULESETS = {
   // FG's Mongoose Traveller 2E ruleset's modules.
   Traveller: ["MGT2"],
   // Kraken's own games, with their books shipped in the app (games/modules).
-  "Descending Darkness": ["Descending Darkness"],
+  "Descending Darkness": ["Descending Darkness", "DD"],
   "Apeira Astra": ["Apeira Astra"],
   // Cairn Second Edition (CC BY-SA 4.0), its books shipped in the app (games/modules).
   Cairn: ["Cairn"],

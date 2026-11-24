@@ -24,6 +24,7 @@ const done = [];
   const at = (item, all) => organize(item, all);
   assert(at({ title: "B4 The Lost City (AD&D 2E)", category: "Adventure" }).kind === "adventure" && at({ title: "B4 The Lost City", category: "Adventure" }).group === "B series", "an adventure by its code's series");
   assert(at({ title: "The Test Keep", category: "Test Adventures", hasBook: true }).kind === "adventure", "a category saying Adventures, in any case");
+  assert(at({ title: "Against the Cult of the Reptile God (N1) 5e", category: "Other", hasBook: true }).kind === "adventure" && at({ title: "Monster Manual (2)", category: "Other", hasBook: true }).kind === "rules", "an adventure by its code in brackets, never a plain number in brackets");
   assert(at({ title: "AD&D 2E Players Handbook", category: "2e", hasBook: true }).group === "Core Rules", "a Player's Handbook is Core Rules");
   assert(at({ title: "Mystara - The Known World", category: "Kraken Worlds" }).group === "Mystara", "a setting under its world");
   const plain = at({ title: "FG Battle Maps", category: "Maps" });

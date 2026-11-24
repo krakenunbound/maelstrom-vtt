@@ -105,7 +105,7 @@ export function buildFromSpec(spec, library) {
     library.packages.find((pkg) => String(pkg.packagetype ?? "").toLowerCase() === type && plainName(pkg.name) === plainName(name)) ?? null;
   const race = findPackage("race", spec.race);
   const cls = findPackage("class", spec.class);
-  if (!race) problem(`race not found: ${spec.race}`);
+  if (!race) problem(spec.race ? `race not found: ${spec.race}` : "no race given");
   if (!cls) {
     problem(`class not found: ${spec.class}`);
     return { character: null, report };

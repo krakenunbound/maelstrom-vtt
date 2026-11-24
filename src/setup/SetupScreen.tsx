@@ -246,10 +246,21 @@ export function SetupScreen({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // The games a campaign can be made with: the built-in ones, and those the GM's packs define (shared/packgame), read
   // from the host once the screen opens.
-  // Only the games whose books are installed (Documents/Kraken VTT/Packs, read when Maelstrom starts) are offered;
-  // Worldbuilding needs none. Until the host answers, every game.
+  // Only the games whose books are installed (Documents/Kraken VTT/Packs) are offered; Worldbuilding needs none. Until
+  // the host answers, every game. Asked again whenever the GM comes back to the window (books copied in or taken out
+  // meanwhile), so no restart is needed.
   const [allRulesets, setRulesets] = useState(campaignRulesets);
   const [installed, setInstalled] = useState<string[] | null>(null);
+  const [gamesAsked, setGamesAsked] = useState(0);
+  useEffect(() => {
+    const again = () => document.visibilityState === "visible" && setGamesAsked((count) => count + 1);
+    window.addEventListener("focus", again);
+    document.addEventListener("visibilitychange", again);
+    return () => {
+      window.removeEventListener("focus", again);
+      document.removeEventListener("visibilitychange", again);
+    };
+  }, []);
   useEffect(() => {
     void window.kraken
       ?.packGames?.()
@@ -267,7 +278,7 @@ export function SetupScreen({
         if (Array.isArray(names)) setInstalled(names);
       })
       .catch(() => undefined);
-  }, []);
+  }, [gamesAsked]);
   const RULESETS = installed ? allRulesets.filter((item) => installed.includes(item.name)) : allRulesets;
   const [ruleset, setRuleset] = useState(RULESETS[0].name);
   // The game chosen is one offered (the list narrows once the host says which games are installed).
@@ -878,7 +889,7 @@ export function SetupScreen({
                   </div>
                   {installed ? (
                     <p className="hint" data-installed-games={installed.length}>
-                      Games appear here when their books are installed: put a game&apos;s packs in Documents/Kraken VTT/Packs and restart Maelstrom.
+                      Games appear here when their books are installed: put a game&apos;s packs in Documents/Kraken VTT/Packs (each game in its own folder), then come back to this window.
                     </p>
                   ) : null}
                   {chosen ? (

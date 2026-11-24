@@ -8,6 +8,9 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **A new DM's books show up without a restart:** the new-campaign screen asks again which games are installed whenever you come back to Maelstrom's window, so a game's packs copied into Documents/Kraken VTT/Packs appear (and books taken out disappear) at once.
+- **An adventure with its code in brackets is filed as an adventure** ("Against the Cult of the Reptile God (N1) 5e" was under Rulesets).
+- **"DD" packs are Descending Darkness's:** the playtest books (ruleset DD) now show in a Descending Darkness campaign instead of only in Worldbuilding.
 - **A book's link into another book says which book it needs:** "Threshold" in the 3.5e B-series adventures opens once *Mystara - The Known World* is active; until then its tooltip names that book. Fantasy Grounds' "Sound: Context" links (no use here) are left out of the pages instead of showing as dead text.
 - **A book's sample characters carry the book's own items even when worded otherwise:** "4 silver arrows" its Silver-Tipped Arrows, "Small metal mirror" its Steel Mirror, "Leather backpack" its Backpack, "6 tinder box torches" a Tinder Box and Torches, 6, and "Small hammer" with "12 iron spikes" its one 12 Iron Spikes and Small Hammer. Treasure ("Gem (100 gp)") and a number the book does not sell ("2 torches") are still carried as written.
 - **A creature named for a person's role gets a person:** a "Soldier" or "Guard" is no longer drawn as a book's "Giant Ant, Soldier" (a role after a book's comma is only the creature's variety).

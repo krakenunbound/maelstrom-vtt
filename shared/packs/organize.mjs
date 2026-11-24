@@ -47,6 +47,8 @@ const TESTS = [
   ["adventure", /\b(adventures?|module|one-shot|scenario|adventure pack|AP\d|slave lords|campaign)\b/i],
   // An adventure's code ("B4 The Lost City"): capitals, so a title's ordinary words never match.
   ["adventure", /^[A-Z]{1,2}\d{1,2}[\s:-]/],
+  // ...or in brackets after its name ("Against the Cult of the Reptile God (N1) 5e").
+  ["adventure", /\(([A-Z]{1,2}\d{1,2})\)/],
   ["rules", /\b(core|rules?|rulebooks?|handbook|player'?s|players|dungeon master|monstrous|manual|guide|tome|accessory|essentials|reference|osric|complete|deities|demihuman|siegecore|bestiary|monsters|spells?|magic items)\b/i],
 ];
 
