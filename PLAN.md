@@ -319,6 +319,8 @@ Each step is tested before the next one starts. Where FG or Foundry does the sam
 
 ### Latest handoff (2026-11-24)
 
+For the Rust port (F:\Maelstrom VTT Rust): [docs/RUST-PORT-CHANGES.md](docs/RUST-PORT-CHANGES.md) lists every change since it began, in order, with where each is described.
+
 [docs/changes-2026-11-24.md](docs/changes-2026-11-24.md): Find a game (the list on maelstromvtt.com and in Join a Game) and creature art by its whole name; before it, [docs/changes-2026-11-23.md](docs/changes-2026-11-23.md) (games defined by their books, BECMI, the character and creature art).
 
 [docs/HANDOFF-2026-11-21.md](docs/HANDOFF-2026-11-21.md): FG maps read whole (alignment, lighting, pins, encounters) after a Ghosts of Saltmarsh play test; the remaining FG map settings and the release still to do.
