@@ -92,6 +92,8 @@ async function openDice(seat) {
 // What Ann's screen shows: her colour, her own dice, her rogue's.
 async function shown(seat, rogueId) {
   await openDice(seat);
+  // The map's window comes to the front when it opens (after a reload, over the Dice window): the Dice window clicked forward.
+  await seat.evaluate(() => document.querySelector(".dice-window")?.closest("section.window")?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })));
   await seat.click('[data-dice-whose="mine"]');
   const mine = await seat.getAttribute('.dice-window [data-active-set]', "data-active-set");
   const color = await seat.getAttribute('.your-colour [role="radio"][aria-checked="true"]', "data-ping-color");

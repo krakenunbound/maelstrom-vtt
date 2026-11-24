@@ -73,6 +73,8 @@ try {
   assert(dice.show === true && dice.preset === "Classic Ruby", `default dice ${JSON.stringify(dice)}`);
   const starfall = await tool("kraken_dice_settings", { preset: "starfall", volume: 0.3 });
   assert(starfall.preset === "Starfall" && starfall.volume === 0.3, `Starfall ${JSON.stringify(starfall)}`);
+  // The window keeps them a moment after the tool answers.
+  await page.waitForFunction(() => JSON.parse(localStorage.getItem("kraken-dice") ?? "{}").look?.theme === "starfall", null, { timeout: 5000 }).catch(() => {});
   const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("kraken-dice") ?? "{}"));
   assert(saved.look?.theme === "starfall" && saved.volume === 0.3, "the window keeps the agent's dice settings");
   assert((await tool("kraken_dice_settings", { ink: "#ffcc00" })).preset === "custom", "a custom colour");

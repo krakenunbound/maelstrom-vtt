@@ -263,6 +263,8 @@ try {
   // --- Ban from the menu: she is sent to the join screen and refused there; Unban lets her in.
   await page.$eval('.players-window li[data-player-name="a test player"] [data-action="player-menu"]', (button) => button.click());
   await page.click('.player-menu [data-menu="ban"]');
+  // Asked first, in the app.
+  await page.click('dialog.ask-dialog [data-ask-answer="ok"]');
   await player.waitForSelector("text=The GM has banned you from this table.");
   await page.waitForSelector('.bans-panel li[data-ban="a test player"]');
   await shoot(page, "gm-banned-list");
@@ -278,6 +280,8 @@ try {
 
   // --- Idle: her portrait dims when she does nothing for a while.
   await player.evaluate(() => window.localStorage.setItem("kraken-idle-seconds", "2"));
+  // Settings go up to her account a moment after they change (src/session/accountUi.ts); the reload waits for it.
+  await new Promise((resolve) => setTimeout(resolve, 1500));
   await player.reload();
   await player.fill('input[name="password"]', "pw");
   await player.click('button[type="submit"]');

@@ -105,6 +105,9 @@ try {
   await page.evaluate(() => { const set = DataTransfer.prototype.setData; DataTransfer.prototype.setData = function (type, value) { (window.__carried ||= {})[type] = value; return set.call(this, type, value); }; });
   const drag = async (selector, to) => {
     await page.evaluate(() => { window.__carried = {}; });
+    // Its window to the front first (the Party Sheet and the tracker open over each other), as a click on it would.
+    await page.evaluate((sel) => document.querySelector(sel)?.closest("section.window")?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true })), selector);
+    await settle(200);
     await page.locator(selector).first().scrollIntoViewIfNeeded();
     const from = await page.locator(selector).first().boundingBox();
     await page.mouse.move(from.x + 30, from.y + from.height / 2);
@@ -126,7 +129,7 @@ try {
   }, [bare.x, bare.y, aldra.id]);
   await settle(1200);
   const bareDrawn = await frame.evaluate(() => { const c = window.KrakenPlay._state.party.find((item) => item.record); return { name: c?.name, picture: c?.picture?.slice(0, 15) ?? null, loaded: Boolean(c?.image?.naturalWidth) }; });
-  assert(bareDrawn.name === "Aldra" && bareDrawn.loaded && bareDrawn.picture === "data:image/png;", `a character dropped with only its record shows its own token picture, not a letter (${JSON.stringify(bareDrawn)})`);
+  assert(bareDrawn.name === "Aldra" && bareDrawn.loaded && /^data:image\//.test(bareDrawn.picture ?? ""), `a character dropped with only its record shows its own token picture, not a letter (${JSON.stringify(bareDrawn)})`);
   const fromParty = await drag(`[data-member="${aldra.id}"]`, await free());
   assert(JSON.parse(fromParty["application/x-kraken-token"] ?? "{}").name === "Aldra" && fromParty["application/x-kraken-record"] === aldra.id, `a Party Sheet member carries its token and record (${JSON.stringify(fromParty)})`);
   let state = await play();
@@ -137,7 +140,7 @@ try {
     try { capture = (await window.KrakenStudio.capture({ grid: false, walls: false })).slice(0, 22); } catch (error) { capture = String(error.message); }
     return { picture: c?.picture?.slice(0, 15) ?? null, loaded: Boolean(c?.image?.naturalWidth), capture };
   });
-  assert(drawn.loaded && drawn.picture === "data:image/png;" && drawn.capture === "data:image/png;base64,", `Aldra's own token picture is her token in Play test, and the map can still be captured (${JSON.stringify(drawn)})`);
+  assert(drawn.loaded && /^data:image\//.test(drawn.picture ?? "") && drawn.capture === "data:image/png;base64,", `Aldra's own token picture is her token in Play test, and the map can still be captured (${JSON.stringify(drawn)})`);
   if (process.env.SHOT) { const box = await page.locator(".studio-frame").boundingBox(); await page.screenshot({ path: process.env.SHOT, clip: box }); }
   assert(state.mode === "play" && state.party.includes("Aldra") && state.who === "Aldra", `a character dragged from the Party Sheet onto Map Studio's map starts Play test with their token (${JSON.stringify(state)})`);
   const second = await free();

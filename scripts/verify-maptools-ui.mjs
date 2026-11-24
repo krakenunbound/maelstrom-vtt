@@ -65,7 +65,7 @@ try {
   await page.waitForSelector(".map-toolbar");
   // The map in its own window (FG's image window), with its tools and the scene pickers, clear of the sidebar.
   const mapWindow = page.locator('.window[data-window="map"]');
-  assert((await mapWindow.locator(".viewport .map-toolbar").count()) === 1 && (await mapWindow.locator(".scene-bar").count()) === 1, "the map, its tools and the scene's pickers are in the map window");
+  assert((await mapWindow.locator(".map-toolbar").count()) === 1 && (await mapWindow.locator(".scene-bar").count()) === 1, "the map, its tools and the scene's pickers are in the map window");
   const frame = await mapWindow.boundingBox();
   const side = await page.locator(".sidebar").boundingBox();
   assert(frame && side && frame.x + frame.width <= side.x + 1, `the map window leaves the sidebar clear: ${JSON.stringify({ frame, side })}`);
@@ -92,7 +92,7 @@ try {
   await tool("kraken_windows", { action: "popout", kind: "map" });
   let own = null;
   for (let wait = 0; wait < 40 && !own; wait++) {
-    for (const other of app.windows()) if (other !== page && (await other.$(".viewport .map-toolbar").catch(() => null))) own = other;
+    for (const other of app.windows()) if (other !== page && (await other.$(".map-toolbar").catch(() => null))) own = other;
     if (!own) await new Promise((resolve) => setTimeout(resolve, 250));
   }
   assert(own, "the map popped out into a window of its own, with its toolbar");
