@@ -165,11 +165,19 @@ function createArtLibrary({ base, roots, characters = null }) {
         const ownToken = shared.creatureToken(all.filter((item) => !item.pair), name, seed, "token");
         const ownPortrait = shared.creatureToken(all.filter((item) => !item.pair), name, seed, "portrait");
         const exactly = (id) => id && shared.tokenCreature(String(index.get(id)?.name ?? "")).replace(/[^a-z()]+/g, "").replace(/(portrait|token)$/, "") === name.toLowerCase().replace(/[^a-z()]+/g, "");
+        // The shipped creature art (games/creatures) by its name's words, before a face its record's words suggest
+        // (a Giant Bat whose text speaks of vampire bats is a bat).
+        const bookToken = shared.creatureToken(all.filter((item) => String(item.id).startsWith("creatures/")), name, seed, "token");
+        const bookPortrait = bookToken ? [...index.values()].find((item) => item.kind === "portrait" && item.name === String(index.get(bookToken)?.name ?? "").replace(/_token$/i, "_Portrait"))?.id : null;
         if (exactly(ownToken) || exactly(ownPortrait)) {
           creatures.picks.set(key, { portrait: exactly(ownPortrait) ? ownPortrait : ownToken, token: exactly(ownToken) ? ownToken : ownPortrait });
+        } else if (bookToken) {
+          creatures.picks.set(key, { portrait: bookPortrait ?? bookToken, token: bookToken });
         } else {
           const token = pair ? null : (kindToken ? shared.creatureToken(all, kindToken, seed) : null) ?? shared.creatureToken(all, name, seed);
-          creatures.picks.set(key, pair ?? (token ? { portrait: token, token } : null));
+          // A token that has a portrait of its own beside it (games/creatures: <Name>_Token, <Name>_Portrait) brings it.
+          const partner = token && /_token$/i.test(String(index.get(token)?.name ?? "")) ? [...index.values()].find((item) => item.kind === "portrait" && item.name === String(index.get(token).name).replace(/_token$/i, "_Portrait"))?.id : null;
+          creatures.picks.set(key, pair ?? (token ? { portrait: partner ?? token, token } : null));
         }
       }
       const pair = creatures.picks.get(key);

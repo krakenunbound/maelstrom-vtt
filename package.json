@@ -269,6 +269,10 @@
       {
         "from": "games/characters",
         "to": "characters"
+      },
+      {
+        "from": "games/creatures",
+        "to": "creatures"
       }
     ],
     "win": {

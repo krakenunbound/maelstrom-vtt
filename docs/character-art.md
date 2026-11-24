@@ -76,6 +76,16 @@ its window:
   fighter, a shaman a cleric), from any system's art (a goblin looks like a
   goblin in any game). Each creature keeps the same face (chosen by its
   record), and a room of goblins gets different ones.
+- **The shipped creature art first** (`games/creatures`: a portrait and its
+  token for each of the 595 creatures of the GM's 3.5e Monster Manual, the
+  GM's own AI-made art, free to use in every game). Found by its name's
+  words, a book's commas too ("Adult Red Dragon" is "Red Dragon, Adult"; a
+  Giant Bat is a Bat, "giant" before another word being only its size), the
+  plainest name first, its portrait with its token. It comes before a face
+  its record's words suggest (a Giant Bat whose text speaks of vampire bats
+  is still a bat). `scripts/import-creature-art.mjs <module.mod>` brings in
+  another book's (an FG module whose creatures each have a picture and a
+  token), named after each record.
 - **Else a token of its name from the token folders** (Forgotten Adventures'
   Dire Wolf, Owlbear, Giant Fire Beetle), the app's own folders before a
   campaign's, never a placeholder card.
@@ -157,4 +167,5 @@ transparent at its corner.
 
 The installer carries the library beside the app (`extraResources`:
 `resources/characters`), not inside `app.asar`; the app reads it there, or
-from `games/characters` when run from the repository.
+from `games/characters` when run from the repository. The creature art the
+same way (`resources/creatures`, else `games/creatures`).

@@ -81,7 +81,7 @@ try {
   const { creaturePair, creatureToken, creatureRace } = await import("../shared/characters/art.mjs");
   const all = createArtLibrary({ base: folder, roots: [], characters: { dir: folder, ruleset: "Forged in the Dark" } });
   assert(all.list("portrait").length === 1 && all.creature("Dwarf Fighter", "x") !== null, `the pickers list the game's art; a creature may take any system's: ${all.list("portrait").length} ${all.creature("Dwarf Fighter", "x")}`);
-  assert(creatureRace(["Goblin", "Hobgoblin"], "Hobgoblin Captain")?.race === "Hobgoblin" && creatureRace(["Goblin"], "Goblin Sentry (Room 2, 1)")?.classes.includes("Fighter") && creatureRace(["Kholo"], "Gnoll")?.race === "Kholo" && creatureRace(["Human"], "Bandit")?.race === "Human" && creatureRace(["Human"], "Carrion Crawler") === null, "a creature's race and role from its name");
+  assert(creatureRace(["Goblin", "Hobgoblin"], "Hobgoblin Captain")?.race === "Hobgoblin" && creatureRace(["Goblin"], "Goblin Sentry (Room 2, 1)")?.classes.includes("Fighter") && creatureRace(["Kholo"], "Gnoll")?.race === "Kholo" && creatureRace(["Human"], "Bandit")?.race === "Human" && creatureRace(["Human"], "Carrion Crawler") === null && creatureRace(["Giant"], "Giant Bat") === null && creatureRace(["Giant"], "Hill Giant")?.race === "Giant", "a creature's race and role from its name (a Giant Bat is no giant)");
   const dwarves = library("D&D 5E").list("portrait");
   const a = creaturePair(dwarves, "Dwarf Guard (Gate, 1)", "npc-1");
   assert(a && a.token === dwarves.find((item) => item.id === a.portrait).pair && JSON.stringify(creaturePair(dwarves, "Dwarf Guard (Gate, 1)", "npc-1")) === JSON.stringify(a), "a creature's pair, the same each time");
@@ -110,6 +110,19 @@ try {
   // Art made for a creature by its name (its own portrait and token in the art folders) comes first, parentheses too.
   const madeFor = [{ id: "kraken/tokens/Creatures/Sprackle (Lesser)_Token.webp", kind: "token", name: "Sprackle (Lesser)_Token" }, { id: "kraken/tokens/Creatures/Sprackle (Greater)_Token.webp", kind: "token", name: "Sprackle (Greater)_Token" }];
   assert(creatureToken(madeFor, "Sprackle (Greater)", "a") === madeFor[1].id && creatureToken(madeFor, "Sprackle (Lesser)", "a") === madeFor[0].id, "its own picture by its full name");
+  // A book's names with commas (games/creatures: "Red Dragon, Adult") are found by their words, the plainest first.
+  const book = ["Red Dragon, Adult", "Skeleton, Young Adult Red Dragon", "Red Dragon, Mature adult", "Ooze, Gelatinous Cube"].map((name) => ({ id: `creatures/tokens/${name}_Token.webp`, kind: "token", name: `${name}_Token` }));
+  assert(creatureToken(book, "Adult Red Dragon", "a") === book[0].id && creatureToken(book, "Gelatinous Cube", "a") === book[3].id, `a book's comma names: ${creatureToken(book, "Adult Red Dragon", "a")}`);
+  // Its portrait comes with the token (the same name, _Portrait).
+  {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "kraken-creatures-"));
+    for (const sub of ["portraits", "tokens"]) fs.mkdirSync(path.join(dir, sub));
+    for (const [sub, end] of [["portraits", "Portrait"], ["tokens", "Token"]]) for (const name of ["Ooze, Gelatinous Cube", "Skeleton, Young Adult Red Dragon"]) fs.writeFileSync(path.join(dir, sub, `${name}_${end}.webp`), "x");
+    const lib = createArtLibrary({ base: dir, roots: [{ dir: path.join(dir, "portraits"), kind: "portrait", group: "Creatures", prefix: "creatures/portraits/" }, { dir: path.join(dir, "tokens"), kind: "token", group: "Creatures", prefix: "creatures/tokens/" }] });
+    const portrait = lib.creature({ name: "Gelatinous Cube", data: {} }, "a", "portrait");
+    assert(portrait === "creatures/portraits/Ooze, Gelatinous Cube_Portrait.webp", `the token's own portrait: ${portrait}`);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
   done.push("a creature with no picture takes one of its kind: a portrait and its token from the character art by the race its name shows (any system's, the same each time), else a token of its name from the GM's token folders; never a picture flagged as not looking like its race");
 
   // --- The shipped library ---------------------------------------------------------------------------------------------

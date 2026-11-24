@@ -279,6 +279,12 @@ function characterArtDir() {
   const installed = process.resourcesPath ? path.join(process.resourcesPath, "characters") : "";
   return installed && fs.existsSync(path.join(installed, "manifest.json")) ? installed : path.join(APP_DIR, "games", "characters");
 }
+// Creature art shipped with the app (games/creatures: a portrait and token per creature, named after it; the GM's
+// own 3.5e Monster Manual art): beside the app when installed, like the character art.
+function creatureArtDir() {
+  const installed = process.resourcesPath ? path.join(process.resourcesPath, "creatures") : "";
+  return installed && fs.existsSync(installed) ? installed : path.join(APP_DIR, "games", "creatures");
+}
 function krakenArtRoots() {
   const assets = path.join(USER_DATA, "assets");
   return [
@@ -289,6 +295,8 @@ function krakenArtRoots() {
     // Astra), so a tester's new character has one with nothing else installed.
     { dir: path.join(APP_DIR, "games", "portraits"), kind: "portrait", group: "Maelstrom", prefix: "kraken-games/portraits/" },
     { dir: path.join(APP_DIR, "games", "tokens"), kind: "token", group: "Maelstrom", prefix: "kraken-games/tokens/" },
+    { dir: path.join(creatureArtDir(), "portraits"), kind: "portrait", group: "Creatures", prefix: "creatures/portraits/" },
+    { dir: path.join(creatureArtDir(), "tokens"), kind: "token", group: "Creatures", prefix: "creatures/tokens/" },
   ];
 }
 // Image layers' pictures (map tiles): the GM's assets folder, shared by every

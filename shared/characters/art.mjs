@@ -124,7 +124,8 @@ const hashOf = (/** @type {string} */ text) => {
 // word above; with the classes its name suggests.
 /** @param {string[]} races @param {string} name */
 export function creatureRace(races, name) {
-  const words = ` ${String(name ?? "").toLowerCase().replace(/\([^)]*\)/g, " ").replace(/[^a-z' -]+/g, " ")} `;
+  // "Giant" before another word only says its size (a Giant Bat is a bat, not a giant; a Hill Giant is one).
+  const words = ` ${String(name ?? "").toLowerCase().replace(/\([^)]*\)/g, " ").replace(/[^a-z' -]+/g, " ").replace(/\bgiant\s+(?=[a-z])/g, "")} `;
   // Whole words only ("Goblin" is not in "Hobgoblin"); a plural too ("Goblins").
   const loose = words.replace(/-/g, " ");
   const known = [...races].sort((a, b) => b.length - a.length).find((race) => [words, loose].some((text) => text.includes(` ${race.toLowerCase()} `) || text.includes(` ${race.toLowerCase()}s `)));
@@ -198,7 +199,7 @@ export function creaturePair(items, who, seed) {
 // The creature a token picture shows, from its file name: "Dire_Wolf_A1_Large_Beast_01" is "dire wolf",
 // "Owlbear_A1_Large_Scale130_Monstrosity_01" is "owlbear" (the words before the variant code).
 /** @param {string} name */
-export const tokenCreature = (name) => String(name ?? "").replace(/[_-]+/g, " ").replace(/\s+[A-Z]\d+\b.*$/, "").replace(/\s+\d+$/, "").trim().toLowerCase();
+export const tokenCreature = (name) => String(name ?? "").replace(/[_ ](portrait|token)$/i, "").replace(/[_-]+/g, " ").replace(/\s+[A-Z]\d+\b.*$/, "").replace(/\s+\d+$/, "").trim().toLowerCase();
 const squash = (/** @type {string} */ text) => text.toLowerCase().replace(/\([^)]*\)/g, " ").replace(/[^a-z]+/g, "");
 // A token of the creature's own kind from a token library (any picture whose file names it): the name exactly
 // ("Owl Bear" is "Owlbear"), else one whose name holds every word of it ("Fire Beetle": "Giant Fire Beetle");
@@ -220,8 +221,9 @@ export function creatureToken(items, name, seed, kind = "token") {
     const exact = tokens.filter((item) => squash(tokenCreature(item.name)) === wanted);
     if (exact.length) return exact;
     const near = tokens.filter((item) => {
-      const base = tokenCreature(item.name);
-      return base && words.every((word) => base.split(" ").includes(word) || base.split(" ").includes(word.replace(/s$/, "")));
+      // Its words without punctuation (a book's "Red Dragon, Adult").
+      const base = tokenCreature(item.name).split(/[^a-z]+/).filter(Boolean);
+      return base.length && words.every((word) => base.includes(word) || base.includes(word.replace(/s$/, "")));
     });
     if (near.length || words.length < 2) return near;
     // Last: the name's last word alone ("Normal Bat": a Bat).
@@ -230,7 +232,8 @@ export function creatureToken(items, name, seed, kind = "token") {
   const own = matching(usable.filter((item) => String(item.id).startsWith("kraken/")));
   const found = own.length ? own : matching(usable);
   // The plainest of them (a "Zombie" before a "Zombie Kobold"): the fewest words in its name.
-  const fewest = Math.min(...found.map((item) => tokenCreature(item.name).split(" ").length));
-  const choices = found.filter((item) => tokenCreature(item.name).split(" ").length === fewest).sort((a, b) => a.id.localeCompare(b.id));
+  const count = (/** @type {any} */ item) => tokenCreature(item.name).split(/[^a-z]+/).filter(Boolean).length;
+  const fewest = Math.min(...found.map(count));
+  const choices = found.filter((item) => count(item) === fewest).sort((a, b) => a.id.localeCompare(b.id));
   return choices.length ? choices[hashOf(String(seed || name)) % choices.length].id : null;
 }

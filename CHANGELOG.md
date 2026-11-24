@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **595 creatures have their own picture and token:** the GM's own 3.5e Monster Manual art ships with the app and is used in every game; a creature is found by its name's words ("Adult Red Dragon" finds "Red Dragon, Adult", a Giant Bat is a bat, not a giant or a vampire), its portrait with its token. check-character-art
 - **A book's record follows its links:** a vehicle's "Open Deck 5" opens the deck in the map window, "Open the printed source" opens the book's page, and a creature's links open what they name, whether the record is read from the book or the campaign's copy of it (before, a copy showed its links as words and picture links did nothing). check-books
 - **A creature's picture from its whole record:** its kind from its description (a nosferatu is a vampire, a creature Turn Undead holds is undead), its class from its Save As code or text, its gender from a title or its pronouns; a title in its name never beats what its record says. Art made for one creature (its own portrait and token in the art folders, named after it) comes first; games/tools/creature_art.mjs makes them with the local ComfyUI. check-character-art
 - **Named humans get faces too:** a creature named by a class or title alone ("Cleric of Balthac", "Lady Lillith", "Lord Kazakk", a guard, a lieutenant) takes a human of that kind from the character art. check-character-art
