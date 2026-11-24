@@ -102,12 +102,19 @@ The name is only the start. The picker reads the creature's whole record:
 
 A creature the libraries have nothing for (a book's own monster, a named
 villain) can have its own portrait and token: put them in the art folders
-named after it, `%APPDATA%\kraken-vttssets\portraits\Creatures\<Name>_Portrait.webp`
+named after it, `%APPDATA%\kraken-vtt\assets\portraits\Creatures\<Name>_Portrait.webp`
 and `tokens\Creatures\<Name>_Token.webp` (the full name, parentheses too:
 `Sprackle (Lesser)`). Maelstrom uses them before anything else.
 `games/tools/creature_art.mjs <list.json>` makes them with the local ComfyUI
 (a portrait, then a round token with a ring). They stay on this computer:
 a book's creatures are its publisher's.
+
+Each prompt is a plain description of how the creature looks ("a gorgon, a
+great bull covered in iron scales, breathing green gas"), never its record's
+text: rules words (saves, damage, page numbers) come out painted into the
+picture as words, and a bare name the model does not know comes out as the
+wrong thing (giants as boulders, a harpy as an eagle). Look over a contact
+sheet of everything made and paint the bad ones again.
 
 ## 3c. Pictures that do not fit
 
