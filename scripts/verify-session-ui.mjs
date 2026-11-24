@@ -88,7 +88,7 @@ try {
       await settle(500);
     }
   }
-  const campaign = await tool("kraken_campaign_create", { name: "Session controls", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "Session controls", ruleset: "Worldbuilding" });
   const port = 47433;
 
   // The GM's own connection, cut under the page on demand (a socket we hold both ends of).

@@ -30,7 +30,7 @@ const rpc = (method, params) =>
 const tool = async (name, args = {}) => JSON.parse((await rpc("tools/call", { name, arguments: args })).content[0].text);
 try {
   await rpc("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "probe", version: "1" } });
-  const campaign = await tool("kraken_campaign_create", { name: "Throw probe", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "Throw probe", ruleset: "Worldbuilding" });
   await tool("kraken_host", { campaignId: campaign.id, port: 47397, password: "" });
   await page.waitForSelector("text=Hosting");
   const die = await page.waitForSelector(".chat-tray [data-sides], .tray-die, [data-die]", { timeout: 15000 });

@@ -15,7 +15,7 @@ await page.waitForSelector("text=My Campaigns");
 await page.waitForTimeout(2000);
 await page.screenshot({ path: `${out}/home.png` });
 await page.click('[data-action="campaigns-mode"]');
-for (const name of ["Castles & Crusades", "The Keep on the Borderlands", "Shadows over Saltmarsh"]) {
+for (const name of ["The Sunless Citadel", "The Keep on the Borderlands", "Shadows over Saltmarsh"]) {
   await page.fill('input[name="new-campaign"]', name);
   await page.locator('form[data-form="create"]').evaluate((form) => form.requestSubmit());
   await page.waitForSelector('form[data-form="play"]');

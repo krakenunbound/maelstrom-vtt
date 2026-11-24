@@ -128,7 +128,7 @@ try {
 
   const status = await tool("kraken_status");
   assert(status.hosting === false, "not hosting at start");
-  const campaign = await tool("kraken_campaign_create", { name: "Agent Table", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "Agent Table", ruleset: "D&D 5E" });
   const port = 47388;
   await tool("kraken_host", { campaignId: campaign.id, port, password: "pw" });
   await page.waitForSelector("text=Hosting");

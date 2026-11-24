@@ -45,7 +45,7 @@ async function tool(name, args = {}) {
 const shot = path.join(tmpdir(), "kraken-table-toast.png");
 try {
   await rpc("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "check", version: "1" } });
-  const campaign = await tool("kraken_campaign_create", { name: "Toast", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "Toast", ruleset: "Worldbuilding" });
   await tool("kraken_host", { campaignId: campaign.id, port: 47416, password: "pw" });
   await page.waitForSelector("text=Hosting");
   // A refusal from the host: on screen, and kept in the chat.

@@ -22,7 +22,7 @@ const done = [];
 const folder = makeBooks();
 const books = createBookShelf({ folder, cache: path.join(folder, "cache.json") });
 const prefs = createPrefsStore(null, diceLook);
-const first = createTableServer({ books, prefs, ruleset: "Castles & Crusades" });
+const first = createTableServer({ books, prefs, ruleset: "D&D 5E" });
 const opened = await first.listen({ port: 0, password: "" });
 const tool = async (server, args) => {
   const result = await callTool("kraken_module_set", args, { table: () => server });
@@ -50,11 +50,11 @@ try {
   done.push("saved, applied: the books active and shared again; a smaller set makes the rest inactive");
 
   // 2. Another campaign of the game; another game.
-  const second = createTableServer({ books, prefs, ruleset: "Castles & Crusades" });
+  const second = createTableServer({ books, prefs, ruleset: "D&D 5E" });
   others.push(second);
   const there = await tool(second, { action: "apply", name: "Keep night" });
   assert(there.active.sort().join() === "Test Handbook,Test Keep", `another campaign: ${JSON.stringify(there)}`);
-  const fifth = createTableServer({ books, prefs, ruleset: "D&D 5E" });
+  const fifth = createTableServer({ books, prefs, ruleset: "D&D 3.5E" });
   others.push(fifth);
   assert((await tool(fifth, { action: "list" })).sets.length === 0, "another game's campaign does not see it");
   done.push("another campaign of the game applies it; another game's does not see it");
@@ -63,7 +63,7 @@ try {
   // A campaign that lists a book active whose file is gone: saved without it, and a set applied makes it inactive.
   await a.activateBook("Test Keep");
   const shelfState = first.persisted().books;
-  const stale = createTableServer({ books, prefs, ruleset: "Castles & Crusades", saved: { books: { ...shelfState, active: [...shelfState.active, "Gone Module"] } } });
+  const stale = createTableServer({ books, prefs, ruleset: "D&D 5E", saved: { books: { ...shelfState, active: [...shelfState.active, "Gone Module"] } } });
   others.push(stale);
   assert(stale.persisted().books.active.includes("Gone Module"), "the campaign lists the gone book active");
   const staleSave = await tool(stale, { action: "save", name: "Stale" });
@@ -71,7 +71,7 @@ try {
   assert(!staleSet.active.includes("Gone Module"), `a gone book not saved: ${JSON.stringify(staleSet)}`);
   const staleApply = await tool(stale, { action: "apply", name: "Rules only" });
   assert(!staleApply.active.includes("Gone Module") && staleApply.active.join() === "Test Handbook", `a gone book made inactive: ${JSON.stringify(staleApply)}`);
-  prefs.set("@gm", { moduleSets: { "Lost shelf": { ruleset: "Castles & Crusades", active: ["Test Handbook", "Gone Book"], shared: [] } } });
+  prefs.set("@gm", { moduleSets: { "Lost shelf": { ruleset: "D&D 5E", active: ["Test Handbook", "Gone Book"], shared: [] } } });
   const lost = await tool(first, { action: "apply", name: "Lost shelf" });
   assert(lost.missing.join() === "Gone Book" && lost.active.join() === "Test Handbook" && lost.shared.length === 0, `a missing book said: ${JSON.stringify(lost)}`);
   await tool(first, { action: "remove", name: "Lost shelf" });

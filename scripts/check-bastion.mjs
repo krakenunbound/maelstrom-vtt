@@ -48,7 +48,7 @@ try {
   // 1. Off until the house rule is on.
   assert(/Bastions are off/.test(refused(() => bastionAction(a, ann, { action: "add", character: mira.id, name: "Smithy" }))), "off by default");
   await tool("kraken_table_options", { rules: { HRBASTION: true } });
-  assert(/no bastions/.test(refused(() => bastionAction({ ...a, ruleset: () => "Castles & Crusades" }, ann, { action: "log" }))), "C&C has none");
+  assert(/no bastions/.test(refused(() => bastionAction({ ...a, ruleset: () => "Worldbuilding" }, ann, { action: "log" }))), "Worldbuilding has none");
   done.push("off until the house rule; only where the game has them");
 
   // 2. A player's own bastion.

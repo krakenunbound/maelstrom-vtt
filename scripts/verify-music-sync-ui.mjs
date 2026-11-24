@@ -48,7 +48,7 @@ const failures = [];
 let browser = null;
 try {
   await rpc("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "check", version: "1" } });
-  const campaign = await tool("kraken_campaign_create", { name: "Music sync", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "Music sync", ruleset: "Worldbuilding" });
   const port = 47419;
   await tool("kraken_host", { campaignId: campaign.id, port, password: "pw" });
   await page.waitForSelector("text=Hosting");

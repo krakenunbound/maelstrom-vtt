@@ -115,7 +115,7 @@ let browser = null;
 try {
   await start();
   page.on("pageerror", (error) => failures.push(error.message));
-  const campaign = await tool("kraken_campaign_create", { name: "Prefs UI", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "Prefs UI", ruleset: "Worldbuilding" });
   await tool("kraken_host", { campaignId: campaign.id, port, password: "" });
   await page.waitForSelector("text=Hosting");
   const withMap = existsSync(bundle);

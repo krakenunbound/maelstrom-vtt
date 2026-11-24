@@ -59,7 +59,7 @@ page.on("pageerror", (error) => failures.push(error.message));
 // A look at painted water and rain kept off a roof, close up (no checks).
 try {
   await rpc("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "shot", version: "1" } });
-  const campaign = await tool("kraken_campaign_create", { name: "FX shot", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "FX shot", ruleset: "Worldbuilding" });
   await tool("kraken_host", { campaignId: campaign.id, port: 47420, password: "" });
   await page.waitForSelector("text=Hosting");
   await tool("kraken_open_adventure", { path: bundle });

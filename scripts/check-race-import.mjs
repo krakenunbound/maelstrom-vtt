@@ -124,11 +124,11 @@ try {
   assert(/GM's/.test(refused), "a player may not import");
   let none = "";
   try {
-    await content.raceImport({ ...agent, ruleset: () => "Castles & Crusades" }, { text: MARSHFOLK });
+    await content.raceImport({ ...agent, ruleset: () => "Worldbuilding" }, { text: MARSHFOLK });
   } catch (error) {
     none = String(error);
   }
-  assert(/no race import/.test(none), `C&C has none: ${none}`);
+  assert(/no race import/.test(none), `Worldbuilding has none: ${none}`);
   done.push("imported with its subraces linked, read by the builder; the GM's alone, only where the game reads races");
 } finally {
   await server.stop?.();

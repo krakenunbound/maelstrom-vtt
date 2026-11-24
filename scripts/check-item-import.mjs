@@ -108,11 +108,11 @@ try {
   assert(/GM's/.test(refused), "a player may not import");
   let none = "";
   try {
-    await content.itemImport({ ...agent, ruleset: () => "Castles & Crusades" }, { text: "x" });
+    await content.itemImport({ ...agent, ruleset: () => "Worldbuilding" }, { text: "x" });
   } catch (error) {
     none = String(error);
   }
-  assert(/no item import/.test(none), `C&C has none: ${none}`);
+  assert(/no item import/.test(none), `Worldbuilding has none: ${none}`);
   done.push("imported, it attacks as the book's; the GM's alone, only where the game reads items");
 } finally {
   await server.stop?.();

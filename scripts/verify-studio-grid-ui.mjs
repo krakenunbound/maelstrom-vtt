@@ -84,7 +84,7 @@ try {
       await settle(500);
     }
   }
-  const campaign = await tool("kraken_campaign_create", { name: "Studio grid", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "Studio grid", ruleset: "Worldbuilding" });
   await tool("kraken_host", { campaignId: campaign.id, port: 47515, password: "pw" });
   await page.waitForSelector("text=Hosting");
 

@@ -65,7 +65,7 @@ try {
       await settle(500);
     }
   }
-  const campaign = await tool("kraken_campaign_create", { name: "Tower", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "Tower", ruleset: "Worldbuilding" });
   await tool("kraken_host", { campaignId: campaign.id, port: 47455, password: "pw" });
   await page.waitForSelector("text=Hosting");
   assert(await page.$(".dice-tray .tower"), "the tower starts docked in the chat's tray");

@@ -44,7 +44,7 @@ assert(text.includes('data-page="inn"') && text.includes('data-file="images/keep
   const { zipSync, strToU8 } = await import("fflate");
   const dir = mkdtempSync(path.join(tmpdir(), "kraken-homebrew-"));
   const db = '<root><encounter><id-00001><name type="string">Arrival</name><text type="formattedtext"><p>The road ends here.</p></text></id-00001></encounter><image><id-00001><name type="string">Map</name></id-00001></image></root>';
-  writeFileSync(path.join(dir, "Duanes Keep.mod"), zipSync({ "definition.xml": strToU8("<root><name>Duanes Keep</name><category>Homebrew</category><ruleset>CnCRPG</ruleset></root>"), "db.xml": strToU8(db) }));
+  writeFileSync(path.join(dir, "Duanes Keep.mod"), zipSync({ "definition.xml": strToU8("<root><name>Duanes Keep</name><category>Homebrew</category><ruleset>5E</ruleset></root>"), "db.xml": strToU8(db) }));
   const shelf = createBookShelf({ folder: dir });
   const homebrew = shelf.list().find((item) => item.name === "Duanes Keep");
   assert(homebrew?.adventure === true, `a module with story entries is an adventure: ${JSON.stringify(homebrew)}`);
@@ -61,7 +61,7 @@ assert(text.includes('data-page="inn"') && text.includes('data-file="images/keep
   const dir = mkdtempSync(path.join(tmpdir(), "kraken-media-"));
   const png = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]);
   const db = '<root><image><id-00001><name type="string">Cave</name><image type="image"><layers><layer><name>cave.png</name><bitmap>images/cave.png</bitmap></layer></layers><grid>on</grid></image></id-00001></image><npc><id-00001><name type="string">Goblin</name><token type="token">art/goblin.png@Caves</token><picture type="token">art/goblin-big.png@Caves</picture></id-00001></npc></root>';
-  writeFileSync(path.join(dir, "Caves.mod"), zipSync({ "definition.xml": strToU8("<root><name>Caves</name><ruleset>CnCRPG</ruleset></root>"), "db.xml": strToU8(db), "images/cave.png": png, "art/goblin.png": png, "art/goblin-big.png": png, "sounds/drip.ogg": strToU8("OggS"), "music/theme.mp3": strToU8("ID3"), "misc/other.png": png }));
+  writeFileSync(path.join(dir, "Caves.mod"), zipSync({ "definition.xml": strToU8("<root><name>Caves</name><ruleset>5E</ruleset></root>"), "db.xml": strToU8(db), "images/cave.png": png, "art/goblin.png": png, "art/goblin-big.png": png, "sounds/drip.ogg": strToU8("OggS"), "music/theme.mp3": strToU8("ID3"), "misc/other.png": png }));
   const shelf = createBookShelf({ folder: dir });
   const kinds = Object.fromEntries(shelf.contents("Caves").media.map((item) => [item.file, item.kind]));
   const wanted = { "images/cave.png": "Maps", "art/goblin.png": "Tokens", "art/goblin-big.png": "Portraits", "sounds/drip.ogg": "Sounds", "music/theme.mp3": "Music", "misc/other.png": "Images" };
@@ -72,7 +72,7 @@ assert(text.includes('data-page="inn"') && text.includes('data-file="images/keep
   {
     const { createSoundLibrary } = require("../electron/sounds.cjs");
     const library = createSoundLibrary({ folder: mkdtempSync(path.join(tmpdir(), "kraken-sound-keep-")) });
-    const table = createTableServer({ books: shelf, sounds: library, ruleset: "Castles & Crusades" });
+    const table = createTableServer({ books: shelf, sounds: library, ruleset: "D&D 5E" });
     await table.agent.activateBook("Caves");
     await table.agent.activateBook("Caves", false);
     await table.agent.activateBook("Caves");
@@ -148,10 +148,10 @@ assert(text.includes('data-page="inn"') && text.includes('data-file="images/keep
   const { fitsRuleset } = require("../electron/books.cjs");
   const fits = (ruleset) => list.filter((item) => fitsRuleset(item, ruleset)).map((item) => item.id).sort().join();
   assert(fits("Worldbuilding") === "Not A Book", `Worldbuilding: only any game's (${fits("Worldbuilding")})`);
-  assert(fitsRuleset({ ruleset: "PFRPG" }, "Worldbuilding") && fitsRuleset({ kraken: "PFRPG", ruleset: "PFRPG" }, "Worldbuilding") && !fitsRuleset({ ruleset: "PFRPG" }, "Castles & Crusades") && !fitsRuleset({ kraken: "D&D 3.5E", ruleset: "3.5E" }, "Worldbuilding"), "a game Kraken has no rules for (Pathfinder) is read in Worldbuilding, not elsewhere; a played game's book is not");
+  assert(fitsRuleset({ ruleset: "PFRPG" }, "Worldbuilding") && fitsRuleset({ kraken: "PFRPG", ruleset: "PFRPG" }, "Worldbuilding") && !fitsRuleset({ ruleset: "PFRPG" }, "D&D 5E") && !fitsRuleset({ kraken: "D&D 3.5E", ruleset: "3.5E" }, "Worldbuilding"), "a game Kraken has no rules for (Pathfinder) is read in Worldbuilding, not elsewhere; a played game's book is not");
   // AD&D 2E is played now: its books (FG's "2E", a pack made before as "2E" or now as "AD&D 2E") are on its shelf, not Worldbuilding's.
   assert(fitsRuleset({ ruleset: "2E" }, "AD&D 2E") && fitsRuleset({ kraken: "2E", ruleset: "2E" }, "AD&D 2E") && fitsRuleset({ kraken: "AD&D 2E", ruleset: "2E" }, "AD&D 2E") && !fitsRuleset({ kraken: "2E", ruleset: "2E" }, "Worldbuilding") && !fitsRuleset({ ruleset: "2E" }, "D&D 3.5E"), "AD&D 2E's books are on the AD&D 2E shelf");
-  assert(fits("Castles & Crusades") === "Not A Book,Test Handbook,Test Keep", `C&C: its own and any game's (${fits("Castles & Crusades")})`);
+  assert(fits("D&D 5E") === "Not A Book,Test Handbook,Test Keep", `5E: its own and any game's (${fits("D&D 5E")})`);
 }
 // A world's book brings its calendar: made active, Mystara sets the campaign's to the Thyatian (the GM may still choose another).
 {
@@ -170,7 +170,7 @@ assert(text.includes('data-page="inn"') && text.includes('data-file="images/keep
   const { calendarOf, dateWords } = require("../shared/calendars.mjs");
   assert(dateWords(calendarOf("mystara"), 1000, 0) === "Lunadain, 1st Nuwmont, 1000 AC" && dateWords(calendarOf("mystara"), 1000, 335) === "Soladain, 28th Kaldmont, 1000 AC", "the Thyatian year: twelve months of 28 days, each starting on Lunadain");
 }
-const server = createTableServer({ books, ruleset: "Castles & Crusades" });
+const server = createTableServer({ books, ruleset: "D&D 5E" });
 const tool = async (name, args) => JSON.parse((await callTool(name, args, { table: () => server })).content[0].text);
 function connect(port, join) {
   return new Promise((resolve, reject) => {
@@ -200,7 +200,7 @@ try {
   assert((await get(gm, `/book/page?book=Other%20Game&page=first`)).status === 404, "another game's book is not this campaign's");
   gm.send({ type: "book-activate", book: "Other Game" });
   await settle();
-  assert(gm.events.some((event) => event.type === "error" && /5E/.test(event.reason)), "another game's book cannot be made active");
+  assert(gm.events.some((event) => event.type === "error" && /3.5E/.test(event.reason)), "another game's book cannot be made active");
 
   // Activation: the handbook opens to the players at once, the adventure not.
   gm.send({ type: "book-activate", book: "Test Handbook" });
@@ -214,7 +214,7 @@ try {
   assert((await (await get(player, "/book/list")).json()).books.map((item) => item.id).join() === "Test Handbook", "the player's shelf: the handbook, not the adventure");
   const loaded = server.agent.records.list({ source: "Test Handbook" });
   assert(loaded.length === 1 && loaded[0].type === "item", `an active module's rules records (its gear) are loaded into the campaign, not its book pages (${loaded.map((record) => record.type)})`);
-  const reopenedWith = createTableServer({ books, ruleset: "Castles & Crusades", saved: { books: server.persisted().books } });
+  const reopenedWith = createTableServer({ books, ruleset: "D&D 5E", saved: { books: server.persisted().books } });
   assert(reopenedWith.agent.records.list({ source: "Test Handbook" }).length === 0, "opening the campaign does not wait for the books");
   await new Promise((resolve) => setTimeout(resolve, 800));
   assert(reopenedWith.agent.records.list({ source: "Test Handbook" }).length === 1, "a book active when the campaign opens has its records soon after");
@@ -279,7 +279,7 @@ try {
   assert(mine?.length === 12 && mine[0].page === "first" && mine[1] === null && mine[3].kind === "picture", `a player's slots, cleaned: ${JSON.stringify(mine)}`);
   assert(server.agent.quickSlots("@gm").every((slot) => slot === null), "the GM's slots are the GM's own");
   assert(server.agent.quickSlots("A test player")[0].label === "Rules", "the agent reads a player's slots");
-  const later = createTableServer({ books, ruleset: "Castles & Crusades", saved: server.persisted() });
+  const later = createTableServer({ books, ruleset: "D&D 5E", saved: server.persisted() });
   assert(later.agent.quickSlots("A test player")[3].file === "images/keep.png", "slots are kept with the campaign");
   assert((await tool("kraken_quickslots", { slots: [{ kind: "sheet", record: "id-1", label: "Aldric" }] }))[0].kind === "sheet", "the agent sets the GM's slots");
 

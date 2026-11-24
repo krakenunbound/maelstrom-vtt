@@ -52,7 +52,7 @@ const failures = [];
 page.on("pageerror", (error) => failures.push(error.message));
 try {
   await rpc("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "check", version: "1" } });
-  const campaign = await tool("kraken_campaign_create", { name: "Packs UI", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "Packs UI", ruleset: "D&D 5E" });
   await tool("kraken_host", { campaignId: campaign.id, port: 47396, password: "pw" });
   await page.waitForSelector("text=Hosting");
 
@@ -65,14 +65,14 @@ try {
   await page.waitForSelector('[data-packs] [data-pack-book="Other Game"]');
   await page.click('[data-packs-every]');
   await page.waitForFunction(() => !document.querySelector('[data-packs] [data-pack-book="Other Game"]'));
-  const listed = await tool("kraken_packs", { action: "list", ruleset: "Castles & Crusades" });
-  assert(listed.folder === packsFolder && listed.books.some((book) => book.id === "Test Keep" && book.ruleset === "Castles & Crusades" && book.pack === null), `kraken_packs lists the modules: ${JSON.stringify(listed).slice(0, 400)}`);
+  const listed = await tool("kraken_packs", { action: "list", ruleset: "D&D 5E" });
+  assert(listed.folder === packsFolder && listed.books.some((book) => book.id === "Test Keep" && book.ruleset === "D&D 5E" && book.pack === null), `kraken_packs lists the modules: ${JSON.stringify(listed).slice(0, 400)}`);
 
   // One pack with its own button.
   await page.click('[data-pack-make="Test Keep"]');
   await page.waitForSelector('[data-packs] [data-pack-book="Test Keep"][data-pack-state="made"]', { timeout: 60000 });
   // (Each pack in its game's folder: docs/kpack-format.md.)
-  assert(existsSync(path.join(packsFolder, "Castles & Crusades", "Test Keep.kpack")), "Test Keep.kpack is in its game's folder");
+  assert(existsSync(path.join(packsFolder, "D&D 5E", "Test Keep.kpack")), "Test Keep.kpack is in its game's folder");
 
   // The rest: "Make N packs", and the agent's make all for another game.
   const label = await page.textContent('[data-action="packs-make-all"]');
@@ -82,7 +82,7 @@ try {
   assert((await page.textContent('[data-action="packs-make-all"]'))?.includes("no packs"), "nothing left to make");
   const queued = await tool("kraken_packs", { action: "make", books: ["all"], ruleset: "" });
   assert(queued.queued.includes("Other Game"), `kraken_packs makes the other game's: ${JSON.stringify(queued)}`);
-  for (let tries = 0; tries < 60 && !existsSync(path.join(packsFolder, "D&D 5E", "Other Game.kpack")); tries++) await new Promise((resolve) => setTimeout(resolve, 500));
+  for (let tries = 0; tries < 60 && !existsSync(path.join(packsFolder, "D&D 3.5E", "Other Game.kpack")); tries++) await new Promise((resolve) => setTimeout(resolve, 500));
   // Each in its game's folder (Packs/<game>/<book>.kpack).
   const packs = readdirSync(packsFolder, { recursive: true }).map((name) => path.basename(String(name))).filter((name) => name.endsWith(".kpack")).sort();
   assert(packs.includes("Other Game.kpack") && packs.includes("Test Handbook.kpack") && packs.includes("Test Keep.kpack"), `the packs: ${packs.join(", ")}`);

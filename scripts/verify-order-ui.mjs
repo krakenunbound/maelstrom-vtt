@@ -50,7 +50,7 @@ page.on("pageerror", (error) => failures.push(error.message));
 let browser = null;
 try {
   await rpc("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "check", version: "1" } });
-  const campaign = await tool("kraken_campaign_create", { name: "Order UI", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "Order UI", ruleset: "D&D 5E" });
   const port = 47399;
   await tool("kraken_host", { campaignId: campaign.id, port, password: "pw" });
   await page.waitForSelector("text=Hosting");

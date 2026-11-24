@@ -33,7 +33,7 @@ export function makeBooks() {
     </reference>
     <npc><guard><name type="string">Gate Guard</name><hp type="number">7</hp></guard></npc>
   </root>`;
-  const definition = `<?xml version="1.0" encoding="UTF-8"?><root><name>${NAME}</name><displayname>The Test Keep</displayname><category>Test Adventures</category><author>Kraken</author><ruleset>CnCRPG</ruleset></root>`;
+  const definition = `<?xml version="1.0" encoding="UTF-8"?><root><name>${NAME}</name><displayname>The Test Keep</displayname><category>Test Adventures</category><author>Kraken</author><ruleset>5E</ruleset></root>`;
   writeFileSync(path.join(folder, "Test Keep.mod"), zipSync({ "definition.xml": strToU8(definition), "db.xml": strToU8(db), "thumbnail.png": PNG, "images/keep.png": PNG, "sounds/gate.ogg": strToU8("OggS") }));
   mkdirSync(path.join(folder, "Not A Book"), { recursive: true });
   writeFileSync(path.join(folder, "Not A Book", "definition.xml"), `<root><name>Not A Book</name><category>Maps</category></root>`);
@@ -43,7 +43,7 @@ export function makeBooks() {
     const index = `<root><reference><refmanualindex><chapters><id-00001><name type="string">${title}</name><subchapters><id-00001><name type="string">${title}</name><refpages><id-00001><name type="string">First</name><listlink type="windowreference"><class>reference_manualtextwide</class><recordname>reference.refmanualdata.first@${name}</recordname></listlink></id-00001></refpages></id-00001></subchapters></id-00001></chapters></refmanualindex><refmanualdata><first><name type="string">First</name><text type="formattedtext"><p>Rules.</p></text></first></refmanualdata></reference><item><longsword><name type="string">Longsword</name><cost type="string">15 gp</cost></longsword></item></root>`;
     writeFileSync(path.join(folder, `${name}.mod`), zipSync({ "definition.xml": strToU8(`<root><name>${name}</name><displayname>${title}</displayname><category>${category}</category><ruleset>${ruleset}</ruleset></root>`), "client.xml": strToU8(index) }));
   };
-  small("Test Handbook", "Test Player's Handbook", "Core Rules", "SiegeCore");
-  small("Other Game", "Another Game's Handbook", "Core Rules", "5E");
+  small("Test Handbook", "Test Player's Handbook", "Core Rules", "5E");
+  small("Other Game", "Another Game's Handbook", "Core Rules", "3.5E");
   return folder;
 }

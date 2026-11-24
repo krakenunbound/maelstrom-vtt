@@ -63,7 +63,7 @@ try {
   const names = (await rpc("tools/list")).tools.map((item) => item.name);
   for (const needed of ["kraken_windows", "kraken_dice_settings", "kraken_open_adventure", "kraken_scenes", "kraken_ping"]) assert(names.includes(needed), `tool ${needed} listed`);
 
-  const campaign = await tool("kraken_campaign_create", { name: "Agent UI", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "Agent UI", ruleset: "D&D 5E" });
   const port = 47391;
   await tool("kraken_host", { campaignId: campaign.id, port, password: "pw" });
   await page.waitForSelector("text=Hosting");

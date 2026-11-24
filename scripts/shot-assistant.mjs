@@ -37,7 +37,7 @@ const tool = async (name, args = {}) => {
 const file = (name) => path.join(tmpdir(), `kraken-assistant-${name}.png`);
 try {
   await rpc("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "shot", version: "1" } });
-  const campaign = await tool("kraken_campaign_create", { name: "Assistant shot", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "Assistant shot", ruleset: "Worldbuilding" });
   await tool("kraken_host", { campaignId: campaign.id, port: 47404, password: "" });
   await page.waitForSelector("text=Hosting");
   await page.click('.sidebar [data-launch="assistant"]');

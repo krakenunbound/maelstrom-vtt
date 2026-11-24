@@ -36,7 +36,7 @@ const tool = async (name, args = {}) => {
 const file = (name) => path.join(tmpdir(), `kraken-dice-${name}.png`);
 try {
   await rpc("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "shot", version: "1" } });
-  const campaign = await tool("kraken_campaign_create", { name: "Dice shot", ruleset: "Castles & Crusades" });
+  const campaign = await tool("kraken_campaign_create", { name: "Dice shot", ruleset: "Worldbuilding" });
   await tool("kraken_host", { campaignId: campaign.id, port: 47403, password: "" });
   await page.waitForSelector("text=Hosting");
   await tool("kraken_windows", { action: "open", kind: "dice" });

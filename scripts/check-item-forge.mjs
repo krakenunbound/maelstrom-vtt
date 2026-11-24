@@ -95,11 +95,11 @@ try {
   assert(/GM's/.test(refused), "a player may not forge");
   let none = "";
   try {
-    await content.itemForge({ ...agent, ruleset: () => "Castles & Crusades" }, { base: [longsword.id], templates: [plus.id] });
+    await content.itemForge({ ...agent, ruleset: () => "Worldbuilding" }, { base: [longsword.id], templates: [plus.id] });
   } catch (error) {
     none = String(error);
   }
-  assert(/no Item Forge/.test(none), `C&C has no forge: ${none}`);
+  assert(/no Item Forge/.test(none), `Worldbuilding has no forge: ${none}`);
   done.push("book records by path, a mix said, the GM's alone, only where the game has a forge");
 } finally {
   await server.stop?.();

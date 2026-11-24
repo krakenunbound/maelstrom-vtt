@@ -92,8 +92,8 @@ const TOOLS = [
   },
   {
     name: "kraken_campaign_ruleset",
-    description: "Change a campaign's ruleset (Castles & Crusades, or Worldbuilding for no rules), as the campaign screen's Ruleset menu. It decides the campaign's books. Not while that campaign is hosted.",
-    inputSchema: object({ campaignId: string("Campaign id from kraken_campaigns"), ruleset: string("Castles & Crusades or Worldbuilding") }, ["campaignId", "ruleset"]),
+    description: "Change a campaign's ruleset (any game kraken_campaign_create takes, or Worldbuilding for no rules), as the campaign screen's Ruleset menu. It decides the campaign's books. Not while that campaign is hosted.",
+    inputSchema: object({ campaignId: string("Campaign id from kraken_campaigns"), ruleset: string("A game kraken_campaign_create takes (D&D 5E, D&D 3.5E, AD&D 2E, Castles & Crusades, Traveller...) or Worldbuilding") }, ["campaignId", "ruleset"]),
     run: (args, ctx) => out(ctx.campaigns.setRuleset({ id: args.campaignId, ruleset: args.ruleset })),
   },
   {
