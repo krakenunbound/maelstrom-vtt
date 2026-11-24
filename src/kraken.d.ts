@@ -88,6 +88,7 @@ export type KrakenApi = {
   rulesetLogos?: () => Promise<{ folder: string; logos: Record<string, string> }>;
   packGames?: () => Promise<Record<string, unknown>[]>;
   installedGames?: () => Promise<string[]>;
+  ownGames?: () => Promise<string[]>;
   studioUrl?: () => Promise<{ url: string }>;
   updater?: {
     state: () => Promise<UpdaterState>;

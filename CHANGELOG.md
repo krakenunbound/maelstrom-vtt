@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **The start screen names 5E by what is installed:** with only the shipped SRD 5.2.1 books it is "5e SRD" (the SRD's licence covers the rules, not the D&D name); a DM's own 5E books bring back "D&D 5E". The game itself, its campaigns and packs are unchanged.
 - **5E takes a book's pregenerated characters:** the 5E character wizard offers "A ready-made character from your books" (a 5e pack's pregens, such as Vault of the Kraken Pregens), and the character comes as the book made it. `kraken_build_character` takes `{ pregen }` in 5E too.
 - **A new DM's books show up without a restart:** the new-campaign screen asks again which games are installed whenever you come back to Maelstrom's window, so a game's packs copied into Documents/Kraken VTT/Packs appear (and books taken out disappear) at once.
 - **An adventure with its code in brackets is filed as an adventure** ("Against the Cult of the Reptile God (N1) 5e" was under Rulesets).

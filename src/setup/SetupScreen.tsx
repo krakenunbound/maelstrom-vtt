@@ -251,6 +251,10 @@ export function SetupScreen({
   // meanwhile), so no restart is needed.
   const [allRulesets, setRulesets] = useState(campaignRulesets);
   const [installed, setInstalled] = useState<string[] | null>(null);
+  // The games the GM's own books make playable. 5E played from the shipped SRD alone is shown as "5e SRD" (the SRD's
+  // licence covers its rules, not the D&D name); the GM's own 5E books bring the name back.
+  const [ownGames, setOwnGames] = useState<string[] | null>(null);
+  const shownName = (name: string) => (name === "D&D 5E" && ownGames && !ownGames.includes(name) ? "5e SRD" : name);
   const [gamesAsked, setGamesAsked] = useState(0);
   useEffect(() => {
     const again = () => document.visibilityState === "visible" && setGamesAsked((count) => count + 1);
@@ -276,6 +280,8 @@ export function SetupScreen({
         setRulesets(campaignRulesets());
         const names = await window.kraken?.installedGames?.();
         if (Array.isArray(names)) setInstalled(names);
+        const own = await window.kraken?.ownGames?.();
+        if (Array.isArray(own)) setOwnGames(own);
       })
       .catch(() => undefined);
   }, [gamesAsked]);
@@ -880,7 +886,7 @@ export function SetupScreen({
                       >
                         <RulesetEmblem name={item.name} picture={rulesetLogos[emblemKey(item.name)]} />
                         <span className="ruleset-words">
-                          <strong>{item.name}</strong>
+                          <strong>{shownName(item.name)}</strong>
                           <small>{item.blurb}</small>
                         </span>
                       </button>
@@ -894,7 +900,7 @@ export function SetupScreen({
                   ) : null}
                   {chosen ? (
                     <p className="ruleset-about" data-ruleset-about={chosen.name}>
-                      <b>{chosen.name}.</b> {chosen.blurb}
+                      <b>{shownName(chosen.name)}.</b> {chosen.blurb}
                     </p>
                   ) : null}
                 </div>

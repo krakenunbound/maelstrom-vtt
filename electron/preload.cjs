@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld("kraken", {
   packGames: () => ipcRenderer.invoke("pack-games"),
   // The games whose books are installed (the campaign screen offers only these).
   installedGames: () => ipcRenderer.invoke("installed-games"),
+  ownGames: () => ipcRenderer.invoke("own-games"),
   studioUrl: () => ipcRenderer.invoke("studio-url"),
   studioOpenImage: (input) => ipcRenderer.invoke("studio-open-image", input),
   studioSettings: (input) => ipcRenderer.invoke("studio-settings", input),

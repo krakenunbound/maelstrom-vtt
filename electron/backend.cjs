@@ -884,6 +884,13 @@ const calls = {
     if (process.env.KRAKEN_ALL_GAMES) return names;
     return require("./books.cjs").installedGames(books().list(), names);
   },
+  // The games the GM's own books make playable (not only Maelstrom's shipped ones): the start screen names a game
+  // by what is installed (5E with only the shipped SRD is "5e SRD").
+  "own-games": () => {
+    const shipped = [path.join(APP_DIR, "games", "modules"), packs.BUNDLED].map((folder) => path.resolve(folder));
+    const own = books().list().filter((info) => !shipped.some((folder) => path.resolve(String(books().file(info.id) ?? "")).startsWith(folder)));
+    return require("./books.cjs").installedGames(own, require("../shared/rulesets/registry.mjs").CAMPAIGN_RULESETS.slice());
+  },
   "studio-url": () => studioUrl(),
   "studio-open-image": (input) => studioOpenImage(input ?? {}),
   "studio-settings": (input) => (input ? setStudioSettings(input) : { ...studioSettings(), found: Object.fromEntries([...studioSettings().dungeondraftFolders, ...studioSettings().packFolders].map((folder) => [folder, fs.existsSync(folder)])) }),
