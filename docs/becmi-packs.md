@@ -610,3 +610,41 @@ the PDF; 105 of the 114 pages are scans; most keyed areas have no
 encounters, battles or treasure yet; the poster panels are not assembled;
 walls and doors are not traced. The lesser Sprackle's save `F1-1` is kept in
 its text and played as `F1`.
+
+## 12. Champions of Mystara (TSR 1094), review build of 2026-11-23
+
+A setting supplement of `D&D BECMI Master` (kind `setting`, no `game.json`),
+played beside the Set 4 Master pack in a D&D BECMI Master campaign. It holds
+280 pages, 56 creatures and heroes, 15 spells, 15 items (the War Claw with its
+mastery), 9 skyships as `vehicle` records, 2 tables and 7 pictures (5 gridded
+decks: the Princess Ark's decks 5, 6 and 7, the Flying Barge, the Alphatian
+Man-of-War). Tested:
+
+- The creatures go to the tracker with their printed hit points, attacks and
+  damage (the Night Dragon's claw/claw/bite, the Sky Wyrm's whirlwind, the
+  Guardian Tree's branch/root/vine). Every save code it uses reads right
+  against Set 4's tables, up to `F36`, `C31`, `MU30`; `D8` (the sky gnome)
+  saves as a dwarf, `H2` as a halfling, `NM` from the Normal Man table, and a
+  hero with his own `saves` (Xerdon's `E10+2` through his armband) keeps them.
+- Both tables roll (Aerial Encounters, the Pouch of Winds).
+- The skyships show in the GM's Vehicles list under "Champions of Mystara,
+  Skyships", with tonnage, hull points, AC, lift, speeds and maneuvering
+  factor. Their links now open: "Open Deck 5" opens the deck in the map
+  window, on its grid, and "Open the printed source" opens the book's page.
+  (Fixed in Maelstrom: a record's links were followed only in a book's own
+  record window, and picture links not at all.)
+
+To fix in the pack:
+
+1. **Picture links use `class="image"`.** Write FG's `imagewindow`
+   (kpack-format.md, "Picture links with a made-up class").
+2. **A note for the app in a creature's text**: the Guardian Tree's "The
+   tracker represents the 25-HD trunk." Say what the record stands for in the
+   book's words, or put it in the hand-over report.
+3. **Pictures and tokens**: 2 of the 71 creatures and items have them. Take
+   them from the art staging folder (`.kpack-review/Art/index.json`, by record
+   name) as kpack-format.md says.
+
+Still to do (Codex's review notes): aerial combat (ship against ship, hull
+points, maneuvering) is played by the GM from the book; the two ungridded
+pictures are views, not battle maps.

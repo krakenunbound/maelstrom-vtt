@@ -362,6 +362,14 @@ being read; warnings are worth fixing.
   scores for an Immortal, a shop with nothing to sell): say how the game
   makes a character in its definition (`abilityEntry`), and leave out what
   it does not have.
+- **Picture links with a made-up class** (`<link class="image">`): write
+  FG's class, `imagewindow`, with the image's record
+  (`recordname="image.ark-5@Champions of Mystara"`). Maelstrom follows any
+  link whose record is an `image.` one, from a page, a story entry or a
+  record (a vehicle's "Open Deck 5"), but other readers of the format may not.
+- **Ships, wagons and airships as pages or creatures**: make each a `vehicle`
+  record (its specs as fields, its words in `text`, links to its deck maps).
+  They show in the GM's Vehicles list, by book and category.
 - **Story records with no links**: an adventure's `encounter` links its
   creatures, battles, treasure and maps (`linklist`), or the GM cannot open
   them from the story.

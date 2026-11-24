@@ -2313,6 +2313,19 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         if (url.pathname === "/book/picture") return canSeePicture(client, book, url.searchParams.get("file") || "") ? picture(books.picture(book, url.searchParams.get("file") || "")) : nothing();
         // A book's sound or video file: the GM's, in Assets, from an active book.
         if (url.pathname === "/book/media") return client.role === "dm" && books.media && canRead(client, book) ? picture(books.media(book, url.searchParams.get("file") || "")) : nothing();
+        // A link in a book's record (book: its id, or the module's name a record's fgPath ends in): where it goes.
+        if (url.pathname === "/book/link" && books.link) {
+          const found = books.list().find((info) => info.id === book || info.name === book || info.title === book);
+          if (!found || !canRead(client, found.id)) return nothing();
+          const file = books.file?.(found.id);
+          (file ? prepareModule(file) : Promise.resolve())
+            .then(() => {
+              const target = books.link(found.id, url.searchParams.get("class") || "", url.searchParams.get("recordname") || "");
+              return target ? json(target) : nothing();
+            })
+            .catch(() => nothing());
+          return;
+        }
         if (!canRead(client, book)) return nothing();
         // A record a page links to (a creature, spell, item...), as FG opens it from the book.
         if (url.pathname === "/book/record") {

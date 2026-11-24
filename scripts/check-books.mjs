@@ -120,6 +120,10 @@ assert(text.includes('data-page="inn"') && text.includes('data-file="images/keep
   assert(/data-kind="battle"[^]*<a class="book-link picture encounter-map" data-book="Lair" data-file="images\/caves.png" data-name="The Caves" data-at="10,20,0"><b>Map: <\/b>The Caves<\/a>/.test(guard), `the encounter's map, beside it: ${guard}`);
   const store = lair.page("Lair", "store");
   assert(store.blocks[0]?.id === "map" && store.blocks[0].html.includes('data-file="images/caves.png"') && store.blocks[0].html.includes('data-at="30,40,0"'), `a room with no encounter names its map, opened on its pin: ${JSON.stringify(store.blocks)}`);
+  // A link in one of the book's records (a vehicle's "Open Deck 5", a creature's page): where it goes, as a page's.
+  const picture = lair.link("Lair", "image", "image.caves@Lair");
+  const pageLink = lair.link("Lair", "reference_manualtextwide", "reference.refmanualdata.store@Lair");
+  assert(picture?.file === "images/caves.png" && picture.name === "The Caves" && pageLink?.page === "store" && lair.link("Lair", "image", "image.nothing@Lair") === null, `a record's links: ${JSON.stringify({ picture, pageLink })}`);
 }
 // Typed superscripts and line breaks in a book's text read as such; nothing else does.
 {

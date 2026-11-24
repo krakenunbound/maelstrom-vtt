@@ -898,6 +898,11 @@ function createBookShelf({ folder, cache = "", also = [], packsFolder = "", modu
       const book = read(id);
       return toHtml(String(formatted ?? ""), resolver(book), []);
     },
+    // Where a link in one of the book's records goes, as a page's link: { book, page } or { book, file, name } (a
+    // picture) or { book, record, name }, or null (the record window follows it).
+    link(id, linkClass, recordname) {
+      return resolver(read(id))(String(linkClass ?? ""), String(recordname ?? ""));
+    },
     // A picture from a book (a page's, or one of its maps).
     picture(id, file) {
       const found = info(id);

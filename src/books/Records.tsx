@@ -590,15 +590,25 @@ const STATS = ["strength", "dexterity", "constitution", "intelligence", "wisdom"
 // in a row, its actions and traits as lists, its text as FG wrote it.
 export function RecordWindow({ session, id, record: given, book }: { session: Session; id: string; record?: TableRecord; book?: string }) {
   const record = given ?? session.records[id];
-  const { openBook, openRecord } = useBookWindows();
-  // A book's record: its links go where the book's own do (a page, or another record of the book).
-  const onLink: OnLink | undefined = book
+  const { openBook, openPicture, openRecord } = useBookWindows();
+  // A book's record, or the campaign's copy of one: its links go where the book's own do (a page, a picture or
+  // map, or another record of the book). The copy's book: the module its fgPath names.
+  const linkBook = book ?? (record?.source ? String(record.data?.fgPath ?? "").split("@").slice(1).join("@") : "");
+  const onLink: OnLink | undefined = linkBook
     ? (linkClass, recordname, words) => {
         const [inner, moduleName] = recordname.split("@");
-        if (moduleName && given?.source && moduleName !== given.source && !String(given.id).endsWith(`@${moduleName}`)) return;
+        if (book && moduleName && given?.source && moduleName !== given.source && !String(given.id).endsWith(`@${moduleName}`)) return;
         const page = /^reference\.refmanualdata\.([^.]+)$/.exec(inner);
-        if (page) openBook(book, given?.source ?? "Book", page[1]);
-        else if (!/^image\./.test(inner) && linkClass !== "imagewindow") openRecord(book, `${inner}@${String(given?.id ?? "").split("@").slice(1).join("@")}`, words);
+        if (book && page) return openBook(book, given?.source ?? "Book", page[1]);
+        if (book && !/^image\./.test(inner) && linkClass !== "imagewindow") return openRecord(book, `${inner}@${String(given?.id ?? "").split("@").slice(1).join("@")}`, words);
+        void session
+          .bookFetch<{ book: string; page?: string; file?: string; record?: string; name?: string }>("link", { book: linkBook, class: linkClass, recordname })
+          .then((target) => {
+            if (target.page) openBook(target.book, target.book, target.page);
+            else if (target.file) openPicture({ book: target.book, file: target.file, name: target.name || words });
+            else if (target.record) openRecord(target.book, target.record, target.name || words);
+          })
+          .catch(() => setStatus(`${words}: not found in its book.`));
       }
     : undefined;
   // FG's lock: shut, the record is read; open (the pencil), it is edited. A new record opens with it open.

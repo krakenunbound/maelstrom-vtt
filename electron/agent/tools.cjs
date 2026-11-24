@@ -2583,7 +2583,8 @@ const TOOLS = [
       }
       if (args.action === "battle") return out(await library.addBattle(table, String(args.path), { place: args.place !== false }));
       if (args.action === "parcel") return out(library.giveParcel(table, String(args.path), party));
-      return out(library.rollTable(table, String(args.path), "Agent"));
+      if (args.action === "table") return out(library.rollTable(table, String(args.path), "Agent"));
+      throw new Error(`No action ${args.action}: list, npc, battle, parcel, table or story (a map goes on the table with kraken_open_fg_module maps, or kraken_image open).`);
     },
   },
   {
