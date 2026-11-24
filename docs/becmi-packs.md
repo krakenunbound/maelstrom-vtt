@@ -592,3 +592,21 @@ window was empty). To fix in the pack:
    70 now stand on floor. Nothing to change in the pack.
 2. Walls and doors are still to come; 67 pages are still scans; the Red
    Hand Trail booklet and the handouts are not in the PDF.
+
+## 11. Wrath of the Immortals: The Immortals' Fury (TSR 1082), review build of 2026-11-23
+
+An adventure of `D&D BECMI Master` (no `game.json`), played beside the Set 4
+Master pack in a D&D BECMI Master campaign. Tested: the Modules list shows
+it with 3 maps, 4 battles, 2 parcels, 13 story entries and 9 creatures; all
+13 story entries open with their 47 links (none dead); the four battles put
+their 5 creatures in their rooms on the Temple of Balthac and the Corran Keep
+cave (Lady Lillith's two battles are her two places, for the GM to pick one);
+both parcels go to the party sheet (500 sp; 500 sp and 200 gp). Its named
+humans now get faces (Maelstrom: a class or title alone, "Cleric of
+Balthac", "Lady Lillith", "Lord Kazakk", is a human of that kind).
+
+Still to do (Codex's review notes): Book I, Codex of the Immortals, is not in
+the PDF; 105 of the 114 pages are scans; most keyed areas have no
+encounters, battles or treasure yet; the poster panels are not assembled;
+walls and doors are not traced. The lesser Sprackle's save `F1-1` is kept in
+its text and played as `F1`.

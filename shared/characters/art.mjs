@@ -92,6 +92,19 @@ const CREATURE_WORDS = {
   mage: { race: "Human", cls: ["Magic-User", "Wizard"] },
   noble: { race: "Human", cls: ["Noble", "Fighter"] },
   merchant: { race: "Human", cls: ["Merchant"] },
+  // A class or a title alone ("Cleric of Balthac", "Lady Lillith", "Lord Kazakk"): a human of that kind.
+  cleric: { race: "Human", cls: ["Cleric"] },
+  fighter: { race: "Human", cls: ["Fighter"] },
+  "magic-user": { race: "Human", cls: ["Magic-User", "Wizard"] },
+  wizard: { race: "Human", cls: ["Wizard", "Magic-User"] },
+  knight: { race: "Human", cls: ["Knight", "Paladin", "Fighter"] },
+  paladin: { race: "Human", cls: ["Paladin", "Fighter"] },
+  druid: { race: "Human", cls: ["Druid"] },
+  lord: { race: "Human", cls: ["Noble", "Fighter"] },
+  lady: { race: "Human", cls: ["Noble", "Fighter"] },
+  captain: { race: "Human", cls: ["Fighter"] },
+  lieutenant: { race: "Human", cls: ["Fighter"] },
+  guard: { race: "Human", cls: ["Fighter"] },
 };
 // A creature's role from its name: the classes to prefer for its face.
 const ROLE_WORDS = [
