@@ -8,6 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **A book's sample characters carry the book's own items even when worded otherwise:** "4 silver arrows" its Silver-Tipped Arrows, "Small metal mirror" its Steel Mirror, "Leather backpack" its Backpack, "6 tinder box torches" a Tinder Box and Torches, 6, and "Small hammer" with "12 iron spikes" its one 12 Iron Spikes and Small Hammer. Treasure ("Gem (100 gp)") and a number the book does not sell ("2 torches") are still carried as written.
 - **A creature named for a person's role gets a person:** a "Soldier" or "Guard" is no longer drawn as a book's "Giant Ant, Soldier" (a role after a book's comma is only the creature's variety).
 - **Ready check after a break:** the GM types /readycheck (or /rc), or presses Ready check on the party sheet, and every player at the table gets a banner asking if they are back, with an I'm back button (also on the chat line). Chat shows who is back and who is still away; it ends by itself when everyone is back, and /rc end or the GM's End closes it, naming who is not back. Agents: `kraken_ready_check`.
 - **A book's sample characters carry what the book sells, in the book's own words:** "1 flask oil" is its Flask of Oil, "Rope (50′)" its Rope, 50 Feet, "2 waterskins (full)" two Waterskins, "Tinderbox" its Tinder Box, "20 arrows" its Quiver with 20 Arrows, "6 torches" its Torches, 6 (before, they were carried as plain words with no price, weight or use). check-pack-game

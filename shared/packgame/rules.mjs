@@ -616,6 +616,35 @@ export function fromPregen(pregen, lib) {
     if (!hit || (hit.bundle > 1 && count !== hit.bundle)) return null;
     return hit;
   };
+  // Not word for word, the one item it can only be: the one whose name holds all the line's words ("4 silver arrows"
+  // a Silver-Tipped Arrow, "Small hammer" the "12 Iron Spikes and Small Hammer"), else the one named with the line's
+  // last word ("Small metal mirror" the Steel Mirror, "Leather backpack" the Backpack). Never a bundle for another
+  // number ("2 torches" is no "Torches, 6").
+  const itemWords = (lib.items ?? []).map((item) => ({ name: String(item.name), bundle: Number(/,\s*(\d+)$/.exec(String(item.name))?.[1] ?? 1), words: wordList(String(item.name)) }));
+  const onlyOne = (/** @type {{ name: string, bundle: number, words: string[] }[]} */ list, count = 1) => {
+    const fits = list.filter((item) => item.bundle === 1 || item.bundle === count);
+    if (!fits.length) return null;
+    const fewest = Math.min(...fits.map((item) => item.words.length));
+    const best = fits.filter((item) => item.words.length === fewest);
+    return best.length === 1 ? best[0] : null;
+  };
+  const nearest = (/** @type {string} */ text, count = 1) => {
+    const words = wordList(text);
+    if (!words.length) return null;
+    return onlyOne(itemWords.filter((item) => words.every((word) => item.words.includes(word))), count) ?? onlyOne(itemWords.filter((item) => item.words.at(-1) === words.at(-1)), count);
+  };
+  // Two items written as one ("6 tinder box torches": a Tinder Box and Torches, 6): the number is the last one's.
+  const twoItems = (/** @type {string} */ text, count = 1) => {
+    const words = text.split(/\s+/).filter(Boolean);
+    for (let cut = 1; cut < words.length; cut += 1) {
+      const left = words.slice(0, cut).join(" ");
+      const right = words.slice(cut).join(" ");
+      const first = byTheWords(left, 1);
+      const second = byTheWords(right, count);
+      if (first && second && first.name !== second.name) return [{ ...first, count: 1 }, { ...second, count }];
+    }
+    return null;
+  };
   const findItem = (/** @type {string} */ words) => {
     const base = words.toLowerCase().replace(/\([^)]*\)/g, "").replace(/\s+/g, " ").trim();
     for (const name of [base, `${base} armor`, base.replace(/s$/, ""), base.replace(/es$/, ""), `${base.replace(/s$/, "")} armor`]) if (names.has(name)) return names.get(name);
@@ -631,16 +660,23 @@ export function fromPregen(pregen, lib) {
     // The whole line an item ("12 Iron Spikes and Small Hammer"), else its parts joined by & or "and".
     const whole = findItem(text);
     const parts = whole ? [text] : text.split(/\s*(?:&|\band\b)\s*/i).filter(Boolean);
-    const found = parts.map((part) => {
-      if (whole) return { count: 1, name: whole };
+    const found = parts.flatMap((part) => {
+      if (whole) return [{ count: 1, name: /** @type {string | null} */ (whole) }];
       const counted = /^(\d+)\s+(.+)$/.exec(part);
       const count = counted ? Number(counted[1]) : 1;
-      const named = findItem(counted ? counted[2] : part);
-      if (named) return { count, name: named };
-      const hit = byTheWords(counted ? counted[2] : part, count);
-      return hit ? { count: hit.bundle > 1 ? 1 : count, name: hit.name } : { count, name: null };
+      const words = counted ? counted[2] : part;
+      const named = findItem(words);
+      if (named) return [{ count, name: /** @type {string | null} */ (named) }];
+      const exact = byTheWords(words, count);
+      const pair = exact ? null : twoItems(words, count);
+      if (pair) return pair.map((item) => ({ count: item.bundle > 1 ? 1 : item.count, name: /** @type {string | null} */ (item.name) }));
+      const hit = exact ?? nearest(words, count);
+      if (hit) return [{ count: hit.bundle > 1 || /^\d+\s/.test(hit.name) ? 1 : count, name: /** @type {string | null} */ (hit.name) }];
+      return [{ count, name: /** @type {string | null} */ (null) }];
     });
-    if (found.every((item) => item.name)) for (const item of found) buy.push([/** @type {string} */ (item.name), item.count]);
+    // A kit ("12 Iron Spikes and Small Hammer") is bought once, however many lines name its parts.
+    const kit = (/** @type {string} */ name) => /\band\b/i.test(name) && buy.some(([had]) => had === name);
+    if (found.every((item) => item.name)) for (const item of found) !kit(/** @type {string} */ (item.name)) && buy.push([/** @type {string} */ (item.name), item.count]);
     else plain.push(text);
   }
   const cls = classOf(lib, src.class ?? src.className);

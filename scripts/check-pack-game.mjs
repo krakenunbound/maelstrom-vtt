@@ -70,6 +70,13 @@ const basic = [
   record(BASIC, "item", "Waterskin or Wineskin", { type: "Gear", cost: "1 gp" }),
   record(BASIC, "item", "Tinder Box", { type: "Gear", cost: "3 gp" }),
   record(BASIC, "item", "Torches, 6", { type: "Gear", cost: "1 gp" }),
+  record(BASIC, "item", "Steel Mirror", { type: "Gear", cost: "5 gp" }),
+  record(BASIC, "item", "Silver-Tipped Arrow", { type: "Gear", cost: "5 gp" }),
+  record(BASIC, "item", "Silver Dagger", { type: "Weapon", cost: "30 gp" }),
+  record(BASIC, "item", "Backpack", { type: "Gear", cost: "5 gp" }),
+  record(BASIC, "item", "War Hammer", { type: "Weapon", cost: "5 gp" }),
+  record(BASIC, "item", "12 Iron Spikes and Small Hammer", { type: "Gear", cost: "3 gp" }),
+  record(BASIC, "pregencharsheet", "Sample Dwarf", { class: "Fighter", level: 1, strength: 13, intelligence: 9, wisdom: 10, dexterity: 11, constitution: 14, charisma: 9, ac: 9, hp: 6, xp: 0, equipment: ["6 tinder box torches", "Small metal mirror", "Small hammer", "12 iron spikes", "4 silver arrows", "Leather backpack", "Gem (100 gp)"] }),
   // A book's sample character, its equipment lines as the book prints them.
   record(BASIC, "pregencharsheet", "Sample Fighter", { class: "Fighter", level: 1, strength: 16, intelligence: 9, wisdom: 10, dexterity: 13, constitution: 14, charisma: 11, ac: 3, hp: 8, xp: 0, equipment: ["Chain mail & shield", "Sword", "2 torches", "1 flask oil", "Rope (50′)", "2 waterskins (full)", "Tinderbox", "20 arrows", "6 torches"], coins: { GP: 12 } }),
   record(BASIC, "npc", "Kobold Chief", { ac: 6, hd: "2", attacks: "1 weapon", damage: "1d6", saveas: "F2", morale: 8, hp: 9 }, "gm"),
@@ -182,6 +189,13 @@ try {
   const gear = Object.values(sd.inventorylist).map((row) => `${row.count ?? 1} ${row.name}`);
   for (const want of ["1 Flask of Oil", "1 Rope, 50 Feet", "2 Waterskin or Wineskin", "1 Tinder Box", "1 Quiver with 20 Arrows", "1 Torches, 6", "1 2 torches"]) assert(gear.includes(want), `the sample's gear by the book's own words, ${want}: ${JSON.stringify(gear)} ${sample.problems.join(" ")}`);
   assert(!/flask oil|Rope \(|waterskins|Tinderbox|20 arrows|6 torches/.test(sample.problems.join()), `only the 2 torches as written: ${sample.problems.join(" ")}`);
+  // Not word for word: the one item it can only be ("4 silver arrows" its Silver-Tipped Arrows, "Small metal mirror" its
+  // Steel Mirror, "Leather backpack" its Backpack), two items written as one ("6 tinder box torches"), and a kit
+  // ("12 Iron Spikes and Small Hammer") bought once for both its lines; a gem is treasure, carried as written.
+  const dwarf = await tool("kraken_build_character", { spec: { pregen: "Sample Dwarf", name: "Dain" } });
+  const dg = Object.values(agent.records.get(dwarf.id).data.inventorylist).map((row) => `${row.count ?? 1} ${row.name}`);
+  for (const want of ["1 Tinder Box", "1 Torches, 6", "1 Steel Mirror", "1 12 Iron Spikes and Small Hammer", "4 Silver-Tipped Arrow", "1 Backpack", "1 Gem (100 gp)"]) assert(dg.includes(want), `the sample dwarf's ${want}: ${JSON.stringify(dg)} ${dwarf.problems.join(" ")}`);
+  assert(!dg.some((row) => /War Hammer|Silver Dagger/.test(row)) && /Gem \(100 gp\)\./.test(dwarf.problems.join()) && !/mirror|hammer|spikes|arrows|backpack|tinder/i.test(dwarf.problems.join()), `only the gem as written: ${dwarf.problems.join(" ")}`);
   // A game that rolls initiative a side starts its table that way.
   assert(server.agent.options?.().initGroup === "sides" || (await tool("kraken_table_options", {})).initGroup === "sides", "initiative a side by default");
   // Two prime requisites (an Elf's Strength and Intelligence): the XP bonus as a list of rules.
