@@ -245,8 +245,8 @@ function adopt(saved: Record<string, unknown>) {
     effectsShort: saved.effectsShort !== false,
     // FG's Desktop: Restore windows on start (WSAV, on): the windows open when this person left open again.
     reopenWindows: saved.reopenWindows !== false,
-    // FG's Desktop: Combat actions and Interface actions (TOAST_COMBAT 5, TOAST_INTERFACE 3): seconds a toast shows (0: none).
-    toastCombat: [0, 3, 5, 10].includes(Number(saved.toastCombat)) ? Number(saved.toastCombat) : 5,
+    // Combat actions and Interface actions: seconds a toast shows (0: none). Combat toasts are off by default: the chat already has every line.
+    toastCombat: [0, 3, 5, 10].includes(Number(saved.toastCombat)) ? Number(saved.toastCombat) : 0,
     toastInterface: [0, 3, 5, 10].includes(Number(saved.toastInterface)) ? Number(saved.toastInterface) : 3,
     // FG's Desktop: Combat list size (DESKTOPCTSIZE, 6): the creatures shown in turn order during a fight (0: none).
     combatList: [0, 6, 8, 10, 12].includes(Number(saved.combatList)) ? Number(saved.combatList) : 6,

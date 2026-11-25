@@ -1674,8 +1674,10 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       const roller =
         [...clients.values()].find((client) => client.id === entry.id) ??
         (asking && Date.now() - asking.at < 1500 ? asking.client : null) ??
-        (agentRoll ? [...clients.values()].find((client) => client.role === "dm" && client.hand) ?? null : null);
-      const hand = roller?.hand;
+        (agentRoll ? [...clients.values()].find((client) => client.role === "dm") ?? null : null);
+      // The GM's sets from their saved settings when their screen has not rolled yet (no hand to remember).
+      const saved = !roller?.hand && agentRoll && roller ? prefs.get(prefsKey(roller)) : null;
+      const hand = roller?.hand ?? (saved ? { look: diceLook(saved.look), looks: { npc: diceLook(saved.npc), damage: diceLook(saved.damage) }, at: 0 } : null);
       if (hand && Date.now() - hand.at < 4000 && hand.throw) entry.roll.throw = hand.throw;
       const look = hand ? lookFor(entry, roller, hand) : null;
       if (look) entry.roll.look = look;

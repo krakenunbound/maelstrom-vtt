@@ -962,7 +962,7 @@ function ActionToasts({ session }: { session: Session }) {
       const tag = /^\[(ATTACK|DAMAGE|HEAL|SAVE|EFFECT|CONCENTRATION)\]/i.exec(label)?.[1] ?? /^\[(EFFECT)\]|^Effect \[/.exec(line.text ?? "")?.[0];
       if (!tag) continue;
       const words = label ? `${label.replace(/\[(?:TYPE|MANUAL)[^\]]*\]/g, "").replace(/\s+/g, " ").trim()}${line.roll ? ` = ${line.roll.total}` : ""}` : String(line.text ?? "");
-      show("combat", line.from, words.slice(0, 160), settings.toastCombat ?? 5);
+      show("combat", line.from, words.slice(0, 160), settings.toastCombat ?? 0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session.chat]);

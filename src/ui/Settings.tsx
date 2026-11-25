@@ -77,7 +77,7 @@ function YouAtTheTable() {
       <Toggle label="Short effect summary" hint="On the combat tracker: each effect as its first part (* when there is more), its time and [T] when it is targeted. Off: the whole effect." setting="effects-short" checked={settings.effectsShort !== false} onChange={(on) => diceStore.update({ effectsShort: on })} />
       <Toggle label="Reopen my windows" hint="The windows you had open when you left open again when you come back to this table." setting="reopen-windows" checked={settings.reopenWindows !== false} onChange={(on) => diceStore.update({ reopenWindows: on })} />
       <SettingRow label="Combat toasts" hint="A note in the corner for attacks, damage and effects, for so many seconds.">
-        <select value={settings.toastCombat ?? 5} onChange={(event) => diceStore.update({ toastCombat: Number(event.target.value) })} aria-label="Combat toasts" data-setting="toast-combat">
+        <select value={settings.toastCombat ?? 0} onChange={(event) => diceStore.update({ toastCombat: Number(event.target.value) })} aria-label="Combat toasts" data-setting="toast-combat">
           <option value={0}>None</option>
           <option value={3}>3 seconds</option>
           <option value={5}>5 seconds</option>
