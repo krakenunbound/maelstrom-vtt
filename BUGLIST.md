@@ -57,4 +57,4 @@ Found while recording the B2 kobold ambush (AD&D 2E, six pregens, the agent play
 | 22 | data | Kraken's AD&D 2E One-Shot Pregens: a stray 13th pregen named "public"; The Leaf (ranger), The Wind (gnome fighter) and Ainsley (paladin) carry the fighters' battle axe and sling kit; Hand Axe and Sling list their damage several times | demo setup | Open (the pack, not the app) |
 | 23 | low | Demo script only: "Quickfingers's eyes" caption (scratchpad demo-b2.mjs, not the app) | demo take | Fixed in the demo script (Quickfingers' eyes) |
 
-Not run this session (they drive whole windows and can freeze the PC while it is in use): `verify-cards-ui` (changed for the GM's long rest), `verify-map-play-ui` (target lines), `verify-campaigns-ui`.
+Run 2026-11-25 after the fixes: `verify-cards-ui` (the GM's long rest), `verify-map-play-ui` (target lines) and `verify-campaigns-ui` all pass (the last had an out-of-date count of the start screen's help links, now ten with YouTube and the website).
