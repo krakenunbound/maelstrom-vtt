@@ -9,7 +9,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 Collected here until the next major release.
 
 - **The map stays underneath:** the map window is the table's bottom layer: other windows put on top of it (the tracker, the cards, a sheet) are never hidden when the map is clicked.
-- **A map in a quick slot:** the map window's title has the pin other windows have; drop it in a quick slot and a click brings that map back on the table (its book's maps opened again if another adventure is open).  takes it as { kind: scene, adventure, scene }.
+- **A map in a quick slot:** the map window's title has the pin other windows have; drop it in a quick slot and a click brings that map back on the table (its book's maps opened again if another adventure is open). `kraken_quickslots` takes it as { kind: scene, adventure, scene }.
 - **Card tabs:** the Cards window has a tab for each group (All, Weapons, each spell level, Features...), so a small window shows one group at full size; the hand also fits the window, shrinking instead of hiding cards as it is made smaller. Opened for another character, it shows that character's hand.
 - **Long rests are the GM's:** players no longer have a Long rest button (on the sheet or the Cards window), and the table refuses one asked for by a player; players still take a short rest (spending their own Hit Dice) when the GM calls one.
 - **End my turn, always to hand:** on a player's turn the top bar shows **End my turn** beside Your turn, so a player can pass the turn on without opening the combat tracker (the GM's Next turn still moves on a turn a player forgets). The Turn badge on the active portrait sits on its lower edge, no longer cut off at the top.
