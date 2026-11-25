@@ -934,7 +934,7 @@ const TOOLS = [
   {
     name: "kraken_cards",
     description:
-      "Ability cards (the Cards window, a player's option in Settings): a character's spells and weapons as cards. list: the cards, each { id, kind spell|weapon, name, level, school, spent (no slot of its level or higher left), slot (the slot a cast would use), pool (that level's slots), concentration, concentrating }. use: a card as its Cast or Attack button does (targetId: make that tracker entry the character's only target first, as dropping the card on its token). damage: a weapon card's Damage. rest: a long rest from the window (every slot back, concentration ends). end-concentration: stop concentrating. Open the window with kraken_windows window cards.",
+      "Ability cards (the Cards window, a player's option in Settings): a character's spells and weapons as cards. list: the cards, each { id, kind spell|weapon, name, level, school, spent (no slot of its level or higher left), slot (the slot a cast would use), pool (that level's slots), concentration, concentrating }. use: a card as its Cast or Attack button does (targetId: make that tracker entry the character's only target first, as dropping the card on its token). damage: a weapon card's Damage. rest: the GM's long rest for that character (every slot back, concentration ends; the party sheet rests everyone). end-concentration: stop concentrating. Open the window with kraken_windows window cards.",
     inputSchema: object(
       {
         action: { type: "string", enum: ["list", "use", "damage", "rest", "end-concentration"] },

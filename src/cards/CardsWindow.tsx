@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Session, TableRecord } from "../session/useSession";
 import { Icon } from "../ui/icons";
-import { cardsFor, restChanges, SCHOOLS } from "../../shared/cards/cards.mjs";
-import { rulesetOfRecord } from "../../shared/rulesets/registry.mjs";
+import { cardsFor, SCHOOLS } from "../../shared/cards/cards.mjs";
 import { cardsStore } from "./cardsStore";
 import { useWindows } from "../ui/Windows";
 import "./cards.css";
@@ -11,7 +10,7 @@ import "./cards.css";
 // some tables use printed spell cards. Click a card to turn it over (its text,
 // Cast or Attack); drag it onto a creature's token to target it and use it.
 // A spell card goes grey and tips over when no slot of its level is left;
-// Long rest stands them all up again. The cards only show the sheet.
+// A long rest (the GM's, from the party sheet) stands them all up again. The cards only show the sheet.
 
 export type Card = ReturnType<typeof cardsFor>[number];
 export const CARD_DRAG = "application/x-kraken-card";
@@ -59,7 +58,6 @@ export function CardsTab({ session, character }: { session: Session; character: 
         <button type="button" className="ghost" data-action="cards-layout" title="Lay the cards out in rows, or fan them as a hand" onClick={() => cardsStore.set({ layout: settings.layout === "fan" ? "spread" : "fan" })}>
           {settings.layout === "fan" ? "Spread" : "Fan"}
         </button>
-        <RestButton session={session} character={character} />
         <button type="button" className="ghost" data-action="cards-undock" title="Undock: the cards in a window of their own, to put anywhere on the table (or out of the app with its pop-out)" onClick={() => windows.open("cards", `${character.name}'s cards`, character.id)}>
           <Icon name="popout" size={14} /> Undock
         </button>
@@ -98,7 +96,6 @@ export function CardsWindow({ session, characterId }: { session: Session; charac
         <button type="button" className="ghost" data-action="cards-layout" title="Lay the cards out in rows, or fan them as a hand" onClick={() => cardsStore.set({ layout: settings.layout === "fan" ? "spread" : "fan" })}>
           {settings.layout === "fan" ? "Spread" : "Fan"}
         </button>
-        <RestButton session={session} character={character} />
         {characterId ? (
           // Undocked from its sheet: back onto the sheet's Cards tab.
           <button type="button" className="ghost" data-action="cards-dock" title="Dock: back on the character sheet's Cards tab" onClick={() => {
@@ -112,26 +109,6 @@ export function CardsWindow({ session, characterId }: { session: Session; charac
       {/* A hand per character: another one's cards never "stand up again" from this one's. */}
       <Hand key={character.id} session={session} character={character} />
     </div>
-  );
-}
-
-function RestButton({ session, character }: { session: Session; character: TableRecord }) {
-  // The GM calls long rests; players do not see the button.
-  if (session.role !== "dm") return null;
-  const changes = restChanges(character.data);
-  // The game's own long rest where it has one (bookkeeping: hit points, Hit Dice, slots, a ration); else the slots alone.
-  const long = Boolean(rulesetOfRecord(character.data?.ruleset).bookkeeping?.rest && (rulesetOfRecord(character.data?.ruleset).bookkeeping?.rest as { long?: unknown }).long);
-  return (
-    <button
-      type="button"
-      className="ghost"
-      data-action="cards-rest"
-      disabled={!long && changes.length === 0}
-      title={long ? "Long rest: the game's long rest (hit points, spell slots, a ration; concentration ends)" : "Long rest: every spell slot back (and concentration ends)"}
-      onClick={() => (long ? void session.rest(character.id, "long").catch(() => undefined) : session.editCharacter(character.id, changes))}
-    >
-      <Icon name="sun" size={14} /> Long rest
-    </button>
   );
 }
 

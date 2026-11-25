@@ -109,8 +109,9 @@ try {
   await seat.waitForTimeout(700);
   await seat.screenshot({ path: shot("spent") });
 
-  // A long rest stands it up again.
-  await seat.click('[data-action="cards-rest"]');
+  // A long rest (the GM's: no button in a player's Cards window) stands it up again.
+  assert((await seat.locator('[data-action="cards-rest"]').count()) === 0, "no long rest button for a player");
+  await tool("kraken_cards", { action: "rest", id: wizard.id });
   await seat.waitForSelector('[data-card="spell:burning-fan"][data-spent="no"]', { timeout: 5000 });
   assert((await slots()) === 0, "a long rest gives the slots back");
 
