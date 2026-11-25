@@ -116,6 +116,13 @@ assert(played("[ATTACK] (M) Bite [AC 15] [HIT 15 vs 15] -> [at Ann]", d20(12, 1)
 assert(played("[ATTACK] (M) Axe, Battle [AC 15] [HIT 15 vs 15] -> [at Ann]", d20(12, 1), { from: "Orc 2" }) === "sfx/Weapons/Axe/Attack", "an orc's axe is still the axe");
 assert(played("[ATTACK] (M) Bite [AC 15] [HIT 15 vs 15] -> [at Ann]", d20(12, 1), { from: "Aldric" }) !== "sfx/Monsters/Orc/Attack", "a character is no creature");
 assert(folderOf(soundFor({ from: "Combat", text: "[DAMAGE] (M) Sword, Long -> Orc 2: 9 (Dead)" }, triggers, sounds)?.id) === "sfx/Monsters/Orc/Death", "an orc killed cries out");
+// Kin with no sounds of their own (B2's kobolds, hobgoblins, bugbears) sound as goblins.
+assert(folderOf(soundFor({ from: "Combat", text: "[DAMAGE] Two-Handed Battle Axe -> Kobold 2: 11 (Dead)" }, triggers, sounds)?.id) === "sfx/Monsters/Goblin/Death", "a kobold killed cries out as a goblin");
+assert(played("[ATTACK] (M) Bite [AC 15] [HIT 15 vs 15] -> [at Ann]", d20(12, 1), { from: "Hobgoblin 3" }) === "sfx/Monsters/Goblin/Attack", "a hobgoblin's bite is a goblin's");
+// The dying's bleeding each round is quiet; bled out, the death still sounds.
+const bleed = (text) => folderOf(soundFor({ from: "Combat", text }, triggers, sounds)?.id);
+assert(bleed("[DAMAGE] Dying -> Quickfingers: 1 (Dying, HP -1/6)") === "", `a bleed is quiet: ${bleed("[DAMAGE] Dying -> Quickfingers: 1 (Dying, HP -1/6)")}`);
+assert(bleed("[DAMAGE] Dying -> Quickfingers: 1 (Dead, HP -10/6)") === "sfx/Body/Death", "bled out: the death sounds");
 
 // A real battle in Kraken's combat tracker: a fighter with a longsword against an orc.
 // A campaign saved with the old triggers (before the Syrinscape layout) gets the new ones.

@@ -311,8 +311,8 @@ li.empty-state { list-style: none; }
   left: 12px;
   bottom: 12px;
   z-index: 12;
-  width: min(380px, 40vw);
-  height: min(46vh, 460px);
+  width: min(420px, 40vw);
+  height: min(62vh, 860px);
   min-width: 280px;
   min-height: 220px;
   display: flex;

@@ -797,7 +797,9 @@ function targetLinksOf(session: ReturnType<typeof useSession>): { from: string; 
   const { entries } = session.combat;
   const tokenOf = (entry: (typeof entries)[number]) => session.map.tokens.find((token) => token.id === entry.tokenId) ?? session.map.tokens.find((token) => entry.recordId && token.recordId === entry.recordId);
   const out: { from: string; to: string; color: string; ranges: { normal: number; long: number } | null }[] = [];
-  for (const source of entries) {
+  // In a fight only the creature whose turn it is shows its lines (everyone's at once is a tangle); between turns, all.
+  const active = session.combat.active;
+  for (const source of active && entries.some((entry) => entry.id === active) ? entries.filter((entry) => entry.id === active) : entries) {
     const from = source.targets?.length ? tokenOf(source) : null;
     if (!from) continue;
     // Its weapons' and spells' reach, from its record when this seat may see it (a player's own, the GM's all).

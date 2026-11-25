@@ -83,8 +83,10 @@ function matches(rule, text) {
 // Attack, Hurt, Death), found from its name: "Orc 2" is an orc, "Dire Wolf" a
 // wolf, "Giant Spider" a spider (the last word that names a creature wins).
 const NATURAL = /\b(bite|bites|claw|claws|slam|sting|gore|talon|talons|tail|tentacle|tentacles|hoof|hooves|horn|horns|tusk|tusks|butt|pincer|pincers|touch|kick|wing|wings|crush|constrict|rake|stomp|beak|peck|swarm|engulf|breath)\b/i;
+// Kin with no sounds of their own sound like their nearest kind (B2's caves are full of them).
+const KIN = [[/\b(kobold|hobgoblin|bugbear)(s)?\b/g, "goblin$2"]];
 function creatureFolder(who, library) {
-  const words = String(who ?? "").toLowerCase().replace(/\s+\d+$/, "");
+  const words = KIN.reduce((text, [pattern, kind]) => text.replace(pattern, kind), String(who ?? "").toLowerCase().replace(/\s+\d+$/, ""));
   if (!words) return null;
   let best = null;
   for (const group of library.groups("sfx")) {
@@ -104,6 +106,8 @@ function creatureFolder(who, library) {
 function soundFor(line, triggers, library) {
   if (!library || !Array.isArray(triggers) || line.local) return null;
   const { kinds, results, name, said } = classify(line);
+  // The dying's bleeding each round is quiet (the cry played when they fell); a death from it still sounds.
+  if (/^\[DAMAGE\] (Dying|Bleeding out)\b/.test(String(line.roll?.label ?? line.text ?? "")) && !/\(Dead\b/.test(said)) return null;
   // A creature's natural attack (an orc's bite, a wolf's claws) is its own attack sound.
   const creature = kinds.includes("attack") && library.groups ? creatureFolder(line.from, library) : null;
   if (creature && NATURAL.test(name)) {
