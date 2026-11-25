@@ -8,7 +8,7 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
-- **Water stays in its pond:** a Fantasy Grounds map whose water (or other weather) layer covers just one area, such as the pool in B2's Caves of Chaos, drew that water rippling over the whole map. It now stays inside its area. Maps already on the table keep the old layer: open the map again from its adventure, or switch the layer off in the map's FX tab.
+- **Water stays in its pond:** a Fantasy Grounds map whose water (or other weather) layer covers just one area, such as the pool in B2's Caves of Chaos, drew that water rippling over the whole map. It now stays inside its area, and a map opened before this fix gets its area back when it is opened again from its adventure.
 
 ## 0.1.0-beta.3: Your books, ready to play
 

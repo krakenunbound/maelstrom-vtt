@@ -125,5 +125,19 @@ assert(pond?.mask.use === true && pond.mask.polygons.length === 1 && pond.mask.p
   }
   assert(masked.darkness === 1 && masked.ambient?.darkness < 0.1 && JSON.stringify(masked.ambient.areas) === JSON.stringify([[50, 50, 150, 50, 150, 150, 50, 150]]), `sunlight inside its mask, dark outside: ${JSON.stringify([masked.darkness, masked.ambient])}`);
 }
+// A map opened before that fix kept its one-shape water with no mask (over the whole map): opened again, the layer
+// takes the module's mask; a layer with no mask in the module stays as it is.
+{
+  const { createMapState, geometryReady } = require("../electron/mapState.cjs");
+  const { createRecordStore } = require("../electron/records.cjs");
+  await geometryReady;
+  const map = createMapState({ saved: {}, records: createRecordStore() });
+  map.setScene({ id: "s1", name: "S", width: 600, height: 300, padding: 0, backgroundColor: "#000", grid: { size: 50, type: 1, color: "#000", alpha: 0.2, distance: 5, units: "ft" }, lights: [], tokens: [], walls: [] });
+  const none = { use: false, mode: "inside", polygons: [] };
+  map.seed("s1", { fx: [{ name: "Water", type: "water", mask: none }, { name: "Clouds", type: "clouds", mask: none }] });
+  map.seed("s1", { fx: [{ name: "Water", type: "water", mask: { use: true, mode: "inside", polygons: [[0, 0, 10, 0, 10, 10]] } }, { name: "Clouds", type: "clouds", mask: none }] });
+  const layers = map.fx().map((layer) => [layer.name, layer.mask.use, layer.mask.polygons.length]);
+  assert(JSON.stringify(layers) === JSON.stringify([["Water", true, 1], ["Clouds", false, 0]]), `an older import's water takes its pond when the map opens again: ${JSON.stringify(layers)}`);
+}
 fs.rmSync(dir, { recursive: true, force: true });
-console.log("ok fg classic maps: an older module's pins all come through, placed and named, a weather layer keeps every mask shape, a newer map's pins are named and linked, terrain is limited");
+console.log("ok fg classic maps: an older module's pins all come through, placed and named, a weather layer keeps every mask shape (one alone too, and an older import's water takes its pond again), a newer map's pins are named and linked, terrain is limited");

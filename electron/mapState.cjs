@@ -2425,6 +2425,14 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
         }
       }
       if (!state.fx[id]) state.fx[id] = fx.map(cleanFx).filter(Boolean).slice(0, 20);
+      else
+        // A layer an older import kept with no mask (one shape was dropped: water over the whole map) takes the
+        // module's mask; layers the GM masked, added or renamed are left as they are.
+        for (const layer of state.fx[id]) {
+          if (layer.mask.use || layer.mask.polygons.length || layer.mask.strokes.length) continue;
+          const fresh = fx.map(cleanFx).find((item) => item && item.mask.use && item.name === layer.name && item.type === layer.type);
+          if (fresh) layer.mask = fresh.mask;
+        }
       if (!state.tiles[id] && tiles.length) {
         state.tiles[id] = tiles.map(cleanTile).filter(Boolean).slice(0, MAX_TILES);
         for (const name of new Set(state.tiles[id].map((tile) => tile.group).filter(Boolean))) if (!state.groups[id]?.some((group) => group.name === name)) (state.groups[id] = state.groups[id] ?? []).push(cleanGroup({ name }));
