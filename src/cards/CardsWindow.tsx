@@ -150,7 +150,7 @@ function Hand({ session, character }: { session: Session; character: TableRecord
     groups.set(group, [...(groups.get(group) ?? []), card]);
   }
   return (
-    <div className="cards-hand">
+    <FitHand>
       {[...groups.entries()].map(([group, list]) => (
         <section key={group} className="cards-row" data-group={group}>
           <h4>
@@ -164,6 +164,54 @@ function Hand({ session, character }: { session: Session; character: TableRecord
           </div>
         </section>
       ))}
+    </FitHand>
+  );
+}
+
+// The whole hand in view: as the window opens and whenever it is resized, the cards shrink together (CSS zoom, by
+// steps down to a third) until every one fits, and grow back to full size when there is room. A browser without
+// zoom scrolls the hand instead, as before.
+const CAN_ZOOM = typeof CSS !== "undefined" && CSS.supports?.("zoom", "0.5");
+function FitHand({ children }: { children: React.ReactNode }) {
+  const hand = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const box = hand.current;
+    const content = inner.current;
+    if (!box || !content || !CAN_ZOOM) return;
+    let frame = 0;
+    const fit = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const room = { w: box.clientWidth - 8, h: box.clientHeight - 8 };
+        let zoom = 1;
+        content.style.zoom = "1";
+        for (; zoom > 0.34; zoom = Math.round((zoom - 0.04) * 100) / 100) {
+          content.style.zoom = String(zoom);
+          const size = content.getBoundingClientRect();
+          // A fan's rows may run wider than the box (scrollWidth, in the hand's own zoomed pixels).
+          const wide = Math.max(size.width, content.scrollWidth * zoom);
+          if (wide <= room.w + 1 && size.height <= room.h + 1) break;
+        }
+        box.dataset.zoom = String(zoom);
+        // All in view: no scrollbar (at the smallest step a hand that still does not fit scrolls).
+        const size = content.getBoundingClientRect();
+        box.dataset.fits = String(Math.max(size.width, content.scrollWidth * zoom) <= room.w + 1 && size.height <= room.h + 1);
+      });
+    };
+    const watch = new ResizeObserver(fit);
+    watch.observe(box);
+    fit();
+    return () => {
+      cancelAnimationFrame(frame);
+      watch.disconnect();
+    };
+  }, [children]);
+  return (
+    <div className="cards-hand" ref={hand}>
+      <div className="cards-fit" ref={inner}>
+        {children}
+      </div>
     </div>
   );
 }

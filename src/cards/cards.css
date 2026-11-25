@@ -6,9 +6,12 @@
 .cards-bar-gap { flex: 1; }
 .cards-bar select { max-width: 220px; }
 .cards-empty { padding: 16px; }
-.cards-hand { flex: 1; overflow: auto; padding: 8px 14px 18px; display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; gap: 6px 26px; }
+/* The hand's box (it scrolls only where CSS zoom is missing), and the hand in it, zoomed to fit (CardsWindow FitHand). */
+.cards-hand { flex: 1; min-height: 0; overflow: auto; padding: 8px 14px 18px; }
+.cards-hand[data-fits="true"] { overflow: hidden; }
+.cards-fit { display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; gap: 6px 26px; }
 .cards-row { margin: 0; }
-.layout-fan .cards-hand { display: block; }
+.layout-fan .cards-fit { display: block; }
 .layout-fan .cards-row { margin-bottom: 10px; }
 .cards-row h4 { margin: 4px 0 6px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brass); display: flex; align-items: center; gap: 10px; }
 .cards-pips { display: inline-flex; gap: 4px; }
