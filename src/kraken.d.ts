@@ -36,7 +36,7 @@ export type KrakenListing = { id: string; listed: boolean; pending?: boolean; re
 // A game on maelstromvtt.com's Find a game list.
 export type ArtPackState = {
   folder: string;
-  packs: { id: string; file: string; title: string; blurb: string; mb: number; installed: boolean }[];
+  packs: { id: string; file: string; title: string; blurb: string; mb: number; installed: boolean; local?: boolean }[];
   downloading: { id: string; percent: number; queued: string[] } | null;
   done: string[];
   failed: { id: string; reason: string }[];

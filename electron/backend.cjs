@@ -786,9 +786,19 @@ const artDownload = { queue: [], current: null, percent: 0, done: [], failed: []
 function artPackState() {
   const { ART_PACKS } = require("../shared/art/packs.mjs");
   const folder = require("./kfolders.cjs").folderOf("artpacks");
+  // The art already here as loose folders (run from the repository, or a copy that shipped with it): that pack's art is
+  // in place without its .kpack, so it is not asked for.
+  const characters = characterArtDir();
+  const local = {
+    monsters: fs.existsSync(path.join(creatureArtDir(), "portraits")),
+    characters: Boolean(characters) && fs.existsSync(path.join(characters, "manifest.json")),
+  };
   return {
     folder,
-    packs: ART_PACKS.map((pack) => ({ ...pack, installed: fs.existsSync(path.join(folder, pack.file)) })),
+    packs: ART_PACKS.map((pack) => {
+      const loose = pack.id === "monsters" ? local.monsters : local.characters;
+      return { ...pack, installed: loose || fs.existsSync(path.join(folder, pack.file)), ...(loose ? { local: true } : {}) };
+    }),
     downloading: artDownload.current ? { id: artDownload.current, percent: artDownload.percent, queued: [...artDownload.queue] } : null,
     done: [...artDownload.done],
     failed: [...artDownload.failed],
@@ -831,7 +841,8 @@ async function runArtDownloads() {
   while (artDownload.queue.length) {
     const id = artDownload.queue.shift();
     const pack = ART_PACKS.find((item) => item.id === id);
-    if (!pack || fs.existsSync(path.join(folder, pack.file))) continue;
+    // Already here: its .kpack, or the same art as loose folders.
+    if (!pack || artPackState().packs.find((item) => item.id === id)?.installed) continue;
     artDownload.current = id;
     artDownload.percent = 0;
     const part = path.join(folder, `${pack.file}.part`);
