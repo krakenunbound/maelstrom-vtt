@@ -879,6 +879,21 @@ async function manageCampaign(input) {
   const action = String(input.action ?? "");
   const id = String(input.id ?? "");
   const playing = hosted && hosted.id === id;
+  // A campaign exported as a .zip, brought back as a new one (its bytes: the window read the file).
+  if (action === "import") {
+    if (!input.bytes) throw new Error("Choose a campaign .zip to import.");
+    return campaigns.importZip(file, { bytes: input.bytes, mapsFolder: (name) => campaignNamedFolder(name) });
+  }
+  // Saved when (the table's Save & Backups window): the campaign being played's last save, and whether a change waits.
+  if (action === "status") return { playing: Boolean(playing), savedAt: playing ? (hosted.state.savedAt ?? null) : null, unsaved: Boolean(playing && hosted.dirty) };
+  // FG's /save, from the window's Save button: now, and said when.
+  if (action === "save") {
+    if (!playing) throw new Error("That campaign is not being played: it was saved when it was left.");
+    hosted.dirty = true;
+    hosted.recordsDirty = true;
+    if (!flushCampaign()) throw new Error("Not saved: the campaign could not be written to the disk. Check the drive, then try again (a recovery copy was kept).");
+    return { savedAt: hosted.state.savedAt };
+  }
   if (playing && (action === "delete" || action === "restore")) throw new Error("Leave the table first: that campaign is being played.");
   if (playing && (action === "duplicate" || action === "export")) {
     hosted.dirty = true;
@@ -934,7 +949,7 @@ async function manageCampaign(input) {
       hosted.recordsDirty = true;
       if (!flushCampaign()) throw new Error("No backup made: the campaign could not be saved to the disk first. Check the drive, then try again.");
     }
-    const made = campaigns.backup(file, { id, reason: "manual" });
+    const made = campaigns.backup(file, { id, reason: "manual", label: input.label });
     if (!made) throw new Error("No backup made: this campaign has nothing saved yet (host it once).");
     return { backup: made };
   }
@@ -945,7 +960,7 @@ async function manageCampaign(input) {
     if (input.open !== false) await ask("shell", { action: "open", path: dir });
     return { folder: dir };
   }
-  throw new Error("action is rename, duplicate, export, delete, backups, backup, restore or folder.");
+  throw new Error("action is status, save, rename, duplicate, export, import, delete, backups, backup, restore or folder.");
 }
 
 // --- What the window's process may call -------------------------------------------

@@ -138,6 +138,30 @@ assert(gone.folders.length === 2 && !campaigns.read(file).some((item) => item.id
 const renamed = campaigns.rename(file, { id: made.id, name: "The Village of Hommlet" });
 assert(renamed.name === "The Village of Hommlet", "renamed");
 
+// The GM's own backup (Save & Backups: Back up now) keeps its name and outlives the automatic ones.
+const named = campaigns.backup(file, { id: made.id, reason: "manual", label: "Before the dragon" });
+assert(named?.label === "Before the dragon", `a backup keeps its name: ${JSON.stringify(named)}`);
+for (let i = 0; i < 12; i++) campaigns.backup(file, { id: made.id, reason: "hourly" });
+const after = campaigns.backups(file, { id: made.id });
+assert(after.some((item) => item.id === named.id) && after.filter((item) => item.reason !== "manual").length === 10, `the GM's own backup outlives ten hourly ones: ${after.map((item) => item.reason)}`);
+
+// Export, then import: a new campaign (the name taken: numbered) with the same table, pictures and maps.
+const mapsHome = path.join(dir, "maps-home");
+mkdirSync(path.join(mapsHome, "Hommlet maps"), { recursive: true });
+writeFileSync(path.join(mapsHome, "Hommlet maps", "moat.webp"), "moat");
+const exported = campaigns.exportZip(file, { id: made.id, path: path.join(dir, "out", "hommlet.zip"), maps: path.join(mapsHome, "Hommlet maps") });
+const brought = campaigns.importZip(file, { bytes: readFileSync(exported.path), mapsFolder: (name) => path.join(mapsHome, name) });
+assert(brought.campaign.name === "The Village of Hommlet (imported)" && brought.campaign.id !== made.id, `imported as a new campaign: ${JSON.stringify(brought.campaign)}`);
+assert(readFileSync(path.join(campaigns.folder(file, brought.campaign.id), "bundle.zip"), "utf8") === readFileSync(path.join(campaigns.folder(file, made.id), "bundle.zip"), "utf8"), "its adventure came with it");
+assert(existsSync(path.join(dir, "studio", "pictures", brought.campaign.id, "map.webp")) && readFileSync(path.join(mapsHome, brought.campaign.name, "moat.webp"), "utf8") === "moat", "its pictures and maps too");
+let refused = "";
+try {
+  campaigns.importZip(file, { bytes: Buffer.from("not a zip") });
+} catch (error) {
+  refused = error.message;
+}
+assert(/not a campaign/.test(refused), `a file that is no campaign .zip is refused: ${refused}`);
+
 const log = createLog(path.join(dir, "logs"), "backend");
 const line = "x".repeat(1000);
 for (let i = 0; i < 2600; i++) log.write("error", line);
@@ -145,4 +169,4 @@ const files = readdirSync(path.join(dir, "logs")).sort();
 assert(files.join(",") === "backend.1.log,backend.2.log,backend.log", `three log files: ${files}`);
 assert(statSync(path.join(dir, "logs", "backend.log")).size < MAX_BYTES + 60 * 1100, "each about a megabyte at most");
 assert(log.tail(5).length === 5 && log.tail(5)[0].includes(" ERROR "), "the last lines read back");
-console.log("CAMPAIGN_FILES_OK backups keep ten, link the adventure, restore; duplicate with pictures; delete; rename; log rotation");
+console.log("CAMPAIGN_FILES_OK backups keep ten, link the adventure, restore; the GM's named backup kept; export and import; duplicate with pictures; delete; rename; log rotation");

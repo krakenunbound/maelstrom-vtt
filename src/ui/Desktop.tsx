@@ -1,6 +1,7 @@
 import { askConfirm, AskHost } from "./Ask";
 import { ShipsWindow } from "../ships/ShipsWindow";
 import { FoldersWindow } from "./FoldersWindow";
+import { CampaignWindow } from "./CampaignWindow";
 import { usePreviewed } from "./pickerPreview";
 import { BRAND } from "../../shared/brand.mjs";
 import { SessionLogWindow } from "../notes/SessionLog";
@@ -381,6 +382,8 @@ export function Desktop({
         { kind: "sessionlog", label: "Session Log", icon: "scroll", title: "Session Log" },
         // Maelstrom's folders: drop in books, sounds, maps and art, then Refresh, with the table still running.
         { kind: "folders", label: "Folders", icon: "folder", title: "Folders", hint: "Add books, modules, sounds and art, and read them again without a restart" },
+        // Saving (it saves by itself; when it last did, Save now), backups by name and putting one back, export and import.
+        { kind: "campaign", label: "Save & Backups", icon: "save", title: "Save & Backups", hint: "Saved by itself as you play: save now, back up under a name, restore, export or import a campaign" },
         { kind: "settings", label: "Settings", icon: "settings", title: "Settings" },
       ]
     : [
@@ -835,6 +838,7 @@ export function Desktop({
               {item.kind === "players" ? <PlayersWindow session={session} onMenu={gm ? playerMenu.open : undefined} /> : null}
               {item.kind === "settings" ? <SettingsWindow session={session} /> : null}
               {item.kind === "folders" && gm ? <FoldersWindow /> : null}
+              {item.kind === "campaign" && gm ? <CampaignWindow campaignId={session.hostInfo?.campaignId ?? ""} leave={session.leave} /> : null}
               {item.kind === "dice" ? <DiceWindow session={session} /> : null}
               {item.kind === "assistant" && gm ? <AssistantWindow /> : null}
               {item.kind === "sound" ? <SoundWindow session={session} /> : null}

@@ -996,6 +996,23 @@ span.ct-init { display: inline-block; }
 .folders-name { display: grid; flex: 1; }
 .folders-name small { opacity: 0.7; }
 .folders-note { margin: 0; font-size: 0.85rem; }
+
+/* The GM's Save & Backups window (CampaignWindow.tsx). */
+.campaign-window { display: grid; gap: 14px; padding: 10px; }
+.campaign-window h3 { margin: 0 0 6px; font-family: var(--serif); font-size: 0.95rem; color: var(--brass); }
+.campaign-window .hint { margin: 4px 0 8px; }
+.campaign-saved { display: flex; align-items: center; gap: 8px; margin: 0; font-weight: 650; }
+.campaign-save > button { justify-self: start; }
+.campaign-backup { display: grid; gap: 4px; }
+.campaign-backup label { font-size: 0.85rem; opacity: 0.85; }
+.campaign-backup-row { display: flex; gap: 8px; }
+.campaign-backup-row input { flex: 1; min-width: 0; }
+.campaign-backups ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; max-height: 260px; overflow: auto; }
+.campaign-backups li { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 8px; background: rgba(255, 255, 255, 0.03); }
+.campaign-backup-name { display: grid; flex: 1; min-width: 0; }
+.campaign-backup-name small { opacity: 0.7; }
+.campaign-file-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.campaign-note { margin: 0; font-size: 0.85rem; overflow-wrap: anywhere; }
 .books-row { display: flex; align-items: center; gap: 8px; }
 .books-open { flex: 1; display: flex; align-items: center; gap: 12px; padding: 4px 6px; border: none; background: transparent; text-align: left; border-radius: 6px; }
 .books-open:hover { background: rgba(255, 255, 255, 0.05); }

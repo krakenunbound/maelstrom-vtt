@@ -46,6 +46,8 @@ const PATHS: Record<string, string> = {
   // Into and out of a tray: a file brought in, a file taken away.
   import: "M12 3v12M7 10l5 5 5-5M4 15v5h16v-5",
   export: "M12 15V3M7 8l5-5 5 5M4 15v5h16v-5",
+  // Save: a disk with its shutter and label.
+  save: "M4 5a1 1 0 0 1 1-1h11.5L20 7.5V19a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1ZM8 4v5h7V4M7.5 20v-6h9v6",
   // A person and a plus: a new character.
   "add-character": "M10 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm-6 9c0-3.3 2.7-6 6-6s6 2.7 6 6M19 7v6M16 10h6",
   character: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8c0-3.3 3.1-6 7-6s7 2.7 7 6",

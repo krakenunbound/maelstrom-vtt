@@ -266,6 +266,47 @@ function exportZip(file, input) {
   return { campaign: found.name, path: target, bytes: bytes.length };
 }
 
+// A campaign exported as a .zip (exportZip) brought back as a new campaign: its table (campaign/), Map Studio's
+// pictures (studio/) and its own maps (maps/, into mapsFolder(name)). A name already used is numbered
+// ("Name (imported)", "Name (imported 2)"). Paths that would leave their folder are refused.
+function importZip(file, input) {
+  const { unzipSync } = require("fflate");
+  let entries;
+  try {
+    entries = unzipSync(new Uint8Array(input?.bytes ?? []));
+  } catch {
+    throw new Error("That is not a campaign .zip (it could not be opened).");
+  }
+  let meta = null;
+  try {
+    meta = JSON.parse(Buffer.from(entries["campaign.json"] ?? []).toString("utf8"));
+  } catch {
+    meta = null;
+  }
+  if (!meta || meta.kraken !== "campaign") throw new Error("That .zip is not a Maelstrom campaign (it has no campaign.json): export one from a campaign's menu.");
+  const campaigns = read(file);
+  const base = clean(meta.name, 70) || "Imported campaign";
+  let name = base;
+  for (let n = 1; campaigns.some((campaign) => folderKey(campaign.name) === folderKey(name)); n++) name = `${base} (imported${n > 1 ? ` ${n}` : ""})`.slice(0, 80);
+  const campaign = { id: crypto.randomBytes(8).toString("hex"), name, ruleset: clean(meta.ruleset, 40) || "Worldbuilding", createdAt: Date.now(), playedAt: null, port: Number(meta.port) || 47300, gmName: clean(meta.gmName, 24) };
+  const places = { "campaign/": folder(file, campaign.id), "studio/": picturesFolder(file, campaign.id), "maps/": input?.mapsFolder ? String(input.mapsFolder(name)) : "" };
+  let files = 0;
+  for (const [entry, bytes] of Object.entries(entries)) {
+    const prefix = Object.keys(places).find((start) => entry.startsWith(start));
+    if (!prefix || !places[prefix] || entry.endsWith("/")) continue;
+    const rest = entry.slice(prefix.length);
+    const target = path.resolve(places[prefix], rest);
+    if (!rest || rest.split(/[\\/]/).includes("..") || !target.startsWith(path.resolve(places[prefix]) + path.sep)) continue;
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(target, bytes);
+    files += 1;
+  }
+  if (!files) throw new Error("That campaign .zip has nothing in it.");
+  campaigns.unshift(campaign);
+  write(file, campaigns);
+  return { campaign, files };
+}
+
 // Rolling backups: a copy of the campaign's files (its adventure linked, not copied, while it is the same file),
 // in <campaign>/backups/<time>-<why>/; the newest ten are kept.
 const KEEP_BACKUPS = 10;
@@ -284,7 +325,14 @@ function backups(file, input) {
       const [at, ...why] = entry.name.split("-");
       const files = BACKUP_FILES.filter((name) => fs.existsSync(path.join(dir, entry.name, name)));
       const bytes = files.reduce((sum, name) => sum + fs.statSync(path.join(dir, entry.name, name)).size, 0);
-      return { id: entry.name, at: Number(at), reason: why.join("-"), files, bytes };
+      // The GM's own name for it ("Before the dragon"), when they gave one.
+      let label = "";
+      try {
+        label = fs.readFileSync(path.join(dir, entry.name, "label.txt"), "utf8").trim().slice(0, 80);
+      } catch {
+        /* none */
+      }
+      return { id: entry.name, at: Number(at), reason: why.join("-"), files, bytes, ...(label ? { label } : {}) };
     })
     .sort((a, b) => b.at - a.at);
 }
@@ -298,6 +346,8 @@ function backup(file, input) {
   while (fs.existsSync(path.join(backupsFolder(file, found.id), `${at}-${reason}`))) at += 1;
   const dir = path.join(backupsFolder(file, found.id), `${at}-${reason}`);
   fs.mkdirSync(dir, { recursive: true });
+  const label = clean(input?.label, 80);
+  if (label) fs.writeFileSync(path.join(dir, "label.txt"), label);
   for (const name of present) {
     const from = path.join(source, name);
     const to = path.join(dir, name);
@@ -328,9 +378,10 @@ function backup(file, input) {
       }
     }
   }
-  // The newest ten are kept (and one being restored from); older ones are this feature's own folders, removed.
+  // The newest ten automatic ones are kept (and one being restored from); older ones are this feature's own folders,
+  // removed. The GM's own (Back up now) are never removed by the automatic ones.
   const keep = String(input?.keep ?? "");
-  for (const old of backups(file, { id: found.id }).filter((item) => item.id !== keep).slice(KEEP_BACKUPS)) fs.rmSync(path.join(backupsFolder(file, found.id), old.id), { recursive: true, force: true });
+  for (const old of backups(file, { id: found.id }).filter((item) => item.id !== keep && item.reason !== "manual").slice(KEEP_BACKUPS)) fs.rmSync(path.join(backupsFolder(file, found.id), old.id), { recursive: true, force: true });
   return backups(file, { id: found.id }).find((item) => item.id === `${at}-${reason}`) ?? null;
 }
 // A backup put back: what is there now is backed up first ("before-restore"), so a restore can be undone.
@@ -367,4 +418,4 @@ function restore(file, input) {
   return { restored: chosen, campaign: found.name };
 }
 
-module.exports = { folderKey, read, create, touch, setRuleset, exists, readState, writeState, readBundle, writeBundle, removeBundle, folder, picturesFolder, copyFolder, rename, duplicate, remove, exportZip, backups, backup, restore };
+module.exports = { folderKey, read, create, touch, setRuleset, exists, readState, writeState, readBundle, writeBundle, removeBundle, folder, picturesFolder, copyFolder, rename, duplicate, remove, exportZip, importZip, backups, backup, restore };

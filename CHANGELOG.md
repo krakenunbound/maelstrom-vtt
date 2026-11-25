@@ -8,6 +8,8 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Save & Backups at the table:** a disk button in the GM's tools row opens one window for keeping a campaign safe. It shows when the campaign was last saved (Maelstrom saves by itself a moment after anything changes, and when you leave: host it again and the table is just as you left it), with **Save now**. **Back up now** takes a name ("Before the dragon"), and backups you make yourself are never pruned by the automatic ones (one each time you host, one an hour). The backups are listed with **Restore** (the table closes, the campaign goes back, what it was is kept as a backup too). **Export .zip**, **Import .zip** (a new campaign from an exported one, its maps and pictures with it) and the campaign's **Folder** are there too. `kraken_campaigns` does the same (status, save, backup with label, import).
+
 - **Water stays in its pond:** a Fantasy Grounds map whose water (or other weather) layer covers just one area, such as the pool in B2's Caves of Chaos, drew that water rippling over the whole map. It now stays inside its area, and a map opened before this fix gets its area back when it is opened again from its adventure.
 - **Target lines for the one whose turn it is:** in a fight, only the creature acting shows its arrows and distances to its targets (eight kobolds' lines at once were a tangle); between turns everyone's still show.
 - **A bigger chat window** to start with, so a fight's rolls can be followed without resizing it.

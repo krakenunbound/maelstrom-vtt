@@ -463,7 +463,7 @@ function guessGame(data, body) {
 /**
  * A spell or power record's data read into structured actions.
  * @param {any} data
- * @param {{ game?: "5e"|"35e"|"2e"|"bf"|"cnc" }} [opts]
+ * @param {{ game?: "5e"|"35e"|"2e"|"bf"|"cnc", reverse?: boolean }} [opts] reverse: a reversible spell cast as its reverse (Cause Light Wounds)
  * @returns {ParsedSpell}
  */
 export function parseSpell(data, opts = {}) {

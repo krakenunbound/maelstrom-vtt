@@ -60,19 +60,24 @@ const TOOLS = [
   {
     name: "kraken_campaigns",
     description:
-      "List the GM's campaigns (id, name, ruleset, last played); with action, the start screen's campaign menu: rename (name), duplicate (a copy with its table, records, adventure and Map Studio pictures; name optional), export (one .zip; path, default Documents/Kraken VTT/Exports/<name>.zip), delete (to the recycle bin, never gone for good; not the campaign being played), backups (the rolling backups: one each Play and every hour while hosting, the newest ten kept), backup (one now), restore (backup: a backup's id; what is there now is backed up first; not while it is played), folder (its folder, opened on the GM's screen).",
+      "List the GM's campaigns (id, name, ruleset, last played); with action, the start screen's campaign menu: rename (name), duplicate (a copy with its table, records, adventure and Map Studio pictures; name optional), export (one .zip; path, default Documents/Kraken VTT/Exports/<name>.zip), delete (to the recycle bin, never gone for good; not the campaign being played), backups (the rolling backups: one each Play and every hour while hosting, the newest ten automatic ones kept; the GM's own never removed; each with its label), backup (one now; label: a name for it, as Before the dragon), restore (backup: a backup's id; what is there now is backed up first; not while it is played), folder (its folder, opened on the GM's screen), status (the campaign being played: when it was last saved, and whether a change waits), save (it, now), import (path: a campaign .zip made by export, added as a new campaign; no id). As the table's Save & Backups window.",
     inputSchema: object({
-      action: { type: "string", enum: ["list", "rename", "duplicate", "export", "delete", "backups", "backup", "restore", "folder"] },
+      action: { type: "string", enum: ["list", "status", "save", "rename", "duplicate", "export", "import", "delete", "backups", "backup", "restore", "folder"] },
       id: string("Campaign id"),
       name: string("rename: the new name; duplicate: the copy's name"),
-      path: string("export: where the .zip goes"),
+      path: string("export: where the .zip goes; import: the .zip to bring in"),
+      label: string("backup: a name for it"),
       backup: string("restore: the backup's id (from action backups)"),
     }),
     async run(args, ctx) {
       const action = args.action ?? "list";
       if (action === "list") return out(ctx.campaigns.list());
+      if (action === "import") {
+        if (!args.path) throw new Error("import: give path, the campaign .zip.");
+        return out(await ctx.campaigns.manage({ action, bytes: require("node:fs").readFileSync(String(args.path)) }));
+      }
       if (!args.id) throw new Error("Which campaign? Give id (kraken_campaigns).");
-      return out(await ctx.campaigns.manage({ action, id: args.id, name: args.name, path: args.path, backup: args.backup }));
+      return out(await ctx.campaigns.manage({ action, id: args.id, name: args.name, path: args.path, backup: args.backup, label: args.label }));
     },
   },
   {
