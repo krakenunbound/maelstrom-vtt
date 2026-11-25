@@ -38,3 +38,23 @@ Phase 3 added for alpha.21 to .25: the party's four tokens moved together, Thori
 ## Play test, fourth run (alpha.28)
 
 After the second ruleset (D&D 5E) changed the tracker and character building: no problems. Every check passes (`dnd5e`, `dnd5e-ui` and `dnd5e-fg` new); `pregens` 128 of 132 while FG is on a 5E campaign (the other four need FG's C&C wizard live).
+
+## Open: from the B2 AD&D 2E demo takes (2026-11-25)
+
+Found while recording the B2 kobold ambush (AD&D 2E, six pregens, the agent playing the GM) on the dev build after beta 3. Fixed that day and in `CHANGELOG.md` Next: the water overlay, dice looks for agent rolls, 2E morale, ammo by the pouch, Cure Light Wounds healing only, target lines on the active turn, the map window at the back with its pin, Save & Backups, End my turn, card tabs and fitting, long rests the GM's, 2E spells castable from cards. Still to fix:
+
+| # | Severity | Bug | Found by | State |
+|---|---|---|---|---|
+| 13 | medium | A dead creature's token stays on the map over its death marker until the GM removes it from the tracker and the map (the demo did it by hand); an option to clear a dead NPC's token (or show it faded) is wanted | demo take | Open |
+| 14 | medium | Chat lines from the agent's attacks, casts and XP read "Agent", not the creature or "DM" (the GM's own tracker buttons say "Combat") | demo take | Open |
+| 15 | low | The ammunition pick-up note reads "can pick up 1 Arrows, bundle of 10 (Poor)": a bundle's count and name, not "4 arrows" / "3 sling stones" | demo take | Open |
+| 16 | low | "low on sling bullets: 5 left" for sling stones: the ammunition's own word (stones) is wanted | demo take | Open |
+| 17 | low | Building a 2E pregen by name fails (kraken_build_character pregen takes only the record id; 5E takes either) | demo setup | Open |
+| 18 | low | "Add party" on the tracker silently adds no one while the party sheet is empty: say so ("the party sheet is empty: add characters first") | demo setup | Open |
+| 19 | low | Rolling initiative and kraken_combat view each take about 2.3 s for the agent (it waits for the 3D dice to land) | demo setup | Open |
+| 20 | low | kraken_library with no module says "That book is not active" instead of asking for the module's name | demo setup | Open |
+| 21 | low | Electron's window reload keeps serving the old page after a rebuild (dev only: restart the app) | testing | Open |
+| 22 | data | Kraken's AD&D 2E One-Shot Pregens: a stray 13th pregen named "public"; The Leaf (ranger), The Wind (gnome fighter) and Ainsley (paladin) carry the fighters' battle axe and sling kit; Hand Axe and Sling list their damage several times | demo setup | Open (the pack, not the app) |
+| 23 | low | Demo script only: "Quickfingers's eyes" caption (scratchpad demo-b2.mjs, not the app) | demo take | Open |
+
+Not run this session (they drive whole windows and can freeze the PC while it is in use): `verify-cards-ui` (changed for the GM's long rest), `verify-map-play-ui` (target lines), `verify-campaigns-ui`.
