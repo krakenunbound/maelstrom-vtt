@@ -9,6 +9,10 @@ full log of the work is in [PLAN.md](PLAN.md).
 Collected here until the next major release.
 
 - **Water stays in its pond:** a Fantasy Grounds map whose water (or other weather) layer covers just one area, such as the pool in B2's Caves of Chaos, drew that water rippling over the whole map. It now stays inside its area, and a map opened before this fix gets its area back when it is opened again from its adventure.
+- **Target lines for the one whose turn it is:** in a fight, only the creature acting shows its arrows and distances to its targets (eight kobolds' lines at once were a tangle); between turns everyone's still show.
+- **A bigger chat window** to start with, so a fight's rolls can be followed without resizing it.
+- **Sounds:** kobolds, hobgoblins and bugbears attack, get hurt and die with goblin sounds instead of a plain sword and the same death cry; a dying character's bleeding each round no longer replays the dying cry (bleeding out still sounds).
+- **The agent attacks with a character from the tracker:** `kraken_combat` attack with a character's tracker entry uses the character's weapons (it said "No such attack").
 
 ## 0.1.0-beta.3: Your books, ready to play
 
