@@ -1,10 +1,12 @@
-// The download buttons point at the newest release's files, and the hero names its version.
+// The download buttons point at the newest version's files (a v... release with an installer; never the art-packs
+// release beside them), and the hero names its version.
 // Without the GitHub API (offline, rate limit) they stay on the releases page.
 (async () => {
   try {
-    const r = await fetch("https://api.github.com/repos/krakenunbound/maelstrom-vtt/releases?per_page=1");
+    const r = await fetch("https://api.github.com/repos/krakenunbound/maelstrom-vtt/releases?per_page=20");
     if (!r.ok) return;
-    const [release] = await r.json();
+    const releases = await r.json();
+    const release = releases.find((item) => /^v\d/.test(item.tag_name) && !item.draft && item.assets.some((asset) => asset.name.endsWith("Setup.exe")));
     if (!release) return;
     for (const a of document.querySelectorAll("[data-asset]")) {
       const asset = release.assets.find((x) => x.name.endsWith(a.dataset.asset));
