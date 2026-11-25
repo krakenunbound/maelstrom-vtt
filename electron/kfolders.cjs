@@ -25,6 +25,9 @@ const FOLDERS = {
   gmicons: "GM Icons",
   decals: "Background Decals",
   wallpapers: "Wallpapers",
+  // Maelstrom's optional character and creature art (electron/artPacks.cjs): the installer's Art packs page or the
+  // start screen's downloads them here.
+  artpacks: "Art Packs",
 };
 
 function root() {

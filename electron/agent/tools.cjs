@@ -1103,6 +1103,15 @@ const TOOLS = [
     },
   },
   {
+    name: "kraken_art_packs",
+    description: "Maelstrom's art packs (the start screen's Art packs; the Windows installer offers them too): the character and creature art, downloaded into Documents/Kraken VTT/Art Packs. Packs: monsters (a portrait and token for each creature), fantasy (fantasy games' races and classes, and people's faces), scifi, horror (horror and modern games). action list (default): each pack, whether it is installed, its size, and any download under way; download (packs: ids): get them, one at a time, skipping any already there (it returns at once; list shows the progress and what failed).",
+    inputSchema: object({ action: string("list or download"), packs: { type: "array", items: { type: "string" }, description: "Pack ids (download): monsters, fantasy, scifi, horror" } }),
+    run(args, ctx) {
+      if (!ctx.artPacks) throw new Error("Art packs are the GM's Maelstrom app's.");
+      return out(args.action === "download" ? ctx.artPacks.download(args.packs) : ctx.artPacks.state());
+    },
+  },
+  {
     name: "kraken_vote",
     description: "FG's /vote: ask the table a yes-or-no question (everyone answers in chat and sees the count), or with no question, read the votes so far.",
     inputSchema: object({ question: string("The question") }),

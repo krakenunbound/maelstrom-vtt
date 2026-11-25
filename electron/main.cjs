@@ -254,6 +254,8 @@ for (const name of [
   "pack-games",
   "installed-games",
   "own-games",
+  "art-packs",
+  "art-packs-download",
   "studio-url",
   "studio-open-image",
   "studio-settings",

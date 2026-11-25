@@ -19,6 +19,9 @@ contextBridge.exposeInMainWorld("kraken", {
   // The games whose books are installed (the campaign screen offers only these).
   installedGames: () => ipcRenderer.invoke("installed-games"),
   ownGames: () => ipcRenderer.invoke("own-games"),
+  // Maelstrom's art packs: which are installed; download some (ids), progress in the state.
+  artPacks: () => ipcRenderer.invoke("art-packs"),
+  artPacksDownload: (ids) => ipcRenderer.invoke("art-packs-download", { ids }),
   studioUrl: () => ipcRenderer.invoke("studio-url"),
   studioOpenImage: (input) => ipcRenderer.invoke("studio-open-image", input),
   studioSettings: (input) => ipcRenderer.invoke("studio-settings", input),

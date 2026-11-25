@@ -34,6 +34,13 @@ export type KrakenHostInfo = {
 // listed: the site has it; reachable: the site could open the table's port (only those are shown to players).
 export type KrakenListing = { id: string; listed: boolean; pending?: boolean; reachable?: boolean; address?: string; error?: string };
 // A game on maelstromvtt.com's Find a game list.
+export type ArtPackState = {
+  folder: string;
+  packs: { id: string; file: string; title: string; blurb: string; mb: number; installed: boolean }[];
+  downloading: { id: string; percent: number; queued: string[] } | null;
+  done: string[];
+  failed: { id: string; reason: string }[];
+};
 export type LobbyGame = { id: string; gm: string; campaign: string; ruleset: string; locked: boolean; players: number; version: string };
 export type KrakenUpnp = { ok: boolean; method: string; external?: string; error?: string };
 // Links that seat a player: the table's password in the #fragment (never sent to the server).
@@ -89,6 +96,8 @@ export type KrakenApi = {
   packGames?: () => Promise<Record<string, unknown>[]>;
   installedGames?: () => Promise<string[]>;
   ownGames?: () => Promise<string[]>;
+  artPacks?: () => Promise<ArtPackState>;
+  artPacksDownload?: (ids: string[]) => Promise<ArtPackState>;
   studioUrl?: () => Promise<{ url: string }>;
   updater?: {
     state: () => Promise<UpdaterState>;

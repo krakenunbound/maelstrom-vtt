@@ -33,30 +33,38 @@ function defaultRoots(dataFolder) {
 // or role and gender; shared/characters/art.mjs): read from the manifest, not walked, and only the pairs that serve
 // the campaign's game (ruleset). Each item carries its race, class, gender and its partner's id (pair).
 function characterItems(characters) {
-  if (!characters?.dir) return [];
-  let manifest;
+  if (!characters?.dir && !characters?.packs) return [];
+  let manifest = null;
   try {
-    manifest = JSON.parse(fs.readFileSync(path.join(characters.dir, "manifest.json"), "utf8"));
+    manifest = characters.dir ? JSON.parse(fs.readFileSync(path.join(characters.dir, "manifest.json"), "utf8")) : null;
   } catch {
-    return [];
+    manifest = null;
   }
+  // The art packs' character art (Documents/Kraken VTT/Art Packs), beside or instead of the folder.
+  const packed = characters.packs ? require("./artPacks.cjs").characterArt(characters.packs) : { pairs: [], notLikeRace: {} };
+  if (!manifest && !packed.pairs.length) return [];
   const { servesGame } = require("../shared/characters/art.mjs");
   // Portraits that do not look like their race (review.json): never picked by themselves, still offered.
   let unlike = {};
   try {
-    unlike = JSON.parse(fs.readFileSync(path.join(characters.dir, "review.json"), "utf8"))?.notLikeRace ?? {};
+    unlike = characters.dir ? JSON.parse(fs.readFileSync(path.join(characters.dir, "review.json"), "utf8"))?.notLikeRace ?? {} : {};
   } catch {
     unlike = {};
   }
+  unlike = { ...packed.notLikeRace, ...unlike };
   const out = [];
-  for (const pair of Array.isArray(manifest?.pairs) ? manifest.pairs : []) {
+  const seen = new Set();
+  for (const pair of [...(Array.isArray(manifest?.pairs) ? manifest.pairs : []), ...packed.pairs]) {
+    if (seen.has(pair.portrait)) continue;
+    seen.add(pair.portrait);
     // Every pair is kept (a creature's face may come from any system's art); the pickers list only the game's.
     const serves = characters.ruleset === undefined || servesGame(pair, characters.ruleset);
     // A pair whose pictures were deleted (the GM taking out ones that do not fit) is left out.
-    if (!fs.existsSync(path.join(characters.dir, ...String(pair.portrait).split("/")))) continue;
+    const inPack = pair.pack ? { pack: pair.pack } : null;
+    if (inPack ? !require("./artPacks.cjs").has(pair.pack, `characters/${pair.portrait}`) : !fs.existsSync(path.join(characters.dir, ...String(pair.portrait).split("/")))) continue;
     const ids = { portrait: `characters/${pair.portrait}`, token: `characters/${pair.token}` };
     for (const kind of KINDS) {
-      out.push({ id: ids[kind], kind, group: `Characters · ${pair.race}`, name: `${pair.race} ${pair.cls}, ${pair.gender} (${String(pair.name).replace(/_/g, " ")})`, video: false, file: path.join(characters.dir, ...pair[kind].split("/")), mime: "image/webp", race: pair.race, cls: pair.cls, gender: pair.gender, pair: ids[kind === "portrait" ? "token" : "portrait"], serves, ...(unlike[pair.portrait] ? { unlike: true } : {}) });
+      out.push({ id: ids[kind], kind, group: `Characters · ${pair.race}`, name: `${pair.race} ${pair.cls}, ${pair.gender} (${String(pair.name).replace(/_/g, " ")})`, video: false, ...(inPack ? { pack: pair.pack, entry: `characters/${pair[kind]}`, file: "" } : { file: path.join(characters.dir, ...pair[kind].split("/")) }), mime: "image/webp", race: pair.race, cls: pair.cls, gender: pair.gender, pair: ids[kind === "portrait" ? "token" : "portrait"], serves, ...(unlike[pair.portrait] ? { unlike: true } : {}) });
     }
   }
   return out;
@@ -106,6 +114,10 @@ function createArtLibrary({ base, roots, characters = null }) {
       }
     }
     for (const item of characterItems(characters)) if (!items.has(item.id)) items.set(item.id, item);
+    // The art packs' creature art (creatures/portraits/X, as the folder's ids are).
+    if (characters?.packs)
+      for (const art of require("./artPacks.cjs").creatureArt(characters.packs))
+        if (!items.has(art.id)) items.set(art.id, { id: art.id, kind: art.kind, group: "Creatures", name: art.name, video: false, file: "", pack: art.pack, entry: art.entry, mime: IMAGE[path.extname(art.entry).toLowerCase()] ?? "image/webp" });
     // What it holds changed (pictures added or deleted): those that show its pictures are told (the map's tokens).
     const signature = `${items.size}:${[...items.keys()].join("|").length}`;
     const changed = index && signature !== indexSignature;
@@ -129,8 +141,10 @@ function createArtLibrary({ base, roots, characters = null }) {
         .sort((a, b) => a.group.localeCompare(b.group) || a.name.localeCompare(b.name));
     },
     // Only files the scan found are served: an id is never a free path. One deleted since: read again at once.
+    // A picture in an art pack: { mime, read() } (its bytes, read from the pack), no path.
     file(id) {
       const item = scan().get(String(id));
+      if (item?.pack) return { mime: item.mime, pack: item.pack, entry: item.entry, read: () => require("./artPacks.cjs").read(item.pack, item.entry) };
       if (item && !fs.existsSync(item.file)) {
         indexedAt = 0;
         scan();
@@ -187,7 +201,7 @@ function createArtLibrary({ base, roots, characters = null }) {
     idOf(file) {
       index = null;
       const wanted = path.resolve(file);
-      return [...scan().values()].find((item) => path.resolve(item.file) === wanted)?.id ?? null;
+      return [...scan().values()].find((item) => item.file && path.resolve(item.file) === wanted)?.id ?? null;
     },
   };
 }

@@ -2277,6 +2277,17 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         res.end();
         return;
       }
+      // A picture in an art pack: its bytes, read from the pack.
+      if (found.read) {
+        const bytes = found.read();
+        if (!bytes) {
+          res.writeHead(404, { "Cache-Control": "no-store" });
+          res.end();
+          return;
+        }
+        sendMedia(req, res, { bytes }, found.mime, "private, max-age=3600");
+        return;
+      }
       fs.stat(found.path, (error, stat) => {
         if (error) {
           res.writeHead(404);
@@ -2468,7 +2479,8 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         if (file) {
           let bytes;
           try {
-            bytes = fs.readFileSync(file.path);
+            bytes = file.read ? file.read() : fs.readFileSync(file.path);
+            if (!bytes) throw new Error("gone");
           } catch {
             res.writeHead(404, { "Cache-Control": "no-store" });
             res.end();
@@ -2486,7 +2498,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         if (file) {
           let bytes;
           try {
-            bytes = fs.readFileSync(file.path);
+            bytes = file.read ? file.read() : fs.readFileSync(file.path);
           } catch {
             bytes = null;
           }

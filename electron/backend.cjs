@@ -276,13 +276,16 @@ function accounts() {
 // from them), in the assets folder beside the GM's FG collection; by race.
 // The character art library shipped with the app (portrait and token pairs by race, class and gender;
 // docs/character-art.md): beside the app's resources when installed, games/characters when run from the repository.
+// KRAKEN_NO_ART_FOLDERS (tests): no art folders, as an installed copy has none (its art comes from the art packs).
 function characterArtDir() {
+  if (process.env.KRAKEN_NO_ART_FOLDERS) return "";
   const installed = process.resourcesPath ? path.join(process.resourcesPath, "characters") : "";
   return installed && fs.existsSync(path.join(installed, "manifest.json")) ? installed : path.join(APP_DIR, "games", "characters");
 }
 // Creature art shipped with the app (games/creatures: a portrait and token per creature, named after it; the GM's
 // own 3.5e Monster Manual art): beside the app when installed, like the character art.
 function creatureArtDir() {
+  if (process.env.KRAKEN_NO_ART_FOLDERS) return path.join(USER_DATA, "no-creature-art");
   const installed = process.resourcesPath ? path.join(process.resourcesPath, "creatures") : "";
   return installed && fs.existsSync(installed) ? installed : path.join(APP_DIR, "games", "creatures");
 }
@@ -718,6 +721,7 @@ const CONTENT_KINDS = [
   { kind: "gmicons", label: "GM icons", accept: /\.(png|webp|jpe?g|gif|svg)$/i },
   { kind: "decals", label: "Background decals", accept: /\.(png|webp|jpe?g|svg)$/i },
   { kind: "wallpapers", label: "Wallpapers", accept: /\.(png|webp|jpe?g|gif|webm|mp4)$/i },
+  { kind: "artpacks", label: "Art packs (.kpack)", accept: /\.kpack$/i },
 ];
 function contentFolder(kind) {
   if (kind === "sounds") return sounds().folder;
@@ -776,6 +780,84 @@ function contentAdd(kind, files) {
   return { added, refused };
 }
 // Everything read again: the books and packs, sounds, art, decals, dice; the table hears of it, nobody is sent away.
+// Maelstrom's art packs (shared/art/packs.mjs): which are in Documents/Kraken VTT/Art Packs, and downloads of more
+// (the start screen's Art packs, kraken_art_packs), one at a time, each to a .part file named when whole.
+const artDownload = { queue: [], current: null, percent: 0, done: [], failed: [] };
+function artPackState() {
+  const { ART_PACKS } = require("../shared/art/packs.mjs");
+  const folder = require("./kfolders.cjs").folderOf("artpacks");
+  return {
+    folder,
+    packs: ART_PACKS.map((pack) => ({ ...pack, installed: fs.existsSync(path.join(folder, pack.file)) })),
+    downloading: artDownload.current ? { id: artDownload.current, percent: artDownload.percent, queued: [...artDownload.queue] } : null,
+    done: [...artDownload.done],
+    failed: [...artDownload.failed],
+  };
+}
+// The bytes of a URL into a file, following GitHub's redirects; progress as a share of the whole.
+function fetchToFile(url, file, onProgress, hops = 0) {
+  return new Promise((resolve, reject) => {
+    const request = (url.startsWith("http:") ? require("http") : https).get(url, { headers: { "User-Agent": "Maelstrom VTT" } }, (res) => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location && hops < 6) {
+        res.resume();
+        resolve(fetchToFile(new URL(res.headers.location, url).toString(), file, onProgress, hops + 1));
+        return;
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        reject(new Error(`the download answered ${res.statusCode}`));
+        return;
+      }
+      const total = Number(res.headers["content-length"]) || 0;
+      let got = 0;
+      const out = fs.createWriteStream(file);
+      res.on("data", (chunk) => {
+        got += chunk.length;
+        if (total) onProgress(Math.floor((got / total) * 100));
+      });
+      res.pipe(out);
+      out.on("finish", () => resolve());
+      out.on("error", reject);
+      res.on("error", reject);
+    });
+    request.on("error", reject);
+  });
+}
+async function runArtDownloads() {
+  if (artDownload.current) return;
+  const { ART_PACKS, ART_URL } = require("../shared/art/packs.mjs");
+  const folder = require("./kfolders.cjs").folderOf("artpacks");
+  fs.mkdirSync(folder, { recursive: true });
+  while (artDownload.queue.length) {
+    const id = artDownload.queue.shift();
+    const pack = ART_PACKS.find((item) => item.id === id);
+    if (!pack || fs.existsSync(path.join(folder, pack.file))) continue;
+    artDownload.current = id;
+    artDownload.percent = 0;
+    const part = path.join(folder, `${pack.file}.part`);
+    try {
+      await fetchToFile(process.env.KRAKEN_ART_URL ? `${process.env.KRAKEN_ART_URL}/${pack.file}` : `${ART_URL}/${pack.file}`, part, (percent) => (artDownload.percent = percent));
+      fs.renameSync(part, path.join(folder, pack.file));
+      artDownload.done.push(id);
+    } catch (error) {
+      fs.rmSync(part, { force: true });
+      artDownload.failed.push({ id, reason: error instanceof Error ? error.message : String(error) });
+    }
+  }
+  artDownload.current = null;
+  artDownload.percent = 0;
+}
+// ids: the packs to get (any already there are skipped). Returns at once; the state shows the progress.
+function downloadArtPacks(ids) {
+  const { ART_PACKS } = require("../shared/art/packs.mjs");
+  const wanted = (Array.isArray(ids) ? ids : []).map(String).filter((id) => ART_PACKS.some((pack) => pack.id === id));
+  if (!wanted.length) throw new Error(`Which art packs? ${ART_PACKS.map((pack) => pack.id).join(", ")}.`);
+  artDownload.failed = artDownload.failed.filter((item) => !wanted.includes(item.id));
+  for (const id of wanted) if (!artDownload.queue.includes(id) && artDownload.current !== id) artDownload.queue.push(id);
+  void runArtDownloads();
+  return artPackState();
+}
+
 function contentRefresh() {
   books().refresh();
   for (const library of [soundLibrary, wallpapers(), decals(), gmIcons(), towers(), dicePacks(), tiles()]) {
@@ -878,6 +960,9 @@ const calls = {
   // The games the GM's packs define (the campaign screen lists them with the built-in ones).
   "pack-games": () => packGames(),
   // The games whose books are installed (the campaign screen offers only these); KRAKEN_ALL_GAMES (tests): every one.
+  // Maelstrom's art packs: which are installed, and downloads of more (the start screen's Art packs).
+  "art-packs": () => artPackState(),
+  "art-packs-download": (input) => downloadArtPacks(input?.ids),
   "installed-games": () => {
     packGames();
     const names = require("../shared/rulesets/registry.mjs").CAMPAIGN_RULESETS.slice();
@@ -927,7 +1012,7 @@ const calls = {
     // The players' own portraits and tokens (each from their computer), kept with the campaign, by player.
     const playerArt = campaignId ? path.join(campaigns.folder(campaignFile(), campaignId), "player-art") : path.join(USER_DATA, "player-art");
     const playerRoots = ["portrait", "token"].map((kind) => ({ dir: path.join(playerArt, `${kind}s`), kind, group: "Players", prefix: `players/${kind}s/` }));
-    const next = createTableServer({ saved, archive, ruleset, onChange: markDirty, playerArt: { folder: (kind) => path.join(playerArt, `${kind}s`) }, art: createArtLibrary({ base: dataFolder, roots: [...playerRoots, ...defaultRoots(dataFolder), ...krakenArtRoots()], characters: { dir: characterArtDir(), ruleset } }), decals: decals(), wallpapers: wallpapers(), gmIcons: gmIcons(), towers: towers(), dicePacks: dicePacks(), tiles: tiles(), sounds: sounds(), books: books(), accounts: accounts(), prefs: prefs(), studioPicture: (sceneId) => studioPicture(sceneId), ownMaps: { folder: () => campaignMapsFolder() } });
+    const next = createTableServer({ saved, archive, ruleset, onChange: markDirty, playerArt: { folder: (kind) => path.join(playerArt, `${kind}s`) }, art: createArtLibrary({ base: dataFolder, roots: [...playerRoots, ...defaultRoots(dataFolder), ...krakenArtRoots()], characters: { dir: characterArtDir(), ruleset, packs: require("./kfolders.cjs").folderOf("artpacks") } }), decals: decals(), wallpapers: wallpapers(), gmIcons: gmIcons(), towers: towers(), dicePacks: dicePacks(), tiles: tiles(), sounds: sounds(), books: books(), accounts: accounts(), prefs: prefs(), studioPicture: (sceneId) => studioPicture(sceneId), ownMaps: { folder: () => campaignMapsFolder() } });
     try {
       const info = await next.listen({ port: wanted, password });
       table = next;
@@ -1100,6 +1185,8 @@ const agentContext = {
   packs: { view: (input) => packsView(input ?? {}), make: (ids) => makePacks(ids), job: () => packJob },
   // The GM's Folders window: Maelstrom's folders, and everything in them read again with the table running.
   folders: { list: () => contentFolders(), refresh: () => contentRefresh() },
+  // Maelstrom's art packs (kraken_art_packs): the start screen's list and downloads.
+  artPacks: { state: () => artPackState(), download: (ids) => downloadArtPacks(ids) },
   // Map Studio's asset pack folders (Settings > Map Studio art).
   // Map Studio's agent tools (kraken_map_studio, electron/studio/agentTools.cjs): an action of the editor
   // (studio/web/agent.js, in the GM's Map Studio window), and the editor's Save to Kraken into the open image.

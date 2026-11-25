@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { BRAND } from "../../shared/brand.mjs";
 import { emblemKey, RulesetEmblem } from "./RulesetEmblem";
 import { UpdateNotice } from "./UpdateNotice";
+import { ArtPacksNotice } from "./ArtPacksNotice";
 import { CampaignMenu } from "./CampaignMenu";
 import { LivingEmblem, Mark } from "../ui/Emblem";
 import type { KrakenCampaign, KrakenNetwork } from "../kraken";
@@ -573,6 +574,7 @@ export function SetupScreen({
       </header>
       {/* A new Kraken: on the start screen only, never once a campaign is open. */}
       {inBrowser ? null : <UpdateNotice />}
+      {inBrowser ? null : <ArtPacksNotice />}
 
       {mode === "home" ? (
         <main className="home-stage">
