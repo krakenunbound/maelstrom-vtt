@@ -1187,6 +1187,9 @@ function createMapState({ saved, records, onChange = () => undefined, hasArt = (
       // Another player's token this seat may move too (party movement).
       ...(seat.role === "player" && token.owner !== seat.name && partyToken(token, seat) ? { party: true } : {}),
       health: shows.health === "off" ? null : health(token),
+      // A creature dead on the field (not a friend or a character, as the death markers): drawn faded, so the marker
+      // left under it shows. Sent whatever the health option (a body is plain to see).
+      ...(token.faction !== "friend" && health(token)?.status === "Dead" ? { dead: true } : {}),
       // The GM's and its owner's: how many moves can be undone, and (on the
       // combat tracker) this turn's path, where it went since its turn began.
       ...(seat.role === "dm" || (token.owner !== "" && token.owner === seat.name) ? movesOut(token) : {}),

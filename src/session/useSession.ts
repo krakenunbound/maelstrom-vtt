@@ -34,6 +34,8 @@ export type MapToken = {
   mine: boolean;
   active?: boolean;
   health: TokenHealth | null;
+  // Dead on the field (a creature, not a friend): drawn faded over its death marker.
+  dead?: boolean;
   art?: string;
   video?: boolean;
   // Its picture's scale (an animated top-down token drawn larger, over its ring); none: it fills its disc.

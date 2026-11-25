@@ -261,7 +261,7 @@ const said = (agent, pattern) => agent.chatLog(400).some((line) => pattern.test(
     assert(!data(pc).consequences.moderate.text, "recovered");
     // A pregen from the scenario, taken as it is.
     const rook = agent.records.list({ type: "pregencharsheet" }).find((item) => item.name === "Rook Tallow (Fate Core)");
-    const taken = await tool("kraken_build_character", { spec: { pregen: rook.id }, owner: "someone" });
+    const taken = await tool("kraken_build_character", { spec: { pregen: "rook tallow (fate core)" }, owner: "someone" }); // by its name, as by its id
     assert(taken.skills.Fight === 4 && taken.stunts.length === 3 && taken.refresh === 3 && taken.tracks.join() === "Physical 4,Mental 3", `Rook taken as he is: ${JSON.stringify(taken)}`);
     const ilsaFae = agent.records.list({ type: "pregencharsheet" }).find((item) => item.name === "Ilsa Fenwright (Fate Accelerated)");
     assert(/Fate Accelerated character/.test((await refused("kraken_build_character", { spec: { pregen: ilsaFae.id } })) ?? ""), "a FAE pregen in a Core game is refused");

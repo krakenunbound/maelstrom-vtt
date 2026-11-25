@@ -539,6 +539,8 @@ select {
 .token-mine { z-index: 6; }
 .token-lifted { opacity: 0.45; }
 .token-hidden .token-disc { opacity: 0.5; outline: 2px dashed #a612d4; outline-offset: 2px; }
+/* A creature dead on the field: faded and grey, so its death marker shows through. */
+.token-dead .token-disc { opacity: 0.32; filter: grayscale(0.85); }
 
 /* FG's token options (TokenBadges.tsx): a health bar along the bottom, a badge on hover only, names always, elevation. */
 .health-bar {

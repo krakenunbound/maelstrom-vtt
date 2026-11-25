@@ -114,6 +114,20 @@ const hero = records.create({ type: "character", name: "Hero", owner: "Ann", vis
   console.log("ok no teleporting by remove and place, nothing while locked");
 }
 
+// --- a dead creature: faded over its death marker (a dead friend is not) ----------
+{
+  const body = records.create({ type: "npc", name: "Kobold", visibility: "gm", data: { hp: { total: 3, wounds: 13 } } }, gm);
+  const ally = records.create({ type: "npc", name: "Hireling", visibility: "gm", data: { hp: { total: 3, wounds: 13 } } }, gm);
+  const alive = records.create({ type: "npc", name: "Kobold 2", visibility: "gm", data: { hp: { total: 3, wounds: 1 } } }, gm);
+  const corpse = map.place({ recordId: body.id, x: 425, y: 275, faction: "foe" }, gm);
+  const friend = map.place({ recordId: ally.id, x: 375, y: 275, faction: "friend" }, gm);
+  const standing = map.place({ recordId: alive.id, x: 325, y: 275, faction: "foe" }, gm);
+  const seen = (seat, id) => map.viewFor(seat, "").tokens.find((token) => token.id === id);
+  assert(seen(gm, corpse.id)?.dead === true && !seen(gm, friend.id)?.dead && !seen(gm, standing.id)?.dead, "a dead foe is marked dead (to fade over its marker); a dead friend and a living foe are not");
+  for (const id of [corpse.id, friend.id, standing.id]) map.remove(id, gm);
+  console.log("ok a dead creature's token is drawn faded");
+}
+
 // --- lights ------------------------------------------------------------------------
 {
   const lurker = map.place({ name: "Lurker", x: 225, y: 75, hidden: true }, gm);

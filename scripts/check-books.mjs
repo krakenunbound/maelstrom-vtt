@@ -197,6 +197,9 @@ try {
   const gm = await connect(port, { name: "GM", hostToken });
   const player = await connect(port, { name: "A test player" });
   const book = encodeURIComponent("Test Keep");
+  // The library with no book named: asked which book, not told some book is inactive.
+  const unnamed = await callTool("kraken_library", { action: "list" }, { table: () => server }).then((result) => result.content[0].text, (error) => error.message);
+  assert(/Which book\?/.test(unnamed), `a library list with no module: ${unnamed}`);
 
   const gmShelf = (await (await get(gm, "/book/list")).json()).books;
   assert(gmShelf.length === 3 && !gmShelf.some((item) => item.id === "Other Game"), `the GM sees the modules for the campaign's game, not another game's: ${gmShelf.map((item) => item.id)}`);

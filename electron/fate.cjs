@@ -72,7 +72,9 @@ async function buildFate(table, spec, owner, seat) {
   let source = spec ?? {};
   if (spec?.pregen) {
     // A book's pregenerated character (type pregencharsheet), as it is.
-    const sheet = table.records.get(String(spec.pregen));
+    // Its id or its name (as 5E takes it).
+    const wanted = String(spec.pregen).toLowerCase();
+    const sheet = table.records.get(String(spec.pregen)) ?? table.records.list({ type: "pregencharsheet" }).find((item) => String(item.name).toLowerCase() === wanted);
     if (!sheet || sheet.type !== "pregencharsheet") throw new Error("No such pregenerated character: make its book active (Modules).");
     if (sheet.data?.game && sheet.data.game !== game) throw new Error(`${sheet.name} is a ${rules.RULESETS[sheet.data.game]} character; this campaign plays ${table.ruleset?.()}.`);
     source = { ...spec, name: spec.name || sheet.name, pregen: unpack(sheet.data) };

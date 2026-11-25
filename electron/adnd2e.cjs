@@ -19,7 +19,9 @@ async function build2e(table, spec, owner, seat) {
   const rules = await rules2e();
   let built;
   if (spec?.pregen) {
-    const sheet = table.records.get(String(spec.pregen));
+    // Its id or its name (as 5E takes it).
+    const wanted = String(spec.pregen).toLowerCase();
+    const sheet = table.records.get(String(spec.pregen)) ?? table.records.list({ type: "pregencharsheet" }).find((item) => String(item.name).toLowerCase() === wanted);
     if (!sheet || sheet.type !== "pregencharsheet") throw new Error("No such pregenerated character: make its book active (Modules).");
     built = { name: String(spec.name ?? "").trim() || sheet.name, data: rules.fromFG(sheet.data), problems: [] };
     // (Its FG portrait path is the book's, not Kraken's art: the GM's art by race and class instead.)

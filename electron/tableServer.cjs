@@ -690,6 +690,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   function requireActiveBook(given) {
     // A table with no shelf (a test's bare server) has no active books to judge by.
     if (!books || activeBookId(given)) return;
+    if (!String(given ?? "").trim()) throw new Error("Which book? Give the module's name (or a record path ending @ its book).");
     const named = books?.info(String(given ?? ""))?.title ?? String(given ?? "").split(/[\/]/).pop();
     throw new Error(`${named || "That book"} is not active in this campaign: make it active in Modules first.`);
   }
@@ -4107,7 +4108,12 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
               } else await combat.add(msg.entry ?? { recordId: msg.recordId, count: msg.count, tokenId: msg.tokenId, name: msg.name, faction: msg.faction }, seat);
               return;
             case "add-party":
-              for (const record of (await party.partyView(agentHandle)).members) await combat.add({ recordId: record.id }, seat);
+              {
+                const members = (await party.partyView(agentHandle)).members;
+                // Nobody on the party sheet: say so, not a silent nothing.
+                if (!members.length) throw new Error("The party sheet is empty: add characters to it first.");
+                for (const record of members) await combat.add({ recordId: record.id }, seat);
+              }
               return;
             case "update":
               return combat.update(String(msg.id), msg.patch ?? {}, seat);

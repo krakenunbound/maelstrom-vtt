@@ -108,7 +108,7 @@ function createBookkeeping(table) {
     }
     await save(now, spent.data);
     if (spent.reloaded) say(`[AMMUNITION] ${now.name} reloads the ${spent.weapon}: ${spent.left} rounds in it, ${plural(spent.spares, "spare magazine")} left.`, "Combat");
-    else if (spent.low) say(`[AMMUNITION] ${now.name} is low on ${spent.kind.label}: ${spent.left} left.`, "Combat");
+    else if (spent.low) say(`[AMMUNITION] ${now.name} is low on ${(!spent.magazine && lib.bk.shotWord(spent.name)) || spent.kind.label}: ${spent.left} left.`, "Combat");
     return { ok: true, ammo: spent.name, fired: spent.fired, left: spent.left, ...(spent.spares !== undefined ? { spares: spent.spares } : {}) };
   }
   // SiegeCore fired one itself (C&C's fireAmmunition): the fight's tally, for picking up after.
@@ -128,7 +128,7 @@ function createBookkeeping(table) {
       if (!decl?.ammo) continue;
       const back = lib.bk.recoverable(decl, record.data).filter((item) => item.back > 0);
       if (!back.length) continue;
-      say(`[AMMUNITION] ${record.name} can pick up ${back.map((item) => `${item.back} ${item.name}`).join(", ")} after the fight: Recover on the sheet's Inventory.`);
+      say(`[AMMUNITION] ${record.name} can pick up ${back.map((item) => `${item.back} ${lib.bk.shotWord(item.name, item.back) || item.name}`).join(", ")} after the fight: Recover on the sheet's Inventory.`);
       told.push({ name: record.name, back });
     }
     return told;
@@ -140,7 +140,7 @@ function createBookkeeping(table) {
     if (!done.back.length) throw new Error(`${record.name} has nothing to pick up.`);
     await save(record, done.data);
     const got = done.back.filter((item) => item.back > 0);
-    say(`[AMMUNITION] ${record.name} picks up ${got.length ? got.map((item) => `${item.back} ${item.name}`).join(", ") : "nothing worth keeping"}${done.back.some((item) => item.spent > item.back) ? "; the rest is lost" : ""}.`, record.name);
+    say(`[AMMUNITION] ${record.name} picks up ${got.length ? got.map((item) => `${item.back} ${lib.bk.shotWord(item.name, item.back) || item.name}`).join(", ") : "nothing worth keeping"}${done.back.some((item) => item.spent > item.back) ? "; the rest is lost" : ""}.`, record.name);
     return { recovered: done.back };
   }
 

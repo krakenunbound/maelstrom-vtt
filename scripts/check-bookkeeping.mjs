@@ -155,7 +155,11 @@ try {
   await tool("kraken_combat", { action: "attack", recordId: ryn.id, weapon: "id-00001" });
   assert(data(ryn).bookkeeping.spent["id-00002"].n === 4, `four shots in the tally: ${JSON.stringify(data(ryn).bookkeeping)}`);
   await tool("kraken_combat", { action: "end" });
-  assert(lines().some((line) => /Ryn can pick up 2 Arrows after the fight/.test(line)), `End offers the recovery: ${lines().join(" | ")}`);
+  assert(lines().some((line) => /Ryn can pick up 2 arrows after the fight/.test(line)), `End offers the recovery: ${lines().join(" | ")}`);
+  // The shots' own word, never the pack's: FG 2E's bundles and pouches, a quiver, one shot.
+  for (const [name, n, want] of [["Arrows, bundle of 10", 1, "arrow"], ["Sling stones, pouch of 10", 3, "sling stones"], ["Quiver with 20 Arrows", 2, "arrows"], ["Arrows (20)", 2, "arrows"], ["Bolts", 1, "bolt"]]) {
+    assert(bk.shotWord(name, n) === want, `the shots' word for ${name} x${n}: ${bk.shotWord(name, n)}`);
+  }
   out = await books(ryn.id, "recover");
   assert(row(ryn, "id-00002").count === 10 && !data(ryn).bookkeeping.spent, `two picked up (8 + 2): ${JSON.stringify(row(ryn, "id-00002"))}`);
   // The GM's switch off: no arrows, the bow fires anyway and counts nothing.

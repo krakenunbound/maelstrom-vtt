@@ -191,6 +191,14 @@ export function spendAmmo(decl, data, weaponKey, weaponName = "", shots = 1) {
   const low = num(decl.ammo.low, 5);
   return { ok: true, tracked: true, kind, key, weapon: nameOf(weapon), name: nameOf(next), fired, left, low: left <= low, data: { ...data, inventorylist: list, bookkeeping: { ...(data.bookkeeping ?? {}), spent } } };
 }
+// The shots' own word for a line in chat: "Arrows, bundle of 10" says "arrows", "Sling stones, pouch of 10"
+// "sling stones", "Quiver with 20 Arrows" "arrows"; one is "arrow".
+export function shotWord(name, n = 2) {
+  let word = String(name ?? "").trim();
+  word = /\bwith\s+\d+\s+([a-z][a-z\s-]*)$/i.exec(word)?.[1] ?? word;
+  word = word.replace(/\s*\(\d+(?:\s+[a-z][a-z\s-]*)?\)\s*$/i, "").replace(/,?\s*(?:pouch|bundle|quiver|case|bag|sheaf|box|sack)\s+of\s+\d+\b/i, "").trim().toLowerCase();
+  return n === 1 ? word.replace(/(\w)s$/, "$1") : word;
+}
 // What can be picked up after a fight: half the shots (5E), or the game's share; rounds down.
 export function recoverable(decl, data) {
   const rate = num(decl?.ammo?.recover, 0);

@@ -2522,7 +2522,7 @@ function MapViewInner({
           return (
             <div
               key={token.id}
-              className={["token", ...tokenFxClasses((token.effects?.fx ?? []) as FxKey[], fxMode), token.sensed ? "token-sensed" : "", token.held ? "token-held" : "", canDrag ? "token-draggable" : "", token.mine ? "token-mine" : "", token.active && tokenLook.initIndicator !== "off" ? (tokenLook.initIndicator === "ring" ? "token-active token-active-ring" : "token-active") : "", targeted.includes(token.id) ? "token-targeted" : "", selected === token.id ? "token-selected" : "", picked.includes(token.id) ? "token-picked" : "", token.hidden ? "token-hidden" : "", isDragged ? "token-lifted" : ""]
+              className={["token", ...tokenFxClasses((token.effects?.fx ?? []) as FxKey[], fxMode), token.sensed ? "token-sensed" : "", token.held ? "token-held" : "", canDrag ? "token-draggable" : "", token.mine ? "token-mine" : "", token.active && tokenLook.initIndicator !== "off" ? (tokenLook.initIndicator === "ring" ? "token-active token-active-ring" : "token-active") : "", targeted.includes(token.id) ? "token-targeted" : "", selected === token.id ? "token-selected" : "", picked.includes(token.id) ? "token-picked" : "", token.hidden ? "token-hidden" : "", token.dead ? "token-dead" : "", isDragged ? "token-lifted" : ""]
                 .filter(Boolean)
                 .join(" ")}
               data-token={token.id}

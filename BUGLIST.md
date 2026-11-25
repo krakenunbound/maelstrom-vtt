@@ -45,16 +45,16 @@ Found while recording the B2 kobold ambush (AD&D 2E, six pregens, the agent play
 
 | # | Severity | Bug | Found by | State |
 |---|---|---|---|---|
-| 13 | medium | A dead creature's token stays on the map over its death marker until the GM removes it from the tracker and the map (the demo did it by hand); an option to clear a dead NPC's token (or show it faded) is wanted | demo take | Open |
-| 14 | medium | Chat lines from the agent's attacks, casts and XP read "Agent", not the creature or "DM" (the GM's own tracker buttons say "Combat") | demo take | Open |
-| 15 | low | The ammunition pick-up note reads "can pick up 1 Arrows, bundle of 10 (Poor)": a bundle's count and name, not "4 arrows" / "3 sling stones" | demo take | Open |
-| 16 | low | "low on sling bullets: 5 left" for sling stones: the ammunition's own word (stones) is wanted | demo take | Open |
-| 17 | low | Building a 2E pregen by name fails (kraken_build_character pregen takes only the record id; 5E takes either) | demo setup | Open |
-| 18 | low | "Add party" on the tracker silently adds no one while the party sheet is empty: say so ("the party sheet is empty: add characters first") | demo setup | Open |
-| 19 | low | Rolling initiative and kraken_combat view each take about 2.3 s for the agent (it waits for the 3D dice to land) | demo setup | Open |
-| 20 | low | kraken_library with no module says "That book is not active" instead of asking for the module's name | demo setup | Open |
-| 21 | low | Electron's window reload keeps serving the old page after a rebuild (dev only: restart the app) | testing | Open |
+| 13 | medium | A dead creature's token stays on the map over its death marker until the GM removes it from the tracker and the map (the demo did it by hand); an option to clear a dead NPC's token (or show it faded) is wanted | demo take | Fixed: a dead foe or neutral is drawn faded and grey (`.token-dead`); check-map-fixes |
+| 14 | medium | Chat lines from the agent's attacks, casts and XP read "Agent", not the creature or "DM" (the GM's own tracker buttons say "Combat") | demo take | Fixed: Combat for its rolls, Party for XP and shares; check-5e-house-rules |
+| 15 | low | The ammunition pick-up note reads "can pick up 1 Arrows, bundle of 10 (Poor)": a bundle's count and name, not "4 arrows" / "3 sling stones" | demo take | Fixed: `shotWord` (the shots' own word, one or many); check-bookkeeping |
+| 16 | low | "low on sling bullets: 5 left" for sling stones: the ammunition's own word (stones) is wanted | demo take | Fixed: the stack's own word (rounds for a magazine); check-bookkeeping |
+| 17 | low | Building a 2E pregen by name fails (kraken_build_character pregen takes only the record id; 5E takes either) | demo setup | Fixed: 2E and Fate take the id or name; check-adnd2e, check-fate |
+| 18 | low | "Add party" on the tracker silently adds no one while the party sheet is empty: say so ("the party sheet is empty: add characters first") | demo setup | Fixed: refused with that message (tracker and tool); check-party-fg |
+| 19 | low | Rolling initiative and kraken_combat view each take about 2.3 s for the agent (it waits for the 3D dice to land) | demo setup | Looked into: the host answers init and view in about 1 ms and nothing waits on the dice; the time was the app busy while recording (3D dice, OBS). No change |
+| 20 | low | kraken_library with no module says "That book is not active" instead of asking for the module's name | demo setup | Fixed: "Which book?"; check-books |
+| 21 | low | Electron's window reload keeps serving the old page after a rebuild (dev only: restart the app) | testing | Looked into: the GM window loads dist with loadFile, no cache, service worker or protocol of ours; dev only, restart the app |
 | 22 | data | Kraken's AD&D 2E One-Shot Pregens: a stray 13th pregen named "public"; The Leaf (ranger), The Wind (gnome fighter) and Ainsley (paladin) carry the fighters' battle axe and sling kit; Hand Axe and Sling list their damage several times | demo setup | Open (the pack, not the app) |
-| 23 | low | Demo script only: "Quickfingers's eyes" caption (scratchpad demo-b2.mjs, not the app) | demo take | Open |
+| 23 | low | Demo script only: "Quickfingers's eyes" caption (scratchpad demo-b2.mjs, not the app) | demo take | Fixed in the demo script (Quickfingers' eyes) |
 
 Not run this session (they drive whole windows and can freeze the PC while it is in use): `verify-cards-ui` (changed for the GM's long rest), `verify-map-play-ui` (target lines), `verify-campaigns-ui`.

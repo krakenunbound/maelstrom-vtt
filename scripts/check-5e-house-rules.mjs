@@ -92,6 +92,8 @@ try {
   const before = shots();
   await ct({ action: "attack", id: R, weapon: bow });
   assert(shots() === before + 1, "the ranger's tracker row shoots its shortbow");
+  // The agent's tracker rolls speak as the GM's tracker buttons do (Combat), not as "Agent".
+  assert(lastRoll(/\[ATTACK\].*Shortbow/).from === "Combat", `the agent's attack line: ${lastRoll(/\[ATTACK\].*Shortbow/).from}`);
   // A Prone target: disadvantage at range; DISATK on the attacker and GRANTADVATK on the target cancel.
   await ct({ action: "effect", id: S, effect: { label: "Prone", duration: 0 } });
   await ct({ action: "attack", recordId: ranger.id, weapon: bow });

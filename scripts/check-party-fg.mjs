@@ -34,6 +34,9 @@ try {
   const build = (owner, name, cls) => tool("kraken_build_character", { owner, spec: { name, species: "Human", class: cls, level: 2, scores: { strength: 14, dexterity: 12, constitution: 14, intelligence: 10, wisdom: 10, charisma: 10 } } });
   const hero = await build("Ann", "Hero", "Fighter");
   const sage = await build("Bob", "Sage", "Wizard");
+  // No one on the party sheet yet: Add party says so, adds nothing.
+  const empty = await tool("kraken_combat", { action: "add-party" }).then(() => "", (error) => error.message);
+  assert(/party sheet is empty/.test(empty) && !agent.combat.entries().length, `Add party with nobody on the sheet: ${empty || "nothing said"}`);
   await tool("kraken_party_edit", { members: [hero.id, sage.id] });
   await tool("kraken_record_update", { id: hero.id, data: { specialdefenses: "Resist fire" } });
 
