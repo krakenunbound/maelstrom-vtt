@@ -742,6 +742,8 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     if (raw.kind === "macro" && typeof raw.text === "string" && raw.text.trim()) return { kind: "macro", text: raw.text.trim().slice(0, 300), label: label || raw.text.trim().slice(0, 80) };
     // A window of the desktop (Cards, Notes, the party sheet...), opened again with a click.
     if (raw.kind === "window" && typeof raw.window === "string" && /^[a-z0-9:_-]{1,40}$/i.test(raw.window)) return { kind: "window", window: raw.window, title: text(raw.title, "").slice(0, 80) || label || raw.window, ...(typeof raw.payload === "string" && raw.payload ? { payload: raw.payload.slice(0, 160) } : {}), label: label || text(raw.title, "").slice(0, 80) || raw.window };
+    // A map (the map window's pin): its adventure and scene, back on the table with a click (the GM's).
+    if (raw.kind === "scene" && typeof raw.adventure === "string" && raw.adventure.trim() && typeof raw.scene === "string" && raw.scene.trim()) return { kind: "scene", adventure: raw.adventure.slice(0, 200), scene: raw.scene.slice(0, 120), label: label || "Map" };
     return null;
   };
   const cleanSlots = (list) => Array.from({ length: SLOTS }, (_, index) => (Array.isArray(list) ? cleanSlot(list[index]) : null));

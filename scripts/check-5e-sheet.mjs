@@ -127,7 +127,8 @@ try {
   ann.send({ type: "rest", id: mage.id, args: { kind: "short", hitDice: 0 }, req: "sr" });
   await settle(400);
   assert(mageData().resources["id-00002"].used === 0 && mageData().resources["id-00001"].used === 1, `a short rest: ${JSON.stringify(mageData().resources)}`);
-  ann.send({ type: "rest", id: mage.id, args: { kind: "long" }, req: "lr" });
+  // A long rest is the GM's to call.
+  gm.send({ type: "rest", id: mage.id, args: { kind: "long" }, req: "lr" });
   await settle(400);
   assert(mageData().resources["id-00001"].used === 0, `a long rest: ${JSON.stringify(mageData().resources)}`);
   await editMage([{ path: "resources.id-00002", value: null }]);

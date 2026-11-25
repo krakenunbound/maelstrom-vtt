@@ -337,11 +337,15 @@ try {
   const held = await latest(player, "op-result", (m) => m.req === 7, "the pause");
   assert(!held.ok && /paused/.test(held.error), `paused: ${JSON.stringify(held)}`);
   await tool("kraken_table_options", { paused: false });
-  // A player rests their own character through the table's message (answered as an op).
-  player.ws.send(JSON.stringify({ type: "rest", id: ryn.id, req: 8, args: { kind: "long" } }));
+  // A player takes a short rest for their own character through the table's message (answered as an op); a long rest
+  // is the GM's to call.
+  player.ws.send(JSON.stringify({ type: "rest", id: ryn.id, req: 8, args: { kind: "short" } }));
   const answer = await latest(player, "op-result", (m) => m.req === 8, "the player's rest");
-  assert(answer.ok && answer.result.rested === "Ryn", `the player's own long rest: ${JSON.stringify(answer)}`);
-  player.ws.send(JSON.stringify({ type: "rest", id: ox.id, req: 9, args: { kind: "long" } }));
+  assert(answer.ok && answer.result.rested === "Ryn", `the player's own short rest: ${JSON.stringify(answer)}`);
+  player.ws.send(JSON.stringify({ type: "rest", id: ryn.id, req: 10, args: { kind: "long" } }));
+  const noLong = await latest(player, "op-result", (m) => m.req === 10, "a player's long rest");
+  assert(!noLong.ok && /GM calls a long rest/.test(noLong.error), `a player cannot call a long rest: ${JSON.stringify(noLong)}`);
+  player.ws.send(JSON.stringify({ type: "rest", id: ox.id, req: 9, args: { kind: "short" } }));
   const not = await latest(player, "op-result", (m) => m.req === 9, "another's rest");
   assert(!not.ok && /not your character/.test(not.error), `not another's: ${JSON.stringify(not)}`);
 } finally {

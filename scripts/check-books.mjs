@@ -286,6 +286,9 @@ try {
   const later = createTableServer({ books, ruleset: "D&D 5E", saved: server.persisted() });
   assert(later.agent.quickSlots("A test player")[3].file === "images/keep.png", "slots are kept with the campaign");
   assert((await tool("kraken_quickslots", { slots: [{ kind: "sheet", record: "id-1", label: "Aldric" }] }))[0].kind === "sheet", "the agent sets the GM's slots");
+  // A map (the map window's pin): kept with its adventure and scene; one without a scene is dropped.
+  const maps = await tool("kraken_quickslots", { slots: [{ kind: "scene", adventure: "B2 The Keep", scene: "fg-caves", label: "The Caves of Chaos" }, { kind: "scene", adventure: "B2 The Keep", label: "No scene" }] });
+  assert(maps[0].kind === "scene" && maps[0].scene === "fg-caves" && maps[0].label === "The Caves of Chaos" && maps[1] === null, `a map in a quick slot: ${JSON.stringify(maps.slice(0, 2))}`);
 
   // Notes, as FG's Player Notes: a player's own, shared when they say so.
   const other = await connect(port, { name: "Another player" });

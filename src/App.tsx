@@ -569,6 +569,45 @@ export function App() {
   }
   const live = useRef({ openBytes, scenes, openImage, closeImage, playImage, openInStudio, prepNow: prep });
   live.current = { openBytes, scenes, openImage, closeImage, playImage, openInStudio, prepNow: prep };
+  // A map's quick slot (its window's pin): that scene back on the table; its book's maps opened again first
+  // when another adventure is open.
+  useEffect(() => {
+    if (!dm) return;
+    const onOpen = (event: Event) => {
+      const { adventure, scene: wanted } = (event as CustomEvent<{ adventure?: string; scene?: string }>).detail ?? {};
+      if (!adventure || !wanted) return;
+      void (async () => {
+        try {
+          try {
+            live.current.scenes(adventure, wanted);
+            return;
+          } catch {
+            /* not open now: opened again below */
+          }
+          const books = await shelf();
+          const from = bookOf({ adventure, sceneId: wanted }, books);
+          if (!from.fromBook || !from.book?.active) throw new Error(`${adventure} is not open, and no active book has it.`);
+          await live.current.openBytes(await session.fgMaps(from.book.name), from.book.name);
+          for (let wait = 0; wait < 40; wait++) {
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            try {
+              live.current.scenes(adventure, wanted);
+              return;
+            } catch {
+              /* not read yet */
+            }
+          }
+          throw new Error(`That map is no longer in ${adventure}.`);
+        } catch (caught) {
+          setError(caught instanceof Error ? caught.message : String(caught));
+        }
+      })();
+    };
+    window.addEventListener("kraken:open-scene", onOpen);
+    return () => window.removeEventListener("kraken:open-scene", onOpen);
+    // live.current holds the current handlers; the listener stays for the sitting.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dm]);
   // The GM's screen opens every picture in the image window; a player's keeps its viewer.
   useEffect(() => {
     imageWindow.open = dm ? (image) => live.current.openImage(image) : null;
@@ -741,6 +780,7 @@ export function App() {
           sceneId={scene?.id ?? ""}
           sceneName={scene?.name ?? ""}
           sceneBar={sceneBar}
+          mapLink={dm && pack && tableScene && !prep ? { kind: "scene", adventure: candidates[adventureIndex]?.name ?? pack.name, scene: tableScene.id, label: tableScene.name } : null}
           onMapClosed={prep ? closeImage : dm && tableScene ? () => closeTableMap(tableScene.id) : undefined}
           mapHeld={mapHeld}
           emptyGM={emptyGM}

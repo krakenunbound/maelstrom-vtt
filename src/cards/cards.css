@@ -8,6 +8,11 @@
 .cards-empty { padding: 16px; }
 /* The hand's box (it scrolls only where CSS zoom is missing), and the hand in it, zoomed to fit (CardsWindow FitHand). */
 .cards-hand { flex: 1; min-height: 0; overflow: auto; padding: 8px 14px 18px; }
+/* One group at a time: a tab each (All, Weapons, a spell level, Features...). */
+.cards-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 6px 12px 0; }
+.cards-tabs button { padding: 3px 12px; border-radius: 999px; font-size: 0.8rem; background: transparent; border: 1px solid var(--panel-edge); color: var(--muted, #b9b2a3); }
+.cards-tabs button small { margin-left: 6px; opacity: 0.7; }
+.cards-tabs button[aria-selected="true"] { background: var(--brass); border-color: var(--brass); color: #121418; font-weight: 700; }
 .cards-hand[data-fits="true"] { overflow: hidden; }
 .cards-fit { display: flex; flex-wrap: wrap; align-items: flex-start; align-content: flex-start; gap: 6px 26px; }
 .cards-row { margin: 0; }

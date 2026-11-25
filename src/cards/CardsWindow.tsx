@@ -73,6 +73,10 @@ export function CardsWindow({ session, characterId }: { session: Session; charac
   const characters = useMine(session);
   const windows = useWindows();
   const [chosen, setChosen] = useState(characterId ?? "");
+  // Opened again for another character (a sheet's Undock, the agent): that character's hand.
+  useEffect(() => {
+    if (characterId) setChosen(characterId);
+  }, [characterId]);
   const character = characters.find((item) => item.id === chosen) ?? characters[0] ?? null;
   const settings = useSyncExternalStore(cardsStore.subscribe, cardsStore.settings);
   if (!character) return <p className="hint cards-empty">No character of yours to lay out yet.</p>;
@@ -112,6 +116,8 @@ export function CardsWindow({ session, characterId }: { session: Session; charac
 }
 
 function RestButton({ session, character }: { session: Session; character: TableRecord }) {
+  // The GM calls long rests; players do not see the button.
+  if (session.role !== "dm") return null;
   const changes = restChanges(character.data);
   // The game's own long rest where it has one (bookkeeping: hit points, Hit Dice, slots, a ration); else the slots alone.
   const long = Boolean(rulesetOfRecord(character.data?.ruleset).bookkeeping?.rest && (rulesetOfRecord(character.data?.ruleset).bookkeeping?.rest as { long?: unknown }).long);
@@ -144,14 +150,49 @@ function Hand({ session, character }: { session: Session; character: TableRecord
     return () => window.clearTimeout(timer);
   }, [cards]);
   if (cards.length === 0) return <p className="hint cards-empty">{character.name} has nothing to lay out as cards yet.</p>;
+  return <HandGroups session={session} character={character} cards={cards} restored={restored} />;
+}
+
+// The tab last chosen, kept on this screen (a group a character lacks shows All).
+const TAB_KEY = "kraken-cards-tab";
+function readTab() {
+  try {
+    return window.localStorage.getItem(TAB_KEY) || "All";
+  } catch {
+    return "All";
+  }
+}
+function HandGroups({ session, character, cards, restored }: { session: Session; character: TableRecord; cards: Card[]; restored: string[] }) {
+  const [tab, setTab] = useState(readTab);
+  const chooseTab = (name: string) => {
+    setTab(name);
+    try {
+      window.localStorage.setItem(TAB_KEY, name);
+    } catch {
+      /* this sitting only */
+    }
+  };
   const groups = new Map<string, Card[]>();
   for (const card of cards) {
     const group = "group" in card && card.group ? String(card.group) : card.kind === "weapon" ? "Weapons" : card.level === 0 ? "Cantrips" : `Level ${card.level}`;
     groups.set(group, [...(groups.get(group) ?? []), card]);
   }
+  // One group at a time (a tab each, All for the whole hand): a small window keeps its cards big.
+  const shown = tab !== "All" && groups.has(tab) ? [[tab, groups.get(tab) ?? []] as const] : [...groups.entries()];
   return (
+    <>
+      {groups.size > 1 ? (
+        <div className="cards-tabs" role="tablist" aria-label="Card groups">
+          {["All", ...groups.keys()].map((name) => (
+            <button key={name} type="button" role="tab" aria-selected={(groups.has(tab) ? tab : "All") === name} data-cards-tab={name} onClick={() => chooseTab(name)}>
+              {name}
+              {name !== "All" ? <small>{groups.get(name)?.length}</small> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
     <FitHand>
-      {[...groups.entries()].map(([group, list]) => (
+      {shown.map(([group, list]) => (
         <section key={group} className="cards-row" data-group={group}>
           <h4>
             {group}
@@ -165,6 +206,7 @@ function Hand({ session, character }: { session: Session; character: TableRecord
         </section>
       ))}
     </FitHand>
+    </>
   );
 }
 

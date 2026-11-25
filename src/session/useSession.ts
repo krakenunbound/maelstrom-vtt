@@ -292,7 +292,9 @@ export type QuickSlot =
   // A chat line run again with a click (/roll 4d6k3, /emote ..., or words said).
   | { kind: "macro"; text: string; label: string }
   // A window of the desktop (Cards, Notes, the party sheet, the combat tracker...): opened with a click.
-  | { kind: "window"; window: string; title: string; payload?: string; label: string };
+  | { kind: "window"; window: string; title: string; payload?: string; label: string }
+  // A map: an adventure's scene (a book's maps, the GM's own map), back on the table with a click (the GM's).
+  | { kind: "scene"; adventure: string; scene: string; label: string };
 export type KrakenLink = QuickSlot;
 export type SoundItem = { id: string; kind: string; group: string; name: string };
 export type SoundLibrary = { sounds: SoundItem[]; groups: { id: string; count: number }[]; folder: string; triggers?: SoundTrigger[] };

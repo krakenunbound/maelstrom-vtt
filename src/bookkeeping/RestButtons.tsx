@@ -8,7 +8,7 @@ import { Icon } from "../ui/icons";
 export function RestButtons({ session, recordId, rests, hitDice = null, party = false, onError = () => undefined, onDone }: { session: Session; recordId?: string; rests: { short?: unknown; long?: unknown }; hitDice?: number | null; party?: boolean; onError?: (text: string) => void; onDone?: (text: string) => void }) {
   const [dice, setDice] = useState(1);
   const [busy, setBusy] = useState(false);
-  if ((!rests.short && !rests.long)) return null;
+  if (!rests.short && !(rests.long && session.role === "dm")) return null;
   const go = (kind: "short" | "long") => {
     setBusy(true);
     void session
@@ -36,7 +36,8 @@ export function RestButtons({ session, recordId, rests, hitDice = null, party = 
           </button>
         </>
       ) : null}
-      {rests.long ? (
+      {/* A long rest is the GM's to call: players see Short rest only. */}
+      {rests.long && session.role === "dm" ? (
         <button type="button" className="supplies-act" data-action={party ? "party-long-rest" : "long-rest"} disabled={busy} onClick={() => go("long")} title={party ? "Every party member takes a long rest (a ration each); the clock moves on" : "A long rest by the game's rules (a ration eaten)"}>
           Long rest
         </button>

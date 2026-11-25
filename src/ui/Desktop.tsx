@@ -286,6 +286,7 @@ export function Desktop({
   onMapClosed,
   mapHeld = "",
   overlay,
+  mapLink = null,
 }: {
   session: Session;
   scene: ReactNode | null;
@@ -293,6 +294,8 @@ export function Desktop({
   sceneId?: string;
   sceneName?: string;
   sceneBar: ReactNode;
+  // The map's pin (its window's anchor): the scene as a link, for a quick slot.
+  mapLink?: QuickSlot | null;
   emptyGM: ReactNode;
   onOpenAdventure: () => void;
   // Opens a map bundle on the table (an FG module's maps from the Library).
@@ -814,8 +817,8 @@ export function Desktop({
         <div className="window-layer">
           {windows.windows.map((item) =>
             item.kind === "map" ? (
-              // The map's window (FG's image window): a window like the others, in front when it opens.
-              <FloatingWindow key={item.key} item={item}>
+              // The map's window (FG's image window): behind every other window, its pin a link back to it.
+              <FloatingWindow key={item.key} item={item} link={scene ? mapLink : null}>
                 {scene ? (
                   <div className="map-window">
                     <div className="scene-bar">{sceneBar}</div>

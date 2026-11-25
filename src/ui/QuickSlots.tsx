@@ -43,7 +43,7 @@ export function slotDrag(slot: QuickSlot) {
   };
 }
 
-export const LINK_ICON: Record<QuickSlot["kind"], string> = { book: "book", picture: "map", sheet: "character", sound: "sound", note: "chat", record: "shield", dice: "tower", macro: "scroll", window: "dock" };
+export const LINK_ICON: Record<QuickSlot["kind"], string> = { book: "book", picture: "map", sheet: "character", sound: "sound", note: "chat", record: "shield", dice: "tower", macro: "scroll", window: "dock", scene: "map" };
 // A link read from a drop, if it is one.
 export function linkFrom(event: React.DragEvent): QuickSlot | null {
   try {
@@ -80,6 +80,10 @@ export function useOpenLink(session: Session) {
     } else if (link.kind === "macro") chatRunner.run?.(link.text);
     // A desktop window (Cards, Notes, the party sheet...): opened, or brought forward.
     else if (link.kind === "window") windows.open(link.window as never, link.title, link.payload);
+    // A map back on the table (the GM's app opens its adventure again if another is open).
+    else if (link.kind === "scene") {
+      if (session.role === "dm") window.dispatchEvent(new CustomEvent("kraken:open-scene", { detail: { adventure: link.adventure, scene: link.scene } }));
+    }
     else if (link.kind === "sound") {
       if (sound.isPlaying(link.sound)) {
         if (session.role === "dm") stopSoundForTable(session, link.sound, link.soundKind);
@@ -144,7 +148,7 @@ function keepStyle(style: BarStyle) {
 }
 const DOCK_WORDS: Record<DockSide, string> = { bottom: "Dock along the bottom", top: "Dock along the top", left: "Dock upright on the left", right: "Dock upright on the right" };
 
-const USE_LABEL: Record<QuickSlot["kind"], string> = { book: "Open", picture: "Open", sheet: "Open", note: "Open", record: "Open", sound: "Play", dice: "Roll", macro: "Run", window: "Open" };
+const USE_LABEL: Record<QuickSlot["kind"], string> = { book: "Open", picture: "Open", sheet: "Open", note: "Open", record: "Open", sound: "Play", dice: "Roll", macro: "Run", window: "Open", scene: "Open" };
 
 export function QuickSlots({ session }: { session: Session }) {
   const openLink = useOpenLink(session);

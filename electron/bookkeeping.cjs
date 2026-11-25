@@ -601,6 +601,8 @@ function createBookkeeping(table) {
   async function rest({ id, party: all = false, kind = "long", hitDice } = {}, seat) {
     await ready;
     if (!["short", "long"].includes(kind)) throw new Error("A short or a long rest?");
+    // The GM decides when the party gets a long rest; a player spends their own Hit Dice on a short one.
+    if (kind === "long" && seat?.role !== "dm") throw new Error("The GM calls a long rest.");
     if (!all) return restOne(character(id), kind, seat, { hitDice });
     if (seat.role !== "dm") throw new Error("The GM rests the party.");
     if (num(table.combat.round?.(), 0) > 0) throw new Error("Not while the fight goes on: end combat first.");
