@@ -126,6 +126,15 @@ try {
   gm.send({ type: "roll", formula: "1d6", label: "Orc morale", as: "Orc 1", look });
   await arrived();
   assert(lookOfLast() === "monster", "the sets are remembered from the seat's last request");
+  // An agent's rolls (it acts as the GM) are thrown with the GM's sets: as a creature its NPC dice, damage the damage dice,
+  // as a character the GM's own (before, they carried no look and every screen showed its own dice).
+  await new Promise((resolve) => setTimeout(resolve, 1600));
+  await callTool("kraken_roll", { formula: "1d20", label: "[ATTACK] Spear", as: "Orc 1" }, { table: () => server });
+  await arrived();
+  assert(lookOfLast() === "monster", `an agent's roll as a creature: the GM's NPC dice (${lookOfLast()})`);
+  await callTool("kraken_roll", { formula: "1d6", label: "[DAMAGE] Spear", as: "Orc 1" }, { table: () => server });
+  await arrived();
+  assert(lookOfLast() === "magma", `an agent's damage roll: the GM's damage dice (${lookOfLast()})`);
 
   // The dice tower, as FG's: the GM sees "[TOWER]" and the result, Ann sees
   // what went in (no result), Bob sees nothing.

@@ -1669,7 +1669,12 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     // A roll goes out with the throw its roller just made, for the 3D dice.
     // (A tracker's roll is the agent's: it is thrown by the seat that just asked for it.)
     if (entry.roll) {
-      const roller = [...clients.values()].find((client) => client.id === entry.id) ?? (asking && Date.now() - asking.at < 1500 ? asking.client : null);
+      // An agent's roll (it acts as the GM) is thrown with the GM's dice: the characters' own, the creatures', the damage set.
+      const agentRoll = entry.id === "agent" || /^(agent|combat)$/i.test(String(entry.from ?? ""));
+      const roller =
+        [...clients.values()].find((client) => client.id === entry.id) ??
+        (asking && Date.now() - asking.at < 1500 ? asking.client : null) ??
+        (agentRoll ? [...clients.values()].find((client) => client.role === "dm" && client.hand) ?? null : null);
       const hand = roller?.hand;
       if (hand && Date.now() - hand.at < 4000 && hand.throw) entry.roll.throw = hand.throw;
       const look = hand ? lookFor(entry, roller, hand) : null;

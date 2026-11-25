@@ -2149,6 +2149,7 @@ function createCombat({ saved, table, onChange = () => undefined }) {
   // nerve (an effect the GM sees). A score of 12 never fails. A character's
   // (a retainer's) is its Loyalty. bonus: the GM's adjustment (at most +-2).
   async function morale(entryId, bonus, seat) {
+    if (d2e()) return morale2e(entryId, bonus, seat);
     await oldReady();
     mustGM(seat);
     if (!dbf() && !pg()) throw new Error("Morale checks are Basic Fantasy's.");
@@ -2159,6 +2160,22 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     const score = base >= 12 ? 12 : Math.max(2, Math.min(12, base + Math.max(-2, Math.min(2, Math.round(num(bonus, 0))))));
     const rolled = table().dice.roll(pg() ? pgGame().morale.die : "2d6");
     const stands = score >= 12 || (pg() && !pgGame().morale.atMost ? rolled.total >= score : rolled.total <= score);
+    table().postRoll(rolled, `[MORALE] ${entry.name} [MORALE ${score}] [${stands ? "STANDS" : "BREAKS"} ${rolled.total} vs ${score}]`, "Combat", Boolean(entry.hidden), { result: stands ? "SUCCESS" : "FAILURE", by: entry.name, against: score });
+    if (!stands) putEffect(entry, "Morale broken (flees or surrenders)", 0, false);
+    changed();
+    return { name: entry.name, total: rolled.total, score, stands };
+  }
+  // AD&D 2E morale (DMG): 2d10 against the creature's morale rating (its block's "Average (8-10)": the first number,
+  // modifiers added); over it, it breaks: flees or surrenders. A rating of 19 or more never breaks (Fearless).
+  function morale2e(entryId, bonus, seat) {
+    mustGM(seat);
+    const entry = find(entryId);
+    const linked = record(entry);
+    const rating = Number(/(\d+)/.exec(String(linked?.data?.morale ?? ""))?.[1] ?? 0);
+    if (!rating) throw new Error(`${entry.name} has no morale rating.`);
+    const score = Math.max(2, Math.min(20, rating + Math.max(-10, Math.min(10, Math.round(num(bonus, 0))))));
+    const rolled = table().dice.roll("2d10");
+    const stands = score >= 19 || rolled.total <= score;
     table().postRoll(rolled, `[MORALE] ${entry.name} [MORALE ${score}] [${stands ? "STANDS" : "BREAKS"} ${rolled.total} vs ${score}]`, "Combat", Boolean(entry.hidden), { result: stands ? "SUCCESS" : "FAILURE", by: entry.name, against: score });
     if (!stands) putEffect(entry, "Morale broken (flees or surrenders)", 0, false);
     changed();
@@ -3934,13 +3951,13 @@ function createCombat({ saved, table, onChange = () => undefined }) {
       if (!fateOn()) throw new Error("Conceding is Fate's.");
       return fc.concede(String(id ?? ""), seat);
     },
-    // Morale, by the campaign's game. Basic Fantasy: one creature's 2d6 at or
+    // Morale, by the campaign's game. AD&D 2E: one creature's 2d10 at or under its rating. Basic Fantasy: one creature's 2d6 at or
     // under its score (bonus: the GM's adjustment). Cairn: the side's WIL saves
     // now (id: that creature alone; faction: everyone of it still standing).
     async morale(idOrFaction, bonus, seat) {
-      if (dbf() || pg()) return morale(String(idOrFaction), Number(bonus) || 0, seat);
+      if (dbf() || pg() || d2e()) return morale(String(idOrFaction), Number(bonus) || 0, seat);
       mustGM(seat);
-      if (!cairnOn()) throw new Error("Morale is Basic Fantasy's and Cairn's.");
+      if (!cairnOn()) throw new Error("Morale is Basic Fantasy's, AD&D 2E's and Cairn's.");
       await rcReady;
       const one = state.entries.find((entry) => entry.id === idOrFaction);
       if (one) return [await moraleRoll(one, "the GM asks")];
