@@ -12,6 +12,8 @@
 
 !include nsDialogs.nsh
 !include LogicLib.nsh
+!include FileFunc.nsh
+!include MUI2.nsh
 
 !define ART_URL "https://github.com/krakenunbound/maelstrom-vtt/releases/download/art-packs"
 
@@ -31,7 +33,11 @@ Var WantHorror
 !macroend
 
 Function ArtPacksShow
-  ${if} ${isUpdated}
+  ; An update (Maelstrom's own, --updated) asks nothing.
+  ${GetParameters} $0
+  ClearErrors
+  ${GetOptions} $0 "--updated" $1
+  ${ifNot} ${Errors}
     Abort
   ${endif}
   !insertmacro MUI_HEADER_TEXT "Art packs" "Optional portraits and tokens, downloaded now"
