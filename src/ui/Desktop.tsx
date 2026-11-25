@@ -759,6 +759,12 @@ export function Desktop({
         </div>
         <div className="session-status">
           {myTurn ? <span className="turn-flag">Your turn</span> : null}
+          {/* A player's End my turn, always to hand (the combat tracker need not be open); the GM moves a forgotten turn on. */}
+          {!gm && myTurn && session.combat.round > 0 ? (
+            <button type="button" className="play-button end-my-turn" data-action="end-my-turn" title="Done: the next one in the order takes their turn" onClick={() => session.ct("next")}>
+              End my turn <Icon name="next" size={14} />
+            </button>
+          ) : null}
           {gm ? <PauseButton session={session} /> : <HandButton session={session} />}
           <span className="where">{gm ? `Hosting · ${session.players.length - 1} player${session.players.length === 2 ? "" : "s"}` : `At ${session.remoteLabel}`}</span>
           {!gm && savedSignIn(session.remoteLabel) ? (
