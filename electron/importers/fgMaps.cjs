@@ -241,8 +241,8 @@ function imageScene(record, moduleName, sceneId, label = moduleName, names = new
       intensity: Number(layer.fx.RainIntensity ?? layer.fx.WaterIntensity ?? 0.5),
       speed: Number(layer.fx.RainSpeed ?? layer.fx.MystSpeed ?? 0.5),
       direction: Math.round((Number(layer.fx.RainDirection ?? 0.7) % 1) * 360),
-      // Each of the mask's shapes (FG keeps one <points> a shape; a weather area may have several).
-      mask: layer.fx.usemask && layer.fx.mask?.points ? { use: true, mode: "inside", polygons: list(layer.fx.mask.points).map((points) => nums(points).flatMap((value, index, all) => (index % 2 ? [] : (() => {
+      // Each of the mask's shapes (FG keeps one <points> a shape; a weather area may have several: one is a string, several a list).
+      mask: layer.fx.usemask && layer.fx.mask?.points ? { use: true, mode: "inside", polygons: [].concat(layer.fx.mask.points).filter((points) => typeof points === "string").map((points) => nums(points).flatMap((value, index, all) => (index % 2 ? [] : (() => {
         const p = at(value, all[index + 1]);
         return [Math.round(p.x), Math.round(p.y)];
       })()))) } : { use: false, mode: "inside", polygons: [] },

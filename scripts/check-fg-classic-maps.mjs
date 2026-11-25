@@ -1,6 +1,6 @@
 // An FG map's repeated parts all come through: an older module's pins (image > shortcuts > shortcut, at picture
 // pixels from the top left), each named by the entry it opens; and a weather layer's every mask shape (one <points>
-// a shape). Before, the importer kept only the last of each.
+// a shape; one shape alone too). Before, the importer kept only the last of each.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -22,7 +22,7 @@ const db = `<root>
   <battle><id-00001><name type="string">Goblin ambush</name></id-00001></battle>
   <image>
     <id-00001><name type="string">Keep (DM)</name><image type="image"><bitmap>keep.png</bitmap><gridsize>50,50</gridsize><shortcuts>${shortcut(10, 20, "encounter", "encounter.id-00001")}${shortcut(30, 40, "encounter", "encounter.id-00002")}${shortcut(50, 60, "battle", "battle.id-00001")}</shortcuts></image></id-00001>
-    <id-00002><name type="string">Moor</name><image type="image"><grid>on</grid><layers><layer><name>moor.png</name><id>0</id><type>image</type><bitmap>moor.png</bitmap></layer><layer><name>Rain</name><id>1</id><type>fx</type><fx><type>rain</type><usemask>true</usemask><mask><points>0,0,10,0,10,10</points><points>20,20,30,20,30,30</points></mask></fx></layer></layers></image></id-00002>
+    <id-00002><name type="string">Moor</name><image type="image"><grid>on</grid><layers><layer><name>moor.png</name><id>0</id><type>image</type><bitmap>moor.png</bitmap></layer><layer><name>Rain</name><id>1</id><type>fx</type><fx><type>rain</type><usemask>true</usemask><mask><points>0,0,10,0,10,10</points><points>20,20,30,20,30,30</points></mask></fx></layer><layer><name>Pond</name><id>2</id><type>fx</type><fx><type>water</type><usemask>true</usemask><mask><points>40,40,50,40,50,50</points></mask></fx></layer></layers></image></id-00002>
   </image>
 </root>`;
 fs.writeFileSync(path.join(dir, "Classic.mod"), zipSync({ "definition.xml": strToU8("<root><name>Classic</name><ruleset>2E</ruleset></root>"), "db.xml": strToU8(db), "keep.png": PNG, "moor.png": PNG }));
@@ -35,6 +35,9 @@ assert(pins.map((pin) => pin.text).join("|") === "1. Gate|2. Hall|Goblin ambush"
 assert(pins[2].group === "Encounters" && pins[0].group === "Map keys" && pins[0].link.id === "encounter.id-00001@Classic", `a battle is an encounter, a story entry a map key, each linked: ${JSON.stringify(pins)}`);
 const rain = extras.flatMap((extra) => extra.fx).find((fx) => fx.name === "Rain");
 assert(rain?.mask.polygons.length === 2, `every shape of a weather mask: ${JSON.stringify(rain?.mask)}`);
+// One shape (a single <points>, as B2's Caves of Chaos pond): kept, so the water stays in its pond.
+const pond = extras.flatMap((extra) => extra.fx).find((fx) => fx.name === "Pond");
+assert(pond?.mask.use === true && pond.mask.polygons.length === 1 && pond.mask.polygons[0].length === 6, `a weather mask of one shape: ${JSON.stringify(pond?.mask)}`);
 // A newer module's map (Ghosts of Saltmarsh's): unnamed pins linked "@*" take the entry's name; terrain (FG marks
 // it toggleable too) is a limited wall, never a door; a toggleable wall is still a door.
 {
