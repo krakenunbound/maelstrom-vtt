@@ -52,9 +52,26 @@ export function freeSlot(slots, level) {
 }
 
 // data: the character's data; spells: the campaign's spell records ({ id, name, data }).
+// A character's spell slots by level ({ l1: { max, used } }): 5E's own, or AD&D 2E's spells per day (spellcasting: a
+// row per casting class, perday and used by spell level from 1st), added up across its classes.
+export function slotsOf(data) {
+  if (data?.slots && typeof data.slots === "object" && Object.keys(data.slots).length) return data.slots;
+  const rows = Array.isArray(data?.spellcasting) ? data.spellcasting.filter((row) => row && Array.isArray(row.perday)) : [];
+  const out = {};
+  for (const row of rows) {
+    row.perday.forEach((max, index) => {
+      if (!(num(max) > 0)) return;
+      const key = `l${index + 1}`;
+      const now = out[key] ?? { max: 0, used: 0 };
+      out[key] = { max: now.max + num(max), used: now.used + num(row.used?.[index]) };
+    });
+  }
+  return out;
+}
+
 export function cardsFor(data, spells = []) {
   const out = [];
-  const slots = data?.slots ?? {};
+  const slots = slotsOf(data);
   const byName = new Map(spells.map((spell) => [String(spell.name).toLowerCase(), spell]));
   const concentration = String(data?.concentration ?? "");
   // A spell listed twice (from two classes, say) is one card.

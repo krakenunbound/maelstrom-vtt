@@ -137,6 +137,18 @@ try {
   assert(other({ abilities: { strength: { score: 10 } } }).length === 0, "a 5E sheet's abilities are not special abilities");
   assert(["Laser Pistol", "Plasma Rifle", "Frag Grenade", "Autopistol", "Longbow"].map((name) => kindOf(name.toLowerCase(), name === "Longbow" ? "ranged" : "")).join() === "energy,heavy,grenade,firearm,bow", "sci-fi weapon pictures");
 
+  // AD&D 2E: spells per day by class (spellcasting), not 5E's slots: a mage's one 1st-level spell is a card to cast
+  // until it is used (it read as spent, and Magic Missile was refused).
+  {
+    const { cardsFor: cards2e } = await import("../shared/cards/cards.mjs");
+    const mage = { spells: ["Magic Missile"], spellcasting: [{ class: "Mage", kind: "arcane", perday: [1, 0, 0], used: [0, 0, 0] }] };
+    const book = [{ name: "Magic Missile", data: { level: 1, school: "Evocation" } }];
+    const fresh = cards2e(mage, book)[0];
+    assert(fresh.spent === false && fresh.slot === 1 && fresh.pool?.max === 1, `a 2E mage's spell, unused: ${JSON.stringify(fresh)}`);
+    mage.spellcasting[0].used = [1, 0, 0];
+    assert(cards2e(mage, book)[0].spent === true, "cast once: spent");
+  }
+
   console.log(`check-cards: ${passed} checks passed`);
 } catch (error) {
   console.error(error);
