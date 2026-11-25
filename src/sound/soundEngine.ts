@@ -386,10 +386,22 @@ export const sound = {
       recentlyPlayed.set(folder, now);
       void sound.play(which, which.startsWith("oneshots/") ? "oneshots" : "sfx");
     };
-    // A weapon's blow: its own sound, then what it lands on (plate's clang, chain's jangle) a beat after.
+    // A weapon's blow: its own sound, then what it lands on (plate's clang, chain's jangle) a beat after. The impact
+    // rides the wound line, which comes while the damage dice are still in the air: it waits for them to land (and
+    // their hit to sound) first.
+    const strike = () => window.setTimeout(() => playOnce(impact!), id ? 90 : 120);
     const once = () => {
       if (id) playOnce(id);
-      if (impact) window.setTimeout(() => playOnce(impact), id ? 90 : 0);
+      if (!impact) return;
+      if (!rolling.busy()) {
+        strike();
+        return;
+      }
+      const stop = rolling.subscribe(() => {
+        if (rolling.busy()) return;
+        stop();
+        strike();
+      });
     };
     if (!rolling.has(line)) {
       once();

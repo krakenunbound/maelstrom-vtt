@@ -2415,18 +2415,41 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         res.end();
         return;
       }
-      // A sound pack's: its bytes from the pack (stored, not squeezed), whole or by range.
+      // A sound pack's: streamed from the pack by range when it is stored (as build-sound-packs makes them: a long
+      // loop is never read whole), else its bytes unpacked.
       if (found.pack) {
+        const packs = require("./artPacks.cjs");
+        let at = null;
         let bytes = null;
         try {
-          bytes = require("./artPacks.cjs").read(found.pack, found.entry);
+          at = packs.locate(found.pack, found.entry);
+          if (at && at.method !== 0) bytes = packs.read(found.pack, found.entry);
         } catch {
           /* the pack went away */
         }
-        if (!bytes) {
+        if (!at) {
           res.writeHead(404, { "Cache-Control": "no-store" });
           res.end();
-        } else sendMedia(req, res, { bytes }, found.mime, "private, max-age=3600");
+          return;
+        }
+        if (bytes) {
+          sendMedia(req, res, { bytes }, found.mime, "private, max-age=3600");
+          return;
+        }
+        const range = /^bytes=(\d*)-(\d*)$/.exec(String(req.headers.range ?? ""));
+        let start = 0;
+        let end = at.size - 1;
+        if (range && (range[1] || range[2])) {
+          start = range[1] ? Number(range[1]) : Math.max(0, at.size - Number(range[2]));
+          end = range[1] && range[2] ? Math.min(at.size - 1, Number(range[2])) : at.size - 1;
+          if (start >= at.size || start > end) {
+            res.writeHead(416, { "Content-Range": `bytes */${at.size}` });
+            res.end();
+            return;
+          }
+          res.writeHead(206, { "Content-Type": found.mime, "Content-Range": `bytes ${start}-${end}/${at.size}`, "Content-Length": end - start + 1, "Accept-Ranges": "bytes", "Cache-Control": "private, max-age=3600", "X-Content-Type-Options": "nosniff" });
+        } else res.writeHead(200, { "Content-Type": found.mime, "Content-Length": at.size, "Accept-Ranges": "bytes", "Cache-Control": "private, max-age=3600", "X-Content-Type-Options": "nosniff" });
+        streamFile(found.pack, res, { start: at.offset + start, end: at.offset + end });
         return;
       }
       fs.stat(found.path, (error, stat) => {

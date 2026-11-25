@@ -368,6 +368,8 @@ export const rolling = {
   },
   version: () => version,
   has: (line: ChatLine) => pending.has(lineKey(line)),
+  // Any dice still in the air (a damage roll landing while its wound line has already come).
+  busy: () => pending.size > 0,
   // A roll arrived live: its dice are thrown, and its card waits for them.
   arrived(line: ChatLine) {
     if (!line.roll || !settings.show || layers === 0 || !hasShapedDice(line.roll)) return;

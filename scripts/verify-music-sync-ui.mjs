@@ -2,7 +2,7 @@
 // later in a full-screen Chrome; the player's track starts where the table's is, not from the top. The player's
 // position is read from the sound engine (window.__krakenSound.playingHere().musicAt).
 import "./loopback.mjs";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -15,7 +15,10 @@ function assert(condition, message) {
 }
 const settle = (ms = 400) => new Promise((resolve) => setTimeout(resolve, ms));
 const profile = mkdtempSync(path.join(tmpdir(), "kraken-music-sync-"));
-const env = { ...process.env, KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0" };
+// Its own home (not the GM's Documents), with the first test sounds as a sound pack.
+const home = path.join(profile, "home");
+execFileSync(process.execPath, ["scripts/build-sound-packs.mjs", "sound-packs/Placeholder", path.join(home, "Sound Packs"), "--name", "Placeholder"], { stdio: "ignore" });
+const env = { ...process.env, KRAKEN_HOME: home, KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0" };
 const app = await electron.launch({ args: [".", "--mute-audio", `--user-data-dir=${profile}`], cwd: process.cwd(), env });
 const page = await app.firstWindow();
 await page.waitForSelector("text=My Campaigns");

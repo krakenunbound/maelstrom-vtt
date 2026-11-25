@@ -6,7 +6,7 @@
 // as a tab. A made-up module, so it
 // needs no FG modules.
 import "./loopback.mjs";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -20,7 +20,10 @@ function assert(condition, message) {
 }
 
 const profile = mkdtempSync(path.join(tmpdir(), "kraken-books-ui-"));
-const env = { ...process.env, KRAKEN_ALL_GAMES: "1", KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0", KRAKEN_BOOKS: makeBooks() };
+// Its own home (not the GM's Documents), with the first test sounds as a sound pack.
+const home = path.join(profile, "home");
+execFileSync(process.execPath, ["scripts/build-sound-packs.mjs", "sound-packs/Placeholder", path.join(home, "Sound Packs"), "--name", "Placeholder"], { stdio: "ignore" });
+const env = { ...process.env, KRAKEN_HOME: home, KRAKEN_ALL_GAMES: "1", KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0", KRAKEN_BOOKS: makeBooks() };
 const app = await electron.launch({ args: [".", "--mute-audio", `--user-data-dir=${profile}`], cwd: process.cwd(), env });
 const page = await app.firstWindow();
 await page.waitForSelector("text=My Campaigns");

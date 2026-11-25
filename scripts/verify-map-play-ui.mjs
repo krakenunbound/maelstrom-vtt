@@ -12,7 +12,7 @@
 //  - magical darkness and the GM's regions.
 // SHOTS: where the screenshots go (default the temp folder).
 import "./loopback.mjs";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -28,6 +28,8 @@ const SHOTS = process.env.SHOTS || tmpdir();
 const W = 2560;
 const H = 1440;
 const profile = mkdtempSync(path.join(tmpdir(), "kraken-map-play-"));
+// Its folders are the profile's (KRAKEN_PACKS): the first test sounds as a sound pack there.
+execFileSync(process.execPath, ["scripts/build-sound-packs.mjs", "sound-packs/Placeholder", path.join(profile, "Sound Packs"), "--name", "Placeholder"], { stdio: "ignore" });
 const env = { ...process.env, KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0", KRAKEN_BOOKS: path.join(profile, "no-fg-modules"), KRAKEN_PACKS: path.join(profile, "packs") };
 const app = process.env.KRAKEN_APP
   ? await electron.launch({ executablePath: process.env.KRAKEN_APP, args: ["--mute-audio", `--user-data-dir=${profile}`], env })

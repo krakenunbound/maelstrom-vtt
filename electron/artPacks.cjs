@@ -62,6 +62,21 @@ function read(file, name) {
   }
 }
 
+// Where one file of a pack lies: { offset (its first byte in the pack), size, method (0 stored, 8 squeezed) }, so a
+// stored one (a sound pack's music) is streamed from the pack by range instead of read whole.
+function locate(file, name) {
+  const entry = (cache.get(file) ?? indexOf(file)).entries.get(name);
+  if (!entry) return null;
+  const fd = fs.openSync(file, "r");
+  try {
+    const local = Buffer.alloc(30);
+    fs.readSync(fd, local, 0, 30, entry.header);
+    return { offset: entry.header + 30 + local.readUInt16LE(26) + local.readUInt16LE(28), size: entry.size, method: entry.method };
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
 // The art packs in a folder: { file, manifest, entries } each (one that cannot be read is left out). kind: the
 // manifest's kind ("sound-pack" for the sound packs, read the same way).
 function packsIn(folder, kind = "art-pack") {
@@ -116,4 +131,4 @@ function creatureArt(folder) {
 
 const has = (file, name) => Boolean((cache.get(file) ?? indexOf(file)).entries.has(name));
 
-module.exports = { packsIn, characterArt, creatureArt, read, has };
+module.exports = { packsIn, characterArt, creatureArt, read, locate, has };
