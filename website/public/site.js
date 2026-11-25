@@ -3,10 +3,19 @@
 // Without the GitHub API (offline, rate limit) they stay on the releases page.
 (async () => {
   try {
-    const r = await fetch("https://api.github.com/repos/krakenunbound/maelstrom-vtt/releases?per_page=20");
-    if (!r.ok) return;
-    const releases = await r.json();
-    const release = releases.find((item) => /^v\d/.test(item.tag_name) && !item.draft && item.assets.some((asset) => asset.name.endsWith("Setup.exe")));
+    const api = "https://api.github.com/repos/krakenunbound/maelstrom-vtt";
+    const usable = (item) => item && /^v\d/.test(item.tag_name) && !item.draft && item.assets.some((asset) => asset.name.endsWith("Setup.exe"));
+    // The highest version tag's release, asked for by its tag (GitHub's list of releases can lag behind a new one),
+    // else the newest usable one in the list.
+    let release = null;
+    const tags = await fetch(`${api}/tags?per_page=30`).then((res) => (res.ok ? res.json() : [])).catch(() => []);
+    const newest = tags.map((tag) => tag.name).filter((name) => /^v\d/.test(name)).sort((a, b) => b.localeCompare(a, undefined, { numeric: true }))[0];
+    if (newest) release = await fetch(`${api}/releases/tags/${newest}`).then((res) => (res.ok ? res.json() : null)).catch(() => null);
+    if (!usable(release)) {
+      const r = await fetch(`${api}/releases?per_page=20`);
+      if (!r.ok) return;
+      release = (await r.json()).find(usable) ?? null;
+    }
     if (!release) return;
     for (const a of document.querySelectorAll("[data-asset]")) {
       const asset = release.assets.find((x) => x.name.endsWith(a.dataset.asset));
