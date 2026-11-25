@@ -14,6 +14,14 @@ const eq = (label, actual, expected) => {
 };
 const ok = (label, value) => eq(label, !!value, true);
 
+// A reversible 2E spell (FG's Cure Light Wounds: a heal row and its reverse's damage row) cast as itself only heals.
+{
+  const clw = { name: "Cure Light Wounds", level: 1, reversible: 1, actions: { a: { order: 1, type: "cast" }, b: { order: 2, type: "heal", heallist: { x: { dice: "d8" } } }, c: { order: 3, type: "damage", damagelist: { x: { dice: "d8" } } } }, description: "<p>the priest causes <b>1d8 </b>points of wound or other injury damage to the creature's body to be healed.</p><p>The reverse of the spell, <i>cause light wounds, </i>operates in the same manner, inflicting <b>1d8 </b>points of damage.</p>" };
+  const cure = parseSpell(clw, { game: "2e" });
+  eq("Cure Light Wounds heals, no damage", [Boolean(cure.heal), cure.damage.length], [true, 0]);
+  eq("its reverse hurts", parseSpell(clw, { game: "2e", reverse: true }).damage.length > 0, true);
+}
+
 // --- Fixtures: our own words, the same fields as each game's records -----------
 
 const fireball5e = {

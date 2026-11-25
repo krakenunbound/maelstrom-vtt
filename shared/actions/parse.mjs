@@ -482,7 +482,10 @@ export function parseSpell(data, opts = {}) {
 
   const save = saveOf(data, body, actionRows);
   const { heal, span } = healOf(body, actionRows);
-  const damage = damageOf(body, actionRows, span);
+  // A reversible spell (2E's Cure Light Wounds: its reverse, Cause Light Wounds, hurts) cast as itself heals only:
+  // FG keeps the reverse's damage row beside the heal, for the caster to pick.
+  const reversedAway = Number(data.reversible) > 0 && heal && !opts.reverse;
+  const damage = reversedAway ? [] : damageOf(body, actionRows, span);
 
   // Effect: an FG effect row's label and duration, else the name, conditions and numeric components.
   const effectRow = actionRows.find((row) => row.type === "effect" && row.label);
