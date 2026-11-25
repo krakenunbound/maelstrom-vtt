@@ -80,6 +80,8 @@ const settle = () => new Promise((resolve) => setTimeout(resolve, 30));
   let quiver = { inventorylist: { q: { name: "Arrows", count: 2, ammoperunit: 20, ammoused: 18 } }, bookkeeping: { spent: { q: { name: "Arrows", n: 4 } } } };
   quiver = bk.recoverAmmo(cnc, quiver).data;
   assert(bk.quantity(quiver.inventorylist.q) === 24 && quiver.inventorylist.q.count === 2 && quiver.inventorylist.q.ammoused === 16, `C&C's quiver gets 2 back across units: ${JSON.stringify(quiver.inventorylist.q)}`);
+  // FG 2E's bundles by their words: a pouch of 10 sling stones is 10 shots (it was 1: a thief's sling ran dry at once).
+  assert(bk.quantity({ name: "Sling stones, pouch of 10 (Poor)", type: "Weapon", count: 1 }) === 10 && bk.quantity({ name: "Arrows, bundle of 10 (Poor)", count: 2 }) === 20, "a pouch of 10 and two bundles of 10");
   // A Traveller medikit is a tool, not used up; a 5E healer's kit's ten uses are.
   assert(bk.consumableOf(mg, { name: "Medikit", description: "Medical supplies: DM+2 to Medic checks." }) === null, "a medikit is not used up");
   assert(bk.consumableOf(rulesetFor("D&D 5E").bookkeeping, { name: "Healer's Kit", description: "This kit has 10 uses." })?.left === 10, "a healer's kit has ten uses");

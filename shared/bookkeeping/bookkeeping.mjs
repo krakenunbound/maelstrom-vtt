@@ -44,10 +44,14 @@ export const rowsOf = (data) => Object.entries(data?.inventorylist ?? {}).filter
 export const carriedOf = (row) => num(row?.carried, 1);
 // "Arrows (20)": a bundle of 20 in one row (the 5E SRD kit, FG's packs).
 // The old books' words too: "Quiver with 20 Arrows", "Case with 30 Quarrels", "Arrows +1 (10 arrows)" (not a weapon
-// that comes with its shot: "Sling with 30 Sling Stones" is the sling).
+// that comes with its shot: "Sling with 30 Sling Stones" is the sling); FG 2E's "Sling stones, pouch of 10".
 export const bundleOf = (row) => {
   const name = nameOf(row);
-  const match = /\((\d+)(?:\s+[a-z][a-z\s-]*)?\)\s*$/i.exec(name) ?? (/weapon/i.test(String(row?.type ?? "")) ? null : /\bwith\s+(\d+)\s+[a-z]/i.exec(name));
+  // ...and FG 2E's "Sling stones, pouch of 10", "Arrows, bundle of 10".
+  const match =
+    /\((\d+)(?:\s+[a-z][a-z\s-]*)?\)\s*$/i.exec(name) ??
+    /\b(?:pouch|bundle|quiver|case|bag|sheaf|box|sack)\s+of\s+(\d+)\b/i.exec(name) ??
+    (/weapon/i.test(String(row?.type ?? "")) ? null : /\bwith\s+(\d+)\s+[a-z]/i.exec(name));
   return match && Number(match[1]) > 1 ? Number(match[1]) : 1;
 };
 // How many there are: count (1 when blank) times the bundle; C&C's ammunition by the unit
