@@ -4255,6 +4255,12 @@ function createCombat({ saved, table, onChange = () => undefined }) {
     },
     // What a creature attacks with, and its numbers.
     weapon(who, weaponKey, engine, game, opts, seat) {
+      // A character's tracker row is its character: its sheet's weapons (an NPC's row reads its block's attacks).
+      if (who?.entryId && !who.recordId) {
+        const row = state.entries.find((entry) => entry.id === who.entryId);
+        const linked = row?.recordId ? table().records.get(row.recordId) : null;
+        if (linked?.type === "character") who = { recordId: linked.id };
+      }
       if (fateOn()) return fc.weapon(who, weaponKey, seat);
       if (ironOn()) throw new Error("Ironsworn has no attack rolls: make a move (Strike, Clash) from the sheet against a foe, or mark its progress.");
       if (cairnOn()) return weaponCairn(who, weaponKey, seat);

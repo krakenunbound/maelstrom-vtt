@@ -87,6 +87,11 @@ try {
   await place(R, 525, 125);
   await ct({ action: "attack", recordId: ranger.id, weapon: bow });
   assert(!/DISADVANTAGE/.test(lastRoll(/\[ATTACK\].*Shortbow/).roll.label), "no enemy within 5 feet: a plain roll");
+  // A character's tracker row attacks with the character's weapons (as its record does; it was read as an NPC's block: "No such attack").
+  const shots = () => agent.chatLog(400).filter((line) => /\[ATTACK\].*Shortbow/.test(line.roll?.label ?? "")).length;
+  const before = shots();
+  await ct({ action: "attack", id: R, weapon: bow });
+  assert(shots() === before + 1, "the ranger's tracker row shoots its shortbow");
   // A Prone target: disadvantage at range; DISATK on the attacker and GRANTADVATK on the target cancel.
   await ct({ action: "effect", id: S, effect: { label: "Prone", duration: 0 } });
   await ct({ action: "attack", recordId: ranger.id, weapon: bow });
