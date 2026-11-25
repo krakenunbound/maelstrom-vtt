@@ -10,8 +10,12 @@ const path = require("path");
 // A folder is a group: playing it picks one of its sounds at random, so a
 // sword hit is not the same every time. Ids are paths inside the folder,
 // only ever looked up in the index.
-// builtin: Kraken's own sounds (made with ElevenLabs, shipped with the app),
-// in the same layout; a sound of the GM's with the same path wins.
+// builtin: the table's own sounds shipped with the app (dice moments: crits,
+// fumbles, initiative, saves, surprise, turns, levels), in the same layout.
+// packs: the sound packs' folder (Documents/Kraken VTT/Sound Packs): each
+// .kpack (kind "sound-pack") holds <kind>/<group>/<file> entries, read in
+// place, with the same ids a loose file there would have. A pack's sound wins
+// over the app's, and a sound of the GM's with the same path wins over both.
 
 const KINDS = ["oneshots", "sfx", "ambience", "music"];
 const AUDIO = { ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".oga": "audio/ogg", ".wav": "audio/wav", ".m4a": "audio/mp4", ".webm": "audio/webm", ".flac": "audio/flac", ".opus": "audio/ogg" };
@@ -21,7 +25,7 @@ const MAX_FILES = 20000;
 const mimeOf = (name) => AUDIO[path.extname(name).toLowerCase()] ?? null;
 const prettyName = (file) => path.basename(file, path.extname(file)).replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim();
 
-function createSoundLibrary({ folder, builtin = "" }) {
+function createSoundLibrary({ folder, builtin = "", packs = "" }) {
   let index = null;
   let indexedAt = 0;
 
@@ -48,6 +52,16 @@ function createSoundLibrary({ folder, builtin = "" }) {
       }
     };
     if (builtin) walk(builtin, builtin, 0);
+    if (packs) {
+      for (const pack of require("./artPacks.cjs").packsIn(packs, "sound-pack")) {
+        for (const [entry, info] of pack.entries) {
+          if (items.size >= MAX_FILES) break;
+          const [kind, ...rest] = entry.split("/");
+          if (!KINDS.includes(kind) || rest.length < 1 || !mimeOf(entry) || !info.size) continue;
+          items.set(entry, { id: entry, kind, group: rest.slice(0, -1).join("/"), name: prettyName(entry), pack: pack.file, entry, size: info.size, mime: mimeOf(entry) });
+        }
+      }
+    }
     walk(folder, folder, 0);
     index = items;
     indexedAt = Date.now();
@@ -83,10 +97,14 @@ function createSoundLibrary({ folder, builtin = "" }) {
       const inside = [...all.values()].filter((item) => `${item.kind}/${item.group}` === wanted || `${item.kind}/${item.group}`.startsWith(`${wanted}/`));
       return inside.length ? inside[Math.floor(Math.random() * inside.length)] : null;
     },
+    // On disk ({ path, mime }) or inside a sound pack ({ pack, entry, mime }: artPacks.read gives its bytes).
     file(id) {
       const item = scan().get(String(id));
-      return item ? { path: item.file, mime: item.mime } : null;
+      if (!item) return null;
+      return item.pack ? { pack: item.pack, entry: item.entry, mime: item.mime } : { path: item.file, mime: item.mime };
     },
+    // The sound packs read (their file and manifest), for the GM's list.
+    packs: () => (packs ? require("./artPacks.cjs").packsIn(packs, "sound-pack").map((pack) => ({ file: pack.file, ...pack.manifest, sounds: [...pack.entries.keys()].filter((name) => mimeOf(name)).length })) : []),
     // A sound file from anywhere, copied into a kind and group.
     add(kind, group, name, bytes) {
       if (!KINDS.includes(kind)) throw new Error(`A sound is one of: ${KINDS.join(", ")}.`);

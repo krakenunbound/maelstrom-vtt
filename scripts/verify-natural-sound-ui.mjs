@@ -4,7 +4,7 @@
 // plays the fanfare and the sad trombone, its meter reading the sound's own
 // level as it plays, with the browser's audio running (not held shut).
 import "./loopback.mjs";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -16,7 +16,11 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 const profile = mkdtempSync(path.join(tmpdir(), "kraken-natural-sound-"));
-const env = { ...process.env, KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0" };
+// Its own home (not the GM's Documents), with the first test sounds as a sound pack: the app ships only the
+// table's own sounds.
+const home = path.join(profile, "home");
+execFileSync(process.execPath, ["scripts/build-sound-packs.mjs", "sound-packs/Placeholder", path.join(home, "Sound Packs"), "--name", "Placeholder"], { stdio: "ignore" });
+const env = { ...process.env, KRAKEN_HOME: home, KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0" };
 const app = await electron.launch({ args: [".", "--mute-audio", `--user-data-dir=${profile}`], cwd: process.cwd(), env });
 const page = await app.firstWindow();
 await page.waitForSelector("text=My Campaigns");

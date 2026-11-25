@@ -1,10 +1,13 @@
-# Kraken's own sounds
+# Maelstrom's own sounds
 
-These ship with Kraken VTT and may be handed out with it.
+The table's own sounds, shipped with the app: a critical hit, a fumble, rolling initiative, a saving throw, a
+level gained, your turn coming, and surprise (empty until its sounds are made). The dice make their own clatter
+(src/dice/sound.ts).
 
-- `sfx/`, `ambience/`, `oneshots/` (voices): made with ElevenLabs (sound effects and text to speech) on the project's own account, from the prompts in `electron/soundCatalog.cjs`. `generated.json` records the words each was made from.
-- `music/`: made locally with YuE2 Studio (the YuE model, Apache-2.0).
+Everything else (weapons, armour impacts, spells, creatures, bodies, traps and effects, ambience, music, voices)
+comes from sound packs in `Documents/Kraken VTT/Sound Packs`: `docs/sound-folders.md` lists every folder the app
+listens for, and `scripts/build-sound-packs.mjs` makes a pack from a folder laid out that way. The first test set
+is `sound-packs/Placeholder` (made with ElevenLabs and YuE2; not shipped).
 
-No Syrinscape sounds are here: those are licensed and may not be handed out.
-
-Remake any of them with `npm run sounds -- --only <folder> --force` (needs `.env.local`; see PLAN.md). A GM's own sounds go in their app data (`assets/sounds`); a file there with the same path wins.
+A GM's own sounds go in their app data (`assets/sounds`); a file there with the same path wins over a pack's and
+the app's.

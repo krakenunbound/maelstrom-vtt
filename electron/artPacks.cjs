@@ -28,7 +28,7 @@ function indexOf(file) {
     };
     const tail = at(Math.min(stat.size, 65557), Math.max(0, stat.size - 65557));
     const end = tail.lastIndexOf(Buffer.from([0x50, 0x4b, 0x05, 0x06]));
-    if (end < 0) throw new Error(`${path.basename(file)} is not an art pack.`);
+    if (end < 0) throw new Error(`${path.basename(file)} is not a pack.`);
     const directory = at(tail.readUInt32LE(end + 12), tail.readUInt32LE(end + 16));
     const entries = new Map();
     for (let i = 0; i + 46 <= directory.length && directory.readUInt32LE(i) === 0x02014b50; ) {
@@ -62,8 +62,9 @@ function read(file, name) {
   }
 }
 
-// The art packs in a folder: { file, manifest, entries } each (one that cannot be read is left out).
-function packsIn(folder) {
+// The art packs in a folder: { file, manifest, entries } each (one that cannot be read is left out). kind: the
+// manifest's kind ("sound-pack" for the sound packs, read the same way).
+function packsIn(folder, kind = "art-pack") {
   let names = [];
   try {
     names = fs.readdirSync(folder).filter((name) => PACK.test(name));
@@ -75,7 +76,7 @@ function packsIn(folder) {
     const file = path.join(folder, name);
     try {
       const { manifest, entries } = indexOf(file);
-      if (manifest?.kind === "art-pack") out.push({ file, manifest, entries });
+      if (manifest?.kind === kind) out.push({ file, manifest, entries });
     } catch {
       /* not an art pack */
     }

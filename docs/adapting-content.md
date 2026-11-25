@@ -33,6 +33,7 @@ folders, tools and environment variables still say "Kraken".
 | Background decals | `Documents/Kraken VTT/Background Decals/` | Settings > Background Decal |
 | Desktop wallpapers | `Documents/Kraken VTT/Wallpapers/` | Settings > Desktop Wallpaper |
 | Sounds and music | `%APPDATA%/kraken-vtt/assets/sounds/<music, ambience, sfx, oneshots>/<folder>/` (Linux: `~/.config/kraken-vtt/...`) | the Sound window |
+| Sound packs | `Documents/Kraken VTT/Sound Packs/*.kpack` (made with `scripts/build-sound-packs.mjs`; the folders are in [sound-folders.md](sound-folders.md)) | they play in chat; the Sound window |
 | Map bundles, pictures, Universal VTT maps | opened with **Open map** (kept with the campaign) | the map window |
 | A game's rules (a ruleset) | the repository: `shared/<id>/`, `electron/<id>.cjs`, `src/rulesets/<id>.tsx` | the whole app |
 

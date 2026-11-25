@@ -32,6 +32,8 @@
     "modifiers": "node scripts/check-modifiers.mjs",
     "chat-flow": "node scripts/check-chat-flow.mjs",
     "sound": "node scripts/check-sound.mjs",
+    "sound-packs": "node scripts/check-sound-packs.mjs",
+    "sound-folders": "node scripts/sound-folders.mjs",
     "sound-ui": "node scripts/verify-sound-ui.mjs",
     "books": "node scripts/check-books.mjs",
     "books-ui": "node scripts/verify-books-ui.mjs",

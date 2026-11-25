@@ -1054,9 +1054,9 @@ const TOOLS = [
   {
     name: "kraken_sound",
     description:
-      "Sound for the table, as Syrinscape in FG, from the GM's sounds (assets/sounds: oneshots, sfx, ambience, music; a folder plays one of its sounds at random). Every seat hears it, each at its own volumes. action list (kind, search: what there is, by folder); play (id or folder, e.g. \"oneshots/Doors/Wooden Door\" or \"sfx/Weapons/Sword/Hit\"); stop (stops one-shots and effects); ambience (add, remove, volume or clear loops; id, volume 0..1); music (play an id or a folder, next, stop, volume); triggers (the chat's sound triggers: read them, or set triggers to a list, or \"default\"); scape (what is playing now); scene (the open scene's own sound, as Syrinscape's moods per map: do keep makes what plays now the scene's, started whenever the scene is opened; clear; play; without do, reads it). A creature's natural attack (an orc's bite, a wolf's claws) plays its own attack sound from sfx/Monsters or sfx/Animals, and a creature killed its death cry.",
+      "Sound for the table, as Syrinscape in FG, from the GM's sounds (assets/sounds: oneshots, sfx, ambience, music; a folder plays one of its sounds at random). Every seat hears it, each at its own volumes. action list (kind, search: what there is, by folder); play (id or folder, e.g. \"oneshots/Doors/Wooden Door\" or \"sfx/Weapons/Sword/Hit\"); stop (stops one-shots and effects); ambience (add, remove, volume or clear loops; id, volume 0..1); music (play an id or a folder, next, stop, volume); triggers (the chat's sound triggers: read them, or set triggers to a list, or \"default\"); scape (what is playing now); scene (the open scene's own sound, as Syrinscape's moods per map: do keep makes what plays now the scene's, started whenever the scene is opened; clear; play; without do, reads it). packs: the sound packs read (Documents/Kraken VTT/Sound Packs: .kpack files of sfx, ambience, music, oneshots; the app itself ships only the table's own sounds: crits, fumbles, initiative, saves, surprise, turns, levels). folders (search: part of a folder): every folder Maelstrom listens for, what goes in it, what plays it, how many to make, and how many it has now (has 0: silent until a pack fills it). A weapon's blow that lands also plays sfx/Impacts/<Plate|Chain|Leather|Cloth|Flesh> by what the target wears; a sprung trap plays sfx/Effects/Traps/<Pit|Spikes|Darts|Boulder|Sprung> to every seat. A creature's natural attack (an orc's bite, a wolf's claws) plays its own attack sound from sfx/Monsters or sfx/Animals, and a creature killed its death cry.",
     inputSchema: object({
-      action: { type: "string", enum: ["list", "play", "stop", "ambience", "music", "triggers", "scape", "scene"] },
+      action: { type: "string", enum: ["list", "play", "stop", "ambience", "music", "triggers", "scape", "scene", "packs", "folders"] },
       kind: { type: "string", enum: ["oneshots", "sfx", "ambience", "music"] },
       search: string("Part of a name or folder (list)"),
       id: string("A sound's id, or a folder"),
@@ -1085,6 +1085,14 @@ const TOOLS = [
       if (action === "music") return out(agent.music(args.do ?? "play", args.id, { volume: args.volume, loop: args.loop, order: args.order, repeat: args.repeat }));
       if (action === "triggers") return out({ triggers: args.triggers !== undefined ? agent.setTriggers(args.triggers) : agent.triggers() });
       if (action === "scene") return out(agent.sceneSound(args.do ?? "view"));
+      // The sound packs read, and the folders Maelstrom listens for with how many sounds each has now (empty ones are silent).
+      if (action === "packs") return out({ packs: library?.packs?.() ?? [] });
+      if (action === "folders") {
+        const counts = new Map((library?.groups() ?? []).map((group) => [group.id, group.count]));
+        const wanted = String(args.search ?? "").toLowerCase();
+        const folders = require("../soundCatalog.cjs").soundFolders().filter((item) => !wanted || item.folder.toLowerCase().includes(wanted)).map((item) => ({ ...item, has: counts.get(item.folder) ?? 0 }));
+        return out({ folders, empty: folders.filter((item) => !item.has).length });
+      }
       return out(agent.soundscape());
     },
   },

@@ -5,7 +5,7 @@
 // audio output (everything the page plays passes through it) must read each
 // sound while it plays, and fall quiet when the GM clears the loops.
 import "./loopback.mjs";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { copyFileSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -38,7 +38,11 @@ mkdirSync(own, { recursive: true });
 if (process.env.KRAKEN_TEST_SOUND) copyFileSync(process.env.KRAKEN_TEST_SOUND, path.join(own, `loop${path.extname(process.env.KRAKEN_TEST_SOUND)}`));
 else writeFileSync(path.join(own, "loop.wav"), toneWav());
 
-const env = { ...process.env, KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0" };
+// Its own home (not the GM's Documents), with the first test sounds as a sound pack: the app ships only the
+// table's own sounds.
+const home = path.join(profile, "home");
+execFileSync(process.execPath, ["scripts/build-sound-packs.mjs", "sound-packs/Placeholder", path.join(home, "Sound Packs"), "--name", "Placeholder"], { stdio: "ignore" });
+const env = { ...process.env, KRAKEN_HOME: home, KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0" };
 const app = await electron.launch({ args: [".", "--mute-audio", `--user-data-dir=${profile}`], cwd: process.cwd(), env });
 const page = await app.firstWindow();
 await page.waitForSelector("text=My Campaigns");

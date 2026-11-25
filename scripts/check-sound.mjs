@@ -19,7 +19,7 @@ const require = createRequire(import.meta.url);
 const { createTableServer } = require("../electron/tableServer.cjs");
 const { createSoundLibrary } = require("../electron/sounds.cjs");
 const { callTool } = require("../electron/agent/tools.cjs");
-const { defaultTriggers, catalog } = require("../electron/soundCatalog.cjs");
+const { defaultTriggers, catalog, CORE } = require("../electron/soundCatalog.cjs");
 const { soundFor } = require("../electron/soundTriggers.cjs");
 
 function assert(condition, message) {
@@ -98,8 +98,8 @@ for (const [label, roll, wanted, fg] of FG) {
   assert(got === wanted, `${label}\n  FG played ${fg}; Kraken plays ${got || "nothing"}, wanted ${wanted}`);
 }
 for (const [text, wanted] of [
-  ["[KRAKEN CRITICAL] : CKG Table 17.1A - Critical Hits (Option 5) d20 = 7: Jaw destroyed", "sfx/Weapons/Sword/Crit"],
-  ["[KRAKEN FUMBLE] : CKG Table 17.1B - Critical Fumble (Option 5) d20 = 9: Stab or crush knee", "sfx/Weapons/Sword/Fumble"],
+  ["[KRAKEN CRITICAL] : CKG Table 17.1A - Critical Hits (Option 5) d20 = 7: Jaw destroyed", "sfx/Effects/Critical Hit"],
+  ["[KRAKEN FUMBLE] : CKG Table 17.1B - Critical Fumble (Option 5) d20 = 9: Stab or crush knee", "sfx/Effects/Fumble"],
   ["[STATUS: dying] Malachi Grey", "sfx/Body/Dying"],
 ]) {
   const got = folderOf(soundFor({ text }, triggers, sounds)?.id);
@@ -143,11 +143,19 @@ assert(bleed("[DAMAGE] Dying -> Quickfingers: 1 (Dead, HP -10/6)") === "sfx/Body
   const both = createSoundLibrary({ folder: theirs, builtin: own });
   assert(both.list("sfx").length === 2 && both.file("sfx/Test/b.mp3").path.startsWith(theirs) && both.file("sfx/Test/a.mp3").path.startsWith(own), "built-in sounds and the GM's are one library");
 }
-// Kraken's shipped set: every default trigger has a sound to play.
+// The app ships the table's own sounds only (crits, fumbles, initiative, saves, turns, levels; surprise waits for
+// its sounds); every other trigger's sounds come from sound packs (the first test set: sound-packs/Placeholder).
 {
-  const shipped = createSoundLibrary({ folder: mkdtempSync(path.join(tmpdir(), "kraken-none-")), builtin: path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "sounds") });
-  const silent = defaultTriggers().filter((trigger) => !shipped.pick(trigger.sound));
-  assert(silent.length === 0, `every trigger has a shipped sound; silent: ${silent.slice(0, 5).map((one) => one.sound).join(", ")}`);
+  const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
+  const shipped = createSoundLibrary({ folder: mkdtempSync(path.join(tmpdir(), "kraken-none-")), builtin: path.join(root, "sounds") });
+  const missing = CORE.filter((folder) => folder !== "sfx/Effects/Surprise" && !shipped.pick(folder));
+  assert(missing.length === 0, `the table's own sounds ship with the app: ${missing.join(", ")}`);
+  assert(shipped.list().every((item) => CORE.some((folder) => item.id.startsWith(`${folder}/`))), `nothing else ships with the app: ${shipped.list().filter((item) => !CORE.some((folder) => item.id.startsWith(`${folder}/`))).slice(0, 3).map((item) => item.id).join(", ")}`);
+  // With the placeholder sounds too: every trigger plays, but the folders added since (waiting for their sounds).
+  const both = createSoundLibrary({ folder: path.join(root, "sound-packs", "Placeholder"), builtin: path.join(root, "sounds") });
+  const NEW = /^sfx\/(Impacts\/|Weapons\/(Club|Chain|Throwing Knife)\/|Effects\/(Surprise|Traps\/Sprung))/;
+  const silent = defaultTriggers().filter((trigger) => !both.pick(trigger.sound) && !NEW.test(trigger.sound));
+  assert(silent.length === 0, `every trigger has a sound with the placeholder set; silent: ${silent.slice(0, 5).map((one) => one.sound).join(", ")}`);
 }
 const server = createTableServer({ sounds });
 const tool = async (name, args) => JSON.parse((await callTool(name, args, { table: () => server })).content[0].text);

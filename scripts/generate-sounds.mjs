@@ -30,7 +30,7 @@ const value = (name) => {
   const at = args.indexOf(`--${name}`);
   return at >= 0 ? args[at + 1] : undefined;
 };
-const out = value("out") ?? path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "sounds");
+const out = value("out") ?? path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "sound-packs", "Placeholder");
 const only = value("only");
 const leaves = (value("leaf") ?? "").split(",").map((leaf) => leaf.trim().toLowerCase()).filter(Boolean);
 const limit = Number(value("limit") ?? Infinity);

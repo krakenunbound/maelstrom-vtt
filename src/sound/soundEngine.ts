@@ -375,17 +375,21 @@ export const sound = {
   },
   // A chat line's triggered sound: as soon as its result shows.
   lineArrived(line: ChatLine) {
-    const id = (line as { sound?: string }).sound;
-    if (!id) return;
-    const kind: SoundKind = id.startsWith("oneshots/") ? "oneshots" : "sfx";
+    const { sound: id, impact } = line as { sound?: string; impact?: string };
+    if (!id && !impact) return;
     // A burst of lines with the same sound (Roll all: a line of initiative for
     // each creature) is heard once, not once a line.
-    const once = () => {
-      const folder = id.slice(0, id.lastIndexOf("/"));
+    const playOnce = (which: string) => {
+      const folder = which.slice(0, which.lastIndexOf("/"));
       const now = Date.now();
       if (now - (recentlyPlayed.get(folder) ?? 0) < 1500) return;
       recentlyPlayed.set(folder, now);
-      void sound.play(id, kind);
+      void sound.play(which, which.startsWith("oneshots/") ? "oneshots" : "sfx");
+    };
+    // A weapon's blow: its own sound, then what it lands on (plate's clang, chain's jangle) a beat after.
+    const once = () => {
+      if (id) playOnce(id);
+      if (impact) window.setTimeout(() => playOnce(impact), id ? 90 : 0);
     };
     if (!rolling.has(line)) {
       once();

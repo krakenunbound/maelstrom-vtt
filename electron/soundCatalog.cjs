@@ -17,9 +17,12 @@ const WEAPONS = [
   ["Sword", "sword|blade|scimitar|rapier|katana|falchion|sabre|saber|cutlass", "a steel sword"],
   ["Greatsword", "greatsword|two-handed sword|claymore|zweihander|bastard sword", "a huge two-handed greatsword"],
   ["Axe", "axe|hatchet|tomahawk", "a battle axe"],
-  ["Mace", "mace|morning ?star|club|cudgel", "a heavy iron mace"],
+  ["Club", "club|cudgel|bludgeon", "a heavy wooden club"],
+  ["Mace", "mace|morning ?star", "a heavy iron mace"],
   ["Warhammer", "hammer|maul", "a warhammer"],
+  ["Chain", "\\bchains?\\b(?! ?mail| ?shirt)|kusari", "a whirling spiked chain"],
   ["Flail", "flail", "a spiked chain flail"],
+  ["Throwing Knife", "throwing (?:knife|knives|dagger)|thrown (?:knife|dagger)", "a thrown knife spinning through the air"],
   ["Dagger", "dagger|knife|dirk|stiletto", "a small dagger"],
   ["Spear", "spear|pike|halberd|trident|lance|glaive|polearm|partisan|guisarme", "a long spear"],
   ["Staff", "staff|quarterstaff", "a wooden quarterstaff"],
@@ -41,13 +44,26 @@ const WEAPON_SOUND = {
   Crit: (what) => `a devastating critical hit with ${what}, a brutal crunching impact with a heavy ringing clang, ${NO_VOICE}, fantasy combat sound effect`,
   Fumble: (what) => `a clumsy fumble with ${what}, the weapon slipping from the hand and clattering onto stone, ${NO_VOICE}, fantasy combat sound effect`,
 };
-const RANGED = new Set(["Bow", "Crossbow", "Sling", "Thrown"]);
+const RANGED = new Set(["Bow", "Crossbow", "Sling", "Thrown", "Throwing Knife"]);
 const RANGED_SOUND = {
   Hit: (what) => `${what} thudding hard into its target, ${NO_VOICE}, fantasy combat sound effect`,
   Attack: (what) => `${what} loosed, the string twanging and the shot whistling away, fantasy combat sound effect`,
   Crit: (what) => `${what} loosed, a perfect shot punching deep into its target with a heavy thud, ${NO_VOICE}, fantasy combat sound effect`,
   Fumble: (what) => `${what} misfired, the string snapping or the shot dropping to the ground, ${NO_VOICE}, fantasy combat sound effect`,
 };
+
+// What a blow lands on (sfx/Impacts/<folder>), played after the weapon's hit: the target's worn armour, or its
+// hide for a creature with none (soundTriggers.cjs impactOf): [folder, what it sounds like].
+const IMPACTS = [
+  ["Plate", "a weapon striking plate armour, a loud metallic clang"],
+  ["Chain", "a weapon striking chain mail, a jangling crunch of metal rings"],
+  ["Leather", "a weapon striking leather armour, a dull leathery thud"],
+  ["Cloth", "a weapon striking cloth robes and the body beneath, a soft thump"],
+  ["Flesh", "a weapon striking a creature's hide and flesh, a meaty thwack"],
+];
+
+// The table's own sounds, shipped with the app (sounds/); everything else comes from sound packs.
+const CORE = ["sfx/Effects/Critical Hit", "sfx/Effects/Fumble", "sfx/Effects/Surprise", "sfx/Effects/Roll Initiative", "sfx/Effects/Saving Throw", "sfx/Effects/Level Up", "sfx/Effects/Turn"];
 
 // Spells by kind: [folder, keys, what the magic is].
 const SPELLS = [
@@ -126,6 +142,9 @@ const BODY = [
 // Sound effects the GM plays by hand (and some triggers).
 const EFFECTS = [
   ["Roll Initiative", "a dramatic orchestral hit and war drum, the start of a battle"],
+  ["Critical Hit", "a triumphant heavy impact with a bright ringing flourish, a perfect strike"],
+  ["Fumble", "a comic clatter and a deflating trombone wah-wah, a clumsy failure"],
+  ["Surprise", "a sharp startled orchestral stab, caught off guard"],
   ["Saving Throw", "magical wind chimes, a shimmering protective ward"],
   ["Resist", "a magical shield flaring and repelling a spell"],
   ["Doors/Wooden Door", "a heavy wooden door creaking open slowly"],
@@ -136,6 +155,7 @@ const EFFECTS = [
   ["Treasure/Chest", "a wooden treasure chest creaking open"],
   ["Treasure/Coins", "a handful of gold coins jingling"],
   ["Treasure/Gem", "a sparkling magical chime as a gem is found"],
+  ["Traps/Sprung", "a hidden trap springing with a sharp mechanical snap"],
   ["Traps/Click", "a pressure plate clicking underfoot"],
   ["Traps/Spikes", "a spike trap springing out of the floor"],
   ["Traps/Darts", "poison darts shooting from the wall"],
@@ -179,6 +199,9 @@ const VOICES = [
 
 // Loops: [folder, what it sounds like].
 const AMBIENCE = [
+  ["Dripping Water", "water dripping slowly in a dark stone cave, echoing drops"],
+  ["Insects", "insects buzzing and chirping in the undergrowth"],
+  ["Rats", "rats squeaking and scurrying in the walls and the straw"],
   ["Gentle Meadow", "a gentle summer meadow, birdsong, buzzing insects and a soft breeze"],
   ["Forest by Day", "a forest in the daytime, birds, rustling leaves and a distant woodpecker"],
   ["Forest at Night", "a forest at night, crickets, an owl hooting and wind in the trees"],
@@ -235,6 +258,7 @@ function catalog() {
     for (const result of RESULTS) out.push({ group: `sfx/Weapons/${folder}/${result}`, prompt: sound[result](what), seconds: result === "Crit" ? 3 : 2, variants: 2 });
   }
   out.push({ group: "sfx/Weapons/Shield/Block", prompt: "a sword striking a raised wooden and steel shield, a heavy block, fantasy combat sound effect", seconds: 2, variants: 2 });
+  for (const [folder, prompt] of IMPACTS) out.push({ group: `sfx/Impacts/${folder}`, prompt: `${prompt}, ${NO_VOICE}, fantasy combat sound effect`, seconds: 1.5, variants: 5 });
   out.push({ group: "sfx/Weapons/Shield/Bash", prompt: "a shield bash slamming into an opponent, fantasy combat sound effect", seconds: 2, variants: 2 });
   for (const [folder, , what] of SPELLS) for (const result of ["Cast", "Hit", "Crit", "Fumble"]) out.push({ group: `sfx/Spells/${folder}/${result}`, prompt: SPELL_SOUND[result](what), seconds: result === "Cast" ? 3 : 2.5, variants: result === "Cast" || result === "Hit" ? 2 : 1 });
   for (const [folder, prompt] of BODY) out.push({ group: `sfx/Body/${folder}`, prompt: `${prompt}, fantasy sound effect`, seconds: 3, variants: folder === "Wounded" ? 1 : 2 });
@@ -255,7 +279,7 @@ function catalog() {
 // hit on the damage; spells by their element; wounds, initiative and saves.
 // Goes up when the defaults change shape (folders renamed), so a campaign
 // saved with older triggers gets the new ones.
-const TRIGGERS_VERSION = 2;
+const TRIGGERS_VERSION = 3;
 
 function defaultTriggers() {
   const out = [];
@@ -263,6 +287,9 @@ function defaultTriggers() {
   const creature = (folder) => (MONSTERS.some(([name]) => name === folder) ? "Monsters" : "Animals");
   for (const [folder, keys] of WEAPONS) add(folder, "attack", keys, "crit", `sfx/Weapons/${folder}/Crit`);
   for (const [folder, keys] of WEAPONS) add(folder, "attack", keys, "fumble", `sfx/Weapons/${folder}/Fumble`);
+  // Any other natural 20 or 1 (a spell's attack, a weapon with no folder): the table's own crit and fumble.
+  add("Any critical hit", "attack", "", "crit", "sfx/Effects/Critical Hit");
+  add("Any fumble", "attack", "", "fumble", "sfx/Effects/Fumble");
   for (const [folder, keys] of SPELLS.filter(([name]) => name !== "Arcane")) add(`${folder} spell`, "attack", keys, "any", `sfx/Spells/${folder}/Cast`);
   for (const [folder, keys] of WEAPONS) add(folder, "attack", keys, "any", `sfx/Weapons/${folder}/Attack`);
   for (const [folder, keys] of [...MONSTERS, ...ANIMALS]) add(`${folder} attacks`, "attack", keys, "any", `sfx/${creature(folder)}/${folder}/Attack`);
@@ -277,9 +304,11 @@ function defaultTriggers() {
   for (const [folder, keys] of SPELLS) add(folder, "cast", keys, "any", `sfx/Spells/${folder}/Cast`);
   add("Healing", "heal", "", "any", "sfx/Body/Heal");
   add("Initiative", "init", "", "any", "sfx/Effects/Roll Initiative");
+  // AD&D 2E's surprise roll: "[SURPRISED 2 vs 4]" (not "[NOT SURPRISED ...]").
+  add("Surprised", "text", "\\[SURPRISED\\b", "any", "sfx/Effects/Surprise");
   add("Saving throw", "save", "", "any", "sfx/Effects/Saving Throw");
-  add("Critical hit", "text", "\\[(KRAKEN )?CRITICAL( HIT)?\\]", "any", "sfx/Weapons/Sword/Crit");
-  add("Fumble", "text", "\\[(KRAKEN )?(CRITICAL )?FUMBLE\\]", "any", "sfx/Weapons/Sword/Fumble");
+  add("Critical hit", "text", "\\[(KRAKEN )?CRITICAL( HIT)?\\]", "any", "sfx/Effects/Critical Hit");
+  add("Fumble", "text", "\\[(KRAKEN )?(CRITICAL )?FUMBLE\\]", "any", "sfx/Effects/Fumble");
   // FG's [STATUS: ...] lines, and Kraken's own wound lines ("-> Orc: 6 (Wounded)").
   add("Death", "text", "\\[STATUS: dead\\]|\\(Dead\\b|\\b(dies|is dead|has died|slain|is killed|falls dead)\\b", "any", "sfx/Body/Death");
   add("Dying", "text", "\\[STATUS: dying\\]|\\(Dying\\b|is dying|bleeding", "any", "sfx/Body/Dying");
@@ -294,4 +323,19 @@ function defaultTriggers() {
   return out;
 }
 
-module.exports = { catalog, defaultTriggers, TRIGGERS_VERSION, WEAPONS, SPELLS, ANIMALS, MONSTERS, VOICES };
+// Every folder Maelstrom listens for, for a sound pack's maker (docs/sound-folders.md, kraken_sound folders):
+// { folder, what (what goes in it), core (shipped with the app), plays (what sets it off), wanted (how many to make) }.
+function soundFolders() {
+  const out = new Map();
+  const plays = new Map();
+  for (const trigger of defaultTriggers()) if (!plays.has(trigger.sound)) plays.set(trigger.sound, `${trigger.on}${trigger.result === "any" ? "" : ` (${trigger.result})`}: ${trigger.name}`);
+  for (const item of catalog()) {
+    const loop = item.loop || item.music;
+    out.set(item.group, { folder: item.group, what: item.say ? `a voice: "${item.say}"` : String(item.prompt ?? "").replace(/, (fantasy|creature)[^,]*sound effect$|, seamless loop, ambient background sound$/, "").replace(/, impact sound only.*$/, ""), core: CORE.includes(item.group), plays: plays.get(item.group) ?? (loop ? "the GM (ambience, music, a map's sound)" : item.group.startsWith("sfx/Impacts/") ? "a weapon's blow landing on that armour" : item.group.startsWith("sfx/Effects/Traps/") ? "a trap or pit sprung on the map" : "the GM, or a quick slot"), wanted: loop ? 3 : 5 });
+  }
+  out.set("sfx/Effects/Turn", { folder: "sfx/Effects/Turn", what: "a soft chime when your turn comes (turn-chime; turn-console in science fiction games)", core: true, plays: "your turn", wanted: 2 });
+  for (const [sound, why] of plays) if (!out.has(sound)) out.set(sound, { folder: sound, what: "", core: CORE.includes(sound), plays: why, wanted: 5 });
+  return [...out.values()].sort((a, b) => Number(b.core) - Number(a.core) || a.folder.localeCompare(b.folder));
+}
+
+module.exports = { catalog, defaultTriggers, soundFolders, TRIGGERS_VERSION, WEAPONS, SPELLS, ANIMALS, MONSTERS, VOICES, IMPACTS, CORE };

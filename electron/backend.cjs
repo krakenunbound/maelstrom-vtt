@@ -229,7 +229,7 @@ function nextPack() {
 }
 // The GM's sounds (one-shots, effects, ambience, music), shared by every campaign.
 function sounds() {
-  if (!soundLibrary) soundLibrary = createSoundLibrary({ folder: path.join(USER_DATA, "assets", "sounds"), builtin: path.join(APP_DIR, "sounds") });
+  if (!soundLibrary) soundLibrary = createSoundLibrary({ folder: path.join(USER_DATA, "assets", "sounds"), builtin: path.join(APP_DIR, "sounds"), packs: require("./kfolders.cjs").folderOf("soundpacks") });
   return soundLibrary;
 }
 // Kraken's folders in Documents/Kraken VTT (kfolders.cjs), made with their
@@ -722,6 +722,7 @@ const CONTENT_KINDS = [
   { kind: "decals", label: "Background decals", accept: /\.(png|webp|jpe?g|svg)$/i },
   { kind: "wallpapers", label: "Wallpapers", accept: /\.(png|webp|jpe?g|gif|webm|mp4)$/i },
   { kind: "artpacks", label: "Art packs (.kpack)", accept: /\.kpack$/i },
+  { kind: "soundpacks", label: "Sound packs (.kpack)", accept: /\.kpack$/i },
 ];
 function contentFolder(kind) {
   if (kind === "sounds") return sounds().folder;

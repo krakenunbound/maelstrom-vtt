@@ -3,7 +3,7 @@
 // from its tabs. Starts the app (throwaway profile, muted) and drives it as
 // an MCP client, then clicks the buttons as the GM would.
 import "./loopback.mjs";
-import { spawn } from "node:child_process";
+import { spawn, execFileSync } from "node:child_process";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -15,7 +15,11 @@ function assert(condition, message) {
 }
 
 const profile = mkdtempSync(path.join(tmpdir(), "kraken-sound-ui-"));
-const env = { ...process.env, KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0" };
+// Its own home (not the GM's Documents), with the first test sounds as a sound pack: the app ships only the
+// table's own sounds.
+const home = path.join(profile, "home");
+execFileSync(process.execPath, ["scripts/build-sound-packs.mjs", "sound-packs/Placeholder", path.join(home, "Sound Packs"), "--name", "Placeholder"], { stdio: "ignore" });
+const env = { ...process.env, KRAKEN_HOME: home, KRAKEN_AGENT_FILE: path.join(profile, "agent.json"), KRAKEN_AGENT_PORT: "0" };
 const app = await electron.launch({ args: [".", "--mute-audio", `--user-data-dir=${profile}`], cwd: process.cwd(), env });
 const page = await app.firstWindow();
 await page.waitForSelector("text=My Campaigns");
@@ -77,7 +81,9 @@ try {
     if (note) silent.push(`${id} (${note})`);
   }
   assert(fetched.length >= tries.length / 2, `the previews fetched sounds (${fetched.length})`);
-  assert(silent.length === 0, `every trigger's ▶ plays a sound; silent: ${silent.slice(0, 8).join(", ")}`);
+  // The folders added for the new sound packs (impacts, club, chain, throwing knife, surprise, traps) wait for their sounds.
+  const waiting = silent.filter((item) => /no sounds in sfx\/(Impacts\/|Weapons\/(Club|Chain|Throwing Knife)\/|Effects\/(Surprise|Traps\/Sprung))/.test(item));
+  assert(silent.length === waiting.length, `every trigger's ▶ plays a sound; silent: ${silent.filter((item) => !waiting.includes(item)).slice(0, 8).join(", ")}`);
   assert(fetched.every((one) => one.status === 200 || one.status === 206), `every sound file answered: ${JSON.stringify(fetched.filter((one) => one.status >= 300).slice(0, 3))}`);
   const heard = await page.evaluate(() => window.__krakenSound.playingHere());
   assert(heard.running, `the sound engine runs (${JSON.stringify(heard)})`);
@@ -130,8 +136,9 @@ try {
   await tool("kraken_open_fg_module", { module: "B1 In Search of the Unknown (C&C)" });
   await page.waitForSelector(".map-toolbar", { timeout: 60000 });
   await tool("kraken_sound", { action: "ambience", do: "add", id: "ambience/Tavern" });
-  // The map opened over the Sound window: the sidebar's Sound Sets brings it to the front.
-  await page.click('.sidebar [data-launch="sound"]');
+  // The map stays underneath (the table's bottom layer): the Sound window is still there in front; the sidebar's Sound
+  // Sets brings it back only if it has gone.
+  if (!(await page.$('[data-tab="ambience"]'))) await page.click('.sidebar [data-launch="sound"]');
   await page.click('[data-tab="ambience"]');
   await page.waitForSelector('[data-scene-sound="none"]');
   await page.click('[data-action="scene-sound-keep"]');

@@ -9,7 +9,7 @@ const { createRecordStore, canSee, viewFor, hideNames, RESERVED_NAMES } = requir
 // The players' view of the party sheet and the records (records.cjs viewFor).
 const PLAYER_VIEW = { role: "player", name: "" };
 const { withArt } = require("./characterArt.cjs");
-const { soundFor, cleanTriggers } = require("./soundTriggers.cjs");
+const { soundFor, cleanTriggers, impactFor } = require("./soundTriggers.cjs");
 const { defaultTriggers, TRIGGERS_VERSION } = require("./soundCatalog.cjs");
 const { createDice } = require("./dice.cjs");
 const { createModifiers, kindOf: modifierKind, run: modifierScope } = require("./modifiers.cjs");
@@ -1262,6 +1262,13 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
     const holds = region.kind === "trap" || region.kind === "pit";
     const line = `${token.name} ${what} "${region.name}"${region.note ? `: ${region.note}` : ""}${holds ? (region.trap?.auto === "apply" ? " (rolled and applied by itself)" : " (it holds them: roll, apply or let them go in Traps sprung)") : ""}`;
     if (!prepOnly) agentHandle.say(line, "Map", true);
+    // Everyone hears it spring (the line is the GM's): a pit's fall, or the trap's own kind by its name, else any trap.
+    if (!prepOnly && holds && sounds) {
+      const words = `${region.name} ${region.note ?? ""}`;
+      const kind = region.kind === "pit" ? "Pit" : /spike/i.test(words) ? "Spikes" : /dart|needle|arrow|bolt/i.test(words) ? "Darts" : /boulder|rolling stone/i.test(words) ? "Boulder" : "Sprung";
+      const picked = sounds.pick(`sfx/Effects/Traps/${kind}`) ?? sounds.pick("sfx/Effects/Traps/Sprung") ?? sounds.pick("sfx/Effects/Traps/Click");
+      if (picked) broadcast({ type: "sound", id: picked.id, kind: picked.kind, volume: 1 });
+    }
     for (const [ws, client] of clients) if (client.role === "dm") send(ws, { type: "notice", text: line.slice(0, 300) });
     if (seat.role !== "dm" && region.kind !== "teleport") for (const [ws, client] of clients) if (client.name === seat.name && client.role !== "dm") send(ws, { type: "notice", text: `Something happens to ${token.name}. The GM decides what.` });
     // The trap's own automation (Map Studio's "When it springs"): rolled for the GM, or rolled and applied.
@@ -1697,6 +1704,12 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
         entry.sound = found.id;
         lastSound.set(folder, Date.now());
       }
+      // A weapon's blow landing: the clang, jangle or thud of what the target wears, after the line's own sound.
+      const impact = allowed ? impactFor(entry, sounds, (name) => {
+        const fighting = combat.entries().find((item) => item.name === name);
+        return records.get(fighting?.recordId ?? "") ?? map.tokens().map((token) => records.get(token.recordId ?? "")).find((record) => record?.name === name) ?? null;
+      }) : null;
+      if (impact) entry.impact = impact;
     }
     // What the GM's seat (or the GM's agent) says carries the GM's chat picture.
     const speaker = [...clients.values()].find((client) => client.id === entry.id);
@@ -2400,6 +2413,20 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
       if (!found) {
         res.writeHead(404, { "Cache-Control": "no-store" });
         res.end();
+        return;
+      }
+      // A sound pack's: its bytes from the pack (stored, not squeezed), whole or by range.
+      if (found.pack) {
+        let bytes = null;
+        try {
+          bytes = require("./artPacks.cjs").read(found.pack, found.entry);
+        } catch {
+          /* the pack went away */
+        }
+        if (!bytes) {
+          res.writeHead(404, { "Cache-Control": "no-store" });
+          res.end();
+        } else sendMedia(req, res, { bytes }, found.mime, "private, max-age=3600");
         return;
       }
       fs.stat(found.path, (error, stat) => {

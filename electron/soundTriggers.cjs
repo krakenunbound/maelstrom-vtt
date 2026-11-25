@@ -137,4 +137,37 @@ function soundFor(line, triggers, library) {
   return null;
 }
 
-module.exports = { soundFor, cleanTriggers, classify, creatureFolder };
+// What a blow lands on (sfx/Impacts/<folder>): the armour worn (a character's equipped armour, an NPC's armour words:
+// "(chain mail, shield)"), else cloth for a character and flesh for a creature.
+function armourOf(record) {
+  const data = record?.data ?? {};
+  const rows = Object.values(data.inventorylist ?? {}).filter((row) => row && typeof row === "object" && !/shield/i.test(String(row.name ?? "")));
+  const armourish = (row) => /armou?r/i.test(`${row.type ?? ""} ${row.subtype ?? ""}`) || ARMOUR.some(([, words]) => words.test(String(row.name ?? "")));
+  const worn = rows.filter((row) => Number(row.carried) === 2 && armourish(row));
+  const words = [
+    ...(worn.length ? worn : rows.filter((row) => Number(row.carried ?? 1) >= 1 && armourish(row))).map((row) => row.name),
+    ...["actext", "armor", "armour", "armortext", "armorclass", "ac"].map((key) => data[key]).filter((value) => typeof value === "string"),
+  ].join(" ");
+  const found = ARMOUR.find(([, pattern]) => pattern.test(words));
+  if (found) return found[0];
+  return record?.type === "character" ? "Cloth" : "Flesh";
+}
+const ARMOUR = [
+  ["Plate", /\b(plate|splint|banded|breastplate|cuirass)\b/i],
+  ["Chain", /\b(chain|mail|ring ?mail|scale|brigandine|lamellar|hauberk)\b/i],
+  ["Leather", /\b(leather|studded|hide|padded|quilted|gambeson|furs?)\b/i],
+  ["Cloth", /\b(robes?|cloth|clothes|clothing)\b/i],
+];
+// A weapon's blow landing ("[DAMAGE] Longsword -> Orc: 8 (Wounded)"): the impact on what the target wears, or null
+// (a spell's damage, bleeding, ongoing poison: no clang). lookup(name) finds the target's record.
+function impactFor(line, library, lookup) {
+  if (!library) return null;
+  const match = /^\[DAMAGE\]\s*(.+?)\s*->\s*(.+?):\s*(\d+)\b/.exec(String(line.text ?? ""));
+  if (!match || Number(match[3]) <= 0) return null;
+  const { WEAPONS } = require("./soundCatalog.cjs");
+  if (!WEAPONS.some(([, keys]) => new RegExp(keys, "i").test(match[1]))) return null;
+  const folder = armourOf(lookup(match[2].trim()));
+  return library.pick(`sfx/Impacts/${folder}`)?.id ?? null;
+}
+
+module.exports = { soundFor, cleanTriggers, classify, creatureFolder, armourOf, impactFor };

@@ -13,12 +13,14 @@ one.
 | `GM Icons` | Your picture beside what you say in chat | Settings > GM Icon |
 | `Background Decals` | The emblem in the middle of the table | Settings > Background Decal |
 | `Wallpapers` | The tiles behind the desktop | Settings > Desktop Wallpaper |
+| `Art Packs` | Maelstrom's character and creature art | Portrait and token pickers |
+| `Sound Packs` | Sound effects, ambience and music (`.kpack`) | They play in chat; Sound window |
 
 Kraken reads these folders when it starts and whenever a table is hosted.
 Pictures you pick with **Browse…** in Kraken are copied into the right folder
 for you.
 
-Sounds are kept apart, in Kraken's data folder: **Sound > Open folder** opens it.
+Your own loose sounds are kept apart, in Kraken's data folder: **Sound > Open folder** opens it. They win over a sound pack's with the same path.
 
 `AGENTS.md` is the same guide written for an AI agent working for you: it
 says how to make each kind of thing and how to check it with Kraken's tools.

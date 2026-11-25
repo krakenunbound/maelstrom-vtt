@@ -28,6 +28,9 @@ const FOLDERS = {
   // Maelstrom's optional character and creature art (electron/artPacks.cjs): the installer's Art packs page or the
   // start screen's downloads them here.
   artpacks: "Art Packs",
+  // Sound packs (sound effects, ambience, music; electron/sounds.cjs reads them in place): the app ships only the
+  // table's own sounds.
+  soundpacks: "Sound Packs",
 };
 
 function root() {
