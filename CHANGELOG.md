@@ -12,6 +12,11 @@ Collected here until the next major release.
 - **Target lines for the one whose turn it is:** in a fight, only the creature acting shows its arrows and distances to its targets (eight kobolds' lines at once were a tangle); between turns everyone's still show.
 - **A bigger chat window** to start with, so a fight's rolls can be followed without resizing it.
 - **Sounds:** kobolds, hobgoblins and bugbears attack, get hurt and die with goblin sounds instead of a plain sword and the same death cry; a dying character's bleeding each round no longer replays the dying cry (bleeding out still sounds).
+- **AD&D 2E morale:** the tracker rolls a creature's morale (2d10 at or under its rating, as "Average (8-10)"); over it, it breaks and flees.
+- **Each character's own dice for every roll:** rolls made for the GM (by the assistant or an agent) use the characters' own dice, the GM's monster dice and the damage dice, instead of everyone's default.
+- **Sling stones and arrows by the pouch:** "Sling stones, pouch of 10" and "Arrows, bundle of 10" are ten shots, not one.
+- **Cure Light Wounds heals:** a reversible 2E spell cast as itself no longer also does its reverse's damage.
+- **No combat pop-ups by default:** the corner notes for attacks and damage are off (the chat has every line); Settings can turn them on.
 - **The agent attacks with a character from the tracker:** `kraken_combat` attack with a character's tracker entry uses the character's weapons (it said "No such attack").
 
 ## 0.1.0-beta.3: Your books, ready to play
