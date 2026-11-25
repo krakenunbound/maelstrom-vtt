@@ -9,6 +9,7 @@ import { withGrid } from "../shared/map/geometry.mjs";
 import { bundleMusic, imageMime, inspectZip, PICTURE, pictureBundle, UVTT, uvttBundle, type ImportCandidate, type LoadedAdventure } from "./foundry/importBundle";
 import { useSession } from "./session/useSession";
 import { SetupScreen } from "./setup/SetupScreen";
+import { AskHost } from "./ui/Ask";
 import { focusView, forgetView, MapView, type MapScene } from "./table/MapView";
 import { DESIGNS, EFFECTS, FONTS, MATERIALS, PRESETS, diceStore, fullLook, type DiceLook } from "./dice/diceStore";
 import type { DiceSettingsPatch } from "./kraken";
@@ -591,13 +592,17 @@ export function App() {
 
   if (!session.connected) {
     return (
-      <SetupScreen
-        busy={session.connecting}
-        error={session.error}
-        canHost={session.canHost}
-        onHost={session.host}
-        onJoin={session.join}
-      />
+      <>
+        <SetupScreen
+          busy={session.connecting}
+          error={session.error}
+          canHost={session.canHost}
+          onHost={session.host}
+          onJoin={session.join}
+        />
+        {/* The in-app asks and notes on the start screen too (a restore said after the table closed). */}
+        <AskHost />
+      </>
     );
   }
 
