@@ -8,6 +8,8 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Water stays in its pond:** a Fantasy Grounds map whose water (or other weather) layer covers just one area, such as the pool in B2's Caves of Chaos, drew that water rippling over the whole map. It now stays inside its area. Maps already on the table keep the old layer: open the map again from its adventure, or switch the layer off in the map's FX tab.
+
 ## 0.1.0-beta.3: Your books, ready to play
 
 Bring your books and play them: a new DM's packs show up as they are copied in, filed where they belong, and play end to end. D&D BECMI is played from its own books (Basic to Immortals), creatures across every game have their own pictures and tokens, 5E takes a book's pregenerated characters, links between books open, and GMs can list their table on maelstromvtt.com for players to find. Checked by putting 175 of a GM's packs back one game at a time, and by playing every game Maelstrom ships as a new DM.
