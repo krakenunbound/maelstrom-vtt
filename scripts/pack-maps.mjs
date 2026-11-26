@@ -8,6 +8,7 @@
 // plan.json (kept with the GM's purchased maps, never in the repository):
 //   { "pack": "<the book's .kpack>", "category": "Maps - <book>", "suffix": " (Map Adventurer)", "square": 70, "quality": 80,
 //     "maps": [ { "name": "Haunted House - Ground Floor", "uvtt": "<file.dd2vtt>" or "<file.zip>::<entry>", "align": "<the book's map>" } ] }
+// A map entry with "into" instead adds other versions of a book map (its seasons) to it as hidden layer groups (addLayers).
 //
 // --dry works out every map (pictures, walls, the line-up) and writes nothing to the pack; --preview draws each new map
 // small with its walls (red), doors (green) and pins (yellow) to check by eye. The pack is backed up once, beside it in
@@ -49,11 +50,11 @@ const records = JSON.parse(Buffer.from(head["records.json"]).toString("utf8"));
 const packKey = String(records.find((record) => record.type === "image")?.id ?? "pack:").split(":")[0];
 
 // A Universal VTT file: a file, or an entry inside a zip ("<zip>::<entry>").
-function readUvtt(source) {
+function readFile(source) {
   const [zip, entry] = String(source).split("::");
-  const bytes = entry ? execFileSync("unzip", ["-p", zip, entry], { maxBuffer: 2 ** 31 }) : readFileSync(zip);
-  return JSON.parse(bytes.toString("utf8"));
+  return entry ? execFileSync("unzip", ["-p", zip, entry], { maxBuffer: 2 ** 31 }) : readFileSync(zip);
 }
+const readUvtt = (source) => JSON.parse(readFile(source).toString("utf8"));
 
 // A book map's walls and pins in its own squares (FG keeps them from the base layer's place, y up).
 function bookMap(record, pictures) {
@@ -242,12 +243,49 @@ async function preview(picture, width, height, walls, doors, pins, file) {
   await sharp(picture).resize(w, h).composite([{ input: Buffer.from(svg) }]).jpeg({ quality: 80 }).toFile(file);
 }
 
+// Other versions of one of the book's maps (its seasons, a labelled copy) as layers on it: { "into": "<the book's map>",
+// "layers": [ { "name": "Winter", "uvtt": "<file.dd2vtt>" or "<zip>::<entry>" (or "picture": a picture file, the same) } ] }. Each is the picture made the book
+// picture's size, in a layer group of its own name, hidden (FG's folder, invisible), so the GM shows the one wanted
+// (the season rolled) and the walls and pins stay the book map's. A version that is the book's own picture is left out.
+// Run again, the layers this added are replaced.
+async function addLayers(spec) {
+  const index = records.findIndex((record) => record.type === "image" && record.name === spec.into);
+  if (index < 0) throw new Error(`The book has no map named "${spec.into}".`);
+  const record = structuredClone(records[index]);
+  const layers = list(record.data.image.layers.layer).filter((layer) => !layer.addedBy);
+  const base = layers[0];
+  const own = Buffer.from(readEntries(PACK, [base.bitmap])[base.bitmap]);
+  const { width, height } = pictureSize(own);
+  const thumb = (bytes) => sharp(bytes, { limitInputPixels: false }).resize(200, 200, { fit: "fill" }).greyscale().raw().toBuffer();
+  const ownThumb = await thumb(own);
+  let nextId = Math.max(0, ...layers.map((layer) => Number(layer.id) || 0)) + 1;
+  const pictures = [];
+  const added = [];
+  const same = [];
+  for (const item of spec.layers) {
+    const source = item.picture ? readFile(item.picture) : Buffer.from(String(readUvtt(item.uvtt).image).replace(/^data:[^,]*,/, ""), "base64");
+    const other = await thumb(source);
+    let diff = 0;
+    for (let i = 0; i < other.length; i++) diff += Math.abs(other[i] - ownThumb[i]);
+    if (diff / other.length < 1.5) { same.push(item.name); continue; }
+    const picture = await sharp(source, { limitInputPixels: false }).resize(width, height, { kernel: "lanczos3" }).webp({ quality: QUALITY, effort: 5 }).toBuffer();
+    const bitmap = `images/maps/ma-${slug(record.id.split(".").pop())}-${slug(item.name)}.webp`;
+    const folder = String(nextId++);
+    layers.push({ name: item.name, id: folder, parentid: base.parentid ?? "-1", type: "folder", invisible: true, addedBy: "pack-maps" });
+    layers.push({ name: `${record.name} - ${item.name}`, id: String(nextId++), parentid: folder, type: "image", bitmap, matrix: base.matrix, addedBy: "pack-maps", madeFrom: path.basename(String(item.picture ?? item.uvtt).split("::").pop()) });
+    pictures.push({ bitmap, picture });
+    added.push({ name: item.name, mb: Math.round((picture.length / 1e6) * 100) / 100, diff: Math.round((diff / other.length) * 10) / 10 });
+  }
+  record.data.image.layers.layer = layers;
+  return { into: index, record, pictures, report: { name: record.name, pixels: `${width}x${height}`, layers: added, sameAsMap: same } };
+}
+
 const reports = [];
 const made = [];
 for (const spec of plan.maps) {
-  if (only && spec.name !== only) continue;
+  if (only && (spec.name ?? spec.into) !== only) continue;
   try {
-    const result = await makeMap(spec);
+    const result = spec.into ? await addLayers(spec) : await makeMap(spec);
     made.push(result);
     reports.push(result.report);
   } catch (error) {
@@ -261,10 +299,14 @@ if (!flag("--dry") && made.length) {
     mkdirSync(path.dirname(backup), { recursive: true });
     copyFileSync(PACK, backup);
   }
-  const replaced = new Set(made.map((item) => item.record.name));
-  const kept = records.filter((record) => !(record.type === "image" && replaced.has(record.name)));
-  const allRecords = [...kept, ...made.map((item) => item.record)];
-  const newPictures = new Set(made.map((item) => item.bitmap));
+  // A map with layers added stays where it is; a new map replaces one of the same name, at the end.
+  const changed = new Map(made.filter((item) => item.into !== undefined).map((item) => [item.into, item.record]));
+  const fresh = made.filter((item) => item.into === undefined);
+  const replaced = new Set(fresh.map((item) => item.record.name));
+  const kept = records.map((record, index) => changed.get(index) ?? record).filter((record) => !(record.type === "image" && replaced.has(record.name)));
+  const allRecords = [...kept, ...fresh.map((item) => item.record)];
+  const added = made.flatMap((item) => item.pictures ?? [{ bitmap: item.bitmap, picture: item.picture }]);
+  const newPictures = new Set(added.map((item) => item.bitmap));
   const pictures = [...new Set([...(manifest.pictures ?? []).filter((name) => !newPictures.has(name)), ...newPictures])];
   const nextManifest = { ...manifest, records: allRecords.length, ...(manifest.contents ? { contents: contentsOf(allRecords) } : {}), pictures, mapsAdded: new Date().toISOString() };
   const out = zipWriter(PACK);
@@ -276,7 +318,7 @@ if (!flag("--dry") && made.length) {
     const batch = readEntries(PACK, rest.slice(i, i + 50));
     for (const name of rest.slice(i, i + 50)) if (batch[name]) out.add(name, Buffer.from(batch[name]));
   }
-  for (const item of made) out.add(item.bitmap, item.picture);
+  for (const item of added) out.add(item.bitmap, item.picture);
   out.end();
   reports.push({ pack: PACK, mb: Math.round(statSync(PACK).size / 1e5) / 10, backup });
 }
