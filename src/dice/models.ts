@@ -571,6 +571,37 @@ export function model(kind: ShapeKind): Model {
   return found;
 }
 
+// A dice pack's picture laid flat on each face at one size (the die's width shows about three quarters of
+// the picture), so its pattern reads on every die. The shared geometry wraps the whole die once, as a globe
+// map, which suits the painted themes but smears a picture's skulls, scales or runes into a sliver a face.
+const PICTURE_SCALE = 0.8;
+const pictureGeometries = new Map<ShapeKind, THREE.BufferGeometry>();
+function pictureGeometry(kind: ShapeKind) {
+  let found = pictureGeometries.get(kind);
+  if (!found) {
+    found = model(kind).geometry.clone();
+    if (!found.getAttribute("normal")) found.computeVertexNormals();
+    const position = found.getAttribute("position");
+    const normal = found.getAttribute("normal");
+    const uv: number[] = [];
+    const p = new THREE.Vector3();
+    const n = new THREE.Vector3();
+    const t = new THREE.Vector3();
+    const b = new THREE.Vector3();
+    for (let i = 0; i < position.count; i++) {
+      p.fromBufferAttribute(position, i);
+      n.fromBufferAttribute(normal, i).normalize();
+      // The face's own plane: two directions across it, the same for every point of a flat face.
+      t.crossVectors(Math.abs(n.y) > 0.9 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0), n).normalize();
+      b.crossVectors(n, t);
+      uv.push(p.dot(t) * PICTURE_SCALE + 0.5, p.dot(b) * PICTURE_SCALE + 0.5);
+    }
+    found.setAttribute("uv", new THREE.Float32BufferAttribute(uv, 2));
+    pictureGeometries.set(kind, found);
+  }
+  return found;
+}
+
 // Each body gets its own collider (cannon keeps per-shape world vertices).
 export function collider(kind: ShapeKind) {
   const { shape, geometry } = model(kind);
@@ -678,7 +709,7 @@ function plane(size: number) {
 export function buildDie(kind: ShapeKind, look: DiceLook, values: string[]) {
   const { faces, geometry } = model(kind);
   const group = new THREE.Group();
-  const shell = new THREE.Mesh(geometry, shellMaterial(look));
+  const shell = new THREE.Mesh(look.theme === "picture" ? pictureGeometry(kind) : geometry, shellMaterial(look));
   shell.castShadow = shell.receiveShadow = true;
   group.add(shell);
   // Its own design: the Gilded Die's inner crystal, face inlays and gems.

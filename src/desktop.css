@@ -730,6 +730,8 @@ span.ct-init { display: inline-block; }
 .dice-display { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .dice-display-die { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 10px; border: 1px solid var(--line); background: radial-gradient(circle, color-mix(in srgb, var(--tray-glow) 28%, transparent) 0%, transparent 70%), #0f1418; }
 .dice-display-die img { width: 46px; height: 46px; }
+.dice-display-die { padding: 0; cursor: pointer; }
+.dice-display-die.on { border-color: var(--gold, #e8c46a); box-shadow: 0 0 0 1px var(--gold, #e8c46a); }
 .dice-sizes { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .dice-stepper { display: inline-flex; align-items: center; gap: 6px; }
 .dice-stepper b { font: 600 0.74rem var(--serif); letter-spacing: 0.12em; text-transform: uppercase; color: var(--brass); margin-right: 4px; }

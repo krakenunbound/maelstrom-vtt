@@ -3,16 +3,18 @@ import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import type { DiceLook } from "./diceStore";
 import { createEffects } from "./effects";
-import { buildDie, model } from "./models";
+import { buildDie, model, type ShapeKind } from "./models";
 
-// The dice settings' preview: a d20 in the chosen look, tumbling on a small
+// The dice settings' preview: a die (a d20 unless another is picked) in the chosen look, tumbling on a small
 // loop so its effect trails behind it; now and then it lands on a 20 and
 // flares, as a natural 20 does on the table.
-export default function DicePreview({ look }: { look: DiceLook }) {
+export default function DicePreview({ look, kind = "d20" }: { look: DiceLook; kind?: ShapeKind }) {
   const host = useRef<HTMLDivElement>(null);
   const lookRef = useRef(look);
   const rebuild = useRef<() => void>(() => undefined);
   lookRef.current = look;
+  const kindRef = useRef(kind);
+  kindRef.current = kind;
 
   useEffect(() => {
     const element = host.current;
@@ -41,7 +43,7 @@ export default function DicePreview({ look }: { look: DiceLook }) {
     let die: THREE.Group | null = null;
     rebuild.current = () => {
       if (die) scene.remove(die);
-      die = buildDie("d20", lookRef.current, model("d20").shape.values);
+      die = buildDie(kindRef.current, lookRef.current, model(kindRef.current).shape.values);
       die.scale.setScalar(1.25);
       scene.add(die);
     };
@@ -93,7 +95,7 @@ export default function DicePreview({ look }: { look: DiceLook }) {
 
   useEffect(() => {
     rebuild.current();
-  }, [look.theme, look.body, look.ink, look.accent, look.material, look.effect, look.font]);
+  }, [kind, look.theme, look.body, look.ink, look.accent, look.material, look.effect, look.font, look.texture, look.glowTexture, look.pips]);
 
   return <div className="dice-preview" ref={host} aria-hidden="true" />;
 }

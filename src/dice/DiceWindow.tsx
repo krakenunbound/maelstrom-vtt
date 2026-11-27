@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from "react";
 import type { Session } from "../session/useSession";
 import { dicePacks } from "./dicePacks";
+import type { DiceKind } from "./models";
 import { characterDice, DESIGNS, DICE_LOOK_DRAG, diceStore, EFFECTS, FONTS, MATERIALS, PRESETS, SET_GROUPS, type DiceLook, type DiceSet } from "./diceStore";
 import { SettingRow, Toggle } from "../ui/SettingsParts";
 
@@ -111,6 +112,8 @@ export function DiceWindow({ session }: { session: Session }) {
   const groupOf = [...PRESETS.map((preset) => SET_GROUPS.find((item) => item.sets.includes(preset.name))?.name ?? ""), ...packs.flatMap((pack) => pack.sets.map(() => pack.name))];
   const groups = [...SET_GROUPS, ...packs.map((pack) => ({ name: pack.name, sets: pack.sets.map((set) => set.name), pack: pack.id }))];
   const nameOf = (shown: DiceLook) => nameIn(all, shown);
+  // The die the live preview shows: a d20 until one is picked under Dice display.
+  const [previewKind, setPreviewKind] = useState<DiceKind>("d20");
   const [group, setGroup] = useState(groups.find((item) => item.sets.includes(nameOf(look) ?? ""))?.name ?? "All");
   const tray = usePictures(() => import("./trayArt").then(({ renderTray }) => renderTray(look)), JSON.stringify(look), {} as Record<number, string>);
   const sets = usePictures(() => import("./trayArt").then(({ renderSets }) => renderSets(all.map(lookOf))), `sets|${packs.map((pack) => `${pack.id}:${pack.sets.length}`).join(",")}`, [] as string[]);
@@ -148,7 +151,7 @@ export function DiceWindow({ session }: { session: Session }) {
         <h3>{character ? `${character.name}'s ${charSet === "damage" ? "damage dice" : "dice"}` : editing === "npc" ? "NPC dice" : editing === "damage" ? "Damage dice" : "Active dice set"}</h3>
         <div className="active-body">
           <Suspense fallback={<div className="dice-preview" />}>
-            <DicePreview look={look} />
+            <DicePreview look={look} kind={previewKind} />
           </Suspense>
           <div className="active-words">
             <strong data-active-set={name ?? "custom"}>{name ?? "Your own set"}</strong>
@@ -178,11 +181,14 @@ export function DiceWindow({ session }: { session: Session }) {
       <section className="dice-panel">
         <h3>Dice display</h3>
         <div className="dice-display" style={{ ["--tray-glow" as string]: look.accent ?? look.body }}>
-          {TRAY_DICE.map((sides) => (
-            <span key={sides} className="dice-display-die" title={sides === 100 ? "d100" : `d${sides}`}>
-              {tray[sides] ? <img src={tray[sides]} alt={`d${sides}`} draggable={false} /> : null}
-            </span>
-          ))}
+          {TRAY_DICE.map((sides) => {
+            const kind = `d${sides}` as DiceKind;
+            return (
+              <button key={sides} type="button" className={previewKind === kind ? "dice-display-die on" : "dice-display-die"} title={`Show the ${kind} above`} aria-label={`Show the ${kind} above`} aria-pressed={previewKind === kind} data-preview-die={kind} onClick={() => setPreviewKind(kind)}>
+                {tray[sides] ? <img src={tray[sides]} alt="" draggable={false} /> : null}
+              </button>
+            );
+          })}
         </div>
         <div className="dice-sizes">
           <Stepper label="Tray" value={settings.tray ?? 1} low={0.6} high={1.6} onChange={(tray) => diceStore.update({ tray })} />
@@ -194,7 +200,7 @@ export function DiceWindow({ session }: { session: Session }) {
         <h3>
           Dice sets
           {session.role === "dm" && window.kraken?.openKrakenFolder ? (
-            <button type="button" className="ghost dice-packs-folder" data-action="dice-packs-folder" title="Dice packs: a folder (or .zip) with dice.json and its pictures, dropped here, adds its sets for everyone at the table. The README there says how to make one." onClick={() => void window.kraken?.openKrakenFolder?.("dice")}>
+            <button type="button" className="ghost dice-packs-folder" data-action="dice-packs-folder" title="Dice packs: a .kpack file dropped here adds its sets for everyone at the table. To make one, show an AI agent DICE-SET-SKILL.md in that folder." onClick={() => void window.kraken?.openKrakenFolder?.("dice")}>
               Dice packs folder
             </button>
           ) : null}
