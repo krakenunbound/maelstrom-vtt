@@ -4376,7 +4376,7 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
               return combat.targetArea(sourceId, { x: num(msg.x, 0), y: num(msg.y, 0), radius: num(msg.radius, 0) * per, faction: msg.faction ?? null }, seat, (entry) => map.tokens().find((token) => token.id === entry.tokenId) ?? map.tokens().find((token) => entry.recordId && token.recordId === entry.recordId) ?? null);
             }
             case "attack":
-              return combat.attack(msg.recordId ? { recordId: String(msg.recordId) } : { entryId: String(msg.id) }, String(msg.weapon), seat, client.role === "dm" ? "Combat" : client.name, { full: Boolean(msg.full), mode: ["impaired", "enhanced"].includes(msg.mode) ? msg.mode : "", invokes: Array.isArray(msg.invokes) ? msg.invokes.slice(0, 6) : [] });
+              return combat.attack(msg.recordId ? { recordId: String(msg.recordId) } : { entryId: String(msg.id) }, String(msg.weapon), seat, client.role === "dm" ? "Combat" : client.name, { full: Boolean(msg.full), mode: ["impaired", "enhanced"].includes(msg.mode) ? msg.mode : "", invokes: Array.isArray(msg.invokes) ? msg.invokes.slice(0, 6) : [], difficulty: msg.difficulty, bonusDice: msg.bonusDice });
             case "absorb":
               // Fate: a hit's shifts taken by a stress box and consequences, as its player chooses (or taken out).
               return combat.absorb(String(msg.id ?? ""), msg.choice && typeof msg.choice === "object" ? msg.choice : {}, seat);
@@ -5347,4 +5347,4 @@ function createTableServer({ saved = {}, archive = null, onChange = () => undefi
   };
 }
 
-module.exports = { createTableServer, decideRole, lanAddresses, eachAddress, diceLook };
+module.exports = { createTableServer, decideRole, lanAddresses, eachAddress, diceLook, DICE_THEMES, DICE_MATERIALS, DICE_EFFECTS, DICE_FONTS };

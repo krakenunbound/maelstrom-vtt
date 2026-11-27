@@ -88,6 +88,12 @@ function ready({ legacy = {} } = {}) {
       const fresh = !fs.existsSync(folder);
       fs.mkdirSync(folder, { recursive: true });
       placeGuide(path.join(GUIDES, name, "README.md"), path.join(folder, "README.md"));
+      // The dice-set skill and its tool, where a GM shows them to an AI agent (skills/dice-set).
+      if (kind === "dice") {
+        const skill = path.join(__dirname, "..", "skills", "dice-set");
+        placeGuide(path.join(skill, "SKILL.md"), path.join(folder, "DICE-SET-SKILL.md"));
+        placeGuide(path.join(skill, "dice_pack.py"), path.join(folder, "dice_pack.py"));
+      }
       const examples = path.join(GUIDES, name, "examples");
       if (fresh && fs.existsSync(examples)) copyTree(examples, folder);
       const old = legacy[kind];

@@ -4,10 +4,12 @@ const { zipEntries } = require("./decals.cjs");
 const { inflateSync } = require("fflate");
 
 // Dice packs: more dice sets for every seat, made by the GM (or an AI agent
-// for them) and dropped in Documents/Kraken VTT/Dice. A pack is a folder, or
-// a .zip of one, holding dice.json and, if its sets wear pictures, those
-// pictures (PNG, WebP or JPEG). The format, with examples, is
-// skills/kraken-content/folders/Dice/README.md (copied into the Dice folder).
+// for them) and dropped in Documents/Kraken VTT/Dice. A pack is a .kpack: a
+// zip holding kraken-pack.json ({ "format": "kraken-pack", "kind":
+// "dice-pack", "name", ... }), dice.json and the pictures its sets wear (PNG,
+// WebP or JPEG). Older packs, a folder or a .zip of one with dice.json, are
+// still read; a .kpack wins over a folder or .zip of the same name. How to
+// make one: skills/dice-set/SKILL.md (copied into the Dice folder).
 //
 // dice.json:
 //   { "kraken": "dice-pack", "version": 1, "name", "author", "description",
@@ -84,6 +86,17 @@ function readPack(at, id, lookOf) {
     return { id, name: id, sets: [], problems: [`dice.json is not valid JSON: ${error.message}`] };
   }
   if (json?.kraken !== "dice-pack") problems.push('dice.json should say "kraken": "dice-pack".');
+  // A .kpack says what it is in kraken-pack.json.
+  const manifestName = files.names.find((name) => name.toLowerCase() === "kraken-pack.json");
+  let manifest = null;
+  if (manifestName) {
+    try {
+      manifest = JSON.parse(files.read(manifestName).toString("utf8").replace(/^﻿/, ""));
+      if (manifest?.kind !== "dice-pack") problems.push('kraken-pack.json should say "kind": "dice-pack".');
+    } catch (error) {
+      problems.push(`kraken-pack.json is not valid JSON: ${error.message}`);
+    }
+  } else if (/\.kpack$/i.test(at)) problems.push("No kraken-pack.json in the pack.");
   const pictures = new Map();
   const picture = (name, set, key) => {
     if (name === undefined || name === null || name === "") return undefined;
@@ -122,7 +135,7 @@ function readPack(at, id, lookOf) {
   if (!Array.isArray(json?.sets) || json.sets.length === 0) problems.push("dice.json has no sets.");
   if (Array.isArray(json?.sets) && json.sets.length > MAX_SETS) problems.push(`Only the first ${MAX_SETS} sets are read.`);
   const text = (value, max) => (typeof value === "string" ? value.trim().slice(0, max) : "");
-  return { id, name: text(json?.name, 80) || id, author: text(json?.author, 80), description: text(json?.description, 400), sets, problems, pictures, files };
+  return { id, name: text(manifest?.name, 80) || text(json?.name, 80) || id, author: text(manifest?.author ?? json?.author, 80), description: text(manifest?.description ?? json?.description, 400), sets, problems, pictures, files, kind: /\.kpack$/i.test(at) ? "kpack" : fs.statSync(at).isDirectory() ? "folder" : "zip" };
 }
 
 function createDicePacks({ folder, lookOf }) {
@@ -137,12 +150,15 @@ function createDicePacks({ folder, lookOf }) {
     } catch {
       /* no folder yet */
     }
-    for (const entry of entries) {
+    // .kpack packs first, so one wins over an older folder or .zip of the same name (its id, the file's name, stays
+    // the same, so a look saved with "<pack>/<picture>" still finds its picture).
+    const kpack = (entry) => entry.isFile() && /\.kpack$/i.test(entry.name);
+    for (const entry of [...entries.filter(kpack), ...entries.filter((item) => !kpack(item))]) {
       if (entry.name.startsWith(".")) continue;
       const at = path.join(folder, entry.name);
-      const zip = entry.isFile() && entry.name.toLowerCase().endsWith(".zip");
+      const zip = entry.isFile() && /\.(zip|kpack)$/i.test(entry.name);
       if (!entry.isDirectory() && !zip) continue;
-      const id = zip ? entry.name.slice(0, -4) : entry.name;
+      const id = zip ? entry.name.replace(/\.(zip|kpack)$/i, "") : entry.name;
       if (packs.has(id)) continue;
       try {
         packs.set(id, readPack(at, id, lookOf));
@@ -154,7 +170,7 @@ function createDicePacks({ folder, lookOf }) {
     indexedAt = Date.now();
     return index;
   }
-  const shown = (pack) => ({ id: pack.id, name: pack.name, author: pack.author ?? "", description: pack.description ?? "", sets: pack.sets, problems: pack.problems });
+  const shown = (pack) => ({ id: pack.id, name: pack.name, author: pack.author ?? "", description: pack.description ?? "", kind: pack.kind ?? "", sets: pack.sets, problems: pack.problems });
   return {
     folder,
     list: () => [...scan().values()].map(shown),
@@ -162,7 +178,7 @@ function createDicePacks({ folder, lookOf }) {
     check(at) {
       const full = path.resolve(String(at ?? ""));
       if (!fs.existsSync(full)) throw new Error(`Nothing at ${full}.`);
-      return shown(readPack(full, path.basename(full).replace(/\.zip$/i, ""), lookOf));
+      return shown(readPack(full, path.basename(full).replace(/\.(zip|kpack)$/i, ""), lookOf));
     },
     file(id) {
       const text = String(id ?? "");

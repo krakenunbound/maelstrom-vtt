@@ -18,7 +18,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFil
 import { tmpdir } from "node:os";
 import path from "node:path";
 import readline from "node:readline";
-import { strToU8, zipSync } from "fflate";
+import { strFromU8, strToU8, unzipSync, zipSync } from "fflate";
 import { _electron as electron, chromium } from "playwright-core";
 import { CHROME } from "./lib/chrome.mjs";
 
@@ -93,7 +93,8 @@ try {
   }
   assert(readFileSync(path.join(home, "README.md"), "utf8").includes("| `Dice` |"), "the top README lists the folders");
   assert(readFileSync(path.join(home, "AGENTS.md"), "utf8").includes("kraken_dice_packs"), "AGENTS.md: the skill for agents");
-  assert(existsSync(path.join(home, "Dice", "Kraken Sea Glass", "dice.json")), "the example dice pack came with the Dice folder");
+  assert(existsSync(path.join(home, "Dice", "Kraken Sea Glass.kpack")), "the example dice pack (a .kpack) came with the Dice folder");
+  assert(readFileSync(path.join(home, "Dice", "DICE-SET-SKILL.md"), "utf8").includes("name: dice-set") && readFileSync(path.join(home, "Dice", "dice_pack.py"), "utf8").includes("def make("), "the dice-set skill and its tool are in the Dice folder");
   assert(existsSync(path.join(home, "GM Icons", "Old Icon.png")), "a GM icon from the old assets folder is copied into GM Icons");
   const icons = await tool("kraken_decal", { kind: "gmicon", action: "list", search: "Old Icon" });
   assert(icons.gmIcons.some((item) => item.name === "Old Icon"), `and it is a GM icon to choose (${JSON.stringify(icons.gmIcons)})`);
@@ -102,15 +103,16 @@ try {
   // kraken_dice_packs: the example's sets; a broken pack checked; a zip read.
   const listed = await tool("kraken_dice_packs", { action: "list" });
   const example = listed.packs.find((pack) => pack.id === "Kraken Sea Glass");
-  assert(example && example.sets.length === 4 && example.problems.length === 0, `the example: four sets, no problems (${JSON.stringify(listed)})`);
+  assert(example && example.kind === "kpack" && example.sets.length === 4 && example.problems.length === 0, `the example: a .kpack, four sets, no problems (${JSON.stringify(listed)})`);
   assert(example.sets.find((set) => set.name === "Kraken Hide").texture === "Kraken Sea Glass/kraken-hide.webp", "a picture set names its picture");
   const broken = path.join(profile, "Broken Pack");
   mkdirSync(broken);
   writeFileSync(path.join(broken, "dice.json"), JSON.stringify({ kraken: "dice-pack", version: 1, name: "Broken", sets: [{ name: "No colours", theme: "marble" }, { name: "Lost picture", texture: "gone.png", body: "#000000", ink: "#ffffff" }, { name: "Fine", theme: "wood", body: "#8a5a2f", ink: "#f1dfb8" }] }));
   const checked = await tool("kraken_dice_packs", { action: "check", path: broken });
   assert(checked.sets.length === 1 && checked.problems.some((text) => text.includes("No colours")) && checked.problems.some((text) => text.includes("gone.png")), `check: its problems before it is dropped in (${JSON.stringify(checked)})`);
-  const exampleFolder = path.join(home, "Dice", "Kraken Sea Glass");
-  const zipped = zipSync({ "Zipped Sea/dice.json": strToU8(readFileSync(path.join(exampleFolder, "dice.json"), "utf8").replace('"name": "Kraken Sea Glass"', '"name": "Zipped Sea"')), "Zipped Sea/kraken-hide.webp": readFileSync(path.join(exampleFolder, "kraken-hide.webp")), "Zipped Sea/kraken-hide-glow.webp": readFileSync(path.join(exampleFolder, "kraken-hide-glow.webp")), "Zipped Sea/sea-glass.webp": readFileSync(path.join(exampleFolder, "sea-glass.webp")) });
+  // An older pack, a .zip of a folder with dice.json, made from the example's files: still read.
+  const exampleFiles = unzipSync(new Uint8Array(readFileSync(path.join(home, "Dice", "Kraken Sea Glass.kpack"))));
+  const zipped = zipSync({ "Zipped Sea/dice.json": strToU8(strFromU8(exampleFiles["dice.json"]).replace('"name": "Kraken Sea Glass"', '"name": "Zipped Sea"')), "Zipped Sea/kraken-hide.webp": exampleFiles["kraken-hide.webp"], "Zipped Sea/kraken-hide-glow.webp": exampleFiles["kraken-hide-glow.webp"], "Zipped Sea/sea-glass.webp": exampleFiles["sea-glass.webp"] });
   writeFileSync(path.join(home, "Dice", "Zipped Sea.zip"), zipped);
   const again = await tool("kraken_dice_packs", { action: "list" });
   const zipPack = again.packs.find((pack) => pack.id === "Zipped Sea");
@@ -146,7 +148,15 @@ try {
     return purple;
   });
   assert(tray > 200, `the set's picture shows the kraken hide (${tray} purple pixels)`);
-  report.push("the Dice window: the pack is a group of its own; Kraken Hide chosen, drawn in its picture");
+  // The live preview shows the die picked under Dice display (a d20 until then).
+  const previewShot = () => page.locator(".dice-window .dice-preview").screenshot();
+  assert((await page.getAttribute('.dice-window [data-preview-die="d20"]', "aria-pressed")) === "true", "the preview starts on the d20");
+  await page.click('.dice-window [data-preview-die="d6"]');
+  assert((await page.getAttribute('.dice-window [data-preview-die="d6"]', "aria-pressed")) === "true" && (await page.getAttribute('.dice-window [data-preview-die="d20"]', "aria-pressed")) === "false", "a d6 picked under Dice display is the preview's die");
+  await settle(800);
+  await page.locator(".dice-window .dice-preview").screenshot({ path: path.join(SHOTS, "kraken-dicepacks-preview-d6.png") });
+  assert((await previewShot()).length > 1000, "the preview draws the d6");
+  report.push("the Dice window: the pack is a group of its own; Kraken Hide chosen, drawn in its picture; the d6 picked under Dice display shows in the live preview");
 
   // By name, for the agent: a pack's set as a preset; and a roll in it.
   const glass = await tool("kraken_dice_settings", { preset: "Sea Glass" });
