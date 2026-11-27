@@ -251,16 +251,18 @@ async function runRuleset(ruleset, plan) {
       await seat.click('.sidebar [data-launch="settings"], [title="Settings"]');
       await seat.click('[data-setting="dice"]');
       // The Dice window's sets on screen (another copy of the window may sit hidden in the page).
-      const shown = seat.locator("[data-preset] >> visible=true");
+      // Each class or kind is a tile; picking one shows its sets below, where one is chosen.
+      const shown = seat.locator("[data-family] >> visible=true");
       await shown.first().waitFor({ timeout: 30000 }).catch(async (error) => {
-        const seen = await seat.$$eval("[data-preset]", (items) => items.slice(0, 4).map((item) => {
+        const seen = await seat.$$eval("[data-family]", (items) => items.slice(0, 4).map((item) => {
           const box = item.getBoundingClientRect();
           const style = getComputedStyle(item);
           return { box: [Math.round(box.width), Math.round(box.height)], vis: style.visibility, op: style.opacity, display: style.display, win: item.closest("[data-window]")?.getAttribute("data-window") };
         })).catch(() => []);
         throw new Error(`${error.message.split("\n")[0]} | presets in the page: ${JSON.stringify(seen)} | windows: ${await seat.$$eval("[data-window]", (wins) => wins.map((win) => win.getAttribute("data-window")).join(",")).catch(() => "?")}`);
       });
-      const preset = shown.nth(Math.min(5, (await shown.count()) - 1));
+      await shown.nth(Math.min(5, (await shown.count()) - 1)).click();
+      const preset = seat.locator("[data-family-choices] [data-preset] >> visible=true").first();
       const presetName = await preset.getAttribute("data-preset");
       await preset.click();
       await seat.waitForTimeout(500);

@@ -136,10 +136,12 @@ try {
   await ann.waitForSelector(`[data-dice-whose="${rogue.id}"]`, { timeout: 10000 });
   await ann.click('[data-dice-whose="mine"]');
   await ann.click('.dice-window [aria-label="Groups"] >> text=All');
+  await ann.click('.dice-window [data-family="Frost Glass"]');
   await ann.click('.dice-window [data-preset="Frost Glass"]');
   await ann.click(`[data-dice-whose="${rogue.id}"]`);
   await ann.click('.dice-window [data-dice-follow]');
   await ann.click('.dice-window [aria-label="Groups"] >> text=All');
+  await ann.click('.dice-window [data-family="Wizard"]');
   await ann.click('.dice-window [data-preset="Wizard"]');
   await ann.waitForFunction(() => document.querySelector(".dice-window [data-active-set]")?.getAttribute("data-active-set") === "Wizard", null, { timeout: 10000 });
   const kept = (await tool("kraken_record_get", { id: rogue.id })).data?.dice?.look;

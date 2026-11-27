@@ -127,6 +127,7 @@ try {
   await page.click('[data-setting="dice"]');
   await page.waitForSelector('.dice-window [aria-label="Groups"] >> text=Kraken Sea Glass');
   await page.click('.dice-window [aria-label="Groups"] >> text=Kraken Sea Glass');
+  await page.click('.dice-window [data-family="Kraken Hide"]');
   await page.waitForSelector('.dice-window [data-preset="Kraken Hide"] img');
   assert((await page.$$(".dice-window .dice-sets .dice-set")).length === 4, "the pack's group holds its four sets");
   // A pack that names one of Maelstrom's groups (Zipped Sea: "group": "Classes") joins it, with no group of its own.
@@ -138,10 +139,13 @@ try {
   const choices = await page.$$eval('.dice-window [data-family-choices="Mariner"] .dice-set', (items) => items.map((item) => item.getAttribute("data-preset")));
   assert(choices.length === 4 && (await page.getAttribute('.dice-window [data-family="Mariner"]', "aria-expanded")) === "true", `the Mariner tile opens its four choices (${choices.join(", ")})`);
   await page.locator(".dice-window .dice-sets").screenshot({ path: path.join(SHOTS, "kraken-dicepacks-family.png") });
-  await page.click('.dice-window [data-family="Mariner"]');
-  assert((await page.$$('.dice-window [data-family-choices="Mariner"]')).length === 0, "and closes them again");
+  // Picking another class shows its choices instead, even a class with one set (Wizard).
+  await page.click('.dice-window [data-family="Wizard"]');
+  const wizard = await page.$$eval('.dice-window [data-family-choices="Wizard"] .dice-set', (items) => items.map((item) => item.getAttribute("data-preset")));
+  assert(wizard.join() === "Wizard" && (await page.$$('.dice-window [data-family-choices="Mariner"]')).length === 0 && (await page.getAttribute('.dice-window [data-family="Mariner"]', "aria-expanded")) === "false", `Wizard, a class of one set, shows it in Mariner's place (${wizard.join(", ")})`);
   assert((await page.$$('.dice-window [aria-label="Groups"] >> text="Zipped Sea"')).length === 0, "no group of its own for a pack that joins Classes");
   await page.click('.dice-window [aria-label="Groups"] >> text=Kraken Sea Glass');
+  await page.click('.dice-window [data-family="Kraken Hide"]');
   await page.click('.dice-window [data-preset="Kraken Hide"]');
   await page.waitForSelector('.dice-window [data-active-set="Kraken Hide"]');
   await settle(1500);
@@ -169,7 +173,7 @@ try {
   await settle(800);
   await page.locator(".dice-window .dice-preview").screenshot({ path: path.join(SHOTS, "kraken-dicepacks-preview-d6.png") });
   assert((await previewShot()).length > 1000, "the preview draws the d6");
-  report.push("the Dice window: the pack is a group of its own; Kraken Hide chosen, drawn in its picture; the d6 picked under Dice display shows in the live preview; a pack naming Classes joins that group, its family one tile that opens its choices");
+  report.push("the Dice window: the pack is a group of its own; Kraken Hide chosen, drawn in its picture; the d6 picked under Dice display shows in the live preview; a pack naming Classes joins that group, its family one tile that shows its choices below, as every class does (Wizard's one)");
 
   // By name, for the agent: a pack's set as a preset; and a roll in it.
   const glass = await tool("kraken_dice_settings", { preset: "Sea Glass" });
@@ -200,6 +204,7 @@ try {
   await seat.waitForSelector('.dice-window [aria-label="Groups"] >> text=Kraken Sea Glass');
   assert(!(await seat.$('[data-action="dice-packs-folder"]')), "the player has no Dice packs folder button");
   await seat.click('.dice-window [aria-label="Groups"] >> text=Kraken Sea Glass');
+  await seat.click('.dice-window [data-family="Sea Glass"]');
   await seat.waitForSelector('.dice-window [data-preset="Sea Glass"] img', { timeout: 30000 });
   await seat.click('.dice-window [data-preset="Sea Glass"]');
   await seat.waitForSelector('.dice-window [data-active-set="Sea Glass"]');

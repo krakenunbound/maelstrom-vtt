@@ -98,6 +98,7 @@ try {
   await page.click('.dice-window [data-dice-set="damage"]');
   await page.click('.dice-window [data-dice-follow]');
   await page.click('.dice-window [aria-label="Groups"] >> text=All');
+  await page.click('.dice-window [data-family="Magma Vein"]');
   await page.click('.dice-window [data-preset="Magma Vein"]');
   const damageSet = await tool("kraken_dice_settings");
   assert(damageSet.damageSet === "Magma Vein" && damageSet.npcSet === "Goblin Scrap" && damageSet.look.material === "glass", `damage dice from the window: ${damageSet.damageSet}`);

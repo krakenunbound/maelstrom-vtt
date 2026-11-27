@@ -1,4 +1,4 @@
-import { Fragment, lazy, Suspense, useEffect, useState, useSyncExternalStore } from "react";
+import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from "react";
 import type { Session } from "../session/useSession";
 import { dicePacks } from "./dicePacks";
 import type { DiceKind } from "./models";
@@ -121,10 +121,10 @@ export function DiceWindow({ session }: { session: Session }) {
   const nameOf = (shown: DiceLook) => nameIn(all, shown);
   // The die the live preview shows: a d20 until one is picked under Dice display.
   const [previewKind, setPreviewKind] = useState<DiceKind>("d20");
-  // The families whose choices are open (the one the dice are in, from the start).
-  const [openFamilies, setOpenFamilies] = useState<string[]>(() => {
+  // The family (class) whose choices show in the area under the tiles: the one the dice are in, from the start.
+  const [openFamily, setOpenFamily] = useState<string | null>(() => {
     const current = ([...PRESETS, ...packs.flatMap((pack) => pack.sets)] as Shown[]).find((preset) => sameLook(look, preset));
-    return current?.family ? [current.family] : [];
+    return current ? current.family || current.name : null;
   });
   const [group, setGroup] = useState(groups.find((item) => item.sets.includes(nameOf(look) ?? ""))?.name ?? "All");
   const tray = usePictures(() => import("./trayArt").then(({ renderTray }) => renderTray(look)), JSON.stringify(look), {} as Record<number, string>);
@@ -259,38 +259,39 @@ export function DiceWindow({ session }: { session: Session }) {
         </div>
         <div className="dice-sets">
           {families.map((family) => {
-            if (family.items.length === 1) return setButton(family.items[0]);
-            // A family (a class: Paladin) is one tile; its sets are its choices, on a row of their own beneath it.
-            const open = openFamilies.includes(family.name);
+            // Each family (a class: Paladin, Wizard) is one tile; picking it shows its choices in the area below.
+            const open = openFamily === family.name;
             const current = family.items.find(({ preset }) => sameLook(look, preset)) ?? null;
             const face = current ?? family.items[0];
-            const id = `dice-family-${family.name.replace(/[^a-z0-9]+/gi, "-")}`;
             return (
-              <Fragment key={`family-${family.name}`}>
-                <button
-                  type="button"
-                  className={["dice-set", "dice-family", current ? "on" : ""].filter(Boolean).join(" ")}
-                  title={`${family.name}: ${family.items.length} choices`}
-                  aria-expanded={open}
-                  aria-controls={id}
-                  data-family={family.name}
-                  style={{ ["--set-glow" as string]: glowOf(face.preset) }}
-                  onClick={() => setOpenFamilies((now) => (now.includes(family.name) ? now.filter((name) => name !== family.name) : [...now, family.name]))}
-                >
-                  {face.picture ? <img src={face.picture} alt="" draggable={false} /> : <span className="dice-set-blank" style={{ background: face.preset.body, color: face.preset.ink, ...FONT_STYLE[face.preset.font] }}>20</span>}
-                  <span>{family.name}</span>
-                  <b className="dice-family-count" aria-hidden="true">{family.items.length}</b>
-                </button>
-                {open ? (
-                  <div className="dice-family-choices" id={id} role="group" aria-label={`${family.name} choices`} data-family-choices={family.name}>
-                    <span className="dice-family-head">{family.name}</span>
-                    <div className="dice-family-row">{family.items.map(setButton)}</div>
-                  </div>
-                ) : null}
-              </Fragment>
+              <button
+                key={`family-${family.name}`}
+                type="button"
+                className={["dice-set", "dice-family", current ? "on" : "", open ? "open" : ""].filter(Boolean).join(" ")}
+                title={family.items.length > 1 ? `${family.name}: ${family.items.length} choices` : family.name}
+                aria-expanded={open}
+                aria-controls="dice-family-choices"
+                data-family={family.name}
+                style={{ ["--set-glow" as string]: glowOf(face.preset) }}
+                onClick={() => setOpenFamily(family.name)}
+              >
+                {face.picture ? <img src={face.picture} alt="" draggable={false} /> : <span className="dice-set-blank" style={{ background: face.preset.body, color: face.preset.ink, ...FONT_STYLE[face.preset.font] }}>20</span>}
+                <span>{family.name}</span>
+                {family.items.length > 1 ? <b className="dice-family-count" aria-hidden="true">{family.items.length}</b> : null}
+              </button>
             );
           })}
         </div>
+        {(() => {
+          // The picked class's choices (one, or many): choosing one sets the dice.
+          const family = families.find((item) => item.name === openFamily);
+          return family ? (
+            <div className="dice-family-choices" id="dice-family-choices" role="group" aria-label={`${family.name} choices`} data-family-choices={family.name}>
+              <span className="dice-family-head">{family.name}</span>
+              <div className="dice-family-row">{family.items.map(setButton)}</div>
+            </div>
+          ) : null;
+        })()}
       </section>
 
       <section className="dice-panel">
