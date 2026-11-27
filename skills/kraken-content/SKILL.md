@@ -1,6 +1,6 @@
 ---
 name: kraken-content
-description: Make things for Kraken VTT and put them where it reads them - dice packs (dice.json sets, picture dice), dice tower pictures (with a lit twin), GM icons, background decals, seamless desktop wallpapers, and book packs. Use when a user asks an agent to create dice, a dice tower, a GM icon, a decal, a wallpaper or other art or content for Kraken VTT, or asks where such things go.
+description: Make things for Kraken VTT and put them where it reads them - dice tower pictures (with a lit twin), GM icons, background decals, seamless desktop wallpapers, and book packs. Use when a user asks an agent to create a dice tower, a GM icon, a decal, a wallpaper or other art or content for Kraken VTT, or asks where such things go. Dice packs are made with the dice-set skill instead.
 ---
 <!-- kraken-vtt guide: Kraken writes this file and keeps it up to date. Edit a copy, not this one. -->
 
@@ -18,7 +18,7 @@ checklist. **Read that README before making something for it.**
 
 | Folder | Kind | In short |
 |---|---|---|
-| `Dice` | Dice packs | A folder or .zip with `dice.json` (`"kraken": "dice-pack"`, `"version": 1`, `name`, `sets`) and any face pictures. Each set is a dice look: `theme` or `texture`, `body`, `ink`, `accent`, `material`, `effect`, `font`, `pips`. |
+| `Dice` | Dice packs (.kpack) | **Made only by the dice-set skill**: `skills/dice-set/SKILL.md` (in the Dice folder as `DICE-SET-SKILL.md`, with its tool `dice_pack.py`). Follow it, not this table. |
 | `Dice Towers` | Tower pictures | A transparent PNG of a tower standing at the bottom middle, about 512 to 1024 pixels; optionally `<Name> lit.png`, the same picture lit. |
 | `GM Icons` | Chat pictures | A square transparent PNG, 256 to 512 pixels, bold enough to read at 36 pixels. |
 | `Background Decals` | Table emblems | A transparent PNG or WebP, about 1024 pixels, one centred emblem; a subfolder named for a game groups it with that game. |
@@ -39,8 +39,8 @@ checklist. **Read that README before making something for it.**
 
 When Kraken is running, its MCP server (`kraken`) has the tools for this:
 
-- `kraken_dice_packs`:
-  - `action: "check"` with `path` reads a pack anywhere and lists its sets and problems;
+- `kraken_dice_packs` (dice: see the dice-set skill):
+  - `action: "check"` with `path` reads a pack anywhere (a .kpack) and lists its sets and problems;
   - `action: "list"` shows the installed packs;
   - `action: "folder"` gives the Dice folder's path.
 - `kraken_dice_settings` sets the GM's dice to a look, and `kraken_roll`

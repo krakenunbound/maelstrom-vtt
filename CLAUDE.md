@@ -10,6 +10,12 @@ Kraken's own agent tools (the MCP server in the app) are described in
 done only when `npm run kpack:verify` prints `DONE`; a game Maelstrom does not
 play means stop and ask the user.
 
+## Making a dice pack
+
+[skills/dice-set/SKILL.md](skills/dice-set/SKILL.md) is the one guide (the app copies it into
+Documents/Kraken VTT/Dice as DICE-SET-SKILL.md with its tool dice_pack.py). A dice
+pack is one .kpack; `node scripts/check-dice-skill.mjs` keeps the skill true to the code.
+
 ## Browser support
 
 Kraken's interface runs in two places: the GM's app (Electron, a current
