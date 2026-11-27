@@ -54,6 +54,9 @@ its look. Ask only what you cannot decide well yourself; otherwise choose and
 say what you chose. Settle:
 
 - **The theme**, and how many sets (default: 6).
+- **Its group** in the Dice window (section 6's `group`): a class pack goes in
+  `Classes`, a monster pack in `Wilds`, and so on. Choose it yourself unless the
+  user said.
 - **Picture dice or designed dice, or a mix.** Picture dice wear a picture you
   make (stone, bone, scales, wood, nebula). Designed dice use Maelstrom's own
   patterns and need no pictures (section 6). A mix is often best.
@@ -104,6 +107,7 @@ Only the pictures `dice.json` names go into the pack.
   "name": "Undeath",
   "author": "<the user's name, if they gave it; otherwise leave author out>",
   "description": "Grim dice: yellowed bone, crypt stone, grave light.",
+  "group": "Wilds",
   "sets": [
     { "name": "Yellowed Bone", "texture": "bone.webp", "body": "#8a7a5c", "ink": "#1a120c", "material": "stone", "effect": "wisp", "font": "engrave" },
     { "name": "Grave Light", "texture": "crypt.webp", "glow": "crypt-glow.webp", "body": "#1c1e1c", "ink": "#d8f0c8", "material": "stone", "effect": "shadow", "font": "runic" },
@@ -121,6 +125,7 @@ The pack:
 | `version` | yes | always `1` |
 | `name` | yes | the pack's name (up to 80 characters): its group in the Dice window, and the `.kpack`'s file name |
 | `author`, `description` | no | who made it; what it is |
+| `group` | no | the Dice window group its sets join. Maelstrom's groups: `Cores` (gems, crystal, glass), `Relics` (holy, gilded, ornate), `Wilds` (monsters, beasts, nature, the undead), `Classes` (a character class or calling: paladin, rogue, druid), `Worlds` (a setting, an era, science fiction), `Maelstrom` (the sea, storms, the app's own). Any other name makes a group of its own; without `group`, the pack is a group named for itself |
 | `sets` | yes | 1 to 60 sets |
 
 A set:
@@ -300,6 +305,8 @@ DESIGNS = ["aether", "reliquary", "rosewindow", "gilded", "emerald", "frost", "o
 MATERIALS = ["plastic", "glass", "metal", "pearl", "stone", "wood", "design"]
 EFFECTS = ["none", "sparkles", "fire", "frost", "arcane", "shadow", "glow", "aura", "spark", "embers", "wisp", "holy", "charge", "notes", "ion"]
 FONTS = ["classic", "bold", "runic", "script", "glow", "metal", "engrave"]
+# The Dice window's own groups; a pack's "group" naming one of them joins it, any other name is a group of its own.
+GROUPS = ["Cores", "Relics", "Wilds", "Classes", "Worlds", "Maelstrom"]
 PICTURE_TYPES = {".png", ".webp", ".jpg", ".jpeg"}
 MAX_PICTURE = 8 * 1024 * 1024
 # How much of a picture one face shows (Maelstrom lays a picture flat on each face, 0.8 of the picture per unit).
@@ -362,6 +369,15 @@ def check(folder):
         errors.append('dice.json: "name" (the pack\'s name) is missing.')
     elif len(data["name"]) > 80:
         errors.append('dice.json: "name" is longer than 80 characters.')
+    for key in data:
+        if key not in ("kraken", "version", "name", "author", "description", "group", "sets"):
+            errors.append(f"dice.json: \"{key}\" is not a pack field (Maelstrom ignores it).")
+    if "group" in data:
+        group = data["group"]
+        if not isinstance(group, str) or not group.strip() or len(group) > 40:
+            errors.append('dice.json: "group" must be a name of up to 40 characters.')
+        elif group not in GROUPS:
+            warnings.append(f"dice.json: the group \"{group}\" is not one of Maelstrom's ({', '.join(GROUPS)}); it becomes a group of its own.")
     sets = data.get("sets")
     if not isinstance(sets, list) or not sets:
         errors.append('dice.json: "sets" must be a list of 1 to 60 sets.')

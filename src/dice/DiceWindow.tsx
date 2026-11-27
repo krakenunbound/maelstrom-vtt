@@ -109,8 +109,15 @@ export function DiceWindow({ session }: { session: Session }) {
   const packs = useSyncExternalStore(dicePacks.subscribe, dicePacks.list);
   const all: Shown[] = [...PRESETS, ...packs.flatMap((pack) => pack.sets)];
   // Each set's group: Kraken's by name, a pack's by the pack (two packs may share a set's name).
-  const groupOf = [...PRESETS.map((preset) => SET_GROUPS.find((item) => item.sets.includes(preset.name))?.name ?? ""), ...packs.flatMap((pack) => pack.sets.map(() => pack.name))];
-  const groups = [...SET_GROUPS, ...packs.map((pack) => ({ name: pack.name, sets: pack.sets.map((set) => set.name), pack: pack.id }))];
+  // A pack's sets join the group it names (Maelstrom's own, such as Classes, or one of its own), else one named for it.
+  const packGroup = (pack: (typeof packs)[number]) => pack.group || pack.name;
+  const groupOf = [...PRESETS.map((preset) => SET_GROUPS.find((item) => item.sets.includes(preset.name))?.name ?? ""), ...packs.flatMap((pack) => pack.sets.map(() => packGroup(pack)))];
+  const groups: { name: string; sets: string[] }[] = SET_GROUPS.map((item) => ({ ...item, sets: [...item.sets] }));
+  for (const pack of packs) {
+    const found = groups.find((item) => item.name === packGroup(pack));
+    if (found) found.sets.push(...pack.sets.map((set) => set.name));
+    else groups.push({ name: packGroup(pack), sets: pack.sets.map((set) => set.name) });
+  }
   const nameOf = (shown: DiceLook) => nameIn(all, shown);
   // The die the live preview shows: a d20 until one is picked under Dice display.
   const [previewKind, setPreviewKind] = useState<DiceKind>("d20");

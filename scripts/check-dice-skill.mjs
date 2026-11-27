@@ -34,7 +34,11 @@ check(same([...list("THEMES"), ...list("DESIGNS")], codeThemes), `themes and des
 check(same(list("MATERIALS"), table.DICE_MATERIALS), "materials match the code");
 check(same(list("EFFECTS"), table.DICE_EFFECTS), "effects match the code");
 check(same(list("FONTS"), table.DICE_FONTS), "fonts match the code");
+const windowGroups = [...readFileSync("src/dice/diceStore.ts", "utf8").matchAll(/\{ name: "([^"]+)", sets: \[/g)].map((match) => match[1]);
+check(windowGroups.length > 0 && same(list("GROUPS"), windowGroups), `the groups match the Dice window's (${windowGroups.join(", ")})`);
 const prose = skill.split("<!-- dice_pack.py begins -->")[0];
+const missingGroups = windowGroups.filter((name) => !prose.includes(`\`${name}\``));
+check(missingGroups.length === 0, `the skill names every group${missingGroups.length ? ` (missing: ${missingGroups.join(", ")})` : ""}`);
 const missing = [...codeThemes, ...table.DICE_MATERIALS, ...table.DICE_EFFECTS, ...table.DICE_FONTS].filter((value) => !prose.includes(`\`${value}\``));
 check(missing.length === 0, `the skill's tables name every value${missing.length ? ` (missing: ${missing.join(", ")})` : ""}`);
 

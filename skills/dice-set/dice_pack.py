@@ -28,6 +28,8 @@ DESIGNS = ["aether", "reliquary", "rosewindow", "gilded", "emerald", "frost", "o
 MATERIALS = ["plastic", "glass", "metal", "pearl", "stone", "wood", "design"]
 EFFECTS = ["none", "sparkles", "fire", "frost", "arcane", "shadow", "glow", "aura", "spark", "embers", "wisp", "holy", "charge", "notes", "ion"]
 FONTS = ["classic", "bold", "runic", "script", "glow", "metal", "engrave"]
+# The Dice window's own groups; a pack's "group" naming one of them joins it, any other name is a group of its own.
+GROUPS = ["Cores", "Relics", "Wilds", "Classes", "Worlds", "Maelstrom"]
 PICTURE_TYPES = {".png", ".webp", ".jpg", ".jpeg"}
 MAX_PICTURE = 8 * 1024 * 1024
 # How much of a picture one face shows (Maelstrom lays a picture flat on each face, 0.8 of the picture per unit).
@@ -90,6 +92,15 @@ def check(folder):
         errors.append('dice.json: "name" (the pack\'s name) is missing.')
     elif len(data["name"]) > 80:
         errors.append('dice.json: "name" is longer than 80 characters.')
+    for key in data:
+        if key not in ("kraken", "version", "name", "author", "description", "group", "sets"):
+            errors.append(f"dice.json: \"{key}\" is not a pack field (Maelstrom ignores it).")
+    if "group" in data:
+        group = data["group"]
+        if not isinstance(group, str) or not group.strip() or len(group) > 40:
+            errors.append('dice.json: "group" must be a name of up to 40 characters.')
+        elif group not in GROUPS:
+            warnings.append(f"dice.json: the group \"{group}\" is not one of Maelstrom's ({', '.join(GROUPS)}); it becomes a group of its own.")
     sets = data.get("sets")
     if not isinstance(sets, list) or not sets:
         errors.append('dice.json: "sets" must be a list of 1 to 60 sets.')

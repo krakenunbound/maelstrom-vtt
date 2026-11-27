@@ -6,7 +6,9 @@
 import { fullLook, type DiceLook } from "./diceStore";
 
 export type DicePackSet = { name: string } & DiceLook;
-export type DicePack = { id: string; name: string; author: string; description: string; sets: DicePackSet[]; problems?: string[] };
+// group: the Dice window group its sets join (one of Maelstrom's, such as Classes, or a group of its own); without
+// it, a group named for the pack.
+export type DicePack = { id: string; name: string; author: string; description: string; group?: string; sets: DicePackSet[]; problems?: string[] };
 
 let packs: DicePack[] = [];
 let urlOf: (id: string) => string = () => "";

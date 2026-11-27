@@ -12,7 +12,7 @@ const { inflateSync } = require("fflate");
 // make one: skills/dice-set/SKILL.md (copied into the Dice folder).
 //
 // dice.json:
-//   { "kraken": "dice-pack", "version": 1, "name", "author", "description",
+//   { "kraken": "dice-pack", "version": 1, "name", "author", "description", "group",
 //     "sets": [ { "name", "theme", "body", "ink", "accent", "material",
 //                 "effect", "font", "crit", "pips",
 //                 "texture": "face.png", "glow": "glow.png" } ] }
@@ -135,7 +135,8 @@ function readPack(at, id, lookOf) {
   if (!Array.isArray(json?.sets) || json.sets.length === 0) problems.push("dice.json has no sets.");
   if (Array.isArray(json?.sets) && json.sets.length > MAX_SETS) problems.push(`Only the first ${MAX_SETS} sets are read.`);
   const text = (value, max) => (typeof value === "string" ? value.trim().slice(0, max) : "");
-  return { id, name: text(manifest?.name, 80) || text(json?.name, 80) || id, author: text(manifest?.author ?? json?.author, 80), description: text(manifest?.description ?? json?.description, 400), sets, problems, pictures, files, kind: /\.kpack$/i.test(at) ? "kpack" : fs.statSync(at).isDirectory() ? "folder" : "zip" };
+  // group: the Dice window group its sets join (Maelstrom's own, such as "Classes", or one of its own).
+  return { id, name: text(manifest?.name, 80) || text(json?.name, 80) || id, group: text(json?.group, 40), author: text(manifest?.author ?? json?.author, 80), description: text(manifest?.description ?? json?.description, 400), sets, problems, pictures, files, kind: /\.kpack$/i.test(at) ? "kpack" : fs.statSync(at).isDirectory() ? "folder" : "zip" };
 }
 
 function createDicePacks({ folder, lookOf }) {
@@ -170,7 +171,7 @@ function createDicePacks({ folder, lookOf }) {
     indexedAt = Date.now();
     return index;
   }
-  const shown = (pack) => ({ id: pack.id, name: pack.name, author: pack.author ?? "", description: pack.description ?? "", kind: pack.kind ?? "", sets: pack.sets, problems: pack.problems });
+  const shown = (pack) => ({ id: pack.id, name: pack.name, author: pack.author ?? "", description: pack.description ?? "", group: pack.group ?? "", kind: pack.kind ?? "", sets: pack.sets, problems: pack.problems });
   return {
     folder,
     list: () => [...scan().values()].map(shown),
