@@ -1,7 +1,7 @@
-// The gate a PDF conversion must pass before it is called done (docs/pdf-to-kpack.md). It compares the built pack
+// The gate a PDF conversion must pass before it is called done (skills/pdf-to-kpack/SKILL.md). It compares the built pack
 // with the PDF and the conversion's work folder, and exits 1 while anything is left:
 //
-//   node scripts/pdf-kpack/verify-conversion.mjs <pack.kpack> --pdf <book.pdf> --work <work folder>
+//   node skills/pdf-to-kpack/scripts/verify-conversion.mjs <pack.kpack> --pdf <book.pdf> --work <work folder>
 //   npm run kpack:verify -- <pack.kpack> --pdf <book.pdf> --work <work folder>
 //
 // The work folder holds the conversion's state, written as the work goes:
@@ -10,7 +10,7 @@
 //                   is made (and "approvedByUser": { "ruleset": "Any" } only when the user said to file it under Any)
 //   playtest.md     what was tried in Maelstrom with the pack (phase D) and what it showed
 //
-//   node scripts/pdf-kpack/verify-conversion.mjs --games    lists the games Maelstrom plays (use before any pack exists)
+//   node skills/pdf-to-kpack/scripts/verify-conversion.mjs --games    lists the games Maelstrom plays (use before any pack exists)
 //
 // Its report is the hand-over: paste it as it prints. Needs Python with PyMuPDF (pdf_text.py beside this file).
 import { execFileSync, spawnSync } from "node:child_process";
@@ -20,7 +20,7 @@ import { fileURLToPath } from "node:url";
 import { unzipSync, strFromU8 } from "fflate";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const repo = path.resolve(here, "..", "..");
+const repo = path.resolve(here, "..", "..", "..");
 const args = process.argv.slice(2);
 const option = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : null);
 if (args.includes("--games")) {
@@ -31,7 +31,7 @@ const packFile = args.find((arg, index) => !arg.startsWith("--") && !["--pdf", "
 const pdfFile = option("--pdf");
 const work = option("--work");
 if (!packFile || !pdfFile || !work) {
-  console.error("Usage: node scripts/pdf-kpack/verify-conversion.mjs <pack.kpack> --pdf <book.pdf> --work <work folder>");
+  console.error("Usage: node skills/pdf-to-kpack/scripts/verify-conversion.mjs <pack.kpack> --pdf <book.pdf> --work <work folder>");
   process.exit(2);
 }
 
@@ -246,5 +246,5 @@ for (const result of results) {
   for (const problem of result.problems) console.log(`      - ${problem}`);
 }
 const failed = results.filter((result) => !result.ok).length;
-console.log(failed ? `NOT DONE: ${failed} of ${results.length} gates fail. Go back to the loop (docs/pdf-to-kpack.md).` : `DONE: all ${results.length} gates pass. Paste this report in the hand-over.`);
+console.log(failed ? `NOT DONE: ${failed} of ${results.length} gates fail. Go back to the loop (skills/pdf-to-kpack/SKILL.md).` : `DONE: all ${results.length} gates pass. Paste this report in the hand-over.`);
 process.exit(failed ? 1 : 0);

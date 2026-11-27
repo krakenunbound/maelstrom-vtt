@@ -8,7 +8,7 @@ Tables, Parcels and so on). It is Maelstrom's own format, as `.mod` is Fantasy
 Grounds'.
 
 This document is the contract. It is written for people and for AI agents
-alike. To convert a PDF into a pack, follow [pdf-to-kpack.md](pdf-to-kpack.md):
+alike. To convert a PDF into a pack, follow [skills/pdf-to-kpack/SKILL.md](../skills/pdf-to-kpack/SKILL.md):
 it is the procedure, and its gate (`npm run kpack:verify`) says when it is done.
 
 Maelstrom was called Kraken VTT until alpha.92, so the format's files and the
@@ -250,7 +250,7 @@ being read; warnings are worth fixing.
 
 ### Converting a PDF
 
-Follow **[pdf-to-kpack.md](pdf-to-kpack.md)**, the one guide for it: the
+Follow **[skills/pdf-to-kpack/SKILL.md](../skills/pdf-to-kpack/SKILL.md)**, the one guide for it: the
 work folder, the page-by-page loop, the mistakes to check for, and the gate
 (`npm run kpack:verify`) that says when a conversion is done.
 

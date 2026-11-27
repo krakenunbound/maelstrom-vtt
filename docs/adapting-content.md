@@ -105,7 +105,7 @@ Fantasy Grounds modules and their history, [kraken-pack-format.md](kraken-pack-f
   campaign and the Kraken Agent Bridge on.
 - **From a PDF or your own notes**: `npm run kpack:make` builds a pack from a
   folder of records and pictures. A PDF is converted by
-  [pdf-to-kpack.md](pdf-to-kpack.md), the one guide for it, and is done only
+  [skills/pdf-to-kpack/SKILL.md](../skills/pdf-to-kpack/SKILL.md), the one guide for it, and is done only
   when `npm run kpack:verify` says so. Every page becomes a book page; creatures,
   items, spells and tables become records the game's ruleset reads. The old D&D
   boxed sets (Basic, Expert, Companion, Master, Immortals) and their adventures:

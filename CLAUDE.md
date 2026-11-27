@@ -6,7 +6,7 @@ Kraken's own agent tools (the MCP server in the app) are described in
 
 ## Converting a PDF into a pack
 
-[docs/pdf-to-kpack.md](docs/pdf-to-kpack.md) is the one guide. A conversion is
+[skills/pdf-to-kpack/SKILL.md](skills/pdf-to-kpack/SKILL.md) is the one guide. A conversion is
 done only when `npm run kpack:verify` prints `DONE`; a game Maelstrom does not
 play means stop and ask the user.
 
