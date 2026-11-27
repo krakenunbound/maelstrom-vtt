@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState, useSyncExternalStore } from "react";
+import { Fragment, lazy, Suspense, useEffect, useState, useSyncExternalStore } from "react";
 import type { Session } from "../session/useSession";
 import { dicePacks } from "./dicePacks";
 import type { DiceKind } from "./models";
@@ -21,12 +21,12 @@ const TRAY_DICE = [20, 12, 10, 8, 6, 4, 100];
 
 // A preset is the whole look: pips only where it has them (not left over from the set before).
 // (and its picture only where it has one).
-const lookOf = ({ name: _name, ...look }: { name: string } & DiceLook): DiceLook => ({ ...look, pips: Boolean(look.pips), texture: look.texture, glowTexture: look.glowTexture });
+const lookOf = ({ name: _name, family: _family, ...look }: { name: string; family?: string } & DiceLook): DiceLook => ({ ...look, pips: Boolean(look.pips), texture: look.texture, glowTexture: look.glowTexture });
 function sameLook(a: DiceLook, b: DiceLook) {
   return (["theme", "body", "ink", "accent", "material", "effect", "font", "texture", "glowTexture"] as const).every((key) => a[key] === b[key]) && Boolean(a.pips) === Boolean(b.pips);
 }
 // Kraken's sets, then each dice pack's (a group of its own).
-type Shown = { name: string } & DiceLook;
+type Shown = { name: string; family?: string } & DiceLook;
 const nameIn = (all: Shown[], look: DiceLook) => all.find((preset) => sameLook(look, preset))?.name ?? null;
 
 // 3D pictures of dice (the tray's renderer), drawn when the window opens.
@@ -121,11 +121,49 @@ export function DiceWindow({ session }: { session: Session }) {
   const nameOf = (shown: DiceLook) => nameIn(all, shown);
   // The die the live preview shows: a d20 until one is picked under Dice display.
   const [previewKind, setPreviewKind] = useState<DiceKind>("d20");
+  // The families whose choices are open (the one the dice are in, from the start).
+  const [openFamilies, setOpenFamilies] = useState<string[]>(() => {
+    const current = ([...PRESETS, ...packs.flatMap((pack) => pack.sets)] as Shown[]).find((preset) => sameLook(look, preset));
+    return current?.family ? [current.family] : [];
+  });
   const [group, setGroup] = useState(groups.find((item) => item.sets.includes(nameOf(look) ?? ""))?.name ?? "All");
   const tray = usePictures(() => import("./trayArt").then(({ renderTray }) => renderTray(look)), JSON.stringify(look), {} as Record<number, string>);
   const sets = usePictures(() => import("./trayArt").then(({ renderSets }) => renderSets(all.map(lookOf))), `sets|${packs.map((pack) => `${pack.id}:${pack.sets.length}`).join(",")}`, [] as string[]);
   const name = nameOf(look);
   const shown = all.map((preset, index) => ({ preset, picture: sets[index], index })).filter(({ index }) => group === "All" || groupOf[index] === group);
+  // Sets of one family (a pack's "family": a class such as Paladin) gather under one tile; a set without one is its own.
+  type Item = (typeof shown)[number];
+  const families: { name: string; items: Item[] }[] = [];
+  for (const item of shown) {
+    const name = item.preset.family || item.preset.name;
+    const found = families.find((family) => family.name === name);
+    if (found) found.items.push(item);
+    else families.push({ name, items: [item] });
+  }
+  const glowOf = (preset: Shown) => (preset.effect === "none" ? preset.accent : preset.effect === "fire" ? "#ff8a2a" : preset.effect === "frost" ? "#bfe8ff" : preset.effect === "shadow" ? "#7a3cff" : preset.accent);
+  const setButton = ({ preset, picture, index }: Item) => (
+    <button
+      key={`${index}-${preset.name}`}
+      type="button"
+      className={sameLook(look, preset) ? "dice-set on" : "dice-set"}
+      title={preset.name}
+      aria-label={preset.name}
+      aria-pressed={sameLook(look, preset)}
+      data-preset={preset.name}
+      style={{ ["--set-glow" as string]: glowOf(preset) }}
+      onClick={() => setLook(lookOf(preset))}
+      // FG's dice skin: dragged onto the chat, it becomes the dropper's own dice.
+      draggable
+      onDragStart={(event) => {
+        event.dataTransfer.setData(DICE_LOOK_DRAG, JSON.stringify(lookOf(preset)));
+        event.dataTransfer.setData("text/plain", preset.name);
+        event.dataTransfer.effectAllowed = "copy";
+      }}
+    >
+      {picture ? <img src={picture} alt="" draggable={false} /> : <span className="dice-set-blank" style={{ background: preset.body, color: preset.ink, ...FONT_STYLE[preset.font] }}>20</span>}
+      <span>{preset.name}</span>
+    </button>
+  );
 
   return (
     <div className="dice-window">
@@ -220,29 +258,38 @@ export function DiceWindow({ session }: { session: Session }) {
           ))}
         </div>
         <div className="dice-sets">
-          {shown.map(({ preset, picture, index }) => (
-            <button
-              key={`${index}-${preset.name}`}
-              type="button"
-              className={sameLook(look, preset) ? "dice-set on" : "dice-set"}
-              title={preset.name}
-              aria-label={preset.name}
-              aria-pressed={sameLook(look, preset)}
-              data-preset={preset.name}
-              style={{ ["--set-glow" as string]: preset.effect === "none" ? preset.accent : preset.effect === "fire" ? "#ff8a2a" : preset.effect === "frost" ? "#bfe8ff" : preset.effect === "shadow" ? "#7a3cff" : preset.accent }}
-              onClick={() => setLook(lookOf(preset))}
-              // FG's dice skin: dragged onto the chat, it becomes the dropper's own dice.
-              draggable
-              onDragStart={(event) => {
-                event.dataTransfer.setData(DICE_LOOK_DRAG, JSON.stringify(lookOf(preset)));
-                event.dataTransfer.setData("text/plain", preset.name);
-                event.dataTransfer.effectAllowed = "copy";
-              }}
-            >
-              {picture ? <img src={picture} alt="" draggable={false} /> : <span className="dice-set-blank" style={{ background: preset.body, color: preset.ink, ...FONT_STYLE[preset.font] }}>20</span>}
-              <span>{preset.name}</span>
-            </button>
-          ))}
+          {families.map((family) => {
+            if (family.items.length === 1) return setButton(family.items[0]);
+            // A family (a class: Paladin) is one tile; its sets are its choices, on a row of their own beneath it.
+            const open = openFamilies.includes(family.name);
+            const current = family.items.find(({ preset }) => sameLook(look, preset)) ?? null;
+            const face = current ?? family.items[0];
+            const id = `dice-family-${family.name.replace(/[^a-z0-9]+/gi, "-")}`;
+            return (
+              <Fragment key={`family-${family.name}`}>
+                <button
+                  type="button"
+                  className={["dice-set", "dice-family", current ? "on" : ""].filter(Boolean).join(" ")}
+                  title={`${family.name}: ${family.items.length} choices`}
+                  aria-expanded={open}
+                  aria-controls={id}
+                  data-family={family.name}
+                  style={{ ["--set-glow" as string]: glowOf(face.preset) }}
+                  onClick={() => setOpenFamilies((now) => (now.includes(family.name) ? now.filter((name) => name !== family.name) : [...now, family.name]))}
+                >
+                  {face.picture ? <img src={face.picture} alt="" draggable={false} /> : <span className="dice-set-blank" style={{ background: face.preset.body, color: face.preset.ink, ...FONT_STYLE[face.preset.font] }}>20</span>}
+                  <span>{family.name}</span>
+                  <b className="dice-family-count" aria-hidden="true">{family.items.length}</b>
+                </button>
+                {open ? (
+                  <div className="dice-family-choices" id={id} role="group" aria-label={`${family.name} choices`} data-family-choices={family.name}>
+                    <span className="dice-family-head">{family.name}</span>
+                    <div className="dice-family-row">{family.items.map(setButton)}</div>
+                  </div>
+                ) : null}
+              </Fragment>
+            );
+          })}
         </div>
       </section>
 

@@ -65,6 +65,18 @@ try {
   check(packs.length === 1 && pack?.kind === "kpack" && pack.sets.length === 4 && pack.problems.length === 0, `Maelstrom reads the made .kpack, 4 sets, no problems, over the folder of the same name (${JSON.stringify(packs.map((item) => [item.id, item.kind, item.sets.length, item.problems]))})`);
   check(pack?.sets.find((set) => set.name === "Kraken Hide")?.texture === "Kraken Sea Glass/kraken-hide.webp", "a picture set's texture keeps its id (<pack>/<file>)");
 
+  // 4b. A family (the pack's, or a set's own) reaches Maelstrom: one tile per class, its sets the choices.
+  const family = path.join(work, "Family");
+  mkdirSync(family);
+  writeFileSync(path.join(family, "dice.json"), JSON.stringify({ kraken: "dice-pack", version: 1, name: "Family", group: "Classes", family: "Paladin", sets: [{ name: "Dawn", theme: "classic", body: "#f0e0a0", ink: "#20180a" }, { name: "Dusk", theme: "classic", body: "#202040", ink: "#f0e0a0" }, { name: "Lute", family: "Bard", theme: "classic", body: "#702020", ink: "#f0e0a0" }] }));
+  const familyChecked = python("check", family);
+  check(familyChecked.status === 0, `check passes a pack with a family (${familyChecked.stdout.trim().split("\n").pop()})`);
+  const familyDice = path.join(work, "FamilyDice");
+  mkdirSync(familyDice);
+  python("make", family, "--out", familyDice);
+  const familySets = createDicePacks({ folder: familyDice, lookOf: table.diceLook }).list()[0]?.sets ?? [];
+  check(familySets.map((set) => set.family).join(",") === "Paladin,Paladin,Bard", `Maelstrom reads each set's family, the pack's or its own (${familySets.map((set) => set.family).join(",")})`);
+
   // 5. A broken work folder fails, and is not packed.
   const broken = path.join(work, "Broken");
   mkdirSync(broken);

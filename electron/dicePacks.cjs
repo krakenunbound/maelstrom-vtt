@@ -12,8 +12,8 @@ const { inflateSync } = require("fflate");
 // make one: skills/dice-set/SKILL.md (copied into the Dice folder).
 //
 // dice.json:
-//   { "kraken": "dice-pack", "version": 1, "name", "author", "description", "group",
-//     "sets": [ { "name", "theme", "body", "ink", "accent", "material",
+//   { "kraken": "dice-pack", "version": 1, "name", "author", "description", "group", "family",
+//     "sets": [ { "name", "family", "theme", "body", "ink", "accent", "material",
 //                 "effect", "font", "crit", "pips",
 //                 "texture": "face.png", "glow": "glow.png" } ] }
 // A set with a texture is drawn with that picture wrapped on its faces (the
@@ -130,7 +130,10 @@ function readPack(at, id, lookOf) {
       continue;
     }
     names.add(name);
-    sets.push({ name, ...look });
+    // family: the class or kind it is a choice of ("Paladin"): the Dice window shows a family as one tile and its sets
+    // as that tile's choices. A set's own, else the pack's.
+    const family = [raw?.family, json?.family].find((value) => typeof value === "string" && value.trim())?.trim().slice(0, 40);
+    sets.push({ name, ...look, ...(family ? { family } : {}) });
   }
   if (!Array.isArray(json?.sets) || json.sets.length === 0) problems.push("dice.json has no sets.");
   if (Array.isArray(json?.sets) && json.sets.length > MAX_SETS) problems.push(`Only the first ${MAX_SETS} sets are read.`);

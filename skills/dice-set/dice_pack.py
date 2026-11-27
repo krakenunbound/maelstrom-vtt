@@ -93,7 +93,7 @@ def check(folder):
     elif len(data["name"]) > 80:
         errors.append('dice.json: "name" is longer than 80 characters.')
     for key in data:
-        if key not in ("kraken", "version", "name", "author", "description", "group", "sets"):
+        if key not in ("kraken", "version", "name", "author", "description", "group", "family", "sets"):
             errors.append(f"dice.json: \"{key}\" is not a pack field (Maelstrom ignores it).")
     if "group" in data:
         group = data["group"]
@@ -101,6 +101,8 @@ def check(folder):
             errors.append('dice.json: "group" must be a name of up to 40 characters.')
         elif group not in GROUPS:
             warnings.append(f"dice.json: the group \"{group}\" is not one of Maelstrom's ({', '.join(GROUPS)}); it becomes a group of its own.")
+    if "family" in data and (not isinstance(data["family"], str) or not data["family"].strip() or len(data["family"]) > 40):
+        errors.append('dice.json: "family" must be a name of up to 40 characters.')
     sets = data.get("sets")
     if not isinstance(sets, list) or not sets:
         errors.append('dice.json: "sets" must be a list of 1 to 60 sets.')
@@ -154,7 +156,9 @@ def check(folder):
         for key in ("pips", "crit"):
             if key in item and not isinstance(item[key], bool):
                 errors.append(f"{label}: \"{key}\" must be true or false.")
-        known = {"name", "theme", "body", "ink", "accent", "material", "effect", "font", "pips", "crit", "texture", "glow"}
+        known = {"name", "family", "theme", "body", "ink", "accent", "material", "effect", "font", "pips", "crit", "texture", "glow"}
+        if "family" in item and (not isinstance(item["family"], str) or not item["family"].strip() or len(item["family"]) > 40):
+            errors.append(f"{label}: \"family\" must be a name of up to 40 characters.")
         for key in item:
             if key not in known:
                 errors.append(f"{label}: \"{key}\" is not a set field (Maelstrom ignores it).")

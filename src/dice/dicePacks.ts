@@ -5,7 +5,8 @@
 
 import { fullLook, type DiceLook } from "./diceStore";
 
-export type DicePackSet = { name: string } & DiceLook;
+// family: the class or kind the set is a choice of ("Paladin"); sets of one family show as one tile with choices.
+export type DicePackSet = { name: string; family?: string } & DiceLook;
 // group: the Dice window group its sets join (one of Maelstrom's, such as Classes, or a group of its own); without
 // it, a group named for the pack.
 export type DicePack = { id: string; name: string; author: string; description: string; group?: string; sets: DicePackSet[]; problems?: string[] };
