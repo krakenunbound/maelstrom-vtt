@@ -36,7 +36,7 @@ asks otherwise).
 
 You are done when all of these are true, and not before:
 
-1. `python dice_pack.py check "<work folder>"` prints `READY` (no errors).
+1. `python dice_pack.py check "<work folder>"` prints `READY` (no errors). It checks a finished `.kpack` the same way.
 2. You made the proof picture (`python dice_pack.py proof "<work folder>"`),
    **looked at it yourself**, and every set's numbers are easy to read and
    every picture tiles without a seam. Warnings in the check are answered by
@@ -273,7 +273,7 @@ marker lines below as `dice_pack.py`, exactly as it is.
 # <!-- kraken-vtt guide: Maelstrom writes this file into the Dice folder and keeps it up to date. Edit a copy. -->
 """Maelstrom dice packs: check a dice set's work folder, draw a proof picture of its sets, and pack it as a .kpack.
 
-    python dice_pack.py check <work folder>
+    python dice_pack.py check <work folder or .kpack>
     python dice_pack.py proof <work folder> [proof.png]
     python dice_pack.py make  <work folder> [--out <folder>]
 
@@ -579,7 +579,21 @@ def main():
         sys.exit(__doc__)
     command, folder = args[0], args[1]
     if command == "check":
-        errors, warnings, data, _ = check(folder)
+        if folder.lower().endswith(".kpack"):
+            # A finished pack: unpacked to a scratch folder and checked the same way, its kraken-pack.json too.
+            import tempfile
+            with tempfile.TemporaryDirectory() as scratch:
+                with zipfile.ZipFile(folder) as pack:
+                    pack.extractall(scratch)
+                    names = pack.namelist()
+                errors, warnings, data, _ = check(scratch)
+                manifest = Path(scratch) / "kraken-pack.json"
+                if "kraken-pack.json" not in names:
+                    errors.append("No kraken-pack.json in the pack.")
+                elif json.loads(manifest.read_text(encoding="utf-8-sig")).get("kind") != "dice-pack":
+                    errors.append('kraken-pack.json: "kind" must be "dice-pack".')
+        else:
+            errors, warnings, data, _ = check(folder)
         for line in errors:
             print(f"ERROR: {line}")
         for line in warnings:
