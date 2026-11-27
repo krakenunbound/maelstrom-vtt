@@ -92,7 +92,7 @@ const inventory = existsSync(inventoryFile) ? JSON.parse(readFileSync(inventoryF
   } else if (files["game.json"]) {
     if (approved.gameJson !== manifest.ruleset) problems.push(`the pack defines a new game "${manifest.ruleset}": only when the user said to add it (then inventory.json "approvedByUser": { "gameJson": "${manifest.ruleset}" }). STOP and ask.`);
   } else if (!knownGames(packFile).includes(manifest.ruleset)) {
-    problems.push(`no built-in game and no pack's game.json defines "${manifest.ruleset}". STOP: ask the user whether to add the game (docs/pack-games.md) or file the book under another game; do not choose for them.`);
+    problems.push(`no built-in game and no pack's game.json defines "${manifest.ruleset}". STOP: ask the user whether to add the game to Maelstrom first or file the book under another game; do not choose for them.`);
   }
   gate(`"${manifest.ruleset}" is a game Maelstrom plays`, problems);
 }

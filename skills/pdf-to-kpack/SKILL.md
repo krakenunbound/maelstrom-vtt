@@ -52,10 +52,10 @@ Stop, say what you found, and wait for the answer when:
    do not give the pack a `game.json` of your own. Ask the user whether to
    (a) add the game to Maelstrom first (its rules, sheet and wizard), or (b)
    file the book under a game they name. Adding a game is not part of this
-   skill: it is development work in the repository, planned with the user
-   (a game taught by its rules book's `game.json` is described in
-   `docs/pack-games.md`). Convert the book after the game exists; then its
-   packs and code give you the record shapes. When the user says `Any`, or to add the game,
+   skill: it is development work in Maelstrom itself (its rules, character
+   sheet and wizard), planned with the user. Convert the book after the game
+   exists; then its installed packs give you the record shapes
+   (`sample_record.mjs`). When the user says `Any`, or to add the game,
    record it in `inventory.json`: `"approvedByUser": { "ruleset": "Any" }` or
    `"approvedByUser": { "gameJson": "<game>" }`. The gate fails without it.
 2. **Pages are missing or unreadable** (blank in two renderers, cut off, an
@@ -253,8 +253,9 @@ node skills/pdf-to-kpack/scripts/sample_record.mjs "<game>" npc 3      # three r
 ```
 
 Never guess a field name. If the game's packs have no record of the type you
-need, read the game's code (`shared/<game>/`) or its `game.json` for the
-fields it reads, and say in the hand-over what you based the shape on.
+need, find the fields Maelstrom reads for that type in its game code
+(`grep -rn "<type>" shared/ electron/` from the repository root), and say in
+the hand-over what you based the shape on.
 
 Shapes every game shares:
 
