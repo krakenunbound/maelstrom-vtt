@@ -411,14 +411,51 @@ function askWindow(command, timeout = 60000) {
 }
 
 // --- The window -------------------------------------------------------------------------------
+// The app's window as the GM left it: its place and size (as it is when neither maximized nor full screen), and
+// whether it was maximized or full screen. Saved as it changes and when it closes, read when it opens again; a place
+// no longer on any screen (a monitor unplugged) is dropped, keeping the size.
+const WINDOW_STATE = path.join(app.getPath("userData"), "window-state.json");
+function savedWindowState() {
+  try {
+    const saved = JSON.parse(fs.readFileSync(WINDOW_STATE, "utf8"));
+    const { x, y, width, height } = saved?.bounds ?? {};
+    if (![width, height].every((value) => Number.isFinite(value) && value >= 400)) return null;
+    const { screen } = require("electron");
+    const onScreen = Number.isFinite(x) && Number.isFinite(y) && screen.getAllDisplays().some(({ workArea: area }) => x + 80 < area.x + area.width && x + width - 80 > area.x && y >= area.y - 20 && y + 40 < area.y + area.height);
+    return { bounds: { width: Math.round(width), height: Math.round(height), ...(onScreen ? { x: Math.round(x), y: Math.round(y) } : {}) }, maximized: saved.maximized === true, fullScreen: saved.fullScreen === true };
+  } catch {
+    return null;
+  }
+}
+function keepWindowState(win) {
+  let timer = null;
+  const write = () => {
+    clearTimeout(timer);
+    if (win.isDestroyed() || win.isMinimized()) return;
+    try {
+      fs.writeFileSync(WINDOW_STATE, JSON.stringify({ bounds: win.getNormalBounds(), maximized: win.isMaximized(), fullScreen: win.isFullScreen() }));
+    } catch {
+      /* not kept this time */
+    }
+  };
+  const soon = () => {
+    clearTimeout(timer);
+    timer = setTimeout(write, 500);
+  };
+  for (const name of ["resize", "move", "maximize", "unmaximize", "enter-full-screen", "leave-full-screen"]) win.on(name, soon);
+  win.on("close", write);
+}
+
 function createWindow() {
   const headless = process.env.KRAKEN_SMOKE === "1" || process.env.KRAKEN_E2E === "1";
-  // Where it opens, when told (test runs on another monitor while the GM plays): "x,y".
+  // Where it opens, when told (test runs on another monitor while the GM plays): "x,y". A told place is a test's: it
+  // neither reads nor writes the GM's window state.
   const at = /^(-?\d+),(-?\d+)$/.exec(process.env.KRAKEN_WINDOW_AT ?? "");
+  const state = at || headless ? null : savedWindowState();
   const win = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    ...(at ? { x: Number(at[1]), y: Number(at[2]) } : {}),
+    width: state?.bounds.width ?? 1440,
+    height: state?.bounds.height ?? 900,
+    ...(at ? { x: Number(at[1]), y: Number(at[2]) } : state?.bounds.x !== undefined ? { x: state.bounds.x, y: state.bounds.y } : {}),
     minWidth: 1024,
     minHeight: 700,
     show: false,
@@ -435,8 +472,13 @@ function createWindow() {
   });
 
   win.once("ready-to-show", () => {
-    if (!headless) win.show();
+    if (headless) return;
+    // Maximized or full screen again, as it was left.
+    if (state?.maximized) win.maximize();
+    win.show();
+    if (state?.fullScreen) win.setFullScreen(true);
   });
+  if (!at && !headless) keepWindowState(win);
 
   // The page's errors and a crashed page, into the window's log.
   win.webContents.on("console-message", (event, level, message, line, source) => {

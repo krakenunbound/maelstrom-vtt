@@ -171,6 +171,7 @@
     "kpack:make": "node scripts/kpack-make.mjs",
     "kpack:verify": "node skills/pdf-to-kpack/scripts/verify-conversion.mjs",
     "check-dice-skill": "node scripts/check-dice-skill.mjs",
+    "layout-restart-ui": "node scripts/verify-layout-restart-ui.mjs",
     "art-packs": "node scripts/build-art-packs.mjs release/art-packs"
   },
   "dependencies": {

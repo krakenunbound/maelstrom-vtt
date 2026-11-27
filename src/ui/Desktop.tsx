@@ -1020,8 +1020,13 @@ function useReopenWindows(session: Session, manager: ReturnType<typeof useWindow
     restored.current = key;
     if (!reopen) return;
     try {
-      const list = JSON.parse(window.localStorage.getItem(key) ?? "[]") as { kind: string; title: string; payload?: string }[];
-      for (const item of Array.isArray(list) ? list.slice(0, 40) : []) if (item && typeof item.kind === "string" && item.kind !== "map") manager.open(item.kind as never, String(item.title ?? ""), item.payload);
+      const list = JSON.parse(window.localStorage.getItem(key) ?? "[]") as { kind: string; title: string; payload?: string; minimized?: boolean }[];
+      for (const item of Array.isArray(list) ? list.slice(0, 40) : []) {
+        if (!item || typeof item.kind !== "string" || item.kind === "map") continue;
+        manager.open(item.kind as never, String(item.title ?? ""), item.payload);
+        // A window left minimized (tucked in the tray) comes back minimized, not open in front.
+        if (item.minimized) manager.minimize(item.payload ? `${item.kind}:${item.payload}` : item.kind);
+      }
     } catch {
       /* nothing kept */
     }
@@ -1030,7 +1035,7 @@ function useReopenWindows(session: Session, manager: ReturnType<typeof useWindow
   useEffect(() => {
     if (!key || restored.current !== key) return;
     try {
-      window.localStorage.setItem(key, JSON.stringify(manager.windows.filter((item) => item.kind !== "map").map((item) => ({ kind: item.kind, title: item.title, ...(item.payload ? { payload: item.payload } : {}) }))));
+      window.localStorage.setItem(key, JSON.stringify(manager.windows.filter((item) => item.kind !== "map").map((item) => ({ kind: item.kind, title: item.title, ...(item.payload ? { payload: item.payload } : {}), ...(item.minimized ? { minimized: true } : {}) }))));
     } catch {
       /* not kept */
     }
