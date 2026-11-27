@@ -8,6 +8,13 @@ full log of the work is in [PLAN.md](PLAN.md).
 
 Collected here until the next major release.
 
+- **Your layout sticks:** Maelstrom opens where you left it: the same size, on the same monitor, maximized or full screen again. Before, it always opened in a small window, so the table's windows (which remember their places) were squeezed out of the layout you had made. A window you minimized to the tray comes back minimized, instead of open in front.
+- **Dice packs are packs:** a dice pack is now one `.kpack` file in `Documents/Kraken VTT/Dice`, to drop in or send to a friend. Older dice packs made as a folder still work.
+- **Make dice with an AI agent:** show your agent `DICE-SET-SKILL.md` in the Dice folder and describe the dice you want. The skill is the whole procedure, and its tool `dice_pack.py` checks the set, draws a proof picture of its faces, and makes the `.kpack`.
+- **Picture dice show their picture:** a pack's picture is laid flat on every face, so its skulls, scales or runes show on each die instead of a smeared sliver of the picture stretched round the whole die.
+- **Dice by class:** in the Dice window each class (or kind) is one tile; pick it and its choices show below it, so six Paladin sets take one tile instead of six. A dice pack can say which group it belongs in (Classes, Wilds...) and which class its sets are for.
+- **Preview any die:** click a die under Dice display and the live preview above shows that die, not only the d20.
+
 - **The map stays underneath:** the map window is the table's bottom layer: other windows put on top of it (the tracker, the cards, a sheet) are never hidden when the map is clicked.
 - **A map in a quick slot:** the map window's title has the pin other windows have; drop it in a quick slot and a click brings that map back on the table (its book's maps opened again if another adventure is open). `kraken_quickslots` takes it as { kind: scene, adventure, scene }.
 - **Card tabs:** the Cards window has a tab for each group (All, Weapons, each spell level, Features...), so a small window shows one group at full size; the hand also fits the window, shrinking instead of hiding cards as it is made smaller. Opened for another character, it shows that character's hand.
