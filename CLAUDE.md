@@ -4,6 +4,12 @@ Kraken's own agent tools (the MCP server in the app) are described in
 [AGENT.md](AGENT.md); the plan and the log of the work are in
 [PLAN.md](PLAN.md).
 
+## Converting a PDF into a pack
+
+[docs/pdf-to-kpack.md](docs/pdf-to-kpack.md) is the one guide. A conversion is
+done only when `npm run kpack:verify` prints `DONE`; a game Maelstrom does not
+play means stop and ask the user.
+
 ## Browser support
 
 Kraken's interface runs in two places: the GM's app (Electron, a current

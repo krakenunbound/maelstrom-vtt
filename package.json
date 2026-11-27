@@ -169,6 +169,7 @@
     "open-art": "node scripts/check-open-art.mjs",
     "kpack:check": "node scripts/kpack-check.mjs",
     "kpack:make": "node scripts/kpack-make.mjs",
+    "kpack:verify": "node scripts/pdf-kpack/verify-conversion.mjs",
     "art-packs": "node scripts/build-art-packs.mjs release/art-packs"
   },
   "dependencies": {

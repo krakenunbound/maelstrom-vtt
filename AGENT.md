@@ -15,7 +15,7 @@ Kraken VTT is built for an AI agent from the ground up, not with one added after
 
 ## Bringing content and games
 
-[docs/adapting-content.md](docs/adapting-content.md) is the agent's guide to bringing anything to Maelstrom: dice packs (and their particle effects), dice towers, GM icons, decals, wallpapers, sounds, books as packs (from FG modules or PDFs), Foundry map sets and Universal VTT maps, and a new game's ruleset from its core rulebook. [docs/kpack-format.md](docs/kpack-format.md) is the pack format.
+[docs/adapting-content.md](docs/adapting-content.md) is the agent's guide to bringing anything to Maelstrom: dice packs (and their particle effects), dice towers, GM icons, decals, wallpapers, sounds, books as packs (from FG modules or PDFs), Foundry map sets and Universal VTT maps, and a new game's ruleset from its core rulebook. [docs/kpack-format.md](docs/kpack-format.md) is the pack format. A PDF is converted only by [docs/pdf-to-kpack.md](docs/pdf-to-kpack.md), and is done only when `npm run kpack:verify` prints DONE.
 
 ## Connecting an agent
 

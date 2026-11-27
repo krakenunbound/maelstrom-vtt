@@ -8,8 +8,8 @@ Tables, Parcels and so on). It is Maelstrom's own format, as `.mod` is Fantasy
 Grounds'.
 
 This document is the contract. It is written for people and for AI agents
-alike: an agent asked to "convert this PDF to a .kpack" should be able to do it
-from this page alone, then check its work with `npm run kpack:check`.
+alike. To convert a PDF into a pack, follow [pdf-to-kpack.md](pdf-to-kpack.md):
+it is the procedure, and its gate (`npm run kpack:verify`) says when it is done.
 
 Maelstrom was called Kraken VTT until alpha.92, so the format's files and the
 folder still say "Kraken" (`kraken-pack.json`, `Documents/Kraken VTT`).
@@ -248,131 +248,11 @@ and checks it. Then **Folders > Refresh** in Maelstrom shows it.
 `npm run kpack:check -- "path/to/Book.kpack"` checks any pack: errors stop it
 being read; warnings are worth fixing.
 
-### Converting a PDF: an agent's checklist
+### Converting a PDF
 
-1. **Read the whole book first.** Note its game (section 3's `ruleset`), its
-   kind and series, its chapters, and every creature, item, spell, table,
-   treasure, map and handout.
-2. **Make the manifest:** `name` (the book's title, as others will link to
-   it), `title`, `ruleset`, `kind`, `group` (the series: "B series", "Against
-   the Slave Lords"; the line: "Core Rules", "Handbooks"), `order` (its code or
-   number), `parent` if it is a part of another pack.
-3. **Pages:** one `refpage` per section of the book, in reading order, with its
-   text in `<p>` paragraphs, boxed read-aloud text in a `blue` (or `grey`)
-   frame, and its pictures as image blocks. One `refindex` lists them by
-   chapter.
-4. **Story (adventures):** one `encounter` per keyed area or scene, its text
-   from the book, linking the creatures, treasure and maps in it.
-5. **Creatures, items, spells:** one record each, in the game's own data shape
-   (copy the shape from that game's existing packs), linked from the pages
-   that mention them.
-6. **Encounters and treasure:** a `battle` for each fight (its creatures,
-   counts and faction), a `treasureparcels` for each hoard.
-7. **Tables:** each random table as a `tables` record.
-8. **Pictures and maps:** extract them as WebP (maps at full resolution),
-   one `image` record each; a map gets its grid size and offset.
-9. **Cover:** the front cover as `images/cover.webp`, named in `cover`.
-9b. **Pictures for every creature, NPC and item** (section 5's npc and item): put each file in the zip and its
-    path in the record's `picture` (and `token` for a living creature). Pictures already made are in the art
-    staging folder with an `index.json` that names, for each record name, its files; use them, and make any
-    that are missing the same way (`games/tools/creature_art.mjs`).
-10. **Make and check:** `npm run kpack:make -- <folder>`; fix every error and
-    warning `kpack:check` reports; then open it in Maelstrom (Modules: make it
-    active, read it in Books, open its maps) and compare with the PDF.
-11. **Play it, not only open it.** `kpack:check` checks the shape, not the
-    numbers. In a campaign of the game: build one character of every class;
-    raise each to its top level and compare its to-hit, saves, hit dice and
-    spells with the book's tables; attack with a melee, a thrown and a
-    missile weapon; roll a save and a skill; put three of the book's
-    monsters on the tracker and fight; take every sample character and
-    compare it with the book; open every page and every map.
-
-### Mistakes conversions have made (check for each)
-
-- **Numbers read from the wrong row or column** of a printed table (a class's
-  to-hit one level band off). Check each class's first and last level of
-  every band against the book's summary table, not only its own page.
-- **Weapons without `damage`**, thrown and missile weapons without `range`:
-  they do not appear as attacks. Every weapon a character can buy needs
-  both where the book gives them.
-- **Things characters cannot wear typed as armor** (horse barding, siege
-  engines as weapons): a character who buys them wears or wields them. Type
-  them `Gear`.
-- **Empty fields that mean "none"** (`xpbonus: {}`) where the book gives a
-  value: leave a field out rather than empty when the book is silent, and
-  fill it when the book is not.
-- **A rules book's monsters left as pages.** If the book has a monster
-  chapter, each monster is an `npc` record; without them the game's
-  campaigns have nothing to fight.
-- **An adventure printed inside a rules book** kept as pages only: give it
-  its encounters, battles, creatures and treasure (steps 4 to 6), or make it
-  its own `adventure` pack.
-- **Battle maps with no grid** (`"grid": "off"`): tokens cannot move by
-  squares or measure. Give dungeon and building maps their grid; region
-  maps may stay without one.
-- **Pages kept as a scan** (a picture-only page) to transcribe later: count
-  them and say so when the pack is handed over; their tables and monsters
-  are not records until transcribed.
-- **An adventure made a game of its own** (its own `game.json` and
-  `ruleset`): Maelstrom never offers a game whose only book is an
-  adventure, so it cannot be played. An adventure's `ruleset` is the game
-  it is played in, and it carries no `game.json`.
-- **An adventure carrying copies of the rules book** (its classes, the
-  equipment, the spells, the standard monsters): they show twice in that
-  game's campaigns. An adventure carries only what it adds, and links the
-  rules book's records (`npc.goblin@Set 1: Basic Rules`).
-- **Battle positions from a PDF**: a PDF gives no coordinates, so give each
-  battle row a `maplink` at about its room (near the key number is enough).
-  For a pack whose `kraken-pack.json` says `"from": { "kind": "pdf" }`,
-  Maelstrom reads the map's picture, finds its floor squares (lighter than
-  the rock, inside their grid lines) and puts each creature on the nearest
-  free floor square of that room. Packs made from a VTT keep their exact
-  spots. The map needs its grid (`gridsize`, `gridoffset`) right.
-- **Battles with no map positions**: their creatures are not placed on the
-  map. Give each battle row its `maplink` (the map's `imageref`, `imagex`
-  and `imagey` from the picture's centre).
-- **Treasure parcels no story links**: link each from its room's encounter.
-- **Maps with oblong squares** (`gridsize` "62.08,63.04"): scale the picture
-  so the squares are square and give one size.
-- **One game split into several rulesets** without meaning to: every book of
-  one game uses the same `ruleset`, so its campaigns see all of its books.
-  A separate ruleset is a separate game whose campaigns see only its own
-  books (see becmi-packs.md, "One game, or one game per set").
-- **The same item in several books of one game**: the shop lists it once per
-  book. Write each item in the book that first sells it; a later book
-  writes it again only to change it.
-- **Notes for the app inside the book's text** ("resolve this manually in
-  the tracker"): book text is the book's words. Put what the app cannot do
-  in the hand-over report, not in a page; when the app learns it, the page
-  is already right.
-- **One damage for several attacks** ("1 bite/1 gaze" with "1d10"): every
-  attack gets it. Write a damage for each attack in order, a word for one
-  with no dice ("1d10/petrification"); "2 claws/1 bite" may give "1d4/1d8"
-  (the claws share theirs).
-- **Things a shop sells without a `cost`**: they cannot be bought. Every
-  item the book prices has its `cost` in the game's coins.
-- **Monsters with no `ac`**: they fight at the game's unarmored AC. Give the
-  printed one; when the book says something else ("always hit"), give the
-  nearest number and say it in the text.
-- **Ranges where the rules want dice** ("4-18" for a bite): write the dice
-  that give the range (`2d8+2`).
-- **A creature that saves as a class the game does not have** (a standalone
-  set without a Fighter): give it its own `saves`.
-- **The wizard's defaults left for a game that does not use them** (rolled
-  scores for an Immortal, a shop with nothing to sell): say how the game
-  makes a character in its definition (`abilityEntry`), and leave out what
-  it does not have.
-- **Picture links with a made-up class** (`<link class="image">`): write
-  FG's class, `imagewindow`, with the image's record
-  (`recordname="image.ark-5@Champions of Mystara"`). Maelstrom follows any
-  link whose record is an `image.` one, from a page, a story entry or a
-  record (a vehicle's "Open Deck 5"), but other readers of the format may not.
-- **Ships, wagons and airships as pages or creatures**: make each a `vehicle`
-  record (its specs as fields, its words in `text`, links to its deck maps).
-  They show in the GM's Vehicles list, by book and category.
-- **Story records with no links**: an adventure's `encounter` links its
-  creatures, battles, treasure and maps (`linklist`), or the GM cannot open
-  them from the story.
+Follow **[pdf-to-kpack.md](pdf-to-kpack.md)**, the one guide for it: the
+work folder, the page-by-page loop, the mistakes to check for, and the gate
+(`npm run kpack:verify`) that says when a conversion is done.
 
 Only convert books the GM owns, for the GM's own use. A book's content is its
 publisher's: packs made from licensed books are never committed to the

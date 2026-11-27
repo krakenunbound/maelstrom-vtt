@@ -104,8 +104,9 @@ Fantasy Grounds modules and their history, [kraken-pack-format.md](kraken-pack-f
   `scripts/fg-bridge-export/export_book.py` with the book loaded in a running FG
   campaign and the Kraken Agent Bridge on.
 - **From a PDF or your own notes**: `npm run kpack:make` builds a pack from a
-  folder of records and pictures; follow "Converting a PDF: an agent's
-  checklist" in kpack-format.md. Every page becomes a book page; creatures,
+  folder of records and pictures. A PDF is converted by
+  [pdf-to-kpack.md](pdf-to-kpack.md), the one guide for it, and is done only
+  when `npm run kpack:verify` says so. Every page becomes a book page; creatures,
   items, spells and tables become records the game's ruleset reads. The old D&D
   boxed sets (Basic, Expert, Companion, Master, Immortals) and their adventures:
   [becmi-packs.md](becmi-packs.md). A game Maelstrom has no code for is taught
